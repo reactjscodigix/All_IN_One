@@ -1,0 +1,88 @@
+{
+  "companies": [
+    {
+      "id": 1,
+      "name": "SkyHigh Solutions",
+      "industry": "Technology",
+      "email": "hello@skyhigh.com",
+      "phone": "+1-234-567-8900",
+      "website": "www.skyhigh.com",
+      "employees": 250,
+      "revenue": 50000000,
+      "status": "Active",
+      "joinDate": "2024-01-10"
+    },
+    {
+      "id": 2,
+      "name": "Enterprise Corp",
+      "industry": "Finance",
+      "email": "info@enterprisecorp.com",
+      "phone": "+1-234-567-8901",
+      "website": "www.enterprisecorp.com",
+      "employees": 500,
+      "revenue": 120000000,
+      "status": "Active",
+      "joinDate": "2024-02-15"
+    },
+    {
+      "id": 3,
+      "name": "Tech Innovations Ltd",
+      "industry": "Software",
+      "email": "contact@techinnovations.com",
+      "phone": "+1-234-567-8902",
+      "website": "www.techinnovations.com",
+      "employees": 150,
+      "revenue": 30000000,
+      "status": "Active",
+      "joinDate": "2024-03-20"
+    },
+    {
+      "id": 4,
+      "name": "Global Industries",
+      "industry": "Manufacturing",
+      "email": "sales@globalindustries.com",
+      "phone": "+1-234-567-8903",
+      "website": "www.globalindustries.com",
+      "employees": 1000,
+      "revenue": 500000000,
+      "status": "Active",
+      "joinDate": "2024-04-10"
+    },
+    {
+      "id": 5,
+      "name": "StartUp Ventures",
+      "industry": "Startup",
+      "email": "info@startupventures.com",
+      "phone": "+1-234-567-8904",
+      "website": "www.startupventures.com",
+      "employees": 50,
+      "revenue": 5000000,
+      "status": "Prospect",
+      "joinDate": "2024-05-18"
+    },
+    {
+      "id": 6,
+      "name": "Digital Agency Pro",
+      "industry": "Advertising",
+      "email": "contact@digitalagencypro.com",
+      "phone": "+1-234-567-8905",
+      "website": "www.digitalagencypro.com",
+      "employees": 85,
+      "revenue": 15000000,
+      "status": "Active",
+      "joinDate": "2024-06-05"
+    },
+    {
+      "id": 7,
+      "name": "CloudFirst Systems",
+      "industry": "Cloud Services",
+      "email": "hello@cloudfirst.com",
+      "phone": "+1-234-567-8906",
+      "website": "www.cloudfirst.com",
+      "employees": 200,
+      "revenue": 40000000,
+      "status": "Active",
+      "joinDate": "2024-07-12"
+    }
+  ]
+}

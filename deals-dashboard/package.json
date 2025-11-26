@@ -1,0 +1,26 @@
+{
+  "name": "crm-dashboard",
+  "version": "1.0.0",
+  "description": "Professional CRM Dashboard - Preadmin Template Recreation",
+  "private": true,
+  "scripts": {
+    "setup": "cd server && npm install && cd ../client && npm install && cd ../server && npm run setup",
+    "start": "concurrently \"cd server && npm start\" \"cd client && npm start\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "test": "cd server && npm test"
+  },
+  "keywords": [
+    "crm",
+    "dashboard",
+    "react",
+    "nodejs",
+    "mysql"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

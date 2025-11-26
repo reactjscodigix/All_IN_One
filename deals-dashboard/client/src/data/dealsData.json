@@ -1,0 +1,114 @@
+{
+  "deals": [
+    {
+      "id": 1,
+      "name": "SkyHigh Annual Booking",
+      "company": "SkyHigh Solutions",
+      "contact": "John Anderson",
+      "stage": "Appointment",
+      "value": 5451000,
+      "status": "Won",
+      "probability": 100,
+      "createdAt": "2025-11-20"
+    },
+    {
+      "id": 2,
+      "name": "CRM Onboarding Package",
+      "company": "Enterprise Corp",
+      "contact": "Sarah Williams",
+      "stage": "Contact Made",
+      "value": 7214078,
+      "status": "Lost",
+      "probability": 0,
+      "createdAt": "2025-11-19"
+    },
+    {
+      "id": 3,
+      "name": "Enterprise Plan Upgrade",
+      "company": "Tech Innovations Ltd",
+      "contact": "Michael Johnson",
+      "stage": "Presentation",
+      "value": 414800,
+      "status": "Won",
+      "probability": 100,
+      "createdAt": "2025-11-18"
+    },
+    {
+      "id": 4,
+      "name": "CRM Migration Project",
+      "company": "Global Industries",
+      "contact": "Emily Brown",
+      "stage": "Proposal Made",
+      "value": 1611400,
+      "status": "Won",
+      "probability": 100,
+      "createdAt": "2025-11-17"
+    },
+    {
+      "id": 5,
+      "name": "Sales Pipeline Optimization",
+      "company": "StartUp Ventures",
+      "contact": "David Miller",
+      "stage": "Qualify To Buy",
+      "value": 905947,
+      "status": "Won",
+      "probability": 100,
+      "createdAt": "2025-11-16"
+    },
+    {
+      "id": 6,
+      "name": "Tech Solutions Integration",
+      "company": "SkyHigh Solutions",
+      "contact": "John Anderson",
+      "stage": "Inpipeline",
+      "value": 2150000,
+      "status": "Pending",
+      "probability": 75,
+      "createdAt": "2025-11-15"
+    },
+    {
+      "id": 7,
+      "name": "Cloud Services Migration",
+      "company": "Enterprise Corp",
+      "contact": "Sarah Williams",
+      "stage": "Follow Up",
+      "value": 1850000,
+      "status": "Lost",
+      "probability": 0,
+      "createdAt": "2025-11-14"
+    },
+    {
+      "id": 8,
+      "name": "Digital Transformation Package",
+      "company": "Tech Innovations Ltd",
+      "contact": "Michael Johnson",
+      "stage": "Conversation",
+      "value": 3200000,
+      "status": "Won",
+      "probability": 100,
+      "createdAt": "2025-11-13"
+    },
+    {
+      "id": 9,
+      "name": "API Integration Suite",
+      "company": "Global Industries",
+      "contact": "Emily Brown",
+      "stage": "Inpipeline",
+      "value": 1250000,
+      "status": "Won",
+      "probability": 100,
+      "createdAt": "2025-11-12"
+    },
+    {
+      "id": 10,
+      "name": "Marketing Automation System",
+      "company": "StartUp Ventures",
+      "contact": "David Miller",
+      "stage": "Conversation",
+      "value": 1800000,
+      "status": "Pending",
+      "probability": 50,
+      "createdAt": "2025-11-11"
+    }
+  ]
+}

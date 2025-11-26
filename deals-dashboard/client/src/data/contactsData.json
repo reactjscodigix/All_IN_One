@@ -1,0 +1,92 @@
+{
+  "contacts": [
+    {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Anderson",
+      "email": "john.anderson@skyhigh.com",
+      "phone": "+1-234-567-8900",
+      "company": "SkyHigh Solutions",
+      "position": "CEO",
+      "status": "Active",
+      "joinDate": "2025-01-15"
+    },
+    {
+      "id": 2,
+      "firstName": "Sarah",
+      "lastName": "Williams",
+      "email": "sarah.williams@enterprise.com",
+      "phone": "+1-234-567-8901",
+      "company": "Enterprise Corp",
+      "position": "Sales Manager",
+      "status": "Active",
+      "joinDate": "2025-02-20"
+    },
+    {
+      "id": 3,
+      "firstName": "Michael",
+      "lastName": "Johnson",
+      "email": "michael.johnson@techinnovations.com",
+      "phone": "+1-234-567-8902",
+      "company": "Tech Innovations Ltd",
+      "position": "Product Manager",
+      "status": "Active",
+      "joinDate": "2025-03-10"
+    },
+    {
+      "id": 4,
+      "firstName": "Emily",
+      "lastName": "Brown",
+      "email": "emily.brown@globalindustries.com",
+      "phone": "+1-234-567-8903",
+      "company": "Global Industries",
+      "position": "Director",
+      "status": "Active",
+      "joinDate": "2025-04-05"
+    },
+    {
+      "id": 5,
+      "firstName": "David",
+      "lastName": "Miller",
+      "email": "david.miller@startupventures.com",
+      "phone": "+1-234-567-8904",
+      "company": "StartUp Ventures",
+      "position": "Founder",
+      "status": "Lead",
+      "joinDate": "2025-05-12"
+    },
+    {
+      "id": 6,
+      "firstName": "Robert",
+      "lastName": "Taylor",
+      "email": "robert.taylor@example.com",
+      "phone": "+1-234-567-9000",
+      "company": "Tech Solutions Inc",
+      "position": "Technical Lead",
+      "status": "Active",
+      "joinDate": "2025-06-01"
+    },
+    {
+      "id": 7,
+      "firstName": "Jennifer",
+      "lastName": "Lee",
+      "email": "jennifer.lee@example.com",
+      "phone": "+1-234-567-9001",
+      "company": "Digital Agency",
+      "position": "Marketing Head",
+      "status": "Active",
+      "joinDate": "2025-06-15"
+    },
+    {
+      "id": 8,
+      "firstName": "Thomas",
+      "lastName": "Davis",
+      "email": "thomas.davis@example.com",
+      "phone": "+1-234-567-9002",
+      "company": "Marketing Group",
+      "position": "Strategy Manager",
+      "status": "Active",
+      "joinDate": "2025-07-08"
+    }
+  ]
+}

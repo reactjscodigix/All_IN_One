@@ -1,0 +1,100 @@
+import React, { useState } from 'react';
+import Chart from 'react-apexcharts';
+import DateRangeDropdown from './DateRangeDropdown';
+
+const LeadsProjectsByStageChart = ({ leads, onDateRangeChange }) => {
+  const [selectedPeriod, setSelectedPeriod] = useState('Last 30 Days');
+
+  const chartData = [1200, 800, 600, 400];
+  const labels = ['Inpipeline', 'Follow Up', 'Schedule Service', 'Conversation'];
+
+  const options = {
+    chart: {
+      type: 'pie',
+      sparkline: { enabled: false },
+      toolbar: { show: false },
+      fontFamily: 'inherit',
+    },
+    labels: labels,
+    colors: ['#3b82f6', '#10b981', '#fbbf24', '#ef4444'],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '0%',
+        },
+        dataLabels: {
+          enabled: true,
+          formatter: (val) => val.toFixed(1) + '%',
+        },
+      },
+    },
+    dataLabels: {
+      background: {
+        enabled: true,
+        foreColor: '#fff',
+        borderRadius: 2,
+        padding: 4,
+        opacity: 0.8,
+      },
+      style: {
+        fontSize: '12px',
+        fontWeight: 500,
+      },
+    },
+    legend: {
+      position: 'bottom',
+      fontSize: '13px',
+      fontWeight: 500,
+      markers: {
+        width: 10,
+        height: 10,
+        radius: 2,
+      },
+    },
+    tooltip: {
+      theme: 'light',
+      style: {
+        fontSize: '12px',
+      },
+      y: {
+        formatter: (val) => val + ' items',
+      },
+    },
+    states: {
+      hover: {
+        filter: {
+          type: 'darken',
+          value: 0.1,
+        },
+      },
+    },
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-border-light">
+      <div className="p-2 border-b border-border-light">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Projects By Stage</h2>
+          <DateRangeDropdown
+            value={selectedPeriod}
+            onChange={setSelectedPeriod}
+            onDateRangeChange={onDateRangeChange}
+            options={['Last 15 Days', 'Last 30 Days', 'Last 7 Days']}
+          />
+        </div>
+      </div>
+
+      <div className="p-2">
+        {chartData.length > 0 ? (
+          <Chart options={options} series={chartData} type="pie" height={300} />
+        ) : (
+          <div className="h-80 flex items-center justify-center text-gray-500">
+            No data available
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LeadsProjectsByStageChart;

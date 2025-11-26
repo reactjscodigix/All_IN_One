@@ -3,33 +3,20 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import CustomDropdown from './CustomDropdown';
 import DateRangeDropdown from './DateRangeDropdown';
 
-const DealsByStageChart = ({ deals, onDateRangeChange }) => {
+const LostDealsChart = ({ deals, onDateRangeChange }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('Marketing Pipeline');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 15 Days');
-  const chartData = [];
-  const stageMap = {};
-
-  deals.forEach((deal) => {
-    if (!stageMap[deal.stage]) {
-      stageMap[deal.stage] = 0;
-    }
-    stageMap[deal.stage] += 1;
-  });
-
-  const stageOrder = ['Inpipeline', 'Follow Up', 'Schedule Conversation', 'Conversation', 'Won', 'Lost'];
-  
-  stageOrder.forEach((stage) => {
-    chartData.push({
-      name: stage,
-      deals: stageMap[stage] || 0,
-    });
-  });
+  const chartData = [
+    { name: 'Conversation', value: 420 },
+    { name: 'Follow Up', value: 240 },
+    { name: 'Inpipeline', value: 400 }
+  ];
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">
       <div className="p-2 border-b border-border-light">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Deals By Stage</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Lost Deals Stage</h2>
           <div className="flex gap-2">
             <CustomDropdown
               options={['Marketing Pipeline', 'Sales Pipeline', 'Email', 'Chats', 'Operational']}
@@ -48,14 +35,16 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
 
       <div className="p-2">
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 60 }} barCategoryGap="10%">
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+              barCategoryGap="30%"
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis tick={{ fontSize: 12 }} />
+              <XAxis type="number" tick={{ fontSize: 12 }} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={90} />
               <Tooltip 
                 contentStyle={{
                   backgroundColor: '#fff',
@@ -63,12 +52,12 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
                   borderRadius: '0.5rem',
                 }}
               />
-              <Bar dataKey="deals" fill="#14b8a6" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="value" fill="#ef4444" radius={[0, 0, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-80 flex items-center justify-center text-gray-500">
-            No deals data available
+          <div className="h-64 flex items-center justify-center text-gray-500">
+            No lost deals data
           </div>
         )}
       </div>
@@ -76,4 +65,4 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
   );
 };
 
-export default DealsByStageChart;
+export default LostDealsChart;

@@ -1,35 +1,31 @@
 import React, { useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import CustomDropdown from './CustomDropdown';
 import DateRangeDropdown from './DateRangeDropdown';
 
-const DealsByStageChart = ({ deals, onDateRangeChange }) => {
+const DealsByYearChart = ({ deals, onDateRangeChange }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('Marketing Pipeline');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 15 Days');
-  const chartData = [];
-  const stageMap = {};
-
-  deals.forEach((deal) => {
-    if (!stageMap[deal.stage]) {
-      stageMap[deal.stage] = 0;
-    }
-    stageMap[deal.stage] += 1;
-  });
-
-  const stageOrder = ['Inpipeline', 'Follow Up', 'Schedule Conversation', 'Conversation', 'Won', 'Lost'];
-  
-  stageOrder.forEach((stage) => {
-    chartData.push({
-      name: stage,
-      deals: stageMap[stage] || 0,
-    });
-  });
+  const chartData = [
+    { month: 'Jan', deals: 1000 },
+    { month: 'Feb', deals: 2000 },
+    { month: 'Mar', deals: 3000 },
+    { month: 'Apr', deals: 2500 },
+    { month: 'May', deals: 1800 },
+    { month: 'Jun', deals: 2200 },
+    { month: 'Jul', deals: 3000 },
+    { month: 'Aug', deals: 2800 },
+    { month: 'Sep', deals: 3500 },
+    { month: 'Oct', deals: 4000 },
+    { month: 'Nov', deals: 3800 },
+    { month: 'Dec', deals: 5500 }
+  ];
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">
       <div className="p-2 border-b border-border-light">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Deals By Stage</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Deals by Year</h2>
           <div className="flex gap-2">
             <CustomDropdown
               options={['Marketing Pipeline', 'Sales Pipeline', 'Email', 'Chats', 'Operational']}
@@ -49,10 +45,13 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
       <div className="p-2">
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 60 }} barCategoryGap="10%">
+            <LineChart
+              data={chartData}
+              margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis 
-                dataKey="name" 
+                dataKey="month" 
                 tick={{ fontSize: 12 }}
               />
               <YAxis tick={{ fontSize: 12 }} />
@@ -60,11 +59,18 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
                 contentStyle={{
                   backgroundColor: '#fff',
                   border: '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
+                  borderRadius: '0',
                 }}
               />
-              <Bar dataKey="deals" fill="#14b8a6" radius={[0, 0, 0, 0]} />
-            </BarChart>
+              <Line 
+                type="monotone" 
+                dataKey="deals" 
+                stroke="#f59e0b" 
+                strokeWidth={3}
+                dot={{ fill: '#f59e0b', r: 5 }}
+                activeDot={{ r: 7 }}
+              />
+            </LineChart>
           </ResponsiveContainer>
         ) : (
           <div className="h-80 flex items-center justify-center text-gray-500">
@@ -76,4 +82,4 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
   );
 };
 
-export default DealsByStageChart;
+export default DealsByYearChart;

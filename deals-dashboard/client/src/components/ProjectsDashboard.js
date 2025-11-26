@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, RotateCcw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
-import dealsData from '../data/dealsData.json';
-import RecentDealsTable from './RecentDealsTable';
-import DealsByStageChart from './DealsByStageChart';
-import LostDealsChart from './LostDealsChart';
+import projectsData from '../data/projectsData.json';
+import RecentProjectsTable from './RecentProjectsTable';
+import ProjectByStageChart from './ProjectByStageChart';
+import ProjectsByStageChart from './ProjectsByStageChart';
+import LeadsByStageChart from './LeadsByStageChart';
 import WonDealsChart from './WonDealsChart';
-import DealsByYearChart from './DealsByYearChart';
 
 const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const calendarPresets = ['Today', 'Yesterday', 'Last 7 Days', 'Last 15 Days', 'Last 30 Days', 'This Month', 'Last Month', 'Custom Range'];
@@ -89,8 +89,8 @@ const formatReadableRange = (range) => {
   return `${formatReadableDate(range.startDate)} - ${formatReadableDate(range.endDate)}`;
 };
 
-const DealsDashboard = () => {
-  const [deals, setDeals] = useState([]);
+const ProjectsDashboard = () => {
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(() => normalizeRange(getPresetRange('Last 30 Days')));
   const [pendingRange, setPendingRange] = useState(() => normalizeRange(getPresetRange('Last 30 Days')));
@@ -101,13 +101,13 @@ const DealsDashboard = () => {
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
   useEffect(() => {
-    fetchDeals();
+    fetchProjects();
   }, []);
 
-  const fetchDeals = async () => {
+  const fetchProjects = async () => {
     try {
       setLoading(true);
-      setDeals(dealsData.deals);
+      setProjects(projectsData.projects);
     } catch (err) {
       console.error(err);
     } finally {
@@ -214,24 +214,22 @@ const DealsDashboard = () => {
   };
 
   const handleRefresh = () => {
-    fetchDeals();
+    fetchProjects();
   };
 
   const handleExport = () => {
-    if (!deals.length) {
+    if (!projects.length) {
       return;
     }
-    const headers = ['ID', 'Name', 'Company', 'Contact', 'Stage', 'Value', 'Status', 'Probability', 'Created At'];
-    const rows = deals.map((deal) => [
-      deal.id,
-      deal.name,
-      deal.company,
-      deal.contact,
-      deal.stage,
-      deal.value,
-      deal.status,
-      deal.probability,
-      deal.createdAt,
+    const headers = ['ID', 'Name', 'Company', 'Priority', 'Due Date', 'Stage', 'Status'];
+    const rows = projects.map((project) => [
+      project.id,
+      project.name,
+      project.company,
+      project.priority,
+      project.dueDate,
+      project.stage,
+      project.status,
     ]);
     const csv = [headers, ...rows]
       .map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
@@ -240,7 +238,7 @@ const DealsDashboard = () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'deals-export.csv');
+    link.setAttribute('download', 'projects-export.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -311,7 +309,7 @@ const DealsDashboard = () => {
     <div className="p-2 bg-gray-50 min-h-screen">
       <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between animate-fade-in">
         <div>
-          <h1 className="text-[1.250025rem] font-bold text-gray-900 text-color-transition">Deals Dashboard</h1>
+          <h1 className="text-[1.250025rem] font-bold text-gray-900 text-color-transition">Project Dashboard</h1>
           {headerRangeLabel && <p className="text-gray-600 text-sm mt-2">{headerRangeLabel}</p>}
         </div>
         <div className="flex items-center gap-2">
@@ -337,7 +335,7 @@ const DealsDashboard = () => {
             onClick={handleExport}
             className="h-10 w-10 flex items-center justify-center rounded-lg border border-border-light text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             title="Export"
-            disabled={!deals.length}
+            disabled={!projects.length}
           >
             <Download size={16} />
           </button>
@@ -346,28 +344,31 @@ const DealsDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
         <div className="chart-container transition-smooth">
-          <RecentDealsTable deals={deals} onDateRangeChange={handleDateRangeChange} />
+          <RecentProjectsTable projects={projects} onDateRangeChange={handleDateRangeChange} />
         </div>
         <div className="chart-container transition-smooth">
-          <DealsByStageChart deals={deals} onDateRangeChange={handleDateRangeChange} />
+          <ProjectByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
+        </div>
+      </div>
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6" >
+<div className="grid grid-cols-1 gap-2 mb-6">
+        <div className="chart-container transition-smooth">
+          <ProjectsByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
+        </div>
+      </div>
+       <div className="grid grid-cols-1 lg:grid-cols-1 gap-2 mb-6">
+        <div className="chart-container transition-smooth">
+          <LeadsByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
+        </div>
+        <div className="chart-container transition-smooth">
+          <WonDealsChart deals={projects} onDateRangeChange={handleDateRangeChange} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
-        <div className="chart-container transition-smooth">
-          <LostDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
-        </div>
-        <div className="chart-container transition-smooth">
-          <WonDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
-        </div>
-      </div>
+</div>
+      
 
-      <div className="grid grid-cols-1 gap-2">
-        <div className="chart-container transition-smooth">
-          <DealsByYearChart deals={deals} onDateRangeChange={handleDateRangeChange} />
-        </div>
-      </div>
-
+     
       {showCalendarPanel && (
         <div className="fixed inset-0 z-40">
           <div className="absolute inset-0 bg-black bg-opacity-25" onClick={closeCalendarPanel}></div>
@@ -407,23 +408,22 @@ const DealsDashboard = () => {
                     <ChevronRight size={18} />
                   </button>
                 </div>
-                <div className="flex gap-2" onMouseLeave={() => setHoverDate(null)}>
+                <div className="flex gap-2">
                   {renderMonth(calendarMonth)}
                   {renderMonth(nextMonth)}
                 </div>
-                <div className="flex justify-end gap-3 mt-6">
+                <div className="flex gap-3 mt-6 justify-end">
                   <button
                     type="button"
                     onClick={closeCalendarPanel}
-                    className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-light rounded-lg hover:bg-gray-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={handleApplyCustomRange}
-                    disabled={!pendingRange?.startDate || !pendingRange?.endDate}
-                    className="px-4 py-2 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 disabled:bg-gray-300 disabled:text-gray-500"
+                    className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
                   >
                     Apply
                   </button>
@@ -437,4 +437,4 @@ const DealsDashboard = () => {
   );
 };
 
-export default DealsDashboard;
+export default ProjectsDashboard;

@@ -3,33 +3,20 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import CustomDropdown from './CustomDropdown';
 import DateRangeDropdown from './DateRangeDropdown';
 
-const DealsByStageChart = ({ deals, onDateRangeChange }) => {
+const WonDealsChart = ({ deals, onDateRangeChange }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('Marketing Pipeline');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 15 Days');
-  const chartData = [];
-  const stageMap = {};
-
-  deals.forEach((deal) => {
-    if (!stageMap[deal.stage]) {
-      stageMap[deal.stage] = 0;
-    }
-    stageMap[deal.stage] += 1;
-  });
-
-  const stageOrder = ['Inpipeline', 'Follow Up', 'Schedule Conversation', 'Conversation', 'Won', 'Lost'];
-  
-  stageOrder.forEach((stage) => {
-    chartData.push({
-      name: stage,
-      deals: stageMap[stage] || 0,
-    });
-  });
+  const chartData = [
+    { name: 'Conversation', value: 330 },
+    { name: 'Follow Up', value: 140 },
+    { name: 'Inpipeline', value: 290 }
+  ];
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">
       <div className="p-2 border-b border-border-light">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Deals By Stage</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Won Deals Stage</h2>
           <div className="flex gap-2">
             <CustomDropdown
               options={['Marketing Pipeline', 'Sales Pipeline', 'Email', 'Chats', 'Operational']}
@@ -48,27 +35,30 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
 
       <div className="p-2">
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 60 }} barCategoryGap="10%">
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 0, right: 0, left: 10, bottom: 0 }}
+              barCategoryGap="30%"
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis tick={{ fontSize: 12 }} />
+              <XAxis type="number" tick={{ fontSize: 10 }} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={80} />
               <Tooltip 
                 contentStyle={{
                   backgroundColor: '#fff',
                   border: '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
+                  borderRadius: '0',
+                  fontSize: '10px'
                 }}
               />
-              <Bar dataKey="deals" fill="#14b8a6" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="value" fill="#22c55e" radius={[0, 0, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-80 flex items-center justify-center text-gray-500">
-            No deals data available
+          <div className="h-64 flex items-center justify-center text-gray-500">
+            No won deals data
           </div>
         )}
       </div>
@@ -76,4 +66,4 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
   );
 };
 
-export default DealsByStageChart;
+export default WonDealsChart;
