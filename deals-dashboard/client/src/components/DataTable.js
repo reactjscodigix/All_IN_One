@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronUp, ChevronDown, Search } from 'lucide-react';
 
-const DataTable = ({ columns, data, title, searchKeys = [] }) => {
+const DataTable = ({ columns, data, title, searchKeys = [], onRowClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,9 +49,9 @@ const DataTable = ({ columns, data, title, searchKeys = [] }) => {
     });
   };
 
-  const renderCellContent = (value, column) => {
+  const renderCellContent = (value, column, rowData) => {
     if (typeof column.render === 'function') {
-      return column.render(value);
+      return column.render(value, rowData);
     }
     return value;
   };
@@ -110,10 +110,17 @@ const DataTable = ({ columns, data, title, searchKeys = [] }) => {
           <tbody className="divide-y divide-gray-100">
             {paginatedData.length > 0 ? (
               paginatedData.map((item, index) => (
-                <tr key={index} className="notification-item hover:bg-gray-50 transition-smooth hover:shadow-sm cursor-pointer" style={{animationDelay: `${index * 0.05}s`}}>
+                <tr
+                  key={index}
+                  className={`notification-item hover:bg-gray-50 transition-smooth hover:shadow-sm ${
+                    onRowClick ? 'cursor-pointer' : ''
+                  }`}
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                  onClick={() => onRowClick?.(item)}
+                >
                   {columns.map((column) => (
                     <td key={column.key} className="px-6 py-4 text-sm text-gray-900 transition-smooth">
-                      {renderCellContent(item[column.key], column)}
+                      {renderCellContent(item[column.key], column, item)}
                     </td>
                   ))}
                 </tr>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DataTable from './DataTable';
 import companiesData from '../data/companiesData.json';
 
-const CompaniesPage = () => {
+const CompaniesPage = ({ onViewCompanyDetails }) => {
   const [companies] = useState(companiesData.companies);
 
   const getStatusBadge = (status) => {
@@ -27,7 +27,18 @@ const CompaniesPage = () => {
       key: 'name',
       label: 'Company Name',
       sortable: true,
-      render: (value) => <span className="font-medium">{value}</span>
+      render: (value, company) => (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onViewCompanyDetails?.(company);
+          }}
+          className="text-red-600 font-semibold hover:text-red-700 focus:outline-none"
+        >
+          {value}
+        </button>
+      )
     },
     {
       key: 'industry',
@@ -75,7 +86,7 @@ const CompaniesPage = () => {
         <p className="text-gray-600 text-sm mt-2">Manage all your company accounts</p>
       </div>
 
-      <DataTable 
+      <DataTable
         columns={columns}
         data={companies}
         title="All Companies"

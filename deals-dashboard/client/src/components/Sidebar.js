@@ -5,6 +5,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
   const [expandedMenus, setExpandedMenus] = useState({
     dashboard: true,
     applications: false,
+    call: false,
     superAdmin: false,
     crm: true,
     reports: false,
@@ -58,17 +59,31 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
     </>
   );
 
+  const callItems = (
+    <>
+      <SubmenuItem icon={Home} label="Video Call" page="video-call" />
+      <SubmenuItem icon={Home} label="Audio Call" page="audio-call" />
+      <SubmenuItem icon={Home} label="Call History" page="call-history" />
+    </>
+  );
+
   const applicationsItems = (
     <>
       <SubmenuItem icon={MessageCircle} label="Chat" page="chat" />
-      <SubmenuItem icon={Home} label="Video Call" />
-      <SubmenuItem icon={Home} label="Audio Call" />
-      <SubmenuItem icon={Home} label="Call History" />
-      <SubmenuItem icon={Home} label="Calendar" />
-      <SubmenuItem icon={Home} label="Email" />
-      <SubmenuItem icon={Home} label="To Do" />
-      <SubmenuItem icon={Home} label="Notes" />
-      <SubmenuItem icon={Home} label="File Manager" />
+      <MenuSection
+        title="Call"
+        items={callItems}
+        expanded={expandedMenus.call}
+        onToggle={() => toggleMenu('call')}
+      />
+      <SubmenuItem icon={Home} label="Calendar" page="calendar" />
+      <SubmenuItem icon={Home} label="Email" page="email" />
+      <SubmenuItem icon={Home} label="To Do" page="todo" />
+      <SubmenuItem icon={Home} label="Notes" page="notes" />
+      <SubmenuItem icon={Home} label="File Manager" page="file-manager" />
+      <SubmenuItem icon={Home} label="Social Feed" page="social-feed" />
+      <SubmenuItem icon={Home} label="Kanban" page="kanban" />
+      <SubmenuItem icon={Home} label="Invoices" page="invoices" />
     </>
   );
 

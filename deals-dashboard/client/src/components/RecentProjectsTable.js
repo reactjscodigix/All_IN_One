@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DateRangeDropdown from './DateRangeDropdown';
 import AddProjectModal from './AddProjectModal';
 
-const RecentProjectsTable = ({ projects, onDateRangeChange, onAddProject, onViewProjectDetails }) => {
+const RecentProjectsTable = ({ projects, onDateRangeChange, onAddProject, onViewProjectDetails, onViewCompanyDetails }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Last 30 Days');
   const [showAddModal, setShowAddModal] = useState(false);
 
@@ -62,13 +62,22 @@ const RecentProjectsTable = ({ projects, onDateRangeChange, onAddProject, onView
               <tr key={project.id} className="hover:bg-gray-50 transition-colors">
                 <td className="p-3 text-xs font-medium text-gray-900">
                   <button
+                    type="button"
                     onClick={() => onViewProjectDetails && onViewProjectDetails(project.id)}
                     className="text-blue-600 hover:text-blue-700 hover:underline"
                   >
                     {project.name}
                   </button>
                 </td>
-                <td className="p-3 text-xs text-gray-600">{project.company}</td>
+                <td className="p-3 text-xs font-medium text-gray-900">
+                  <button
+                    type="button"
+                    onClick={() => onViewCompanyDetails && onViewCompanyDetails(project.company)}
+                    className="text-red-600 hover:text-red-700 font-semibold"
+                  >
+                    {project.company}
+                  </button>
+                </td>
                 <td className="p-3 text-xs">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
                     ● {project.priority}

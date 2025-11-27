@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, AlertCircle, MoreHorizontal, MessageCircle, ChevronDown, Edit3, Trash2, X, FolderOpen } from 'lucide-react';
+import { Plus, AlertCircle, MoreHorizontal, MessageCircle, ChevronDown, Edit3, Trash2, X, MapPin, Mail, Phone, Globe, FolderOpen, Star, FileText, FileSpreadsheet, Send, Copy } from 'lucide-react';
 
 const fileBadgeStyles = {
   doc: { label: 'DOC', bg: 'bg-blue-50', text: 'text-blue-600' },
@@ -45,40 +45,47 @@ const getFileBadgeStyle = (type = 'doc') => fileBadgeStyles[type] || fileBadgeSt
 const getCallStatusStyle = (status = 'default') => callStatusStyles[status] || callStatusStyles.default;
 const getEmailStatusStyle = (status = 'sent') => emailStatusStyles[status] || emailStatusStyles.sent;
 
-const ProjectDetailsPage = ({ projectId, onBack }) => {
-  const projectData = {
-    id: '154454887',
-    name: 'Truelysell',
-    status: 'Completed',
-    priority: 'High',
-    isPrivate: true,
-    startDate: '27 Sep 2025, 11:45 PM',
-    dueDate: '27 Sep 2025, 11:45 PM',
-    dealValue: '$25,11,145',
-    projectType: 'Mobile Application',
-    projectTiming: 'Hourly',
-    client: {
-      name: 'Jessica Sen',
-      avatar: 'JS'
-    },
-    responsiblePersons: [
-      { name: 'Robert Johnson', initials: 'RJ', color: 'bg-purple-500' },
-      { name: 'Sarah Chen', initials: 'SC', color: 'bg-cyan-500' },
-      { name: 'Emily Davis', initials: 'ED', color: 'bg-pink-500' }
+const CompanyDetailsPage = ({ company = {}, onBack }) => {
+  const companyProfile = {
+    id: company.id ?? 'NVW-88912',
+    name: company.name ?? 'NovaWave LLC',
+    rating: company.rating ?? '5.0',
+    address: company.address ?? '22, Ave Street, Newyork, USA',
+    email: company.email ?? 'novawave@gmail.com',
+    phone: company.phone ?? '+1-12445-47878',
+    website: company.website ?? 'www.novawavellc.com',
+    industry: company.industry ?? 'Aviation Tech',
+    createdAt: company.createdAt ?? '27 Sep 2025, 11:45 PM'
+  };
+
+  const companyData = {
+    ...companyProfile,
+    basicInformation: [
+      { label: 'Email', value: companyProfile.email, icon: Mail },
+      { label: 'Phone', value: companyProfile.phone, icon: Phone },
+      { label: 'Address', value: companyProfile.address, icon: MapPin },
+      { label: 'Created', value: companyProfile.createdAt, icon: Globe }
     ],
-    teamLeader: {
-      name: 'Jessica Sen',
-      avatar: 'JS'
-    },
-    pipeline: 'Marketing Pipeline',
-    lastModified: '27 Sep 2025, 11:45 PM',
-    modifiedBy: 'Darlee Robertson',
-    pipelineStatus: [
-      { name: 'Plan', color: '#4b4efc', status: 'active' },
-      { name: 'Design', color: '#1fa1ff', status: 'active' },
-      { name: 'Development', color: '#26c259', status: 'active' },
-      { name: 'Completed', color: '#ff6a3d', status: 'completed' }
+    otherInformation: [
+      { label: 'Language', value: 'English' },
+      { label: 'Currency', value: 'United States dollar' },
+      { label: 'Last Modified', value: '27 Sep 2023, 11:45 pm' },
+      { label: 'Source', value: 'Paid Campaign' }
     ],
+    tags: [
+      { id: 'tag1', label: 'Collab', classes: 'bg-emerald-50 text-emerald-600 border border-emerald-100' },
+      { id: 'tag2', label: 'Rated', classes: 'bg-red-50 text-red-600 border border-red-100' }
+    ],
+    associatedCompanies: [
+      { id: 'assoc1', name: 'Summit Peak', rating: '5.0', initials: 'SP', color: 'bg-blue-500' },
+      { id: 'assoc2', name: 'RiverStone Ltd', rating: '4.3', initials: 'RL', color: 'bg-amber-500' }
+    ],
+    socialProfiles: [
+      { id: 'social1', label: 'Website', value: companyProfile.website },
+      { id: 'social2', label: 'LinkedIn', value: 'linkedin.com/company/novawave' },
+      { id: 'social3', label: 'Twitter', value: '@novawave' }
+    ],
+    settings: ['Share Contact', 'Add to Favourite', 'Delete Contact'],
     activities: [
       {
         id: 1,
@@ -96,7 +103,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           {
             id: 'a2',
             type: 'call',
-            title: 'Denwar responded to your appointment schedule by call at 09:30pm.',
+            title: 'Denwar responded to your appointment schedule question by call at 09:30pm.',
             timestamp: '09:25 pm',
             iconBg: '#e8f9ef',
             iconColor: '#3bb54a',
@@ -106,7 +113,8 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
             id: 'a3',
             type: 'note',
             title: 'Notes added by Antony',
-            description: 'Please accept my apologies for the inconvenience caused. It would be much appreciated if it\'s possible to reschedule to 6:00 PM, or any other day that week.',
+            description:
+              "Please accept my apologies for the inconvenience caused. It would be much appreciated if it's possible to reschedule to 6:00 PM, or any other day that week.",
             timestamp: '10:00 pm',
             iconBg: '#fde8e8',
             iconColor: '#e63535',
@@ -219,7 +227,8 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
     ],
     upcomingActivity: {
       title: 'Product Meeting',
-      description: 'A product team meeting is a gathering of the cross-functional product team – ideally including team members from product, engineering, marketing, and customer support.',
+      description:
+        'A product team meeting is a gathering of the cross-functional product team – ideally including team members from product, engineering, marketing, and customer support.',
       timestamp: '25 Jul 2023, 05:00 pm',
       iconBg: '#fff4e5',
       iconColor: '#f3a009',
@@ -339,7 +348,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           cc: ['design@trulysell.com'],
           subject: 'Kickoff call recap & action items',
           snippet:
-            'Thanks for taking the time for today\'s call. Please review the milestones and confirm the owners before tomorrow\'s sync.',
+            "Thanks for taking the time for today's call. Please review the milestones and confirm the owners before tomorrow's sync.",
           timestamp: '26 Sep 2025, 09:35 am',
           status: 'sent',
           badges: [{ id: 'eb1', label: 'Priority', bg: 'bg-red-50', text: 'text-red-600' }],
@@ -368,7 +377,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           cc: ['legal@partners.co'],
           subject: 'Contract redlines & compliance checklist',
           snippet:
-            'Please review the annotated contract and checklist ahead of tomorrow\'s review call so we can finalize sign-off before deployment.',
+            "Please review the annotated contract and checklist ahead of tomorrow's review call so we can finalize sign-off before deployment.",
           timestamp: '24 Sep 2025, 08:45 pm',
           status: 'scheduled',
           badges: [{ id: 'eb3', label: 'Contract', bg: 'bg-blue-50', text: 'text-blue-600' }],
@@ -382,7 +391,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
   };
 
   const [activeTab, setActiveTab] = useState('activities');
-  const [callEntries, setCallEntries] = useState(projectData.calls);
+  const [callEntries, setCallEntries] = useState(companyData.calls);
   const [openStatusDropdown, setOpenStatusDropdown] = useState(null);
   const [openActionDropdown, setOpenActionDropdown] = useState(null);
   const [isCreateDocumentOpen, setIsCreateDocumentOpen] = useState(false);
@@ -391,11 +400,15 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
   const [isCreateCallOpen, setIsCreateCallOpen] = useState(false);
   const [isFollowUpTask, setIsFollowUpTask] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [isComposeEmailOpen, setIsComposeEmailOpen] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
     const handleClick = () => {
       setOpenStatusDropdown(null);
       setOpenActionDropdown(null);
+      setIsExportMenuOpen(false);
     };
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
@@ -462,189 +475,194 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
 
   return (
     <div className="bg-gray-50 min-h-screen p-6">
-      {/* TITLE + COUNT */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-[22px] font-semibold flex items-center gap-2">
-          Projects
-          <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-md">
-            125
-          </span>
+          Companies
+          <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-md">125</span>
         </h1>
+        <div className="flex items-center gap-2">
+          <button className="w-9 h-9 rounded-md border border-gray-200 text-gray-500 hover:text-gray-700 bg-white flex items-center justify-center">
+            <AlertCircle className="w-4 h-4" />
+          </button>
+          <button className="w-9 h-9 rounded-md border border-gray-200 text-gray-500 hover:text-gray-700 bg-white flex items-center justify-center">
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Breadcrumb */}
       <div className="text-sm text-gray-500 flex items-center gap-2 mb-4">
         <span>Home</span>
         <span>/</span>
-        <span className="text-gray-700">Projects</span>
+        <span className="text-gray-700">Companies</span>
       </div>
 
-      {/* BACK BUTTON */}
-      <button onClick={onBack} className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm">
+      <button
+        onClick={() => onBack?.()}
+        className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm"
+      >
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
           <path stroke="currentColor" strokeWidth="2" d="M15 18l-6-6 6-6" />
         </svg>
-        Back to Projects
+        Back to Companies
       </button>
 
-      {/* PROJECT CARD */}
       <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-5 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-purple-500 text-white rounded-full flex items-center justify-center text-lg font-semibold flex-shrink-0">
-              T
-            </div>
-            <div className="space-y-2">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">{projectData.name}</h2>
-                <p className="text-sm text-gray-600">
-                  Project Id :{" "}
-                  <span className="text-gray-800 font-semibold">{projectData.id}</span>
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 text-xs rounded-md border border-red-200 bg-red-50 text-red-600 font-semibold">
-                  High
-                </span>
-                <span className="px-3 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-600 font-semibold">
-                  Active
+            <div className="w-14 h-14 rounded-full bg-indigo-500 text-white flex items-center justify-center text-2xl">✈️</div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-semibold text-gray-900">{companyData.name}</h2>
+                <span className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-600 border border-amber-100">
+                  ⭐ {companyData.rating}
                 </span>
               </div>
+              <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                <MapPin className="w-4 h-4 text-red-500" />
+                {companyData.address}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">Company Id : <span className="font-semibold text-gray-800">{companyData.id}</span></p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 text-xs rounded-md border border-red-200 bg-red-50 text-red-600 font-semibold">
-              Private
-            </span>
-            <button className="px-4 py-2 text-xs font-semibold rounded-md bg-green-600 text-white flex items-center gap-1 hover:bg-green-700 transition">
-              Completed
-              <svg className="w-3 h-3" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+          <div className="flex flex-wrap items-center gap-3">
+            <button 
+              onClick={() => setIsFavorited(!isFavorited)}
+              className="w-9 h-9 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 flex items-center justify-center transition-colors"
+            >
+              <Star className={`w-4 h-4 ${isFavorited ? 'fill-yellow-400 text-yellow-400' : ''}`} />
             </button>
-            <button className="w-9 h-9 rounded-md bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition">
-              <AlertCircle className="w-4 h-4" />
+            <button className="px-4 py-2 text-xs font-semibold rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
+              + Add Deal
             </button>
+            <button 
+              onClick={() => setIsComposeEmailOpen(true)}
+              className="px-4 py-2 text-xs font-semibold rounded-md bg-red-500 text-white hover:bg-red-600"
+            >
+              Send Email
+            </button>
+            <button className="w-9 h-9 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 flex items-center justify-center transition-colors">
+              <Send className="w-4 h-4" />
+            </button>
+            <button className="w-9 h-9 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 flex items-center justify-center transition-colors">
+              <Copy className="w-4 h-4" />
+            </button>
+            <div className="relative">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExportMenuOpen(!isExportMenuOpen);
+                }}
+                className="w-9 h-9 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 flex items-center justify-center transition-colors"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+              {isExportMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Export as PDF
+                  </button>
+                  <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                    <FileSpreadsheet className="w-4 h-4" />
+                    Export as Excel
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Two Column Layout */}
       <div className="flex gap-6">
-        {/* Left Sidebar (27%) */}
         <div className="w-80 space-y-5">
-          {/* Project Information Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">Project Information</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-4">Basic Information</h3>
             <div className="space-y-3">
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Start Date</span>
-                <span className="text-sm font-medium text-gray-900">{projectData.startDate}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Due Date</span>
-                <span className="text-sm font-medium text-gray-900">{projectData.dueDate}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Deal Value</span>
-                <span className="text-sm font-bold text-gray-900">{projectData.dealValue}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Project Type</span>
-                <span className="text-sm font-medium text-gray-900">{projectData.projectType}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Project Timing</span>
-                <span className="text-sm font-medium text-gray-900">{projectData.projectTiming}</span>
-              </div>
+              {companyData.basicInformation.map((info) => {
+                const Icon = info.icon;
+                return (
+                  <div key={info.label} className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+                      {Icon ? <Icon className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium">{info.label}</p>
+                      <p className="text-sm font-semibold text-gray-900">{info.value}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Client Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Client</h3>
-              <button className="text-red-500 hover:text-red-600">
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                {projectData.client.avatar}
-              </div>
-              <span className="text-sm text-gray-900">{projectData.client.name}</span>
-            </div>
-          </div>
-
-          {/* Responsible Persons Card */}
-          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Responsible Persons</h3>
-              <button className="text-red-500 hover:text-red-600">
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex items-center gap-1">
-              {projectData.responsiblePersons.map((person, index) => (
-                <div key={index} className={`w-8 h-8 ${person.color} rounded-full flex items-center justify-center text-white text-xs font-bold`}>
-                  {person.initials[0]}
+            <h3 className="text-sm font-bold text-gray-900 mb-4">Other Information</h3>
+            <div className="space-y-3">
+              {companyData.otherInformation.map((info) => (
+                <div key={info.label} className="flex justify-between">
+                  <span className="text-xs text-gray-500 font-medium">{info.label}</span>
+                  <span className="text-xs font-semibold text-gray-900">{info.value}</span>
                 </div>
               ))}
-              <span className="text-xs text-gray-500 ml-1 font-medium">+1</span>
             </div>
           </div>
 
-          {/* Team Leader Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Team Leader</h3>
-              <button className="text-red-500 hover:text-red-600 text-xs font-medium">Change</button>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                {projectData.teamLeader.avatar}
-              </div>
-              <span className="text-sm text-gray-900">{projectData.teamLeader.name}</span>
+            <h3 className="text-sm font-bold text-gray-900 mb-3">Tags</h3>
+            <div className="flex flex-wrap gap-2">
+              {companyData.tags.map((tag) => (
+                <span key={tag.id} className={`text-xs font-semibold px-3 py-1 rounded-full ${tag.classes}`}>
+                  {tag.label}
+                </span>
+              ))}
             </div>
           </div>
 
-          {/* Pipeline Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Pipeline</h3>
-            <div className="text-sm text-gray-600 mb-3 font-medium">{projectData.pipeline}</div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500">Last Modified</span>
-                <span className="text-xs font-medium text-gray-900">{projectData.lastModified}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500">Modified By</span>
-                <span className="text-xs font-medium text-gray-900">{projectData.modifiedBy}</span>
-              </div>
+            <h3 className="text-sm font-bold text-gray-900 mb-4">Company</h3>
+            <div className="space-y-4">
+              {companyData.associatedCompanies.map((assoc) => (
+                <div key={assoc.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full text-white text-xs font-semibold flex items-center justify-center ${assoc.color}`}>
+                      {assoc.initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{assoc.name}</p>
+                      <p className="text-xs text-gray-500">⭐ {assoc.rating}</p>
+                    </div>
+                  </div>
+                  <button className="text-xs font-semibold text-red-500">View</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 mb-4">Social Profile</h3>
+            <div className="space-y-3">
+              {companyData.socialProfiles.map((social) => (
+                <div key={social.id} className="flex justify-between">
+                  <span className="text-xs text-gray-500">{social.label}</span>
+                  <span className="text-xs font-semibold text-gray-900">{social.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
+            <h3 className="text-sm font-bold text-gray-900 mb-4">Settings</h3>
+            <div className="space-y-3">
+              {companyData.settings.map((item) => (
+                <button key={item} className="w-full text-left text-sm font-semibold text-gray-700 hover:text-red-500">
+                  {item}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Right Column - Main Content */}
         <div className="flex-1 space-y-5">
-          {/* Pipeline Status */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">Project Pipeline Status</h3>
-            <div className="flex items-center gap-3 overflow-x-auto pb-1">
-                {projectData.pipelineStatus.map((step, index) => (
-                  <div
-                    key={index}
-                    className="pipeline-step"
-                    style={{ backgroundColor: step.color }}
-                  >
-                    <span>{step.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          {/* Tabs Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="flex gap-8 px-6 border-b border-gray-200">
               {['Activities', 'Notes', 'Calls', 'Files', 'Email'].map((tab) => (
@@ -662,7 +680,6 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
               ))}
             </div>
 
-            {/* Activities Content */}
             <div className="p-5">
               {activeTab === 'activities' && (
                 <div className="space-y-4">
@@ -676,12 +693,12 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                     </button>
                   </div>
 
-                  {projectData.activities.map((dateGroup) => (
+                  {companyData.activities.map((dateGroup) => (
                     <div key={dateGroup.id} className="space-y-2">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium" style={{ backgroundColor: '#e3ebff', color: '#3d5afe' }}>
                         📅 {dateGroup.date}
                       </div>
-                      
+
                       {dateGroup.items.map((activity) => (
                         <div key={activity.id} className="border border-gray-200 rounded-lg p-4 flex gap-3 hover:bg-gray-50 transition">
                           <div
@@ -714,36 +731,42 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                       <div
                         className="w-10 h-10 rounded-lg flex items-center justify-center text-base flex-shrink-0"
                         style={{
-                          backgroundColor: projectData.upcomingActivity.iconBg,
-                          color: projectData.upcomingActivity.iconColor
+                          backgroundColor: companyData.upcomingActivity.iconBg,
+                          color: companyData.upcomingActivity.iconColor
                         }}
                       >
-                        {projectData.upcomingActivity.icon}
+                        {companyData.upcomingActivity.icon}
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-gray-900 text-sm font-semibold">{projectData.upcomingActivity.title}</h4>
-                        <p className="text-gray-600 text-xs mt-1">{projectData.upcomingActivity.description}</p>
-                        <p className="text-gray-500 text-xs mt-1">{projectData.upcomingActivity.timestamp}</p>
+                        <h4 className="text-gray-900 text-sm font-semibold">{companyData.upcomingActivity.title}</h4>
+                        <p className="text-gray-600 text-xs mt-1">{companyData.upcomingActivity.description}</p>
+                        <p className="text-gray-500 text-xs mt-1">{companyData.upcomingActivity.timestamp}</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-gray-200">
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Reminder <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Reminder <span className="text-red-500">*</span>
+                        </label>
                         <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
-                          <option>{projectData.upcomingActivity.reminder}</option>
+                          <option>{companyData.upcomingActivity.reminder}</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Task Priority <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Task Priority <span className="text-red-500">*</span>
+                        </label>
                         <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
-                          <option>{projectData.upcomingActivity.priority}</option>
+                          <option>{companyData.upcomingActivity.priority}</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Assigned To <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                          Assigned To <span className="text-red-500">*</span>
+                        </label>
                         <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
-                          <option>{projectData.upcomingActivity.assignedTo}</option>
+                          <option>{companyData.upcomingActivity.assignedTo}</option>
                         </select>
                       </div>
                     </div>
@@ -757,7 +780,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold text-gray-900">Notes</h3>
                       <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
-                        {projectData.notes.length}
+                        {companyData.notes.length}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -780,7 +803,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                     </div>
                   </div>
 
-                  {projectData.notes.map((note) => (
+                  {companyData.notes.map((note) => (
                     <div key={note.id} className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white space-y-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
@@ -956,7 +979,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold text-gray-900">Files</h3>
                       <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
-                        {projectData.files.items.length}
+                        {companyData.files.items.length}
                       </span>
                     </div>
                     <button
@@ -973,8 +996,8 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                   <div className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-900">{projectData.files.summary.title}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{projectData.files.summary.description}</p>
+                        <h4 className="text-sm font-semibold text-gray-900">{companyData.files.summary.title}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{companyData.files.summary.description}</p>
                       </div>
                       <button
                         className="inline-flex items-center justify-center rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600 md:self-start"
@@ -983,12 +1006,12 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                           openCreateDocumentModal();
                         }}
                       >
-                        {projectData.files.summary.actionLabel}
+                        {companyData.files.summary.actionLabel}
                       </button>
                     </div>
                   </div>
 
-                  {projectData.files.items.map((file) => (
+                  {companyData.files.items.map((file) => (
                     <div key={file.id} className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white">
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="space-y-3">
@@ -1033,7 +1056,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-bold text-gray-900">Email</h3>
                       <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
-                        {projectData.emails.threads.length}
+                        {companyData.emails.threads.length}
                       </span>
                     </div>
                     <button className="flex items-center gap-1.5 rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600">
@@ -1045,18 +1068,18 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                   <div className="rounded-lg border border-gray-200 bg-white shadow-sm p-5">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-900">{projectData.emails.summary.title}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{projectData.emails.summary.description}</p>
-                        <p className="text-xs text-gray-500 mt-2">{projectData.emails.summary.helper}</p>
+                        <h4 className="text-sm font-semibold text-gray-900">{companyData.emails.summary.title}</h4>
+                        <p className="text-sm text-gray-600 mt-1">{companyData.emails.summary.description}</p>
+                        <p className="text-xs text-gray-500 mt-2">{companyData.emails.summary.helper}</p>
                       </div>
                       <button className="inline-flex items-center justify-center rounded-md bg-green-600 text-white px-5 py-2 text-xs font-semibold hover:bg-green-700">
-                        {projectData.emails.summary.actionLabel}
+                        {companyData.emails.summary.actionLabel}
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    {projectData.emails.threads.map((thread) => {
+                    {companyData.emails.threads.map((thread) => {
                       const statusStyle = getEmailStatusStyle(thread.status);
                       return (
                         <div key={thread.id} className="rounded-lg border border-gray-200 bg-white shadow-sm p-5 space-y-4">
@@ -1164,7 +1187,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
             </div>
             <div className="px-6 py-5 overflow-y-auto">
               <div className="flex flex-wrap gap-3 mb-6">
-                {projectData.documentForm.tabs.map((tab) => (
+                {companyData.documentForm.tabs.map((tab) => (
                   <button
                     key={tab.id}
                     className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-all ${
@@ -1188,7 +1211,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                     </label>
                     <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
                       <option value="">Select</option>
-                      {projectData.documentForm.deals.map((deal) => (
+                      {companyData.documentForm.deals.map((deal) => (
                         <option key={deal} value={deal}>
                           {deal}
                         </option>
@@ -1202,7 +1225,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                       </label>
                       <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
                         <option value="">Select</option>
-                        {projectData.documentForm.documentTypes.map((type) => (
+                        {companyData.documentForm.documentTypes.map((type) => (
                           <option key={type} value={type}>
                             {type}
                           </option>
@@ -1215,7 +1238,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                       </label>
                       <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
                         <option value="">Select</option>
-                        {projectData.documentForm.owners.map((owner) => (
+                        {companyData.documentForm.owners.map((owner) => (
                           <option key={owner} value={owner}>
                             {owner}
                           </option>
@@ -1239,7 +1262,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                       <span className="text-xs text-red-500 font-semibold">Required</span>
                     </div>
                     <div className="space-y-3">
-                      {projectData.documentForm.signatureOptions.map((option) => (
+                      {companyData.documentForm.signatureOptions.map((option) => (
                         <label
                           key={option.id}
                           className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition ${
@@ -1274,23 +1297,23 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-semibold text-gray-700 mb-1">
-                            {projectData.documentForm.recipientFields[0].label} <span className="text-red-500">*</span>
+                            {companyData.documentForm.recipientFields[0].label} <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
                             className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                            placeholder={projectData.documentForm.recipientFields[0].placeholder}
+                            placeholder={companyData.documentForm.recipientFields[0].placeholder}
                           />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-gray-700 mb-1">
-                            {projectData.documentForm.recipientFields[1].label} <span className="text-red-500">*</span>
+                            {companyData.documentForm.recipientFields[1].label} <span className="text-red-500">*</span>
                           </label>
                           <div className="flex gap-2">
                             <input
                               type="text"
                               className="flex-1 border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                              placeholder={projectData.documentForm.recipientFields[1].placeholder}
+                              placeholder={companyData.documentForm.recipientFields[1].placeholder}
                             />
                             <button className="w-11 h-11 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 bg-white flex items-center justify-center">
                               <Plus className="w-4 h-4" />
@@ -1307,7 +1330,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                     <textarea
                       rows="3"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                      placeholder={projectData.documentForm.contentPlaceholder}
+                      placeholder={companyData.documentForm.contentPlaceholder}
                     ></textarea>
                   </div>
                   <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 pt-4">
@@ -1337,23 +1360,23 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">
-                          {projectData.documentForm.recipientFields[0].label} <span className="text-red-500">*</span>
+                          {companyData.documentForm.recipientFields[0].label} <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
                           className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                          placeholder={projectData.documentForm.recipientFields[0].placeholder}
+                          placeholder={companyData.documentForm.recipientFields[0].placeholder}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">
-                          {projectData.documentForm.recipientFields[1].label} <span className="text-red-500">*</span>
+                          {companyData.documentForm.recipientFields[1].label} <span className="text-red-500">*</span>
                         </label>
                         <div className="flex gap-2">
                           <input
                             type="text"
                             className="flex-1 border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                            placeholder={projectData.documentForm.recipientFields[1].placeholder}
+                            placeholder={companyData.documentForm.recipientFields[1].placeholder}
                           />
                           <button className="w-11 h-11 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 bg-white flex items-center justify-center">
                             <Plus className="w-4 h-4" />
@@ -1370,8 +1393,8 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                       <input
                         type="text"
                         className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                        placeholder={projectData.documentForm.messageTemplate.subjectPlaceholder}
-                        defaultValue={projectData.documentForm.messageTemplate.subjectValue}
+                        placeholder={companyData.documentForm.messageTemplate.subjectPlaceholder}
+                        defaultValue={companyData.documentForm.messageTemplate.subjectValue}
                       />
                     </div>
                     <div>
@@ -1381,8 +1404,8 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                       <textarea
                         rows="3"
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                        placeholder={projectData.documentForm.messageTemplate.bodyPlaceholder}
-                        defaultValue={projectData.documentForm.messageTemplate.bodyValue}
+                        placeholder={companyData.documentForm.messageTemplate.bodyPlaceholder}
+                        defaultValue={companyData.documentForm.messageTemplate.bodyValue}
                       ></textarea>
                     </div>
                     <button className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100">
@@ -1432,45 +1455,45 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
             <div className="px-7 py-6 overflow-y-auto space-y-6">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  {projectData.noteForm.titleLabel} <span className="text-red-500">*</span>
+                  {companyData.noteForm.titleLabel} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder={projectData.noteForm.titlePlaceholder}
+                  placeholder={companyData.noteForm.titlePlaceholder}
                   className="w-full border border-gray-200 rounded-2xl h-12 px-4 text-sm text-gray-800 bg-white shadow-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
                 />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  {projectData.noteForm.noteLabel} <span className="text-red-500">*</span>
+                  {companyData.noteForm.noteLabel} <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   rows="4"
-                  placeholder={projectData.noteForm.notePlaceholder}
+                  placeholder={companyData.noteForm.notePlaceholder}
                   className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-800 bg-white shadow-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
                 ></textarea>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  {projectData.noteForm.attachmentLabel} <span className="text-red-500">*</span>
+                  {companyData.noteForm.attachmentLabel} <span className="text-red-500">*</span>
                 </label>
                 <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center flex flex-col items-center gap-3 shadow-[0_24px_65px_rgba(15,23,42,0.08)]">
                   <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
                     <FolderOpen className="w-6 h-6 text-red-500" />
                   </div>
                   <p className="text-sm text-gray-700">
-                    {projectData.noteForm.dropInfo.text}{' '}
-                    <label htmlFor="note-attachment-upload" className="text-red-500 font-semibold cursor-pointer">
-                      {projectData.noteForm.dropInfo.action}
+                    {companyData.noteForm.dropInfo.text}{' '}
+                    <label htmlFor="company-note-attachment" className="text-red-500 font-semibold cursor-pointer">
+                      {companyData.noteForm.dropInfo.action}
                     </label>
                   </p>
-                  <input id="note-attachment-upload" type="file" className="sr-only" />
-                  <p className="text-xs text-gray-500">{projectData.noteForm.helperText}</p>
+                  <input id="company-note-attachment" type="file" className="sr-only" />
+                  <p className="text-xs text-gray-500">{companyData.noteForm.helperText}</p>
                 </div>
               </div>
-              {projectData.noteForm.attachments && projectData.noteForm.attachments.length > 0 && (
+              {companyData.noteForm.attachments && companyData.noteForm.attachments.length > 0 && (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {projectData.noteForm.attachments.map((attachment) => {
+                  {companyData.noteForm.attachments.map((attachment) => {
                     const badge = getFileBadgeStyle(attachment.type);
                     return (
                       <div key={attachment.id} className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-[0_22px_70px_rgba(15,23,42,0.1)]">
@@ -1497,13 +1520,13 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                 className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
                 onClick={closeAddNoteModal}
               >
-                {projectData.noteForm.buttons.cancel}
+                {companyData.noteForm.buttons.cancel}
               </button>
               <button
                 className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600"
                 onClick={closeAddNoteModal}
               >
-                {projectData.noteForm.buttons.confirm}
+                {companyData.noteForm.buttons.confirm}
               </button>
             </div>
           </div>
@@ -1529,7 +1552,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                   Status <span className="text-red-500">*</span>
                 </label>
                 <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                  {projectData.callForm.statusOptions.map((status) => (
+                  {companyData.callForm.statusOptions.map((status) => (
                     <option key={status}>{status}</option>
                   ))}
                 </select>
@@ -1540,7 +1563,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                 </label>
                 <input
                   type="date"
-                  defaultValue={projectData.callForm.followUpDate}
+                  defaultValue={companyData.callForm.followUpDate}
                   className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 />
               </div>
@@ -1550,7 +1573,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                 </label>
                 <textarea
                   rows="4"
-                  placeholder={projectData.callForm.notePlaceholder}
+                  placeholder={companyData.callForm.notePlaceholder}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 ></textarea>
               </div>
@@ -1561,7 +1584,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                   onChange={(event) => setIsFollowUpTask(event.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
                 />
-                {projectData.callForm.followUpLabel}
+                {companyData.callForm.followUpLabel}
               </label>
             </div>
             <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
@@ -1578,8 +1601,90 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           </div>
         </div>
       )}
+
+      {isComposeEmailOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 sm:px-6">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setIsComposeEmailOpen(false)}></div>
+          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Compose Email</h3>
+              <button
+                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700"
+                onClick={() => setIsComposeEmailOpen(false)}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-6 py-5 overflow-y-auto flex-1 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  To <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="Recipient email address"
+                  defaultValue={companyData.email}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  CC
+                </label>
+                <input
+                  type="email"
+                  className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="Add CC email addresses"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Subject <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="Email subject"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Message <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows="6"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="Compose your email message"
+                ></textarea>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Attachment
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <p className="text-sm text-gray-600">
+                    Drop your files here or <span className="text-red-500 cursor-pointer font-semibold">browse</span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Maximum size: 25 MB</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+              <button
+                className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                onClick={() => setIsComposeEmailOpen(false)}
+              >
+                Cancel
+              </button>
+              <button className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600">
+                Send Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default ProjectDetailsPage;
+export default CompanyDetailsPage;

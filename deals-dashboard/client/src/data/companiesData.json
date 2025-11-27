@@ -1,6 +1,21 @@
 {
   "companies": [
     {
+      "id": 101,
+      "name": "NovaWave LLC",
+      "industry": "Aviation Tech",
+      "email": "novawave@gmail.com",
+      "phone": "+1-12445-47878",
+      "website": "www.novawavellc.com",
+      "employees": 320,
+      "revenue": 7800000,
+      "status": "Active",
+      "joinDate": "2024-06-22",
+      "address": "22, Ave Street, Newyork, USA",
+      "createdAt": "27 Sep 2025, 11:45 PM",
+      "rating": 5.0
+    },
+    {
       "id": 1,
       "name": "SkyHigh Solutions",
       "industry": "Technology",

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, RotateCcw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import projectsData from '../data/projectsData.json';
+import companiesData from '../data/companiesData.json';
 import RecentProjectsTable from './RecentProjectsTable';
 import ProjectByStageChart from './ProjectByStageChart';
 import ProjectsByStageChart from './ProjectsByStageChart';
@@ -89,7 +90,7 @@ const formatReadableRange = (range) => {
   return `${formatReadableDate(range.startDate)} - ${formatReadableDate(range.endDate)}`;
 };
 
-const ProjectsDashboard = ({ onViewProjectDetails }) => {
+const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(() => normalizeRange(getPresetRange('Last 30 Days')));
@@ -129,6 +130,14 @@ const ProjectsDashboard = ({ onViewProjectDetails }) => {
       return;
     }
     updateDateRange(range);
+  };
+
+  const handleCompanyDetailsView = (companyName) => {
+    if (!companyName || !onViewCompanyDetails) {
+      return;
+    }
+    const companyRecord = companiesData.companies.find((company) => company.name === companyName);
+    onViewCompanyDetails(companyRecord || { name: companyName });
   };
 
   const openCalendarPanel = () => {
@@ -358,7 +367,13 @@ const ProjectsDashboard = ({ onViewProjectDetails }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
         <div className="chart-container transition-smooth">
-          <RecentProjectsTable projects={projects} onDateRangeChange={handleDateRangeChange} onAddProject={handleAddProject} onViewProjectDetails={onViewProjectDetails} />
+          <RecentProjectsTable
+            projects={projects}
+            onDateRangeChange={handleDateRangeChange}
+            onAddProject={handleAddProject}
+            onViewProjectDetails={onViewProjectDetails}
+            onViewCompanyDetails={handleCompanyDetailsView}
+          />
         </div>
         <div className="chart-container transition-smooth">
           <ProjectByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
