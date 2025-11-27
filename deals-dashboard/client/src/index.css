@@ -273,3 +273,25 @@ tbody tr:hover {
               color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.pipeline-step {
+  position: relative;
+  padding: 12px 32px;
+  font-weight: 500;
+  font-size: 14px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+  height: 48px;
+  clip-path: polygon(
+    0% 0%,
+    85% 0%,
+    100% 50%,
+    85% 100%,
+    0% 100%
+  );
+  color: white;
+  transition: all 0.3s ease;
+}

@@ -89,7 +89,7 @@ const formatReadableRange = (range) => {
   return `${formatReadableDate(range.startDate)} - ${formatReadableDate(range.endDate)}`;
 };
 
-const ProjectsDashboard = () => {
+const ProjectsDashboard = ({ onViewProjectDetails }) => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(() => normalizeRange(getPresetRange('Last 30 Days')));
@@ -245,6 +245,20 @@ const ProjectsDashboard = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleAddProject = (formData) => {
+    const newProject = {
+      id: projects.length + 1,
+      name: formData.name,
+      company: formData.client,
+      priority: formData.priority,
+      dueDate: formData.dueDate,
+      stage: 'Planning',
+      status: formData.status,
+      ...formData,
+    };
+    setProjects(prev => [newProject, ...prev]);
+  };
+
   const renderMonth = (baseDate) => {
     const cells = buildMonthMatrix(baseDate);
     return (
@@ -344,7 +358,7 @@ const ProjectsDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
         <div className="chart-container transition-smooth">
-          <RecentProjectsTable projects={projects} onDateRangeChange={handleDateRangeChange} />
+          <RecentProjectsTable projects={projects} onDateRangeChange={handleDateRangeChange} onAddProject={handleAddProject} onViewProjectDetails={onViewProjectDetails} />
         </div>
         <div className="chart-container transition-smooth">
           <ProjectByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />

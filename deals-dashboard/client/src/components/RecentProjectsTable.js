@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import DateRangeDropdown from './DateRangeDropdown';
+import AddProjectModal from './AddProjectModal';
 
-const RecentProjectsTable = ({ projects, onDateRangeChange }) => {
+const RecentProjectsTable = ({ projects, onDateRangeChange, onAddProject, onViewProjectDetails }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Last 30 Days');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -35,6 +37,7 @@ const RecentProjectsTable = ({ projects, onDateRangeChange }) => {
             />
             <button
               type="button"
+              onClick={() => setShowAddModal(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors"
               title="Add Project"
             >
@@ -57,7 +60,14 @@ const RecentProjectsTable = ({ projects, onDateRangeChange }) => {
           <tbody className="divide-y divide-border-light">
             {projects.slice(0, 5).map((project) => (
               <tr key={project.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-3 text-xs font-medium text-gray-900">{project.name}</td>
+                <td className="p-3 text-xs font-medium text-gray-900">
+                  <button
+                    onClick={() => onViewProjectDetails && onViewProjectDetails(project.id)}
+                    className="text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    {project.name}
+                  </button>
+                </td>
                 <td className="p-3 text-xs text-gray-600">{project.company}</td>
                 <td className="p-3 text-xs">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
@@ -76,6 +86,17 @@ const RecentProjectsTable = ({ projects, onDateRangeChange }) => {
           <p className="text-gray-500">No projects found</p>
         </div>
       )}
+
+      <AddProjectModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={(formData) => {
+          if (onAddProject) {
+            onAddProject(formData);
+          }
+          setShowAddModal(false);
+        }}
+      />
     </div>
   );
 };

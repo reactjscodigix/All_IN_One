@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, X, Home, Users, Building2, Settings, BarChart3, FileText, Briefcase } from 'lucide-react';
+import { ChevronDown, X, Home, Users, Building2, Settings, BarChart3, FileText, Briefcase, MessageCircle } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
   const [expandedMenus, setExpandedMenus] = useState({
@@ -60,7 +60,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
 
   const applicationsItems = (
     <>
-      <SubmenuItem icon={Home} label="Chat" />
+      <SubmenuItem icon={MessageCircle} label="Chat" page="chat" />
       <SubmenuItem icon={Home} label="Video Call" />
       <SubmenuItem icon={Home} label="Audio Call" />
       <SubmenuItem icon={Home} label="Call History" />
