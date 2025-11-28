@@ -1,0 +1,193 @@
+{
+  "statCards": [
+    {
+      "id": 1,
+      "title": "Total Companies",
+      "value": "5468",
+      "change": "+5.62%",
+      "from": "from last month",
+      "borderColor": "#FF6A59",
+      "backgroundColor": "#FFFCFB",
+      "circleColor": "#FFE5E0",
+      "icon": "📦"
+    },
+    {
+      "id": 2,
+      "title": "Active Companies",
+      "value": "4598",
+      "change": "+12%",
+      "from": "from last month",
+      "borderColor": "#2ED573",
+      "backgroundColor": "#F9FFFC",
+      "circleColor": "#D4F9E8",
+      "icon": "✓"
+    },
+    {
+      "id": 3,
+      "title": "Total Subscribers",
+      "value": "5468",
+      "change": "+6%",
+      "from": "from last month",
+      "borderColor": "#FFC107",
+      "backgroundColor": "#FFFEF5",
+      "circleColor": "#FFE8B3",
+      "icon": "👥"
+    },
+    {
+      "id": 4,
+      "title": "Total Earnings",
+      "value": "$89,878.58",
+      "change": "+16%",
+      "from": "from last month",
+      "borderColor": "#FF6A59",
+      "backgroundColor": "#FFFCFB",
+      "circleColor": "#FFE5E0",
+      "icon": "💵"
+    }
+  ],
+  "companiesChart": {
+    "title": "Companies",
+    "timeframe": "This Week",
+    "data": [30, 40, 20, 50, 60, 40, 50],
+    "categories": ["M", "T", "W", "T", "F", "S", "S"],
+    "change": "+12.5%",
+    "from": "from last month"
+  },
+  "revenueChart": {
+    "title": "Revenue",
+    "timeframe": "2025",
+    "value": "$89,878.58",
+    "data": [40000, 20000, 50000, 45000, 80000, 75000, 80000, 78000, 85000, 20000, 75000, 60000],
+    "categories": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "change": "+40%",
+    "from": "increased from last year"
+  },
+  "topPlans": {
+    "title": "Top Plans",
+    "timeframe": "Last 30 Days",
+    "data": [60, 20, 20],
+    "labels": ["Basic", "Premium", "Enterprise"],
+    "colors": ["#0D6EFD", "#FFC107", "#FF6A59"]
+  },
+  "recentTransactions": [
+    {
+      "id": 1,
+      "company": "NovaWave LLC",
+      "date": "14 Sep 2025",
+      "amount": "+$245",
+      "plan": "Basic (Monthly)",
+      "avatar": "🌊"
+    },
+    {
+      "id": 2,
+      "company": "BlueSky",
+      "date": "20 Mar 2025",
+      "amount": "+$395",
+      "plan": "Enterprise (Yearly)",
+      "avatar": "☁️"
+    },
+    {
+      "id": 3,
+      "company": "Silver Hawk",
+      "date": "26 Mar 2025",
+      "amount": "+$145",
+      "plan": "Advanced (Monthly)",
+      "avatar": "🦅"
+    },
+    {
+      "id": 4,
+      "company": "Summit Peak",
+      "date": "10 Feb 2025",
+      "amount": "+$758",
+      "plan": "Enterprise (Monthly)",
+      "avatar": "⛰️"
+    },
+    {
+      "id": 5,
+      "company": "RiverStone Ltd",
+      "date": "10 Jan 2025",
+      "amount": "+$977",
+      "plan": "Premium (Yearly)",
+      "avatar": "🏞️"
+    }
+  ],
+  "recentlyRegistered": [
+    {
+      "id": 1,
+      "company": "Bright Bridge Grp",
+      "plan": "Basic (Monthly)",
+      "users": "150 Users",
+      "email": "bbg@example.com",
+      "avatar": "🌉"
+    },
+    {
+      "id": 2,
+      "company": "CoastalStar Co.",
+      "plan": "2Enterprise (Yearly)",
+      "users": "200 Users",
+      "email": "csc@example.com",
+      "avatar": "⭐"
+    },
+    {
+      "id": 3,
+      "company": "HarborView",
+      "plan": "Advanced (Monthly)",
+      "users": "129 Users",
+      "email": "hv@example.com",
+      "avatar": "🏖️"
+    },
+    {
+      "id": 4,
+      "company": "Golden Gate Ltd",
+      "plan": "Enterprise (Monthly)",
+      "users": "103 Users",
+      "email": "ggl@example.com",
+      "avatar": "🚪"
+    },
+    {
+      "id": 5,
+      "company": "Redwood Inc",
+      "plan": "Premium (Yearly)",
+      "users": "109 Users",
+      "email": "rw@example.com",
+      "avatar": "🌲"
+    }
+  ],
+  "recentlyExpired": [
+    {
+      "id": 1,
+      "company": "VK Pvt Ltd",
+      "date": "14 Sep 2025",
+      "plan": "Basic (Monthly)",
+      "avatar": "📱"
+    },
+    {
+      "id": 2,
+      "company": "RiverStone Ltd",
+      "date": "20 Mar 2025",
+      "plan": "Enterprise (Yearly)",
+      "avatar": "🏞️"
+    },
+    {
+      "id": 3,
+      "company": "Summit Peak",
+      "date": "26 Mar 2025",
+      "plan": "Advanced (Monthly)",
+      "avatar": "⛰️"
+    },
+    {
+      "id": 4,
+      "company": "Redwood Inc",
+      "date": "10 Feb 2025",
+      "plan": "Enterprise (Monthly)",
+      "avatar": "🌲"
+    },
+    {
+      "id": 5,
+      "company": "NovaWave LLC",
+      "date": "10 Jan 2025",
+      "plan": "Premium (Yearly)",
+      "avatar": "🌊"
+    }
+  ]
+}

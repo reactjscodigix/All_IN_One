@@ -1,0 +1,52 @@
+{
+  "columns": [
+    {
+      "id": "contacted",
+      "title": "Contacted",
+      "color": "#FFA200",
+      "count": 45,
+      "value": "$15,44,540",
+      "leads": [
+        {"id": 1, "initials": "SM", "name": "Schumm", "value": "$03,50,000", "email": "darleeo@example.com", "phone": "+1 12445-47878", "location": "Newyork, United States", "icon": "bg-blue-500"},
+        {"id": 2, "initials": "CS", "name": "Collins", "value": "$02,10,000", "email": "robertson@example.com", "phone": "+1 13987-90231", "location": "Austin, United States", "icon": "bg-purple-500"},
+        {"id": 3, "initials": "KI", "name": "Konopelski", "value": "$02,18,000", "email": "sharon@example.com", "phone": "+1 17932-04278", "location": "Atlanta, United States", "icon": "bg-orange-500"}
+      ]
+    },
+    {
+      "id": "not_contacted",
+      "title": "Not Contacted",
+      "color": "#0EA5E9",
+      "count": 45,
+      "value": "$15,44,540",
+      "leads": [
+        {"id": 4, "initials": "AS", "name": "Adams", "value": "$02,45,000", "email": "vaughan12@example.com", "phone": "+1 17392-27846", "location": "London, United Kingdom", "icon": "bg-red-500"},
+        {"id": 5, "initials": "WK", "name": "Wizosk", "value": "$01,17,000", "email": "caroltho3@example.com", "phone": "+1 78982-09163", "location": "Bristol, United Kingdom", "icon": "bg-green-500"},
+        {"id": 6, "initials": "HR", "name": "Heller", "value": "$02,12,000", "email": "dawnmercha@example.com", "phone": "+1 27691-89246", "location": "San Francisco, United States", "icon": "bg-cyan-500"}
+      ]
+    },
+    {
+      "id": "closed",
+      "title": "Closed",
+      "color": "#22C55E",
+      "count": 45,
+      "value": "$15,44,540",
+      "leads": [
+        {"id": 7, "initials": "GI", "name": "Gutkowsi", "value": "$01,84,043", "email": "rachel@example.com", "phone": "+1 17839-93617", "location": "Dallas, United States", "icon": "bg-indigo-500"},
+        {"id": 8, "initials": "WR", "name": "Walter", "value": "$09,35,189", "email": "jonelle@example.com", "phone": "+1 16739-47193", "location": "Leicester, United Kingdom", "icon": "bg-amber-500"},
+        {"id": 9, "initials": "HN", "name": "Hansen", "value": "$04,27,940", "email": "jonathan@example.com", "phone": "+1 18390-37153", "location": "Norwich, United Kingdom", "icon": "bg-pink-500"}
+      ]
+    },
+    {
+      "id": "lost",
+      "title": "Lost",
+      "color": "#F62416",
+      "count": 15,
+      "value": "$14,89,543",
+      "leads": [
+        {"id": 10, "initials": "SE", "name": "Steve", "value": "$04,17,593", "email": "sidney@example.com", "phone": "+1 11739-38135", "location": "Manchester, United Kingdom", "icon": "bg-sky-500"},
+        {"id": 11, "initials": "LE", "name": "Leuschke", "value": "$08,81,389", "email": "brook@example.com", "phone": "+1 19302-91043", "location": "Chicago, United States", "icon": "bg-emerald-500"},
+        {"id": 12, "initials": "AY", "name": "Anthony", "value": "$09,27,193", "email": "mickey@example.com", "phone": "+1 17280-92016", "location": "Derby, United Kingdom", "icon": "bg-violet-500"}
+      ]
+    }
+  ]
+}

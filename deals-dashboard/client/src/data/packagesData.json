@@ -1,0 +1,85 @@
+{
+  "count": 198,
+  "packages": [
+    {
+      "id": 1,
+      "planName": "Basic",
+      "planType": "Monthly",
+      "totalSubscribers": 56,
+      "price": "$50",
+      "createdDate": "14 Jan 2024",
+      "status": "Active",
+      "icon": "⭐"
+    },
+    {
+      "id": 2,
+      "planName": "Advanced",
+      "planType": "Monthly",
+      "totalSubscribers": 99,
+      "price": "$200",
+      "createdDate": "21 Jan 2024",
+      "status": "Active",
+      "icon": "🚀"
+    },
+    {
+      "id": 3,
+      "planName": "Premium",
+      "planType": "Monthly",
+      "totalSubscribers": 58,
+      "price": "$300",
+      "createdDate": "10 Feb 2024",
+      "status": "Active",
+      "icon": "💎"
+    },
+    {
+      "id": 4,
+      "planName": "Enterprise",
+      "planType": "Monthly",
+      "totalSubscribers": 67,
+      "price": "$400",
+      "createdDate": "18 Feb 2024",
+      "status": "Active",
+      "icon": "🏢"
+    },
+    {
+      "id": 5,
+      "planName": "Basic",
+      "planType": "Yearly",
+      "totalSubscribers": 78,
+      "price": "$600",
+      "createdDate": "15 Mar 2024",
+      "status": "Active",
+      "icon": "⭐"
+    },
+    {
+      "id": 6,
+      "planName": "Advanced",
+      "planType": "Yearly",
+      "totalSubscribers": 99,
+      "price": "$2400",
+      "createdDate": "26 Mar 2024",
+      "status": "Active",
+      "icon": "🚀"
+    },
+    {
+      "id": 7,
+      "planName": "Premium",
+      "planType": "Yearly",
+      "totalSubscribers": 48,
+      "price": "$3600",
+      "createdDate": "05 Apr 2024",
+      "status": "Active",
+      "icon": "💎"
+    },
+    {
+      "id": 8,
+      "planName": "Enterprise",
+      "planType": "Yearly",
+      "totalSubscribers": 17,
+      "price": "$4800",
+      "createdDate": "16 Apr 2024",
+      "status": "Active",
+      "icon": "🏢"
+    }
+  ]
+}

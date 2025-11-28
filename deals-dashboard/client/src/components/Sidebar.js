@@ -94,6 +94,11 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       <SubmenuItem icon={FileText} label="Deals" page="deals-list" />
       <SubmenuItem icon={Users} label="Leads" page="leads" />
       <SubmenuItem icon={Briefcase} label="Pipeline" page="pipeline" />
+      <SubmenuItem icon={FileText} label="Campaign" page="campaign" />
+      <SubmenuItem icon={Briefcase} label="Projects" page="projects" />
+      <SubmenuItem icon={FileText} label="Tasks" page="tasks" />
+      <SubmenuItem icon={FileText} label="Proposals" page="proposals" />
+      <SubmenuItem icon={FileText} label="Contracts" page="contracts" />
     </>
   );
 
@@ -162,9 +167,12 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
             title="Super Admin"
             items={
               <>
-                <SubmenuItem icon={Home} label="Dashboard" />
-                <SubmenuItem icon={Building2} label="Companies" />
-                <SubmenuItem icon={FileText} label="Subscriptions" />
+                <SubmenuItem icon={Home} label="Dashboard" page="super-admin" />
+                <SubmenuItem icon={Building2} label="Companies" page="super-admin-companies" />
+                <SubmenuItem icon={FileText} label="Subscriptions" page="super-admin-subscriptions" />
+                <SubmenuItem icon={Briefcase} label="Packages" page="super-admin-packages" />
+                <SubmenuItem icon={Building2} label="Domain" page="super-admin-domain" />
+                <SubmenuItem icon={FileText} label="Purchase Transaction" page="super-admin-purchase-transaction" />
               </>
             }
             expanded={expandedMenus.superAdmin}
@@ -172,12 +180,12 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
           />
 
           {/* CRM Section */}
-          <div className="pt-4">
-            <h3 className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">CRM</h3>
-            <div className="space-y-1">
-              {crmMenuItems}
-            </div>
-          </div>
+          <MenuSection
+            title="CRM"
+            items={crmMenuItems}
+            expanded={expandedMenus.crm}
+            onToggle={() => toggleMenu('crm')}
+          />
 
           {/* Reports Section */}
           <div className="pt-4">

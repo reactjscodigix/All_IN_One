@@ -5,11 +5,14 @@ import DealsDashboard from './components/DealsDashboard';
 import LeadsDashboard from './components/LeadsDashboard';
 import ProjectsDashboard from './components/ProjectsDashboard';
 import ProjectDetailsPage from './components/ProjectDetailsPage';
-import DealsListPage from './components/DealsListPage';
 import ContactsPage from './components/ContactsPage';
-import CompaniesPage from './components/CompaniesPage';
+import CrmCompaniesPage from './components/CrmCompaniesPage';
+import CrmDealsPage from './components/CrmDealsPage';
+import CrmLeadsPage from './components/CrmLeadsPage';
+import CrmPipelinePage from './components/CrmPipelinePage';
+import CrmCampaignPage from './components/CrmCampaignPage';
+import CrmProjectsPage from './components/CrmProjectsPage';
 import CompanyDetailsPage from './components/CompanyDetailsPage';
-import PipelinePage from './components/PipelinePage';
 import ChatPage from './components/ChatPage';
 import VideoCallPage from './components/VideoCallPage';
 import AudioCallPage from './components/AudioCallPage';
@@ -17,11 +20,20 @@ import CallHistoryPage from './components/CallHistoryPage';
 import CalendarPage from './components/CalendarPage';
 import EmailPage from './components/EmailPage';
 import TodoPage from './components/TodoPage';
+import TasksPage from './components/TasksPage';
+import ProposalsPage from './components/ProposalsPage';
+import ContractsPage from './components/ContractsPage';
 import NotesPage from './components/NotesPage';
 import FileManagerPage from './components/FileManagerPage';
 import SocialFeedPage from './components/SocialFeedPage';
 import KanbanPage from './components/KanbanPage';
 import InvoicesPage from './components/InvoicesPage';
+import SuperAdminDashboard from './components/SuperAdminDashboard';
+import Companies from './components/Companies';
+import Subscriptions from './components/Subscriptions';
+import Packages from './components/Packages';
+import Domain from './components/Domain';
+import PurchaseTransaction from './components/PurchaseTransaction';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('deals');
@@ -64,17 +76,21 @@ function App() {
       case 'project-details':
         return <ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />;
       case 'deals-list':
-        return <DealsListPage />;
+        return <CrmDealsPage />;
       case 'contacts':
         return <ContactsPage />;
       case 'companies':
-        return <CompaniesPage onViewCompanyDetails={handleViewCompanyDetails} />;
+        return <CrmCompaniesPage />;
       case 'company-details':
         return <CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />;
       case 'leads':
-        return <LeadsDashboard />;
+        return <CrmLeadsPage />;
       case 'pipeline':
-        return <PipelinePage />;
+        return <CrmPipelinePage />;
+      case 'campaign':
+        return <CrmCampaignPage />;
+      case 'projects':
+        return <CrmProjectsPage />;
       case 'chat':
         return <ChatPage />;
       case 'video-call':
@@ -89,6 +105,12 @@ function App() {
         return <EmailPage />;
       case 'todo':
         return <TodoPage />;
+      case 'tasks':
+        return <TasksPage />;
+      case 'proposals':
+        return <ProposalsPage />;
+      case 'contracts':
+        return <ContractsPage />;
       case 'notes':
         return <NotesPage />;
       case 'file-manager':
@@ -99,6 +121,18 @@ function App() {
         return <KanbanPage />;
       case 'invoices':
         return <InvoicesPage />;
+      case 'super-admin':
+        return <SuperAdminDashboard />;
+      case 'super-admin-companies':
+        return <Companies />;
+      case 'super-admin-subscriptions':
+        return <Subscriptions />;
+      case 'super-admin-packages':
+        return <Packages />;
+      case 'super-admin-domain':
+        return <Domain />;
+      case 'super-admin-purchase-transaction':
+        return <PurchaseTransaction />;
       default:
         return <DealsDashboard />;
     }
