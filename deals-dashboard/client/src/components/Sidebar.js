@@ -8,7 +8,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
     call: false,
     superAdmin: false,
     crm: true,
-    reports: false,
+    reports: true,
     crmSettings: false,
     userManagement: false,
     settings: false,
@@ -109,10 +109,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
 
   const reportsItems = (
     <>
-      <SubmenuItem icon={BarChart3} label="Lead Reports" />
-      <SubmenuItem icon={BarChart3} label="Deal Reports" />
-      <SubmenuItem icon={BarChart3} label="Contact Reports" />
-      <SubmenuItem icon={BarChart3} label="Company Reports" />
+      <SubmenuItem icon={BarChart3} label="Lead Reports" page="lead-report" />
+      <SubmenuItem icon={BarChart3} label="Deal Reports" page="deal-report" />
+      <SubmenuItem icon={BarChart3} label="Contact Reports" page="contact-report" />
+      <SubmenuItem icon={BarChart3} label="Company Reports" page="company-report" />
     </>
   );
 
@@ -193,12 +193,12 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
           />
 
           {/* Reports Section */}
-          <div className="pt-4">
-            <h3 className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase">Reports</h3>
-            <div className="space-y-1">
-              {reportsItems}
-            </div>
-          </div>
+          <MenuSection
+            title="Reports"
+            items={reportsItems}
+            expanded={expandedMenus.reports}
+            onToggle={() => toggleMenu('reports')}
+          />
 
           {/* Settings Section */}
           <MenuSection

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MoreVertical, Download, Layout as LayoutIcon, Grid3x3 } from 'lucide-react';
+import { Download, Layout as LayoutIcon, Grid3x3 } from 'lucide-react';
 
 const InvoicesPage = () => {
   const [invoices] = useState([

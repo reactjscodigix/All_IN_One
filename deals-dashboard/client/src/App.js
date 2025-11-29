@@ -36,6 +36,10 @@ import Packages from './components/Packages';
 import Domain from './components/Domain';
 import PurchaseTransaction from './components/PurchaseTransaction';
 import EstimationsPage from './components/EstimationsPage';
+import ActivitiesPage from './components/ActivitiesPage';
+import AnalyticsPage from './components/AnalyticsPage';
+import LeadReport from './components/LeadReport';
+import DealReport from './components/DealReport';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('deals');
@@ -127,6 +131,14 @@ function App() {
         return <InvoicesPage />;
       case 'payments':
         return <PaymentsPage />;
+      case 'activities':
+        return <ActivitiesPage />;
+      case 'analytics':
+        return <AnalyticsPage />;
+      case 'lead-report':
+        return <LeadReport />;
+      case 'deal-report':
+        return <DealReport />;
       case 'super-admin':
         return <SuperAdminDashboard />;
       case 'super-admin-companies':

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MoreVertical, Download, Filter as FilterIcon, Eye, Trash2, Search } from 'lucide-react';
+import { MoreVertical, Download, Filter as FilterIcon, Search } from 'lucide-react';
 
 const PaymentsPage = () => {
   const [selectedPayments, setSelectedPayments] = useState([]);
