@@ -95,10 +95,15 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       <SubmenuItem icon={Users} label="Leads" page="leads" />
       <SubmenuItem icon={Briefcase} label="Pipeline" page="pipeline" />
       <SubmenuItem icon={FileText} label="Campaign" page="campaign" />
-      <SubmenuItem icon={Briefcase} label="Projects" page="projects" />
+      <SubmenuItem icon={FileText} label="Projects" page="projects" />
       <SubmenuItem icon={FileText} label="Tasks" page="tasks" />
       <SubmenuItem icon={FileText} label="Proposals" page="proposals" />
       <SubmenuItem icon={FileText} label="Contracts" page="contracts" />
+      <SubmenuItem icon={FileText} label="Estimations" page="estimations" />
+      <SubmenuItem icon={FileText} label="Invoices" page="invoices" />
+      <SubmenuItem icon={FileText} label="Payments" page="payments" />
+      <SubmenuItem icon={BarChart3} label="Analytics" page="analytics" />
+      <SubmenuItem icon={FileText} label="Activities" page="activities" />
     </>
   );
 

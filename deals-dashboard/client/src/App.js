@@ -28,12 +28,14 @@ import FileManagerPage from './components/FileManagerPage';
 import SocialFeedPage from './components/SocialFeedPage';
 import KanbanPage from './components/KanbanPage';
 import InvoicesPage from './components/InvoicesPage';
+import PaymentsPage from './components/PaymentsPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import Companies from './components/Companies';
 import Subscriptions from './components/Subscriptions';
 import Packages from './components/Packages';
 import Domain from './components/Domain';
 import PurchaseTransaction from './components/PurchaseTransaction';
+import EstimationsPage from './components/EstimationsPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('deals');
@@ -91,6 +93,8 @@ function App() {
         return <CrmCampaignPage />;
       case 'projects':
         return <CrmProjectsPage />;
+      case 'estimations':
+        return <EstimationsPage />;
       case 'chat':
         return <ChatPage />;
       case 'video-call':
@@ -121,6 +125,8 @@ function App() {
         return <KanbanPage />;
       case 'invoices':
         return <InvoicesPage />;
+      case 'payments':
+        return <PaymentsPage />;
       case 'super-admin':
         return <SuperAdminDashboard />;
       case 'super-admin-companies':

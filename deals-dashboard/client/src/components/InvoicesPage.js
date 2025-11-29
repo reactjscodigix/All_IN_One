@@ -1,141 +1,316 @@
 import React, { useState } from 'react';
-import { Eye, Edit2, Trash2, Plus } from 'lucide-react';
+import { MoreVertical, Download, Layout as LayoutIcon, Grid3x3 } from 'lucide-react';
 
 const InvoicesPage = () => {
   const [invoices] = useState([
-    { id: 'INV-1454', name: 'Anthony Lewis', email: 'anthony@example.com', date: '14 Jan 2024, 04:27 AM', total: '$300', due: '$0', dueDate: '14 Jan 2024, 04:27 AM', status: 'Paid', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-01.jpg' },
-    { id: 'INV-6571', name: 'Brian Villalobos', email: 'brian@example.com', date: '21 Jan 2024, 03:19 AM', total: '$547', due: '$200', dueDate: '21 Jan 2024, 03:19 AM', status: 'Overdue', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-09.jpg' },
-    { id: 'INV-2245', name: 'Harvey Smith', email: 'harvey@example.com', date: '20 Feb 2024, 12:15 PM', total: '$325', due: '$65', dueDate: '20 Feb 2024, 12:15 PM', status: 'Pending', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-01.jpg' },
-    { id: 'INV-1456', name: 'Stephan Peralt', email: 'peral@example.com', date: '15 Mar 2024, 12:11 AM', total: '$471', due: '$145', dueDate: '15 Mar 2024, 12:11 AM', status: 'Pending', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-02.jpg' },
-    { id: 'INV-0045', name: 'Doglas Martini', email: 'martniwr@example.com', date: '12 Apr 2024, 05:48 PM', total: '$147', due: '$32', dueDate: '12 Apr 2024, 05:48 PM', status: 'Overdue', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-03.jpg' },
-    { id: 'INV-6244', name: 'Linda Ray', email: 'ray456@example.com', date: '20 Apr 2024, 06:11 PM', total: '$654', due: '$140', dueDate: '20 Apr 2024, 06:11 PM', status: 'Draft', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-02.jpg' },
-    { id: 'INV-9565', name: 'Elliot Murray', email: 'murray@example.com', date: '14 Jan 2024, 04:27 AM', total: '$300', due: '$0', dueDate: '14 Jan 2024, 04:27 AM', status: 'Paid', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-06.jpg' },
-    { id: 'INV-6874', name: 'Rebecca Smith', email: 'smith@example.com', date: '02 Sep 2024, 09:21 PM', total: '$654', due: '$65', dueDate: '02 Sep 2024, 09:21 PM', status: 'Paid', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-07.jpg' },
-    { id: 'INV-1454b', name: 'Anthony Lewis', email: 'anthony@example.com', date: '14 Jan 2024, 04:27 AM', total: '$300', due: '$0', dueDate: '14 Jan 2024, 04:27 AM', status: 'Draft', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-08.jpg' },
-    { id: 'INV-6587', name: 'Connie Waters', email: 'connie@example.com', date: '15 Nov 2024, 12:44 PM', total: '$987', due: '$47', dueDate: '15 Nov 2024, 12:44 PM', status: 'Pending', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-09.jpg' },
-    { id: 'INV-5879', name: 'Lori Broaddus', email: 'broaddus@example.com', date: '10 Dec 2024, 11:23 PM', total: '$365', due: '$21', dueDate: '10 Dec 2024, 11:23 PM', status: 'Overdue', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/users/user-10.jpg' }
+    {
+      id: '#1465781',
+      company: 'Truelyselli',
+      companyLogo: '🎨',
+      avatarBg: 'bg-orange-400',
+      totalValue: '$2,15,000',
+      dueDate: '22 Jun 2025',
+      paidAmount: '$2,15,000',
+      balanceAmount: '$0',
+      status: 'Partially Paid',
+      statusBg: 'bg-yellow-100',
+      statusText: 'text-yellow-700',
+      sentTo: 'BlueSky Industries',
+      sentToLogo: '☁️'
+    },
+    {
+      id: '#1465782',
+      company: 'Dreamschat',
+      companyLogo: '💬',
+      avatarBg: 'bg-red-400',
+      totalValue: '$1,45,000',
+      dueDate: '20 May 2025',
+      paidAmount: '$1,45,000',
+      balanceAmount: '$0',
+      status: 'Paid',
+      statusBg: 'bg-green-100',
+      statusText: 'text-green-700',
+      sentTo: 'NovaWave LLC',
+      sentToLogo: '🌊'
+    },
+    {
+      id: '#1465783',
+      company: 'DreamGigs',
+      companyLogo: '🎭',
+      avatarBg: 'bg-black',
+      totalValue: '$2,15,000',
+      dueDate: '30 Apr 2025',
+      paidAmount: '$1,00,000',
+      balanceAmount: '$1,15,000',
+      status: 'Partially Paid',
+      statusBg: 'bg-yellow-100',
+      statusText: 'text-yellow-700',
+      sentTo: 'Silver Hawk',
+      sentToLogo: '🦅'
+    },
+    {
+      id: '#1465784',
+      company: 'Servbook',
+      companyLogo: '📖',
+      avatarBg: 'bg-purple-400',
+      totalValue: '$4,80,380',
+      dueDate: '21 Apr 2025',
+      paidAmount: '$4,80,380',
+      balanceAmount: '$0',
+      status: 'Paid',
+      statusBg: 'bg-green-100',
+      statusText: 'text-green-700',
+      sentTo: 'Summit Peak',
+      sentToLogo: '⛰️'
+    },
+    {
+      id: '#1465785',
+      company: 'DreamPOS',
+      companyLogo: '🛒',
+      avatarBg: 'bg-green-400',
+      totalValue: '$2,12,000',
+      dueDate: '19 Mar 2025',
+      paidAmount: '$0',
+      balanceAmount: '$2,12,000',
+      status: 'Unpaid',
+      statusBg: 'bg-red-100',
+      statusText: 'text-red-700',
+      sentTo: 'RiverStone Ltd',
+      sentToLogo: '🏞️'
+    },
+    {
+      id: '#1465786',
+      company: 'Kafejob',
+      companyLogo: '☕',
+      avatarBg: 'bg-cyan-400',
+      totalValue: '$3,50,000',
+      dueDate: '11 Mar 2025',
+      paidAmount: '$1,50,000',
+      balanceAmount: '$2,00,000',
+      status: 'Partially Paid',
+      statusBg: 'bg-yellow-100',
+      statusText: 'text-yellow-700',
+      sentTo: 'Bright Bridge Grp',
+      sentToLogo: '🌉'
+    },
+    {
+      id: '#1465787',
+      company: 'SmartHR',
+      companyLogo: '👥',
+      avatarBg: 'bg-yellow-400',
+      totalValue: '$2,46,000',
+      dueDate: '17 Feb 2025',
+      paidAmount: '$1,23,000',
+      balanceAmount: '$1,23,000',
+      status: 'Overdue',
+      statusBg: 'bg-blue-100',
+      statusText: 'text-blue-700',
+      sentTo: 'CoastalStar Co.',
+      sentToLogo: '🏖️'
+    },
+    {
+      id: '#1465788',
+      company: 'Docure',
+      companyLogo: '📋',
+      avatarBg: 'bg-cyan-400',
+      totalValue: '$3,12,500',
+      dueDate: '07 Feb 2025',
+      paidAmount: '$3,12,500',
+      balanceAmount: '$0',
+      status: 'Paid',
+      statusBg: 'bg-green-100',
+      statusText: 'text-green-700',
+      sentTo: 'HarborView',
+      sentToLogo: '⛵'
+    },
+    {
+      id: '#1465789',
+      company: 'Best@laundry',
+      companyLogo: '🧺',
+      avatarBg: 'bg-purple-500',
+      totalValue: '$4,18,000',
+      dueDate: '20 Jan 2025',
+      paidAmount: '$0',
+      balanceAmount: '$4,18,000',
+      status: 'Unpaid',
+      statusBg: 'bg-red-100',
+      statusText: 'text-red-700',
+      sentTo: 'Golden Gate Ltd',
+      sentToLogo: '🌉'
+    },
+    {
+      id: '#1465790',
+      company: 'Dreamsports',
+      companyLogo: '⚽',
+      avatarBg: 'bg-orange-500',
+      totalValue: '$5,00,000',
+      dueDate: '18 Jan 2025',
+      paidAmount: '$5,00,000',
+      balanceAmount: '$0',
+      status: 'Paid',
+      statusBg: 'bg-green-100',
+      statusText: 'text-green-700',
+      sentTo: 'Redwood Inc',
+      sentToLogo: '🌲'
+    },
+    {
+      id: '#1465791',
+      company: 'Dreamsgigs',
+      companyLogo: '🎵',
+      avatarBg: 'bg-green-500',
+      totalValue: '$5,00,000',
+      dueDate: '19 Jan 2025',
+      paidAmount: '$2,15,000',
+      balanceAmount: '$2,85,000',
+      status: 'Partially Paid',
+      statusBg: 'bg-yellow-100',
+      statusText: 'text-yellow-700',
+      sentTo: 'Acme Corp.',
+      sentToLogo: '🏢'
+    },
+    {
+      id: '#1465792',
+      company: 'SmartHR',
+      companyLogo: '👥',
+      avatarBg: 'bg-yellow-400',
+      totalValue: '$2,46,000',
+      dueDate: '17 Feb 2025',
+      paidAmount: '$1,23,000',
+      balanceAmount: '$1,23,000',
+      status: 'Overdue',
+      statusBg: 'bg-blue-100',
+      statusText: 'text-blue-700',
+      sentTo: 'CoastalStar Co.',
+      sentToLogo: '🏖️'
+    }
   ]);
 
-  const getStatusBadge = (status) => {
-    const colors = {
-      'Paid': 'bg-green-100 text-green-700 border border-green-300',
-      'Pending': 'bg-orange-100 text-orange-700 border border-orange-300',
-      'Overdue': 'bg-red-100 text-red-700 border border-red-300',
-      'Draft': 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-    };
-    return colors[status] || 'bg-gray-100 text-gray-700';
-  };
-
-  const stats = [
-    { label: 'Total Invoice', value: '$3,237.94', change: '+32.40% from last month', color: 'border-blue-500' },
-    { label: 'Outstanding', value: '$3,237.94', change: '-4.40% from last month', color: 'border-red-500' },
-    { label: 'Draft', value: '$3,237.94', change: '+12% from last month', color: 'border-yellow-500' },
-    { label: 'Total Overdue', value: '$3,237.94', change: '-15.40% from last month', color: 'border-orange-500' }
-  ];
-
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
+        {/* Header Section */}
+        <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-              <button className="text-gray-600 hover:text-gray-900">Home</button>
-              <span>›</span>
-              <button className="text-gray-600 hover:text-gray-900">Applications</button>
-              <span>›</span>
-              <span>Invoices</span>
+            <div className="flex items-center gap-3 mb-3">
+              <h1 className="text-5xl font-bold text-gray-900">Invoices</h1>
+              <span className="bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold">125</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+              <button className="hover:text-gray-900">Home</button>
+              <span className="text-gray-400">›</span>
+              <span className="text-gray-600">Invoices</span>
             </div>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium text-sm">
-            <Plus size={18} />
-            Add Invoices
-          </button>
+          <div className="flex items-center gap-3">
+            <button className="border border-gray-300 px-5 py-2.5 rounded-lg bg-white text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-gray-50 transition">
+              <Download size={18} />
+              Export
+            </button>
+            <div className="flex items-center gap-1 border border-gray-300 rounded-lg p-1 bg-white shadow-sm">
+              <button className="p-2 hover:bg-gray-100 rounded transition">
+                <LayoutIcon size={18} className="text-gray-600" />
+              </button>
+              <button className="p-2 bg-gray-100 rounded transition">
+                <Grid3x3 size={18} className="text-gray-700" />
+              </button>
+            </div>
+            <button className="bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-red-700 transition">
+              + Add New Invoice
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, idx) => (
-            <div key={idx} className="bg-white rounded-lg p-4 border-l-4" style={{ borderLeftColor: stat.color.split('-')[1] === 'blue' ? '#3b82f6' : stat.color.split('-')[1] === 'red' ? '#ef4444' : stat.color.split('-')[1] === 'yellow' ? '#eab308' : '#f97316' }}>
-              <p className="text-xs text-gray-600 font-medium mb-2">{stat.label}</p>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{stat.value}</h3>
-              <div className="h-1 bg-gray-200 rounded-full mb-2" style={{ background: stat.color.split('-')[1] === 'blue' ? '#3b82f6' : stat.color.split('-')[1] === 'red' ? '#ef4444' : stat.color.split('-')[1] === 'yellow' ? '#eab308' : '#f97316', width: '60%' }}></div>
-              <p className={`text-xs font-medium ${stat.change.startsWith('+') ? 'text-green-600' : 'text-green-600'}`}>
-                {stat.change}
-              </p>
+        {/* Filter Bar */}
+        <div className="mb-6 flex items-center gap-3">
+          <button className="border border-gray-300 px-4 py-2.5 rounded-lg bg-white text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition shadow-sm">
+            🔍 Filter
+          </button>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search Keyword"
+              className="border border-gray-300 px-4 py-2.5 rounded-lg text-sm w-80 font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">✕</button>
+          </div>
+        </div>
+
+        {/* Invoice Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          {invoices.map((invoice, idx) => (
+            <div 
+              key={idx} 
+              className="bg-white rounded-2xl p-5 shadow border border-gray-100 hover:shadow-lg transition-all duration-300 flex flex-col"
+            >
+              {/* Card Header */}
+              <div className="flex justify-between items-start mb-3">
+                <span className="text-xs font-bold text-blue-600 cursor-pointer hover:text-blue-700">
+                  {invoice.id}
+                </span>
+                <button className="text-gray-400 hover:text-gray-600 text-lg">⋮</button>
+              </div>
+
+              {/* Company Info */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className={`w-14 h-14 ${invoice.avatarBg} rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-sm`}>
+                  {invoice.companyLogo}
+                </div>
+                <div>
+                  <h4 className="font-bold text-base text-gray-900">{invoice.company}</h4>
+                  <p className="text-xs text-gray-600 font-medium">Sent to</p>
+                </div>
+              </div>
+
+              {/* Invoice Details */}
+              <div className="space-y-3 mb-5 text-xs text-gray-700 flex-grow bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <span>📄</span>
+                  <span className="text-gray-600 font-medium">Total Value :</span>
+                  <span className="font-bold text-gray-900 text-sm">{invoice.totalValue}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>📅</span>
+                  <span className="text-gray-600 font-medium">Due Date :</span>
+                  <span className="font-bold text-gray-900">{invoice.dueDate}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>💰</span>
+                  <span className="text-gray-600 font-medium">Paid Amount :</span>
+                  <span className="font-bold text-gray-900">{invoice.paidAmount}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>💵</span>
+                  <span className="text-gray-600 font-medium">Balance Amount :</span>
+                  <span className="font-bold text-gray-900">{invoice.balanceAmount}</span>
+                </div>
+              </div>
+
+              {/* Status Badge and Sent To */}
+              <div className="pt-3 border-t border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${invoice.statusBg} ${invoice.statusText}`}>
+                    {invoice.status}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{invoice.sentToLogo}</span>
+                  <p className="text-xs text-gray-600 font-medium">{invoice.sentTo}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-gray-900">Invoices</h2>
-              <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">2000 Invoices</span>
-            </div>
-          </div>
+        {/* Load More Button */}
+        <div className="flex justify-center mb-10">
+          <button className="bg-red-600 text-white px-12 py-3 rounded-lg shadow-sm hover:bg-red-700 transition text-base font-semibold flex items-center gap-2">
+            🔄 Load More
+          </button>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="px-6 py-3 text-left">
-                    <input type="checkbox" className="w-4 h-4" />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Invoice</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Created On</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Total</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Amount Due</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Due Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((invoice, idx) => (
-                  <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <input type="checkbox" className="w-4 h-4" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <button className="text-sm font-medium text-red-600 hover:text-red-700">{invoice.id}</button>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <img src={invoice.avatar} alt={invoice.name} className="w-8 h-8 rounded-full" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{invoice.name}</p>
-                          <p className="text-xs text-gray-600">{invoice.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{invoice.date}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{invoice.total}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{invoice.due}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{invoice.dueDate}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(invoice.status)}`}>
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
-                          <Eye size={16} />
-                        </button>
-                        <button className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
-                          <Edit2 size={16} />
-                        </button>
-                        <button className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {/* Footer */}
+        <div className="text-center text-gray-500 text-sm border-t border-gray-200 pt-8 pb-6 font-medium">
+          Copyright © 2025 <span className="text-red-600 font-bold">Preadmin</span>
         </div>
       </div>
     </div>
