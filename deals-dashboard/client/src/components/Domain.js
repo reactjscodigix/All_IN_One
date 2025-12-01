@@ -1,9 +1,26 @@
 import React, { useState } from 'react';
-import { ChevronDown, MoreVertical, Search } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronDown, MoreVertical, Search, Download, Settings, X } from 'lucide-react';
 import domainsData from '../data/domainsData.json';
 
 const Domain = () => {
+  const navigate = useNavigate();
   const [starred, setStarred] = useState({});
+  const [openActionMenu, setOpenActionMenu] = useState(null);
+  const [exportDropOpen, setExportDropOpen] = useState(false);
+  const [sortDropOpen, setSortDropOpen] = useState(false);
+  const [filterDropOpen, setFilterDropOpen] = useState(false);
+  const [dateDropOpen, setDateDropOpen] = useState(false);
+  const [manageColsOpen, setManageColsOpen] = useState(false);
+  const [selectedDate] = useState('1 Dec 25 - 1 Dec 25');
+  const [columnVisibility, setColumnVisibility] = useState({
+    name: true,
+    domainUrl: true,
+    plan: true,
+    createdDate: true,
+    status: true,
+    action: true
+  });
 
   const toggleStar = (id) => {
     setStarred(prev => ({
@@ -29,39 +46,168 @@ const Domain = () => {
     <div style={{ backgroundColor: '#F5F6FB', minHeight: '100vh', padding: '24px' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-            <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif", margin: 0 }}>
-              Domains
-            </h1>
-            <div style={{ backgroundColor: '#FF6A59', color: '#FFF', borderRadius: '12px', padding: '4px 12px', fontSize: '12px', fontWeight: '700', fontFamily: "'Poppins', sans-serif" }}>
-              {domainsData.count}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+              <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif", margin: 0 }}>
+                Domains
+              </h1>
+              <div style={{ backgroundColor: '#FFE5E5', color: '#F62416', borderRadius: '12px', padding: '4px 12px', fontSize: '12px', fontWeight: '700', fontFamily: "'Poppins', sans-serif" }}>
+                {domainsData.count}
+              </div>
+            </div>
+            <div style={{ fontSize: '13px', color: '#475467', fontFamily: "'Poppins', sans-serif", display: 'flex', gap: '8px' }}>
+              <span style={{ color: '#FF6A59', fontWeight: '500', cursor: 'pointer' }}>Home</span> 
+              <span>/</span> 
+              <span>Domains</span>
             </div>
           </div>
-          <div style={{ fontSize: '13px', color: '#6B7280', fontFamily: "'Poppins', sans-serif" }}>
-            <span>Home</span> <span style={{ margin: '0 8px' }}>/</span> <span>Domains</span>
+
+          {/* Top Right Action Buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Export Button */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setExportDropOpen(!exportDropOpen)}
+                style={{ fontSize: '13px', color: '#475467', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '10px 16px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#F3F4F6'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#F9FAFB'}
+              >
+                <Download size={16} />
+                Export <ChevronDown size={16} />
+              </button>
+              {exportDropOpen && (
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', zIndex: 50, minWidth: '200px' }}>
+                  <button style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                    <Download size={14} /> Export as PDF
+                  </button>
+                  <button style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                    <Download size={14} /> Export as Excel
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button style={{ fontSize: '13px', color: '#475467', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '10px 16px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F3F4F6'} onMouseLeave={(e) => e.target.style.backgroundColor = '#F9FAFB'}>
+              🔄
+            </button>
+
+            {/* Manage Columns Button */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setManageColsOpen(!manageColsOpen)}
+                style={{ fontSize: '13px', color: '#475467', backgroundColor: '#EEF5FF', border: '1px solid #D1E0FF', borderRadius: '6px', padding: '10px 16px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#E0EBFF'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#EEF5FF'}
+              >
+                <Settings size={16} />
+                Manage Columns
+              </button>
+              {manageColsOpen && (
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', zIndex: 50, minWidth: '240px', padding: '12px 0' }}>
+                  {Object.keys(columnVisibility).map((col) => (
+                    <button
+                      key={col}
+                      onClick={() => setColumnVisibility(prev => ({ ...prev, [col]: !prev[col] }))}
+                      style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '16px' }}>≡</span>
+                        {col.charAt(0).toUpperCase() + col.slice(1).replace(/([A-Z])/g, ' $1')}
+                      </span>
+                      <div style={{ width: '32px', height: '18px', borderRadius: '9px', backgroundColor: columnVisibility[col] ? '#FF5B5B' : '#D1D5DB', transition: 'all 0.2s', display: 'flex', alignItems: 'center', padding: '2px' }}>
+                        <div style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#FFF', marginLeft: columnVisibility[col] ? '14px' : '0px', transition: 'margin-left 0.2s' }} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Controls Bar */}
-        <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '280px' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
-              <input 
-                type="text" 
-                placeholder="Search" 
-                style={{ width: '100%', padding: '10px 12px 10px 36px', border: '1px solid #E5E7EB', borderRadius: '6px', fontSize: '13px', fontFamily: "'Poppins', sans-serif", color: '#1F2937' }}
-              />
-            </div>
+        <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ position: 'relative', maxWidth: '360px', flex: '0 0 auto' }}>
+            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+            <input 
+              type="text" 
+              placeholder="Search" 
+              style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid #E5E7EB', borderRadius: '24px', fontSize: '13px', fontFamily: "'Poppins', sans-serif", color: '#1F2937', height: '44px', boxSizing: 'border-box' }}
+            />
           </div>
-          <button style={{ fontSize: '13px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
-            Filter <ChevronDown size={16} />
-          </button>
-          <div style={{ fontSize: '13px', color: '#6B7280', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>28 Nov 25 - 28 Nov 25</div>
-          <button style={{ fontSize: '13px', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '6px', padding: '10px 18px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", fontWeight: '600' }}>
-            Add New
-          </button>
+
+          {/* Filter Button */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setFilterDropOpen(!filterDropOpen)}
+              style={{ fontSize: '13px', color: '#475467', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '12px 14px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', height: '44px' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#F3F4F6'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#F9FAFB'}
+            >
+              <span>Filter</span> <ChevronDown size={16} />
+            </button>
+            {filterDropOpen && (
+              <div style={{ position: 'absolute', left: 0, top: '100%', marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', zIndex: 50, minWidth: '200px' }}>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#1F2937' }}>Filters</span>
+                  <button onClick={() => setFilterDropOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}>
+                    <X size={16} />
+                  </button>
+                </div>
+                <button style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                  By Status
+                </button>
+                <button style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                  By Plan
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Date Picker */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setDateDropOpen(!dateDropOpen)}
+              style={{ fontSize: '13px', color: '#475467', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '12px 14px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', height: '44px' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#F3F4F6'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#F9FAFB'}
+            >
+              📅 {selectedDate}
+            </button>
+            {dateDropOpen && (
+              <div style={{ position: 'absolute', left: 0, top: '100%', marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', zIndex: 50, minWidth: '200px', padding: '8px' }}>
+                <input type="date" style={{ width: '100%', padding: '8px', border: '1px solid #E5E7EB', borderRadius: '4px', fontSize: '12px', fontFamily: "'Poppins', sans-serif" }} />
+              </div>
+            )}
+          </div>
+
+          {/* Sort By Button */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setSortDropOpen(!sortDropOpen)}
+              style={{ fontSize: '13px', color: '#475467', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '6px', padding: '12px 14px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s', height: '44px' }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#F3F4F6'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#F9FAFB'}
+            >
+              <span>Sort By</span> <ChevronDown size={16} />
+            </button>
+            {sortDropOpen && (
+              <div style={{ position: 'absolute', left: 0, top: '100%', marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', zIndex: 50, minWidth: '180px' }}>
+                <button style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                  Newest First
+                </button>
+                <button style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                  Oldest First
+                </button>
+                <button style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                  By Plan
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -112,10 +258,17 @@ const Domain = () => {
                           {domain.status}
                         </span>
                       </td>
-                      <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '4px', transition: 'color 0.2s' }}>
+                      <td style={{ padding: '16px 12px', textAlign: 'center', position: 'relative' }}>
+                        <button onClick={() => setOpenActionMenu(openActionMenu === domain.id ? null : domain.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '4px', transition: 'color 0.2s' }}>
                           <MoreVertical size={18} />
                         </button>
+                        {openActionMenu === domain.id && (
+                          <div style={{ position: 'absolute', top: '100%', right: '0', marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '180px' }}>
+                            <button onClick={() => { navigate('/super-admin-companies'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                              <span>🏢</span> View Company
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

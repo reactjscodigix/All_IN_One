@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Chart from 'react-apexcharts';
 import { ChevronDown } from 'lucide-react';
 
 const SuperAdminDashboard = () => {
+  const navigate = useNavigate();
 
   const statCards = [
     {
@@ -253,10 +255,10 @@ const SuperAdminDashboard = () => {
                 </p>
               </div>
               <div className="flex gap-2">
-                <button style={{ padding: '8px 16px', backgroundColor: '#FF6A59', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: "'Poppins', sans-serif" }}>
+                <button onClick={() => navigate('/super-admin-companies')} style={{ padding: '8px 16px', backgroundColor: '#FF6A59', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: "'Poppins', sans-serif" }}>
                   Companies
                 </button>
-                <button style={{ padding: '8px 16px', backgroundColor: '#FFF', color: '#1F2937', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: "'Poppins', sans-serif" }}>
+                <button onClick={() => navigate('/super-admin-packages')} style={{ padding: '8px 16px', backgroundColor: '#FFF', color: '#1F2937', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: "'Poppins', sans-serif" }}>
                   All Packages
                 </button>
               </div>
@@ -268,6 +270,10 @@ const SuperAdminDashboard = () => {
             {statCards.map((card, index) => (
               <div
                 key={index}
+                onClick={() => {
+                  if (index === 0 || index === 1 || index === 2) navigate('/super-admin-companies');
+                  else if (index === 3) navigate('/super-admin-purchase-transaction');
+                }}
                 style={{
                   backgroundColor: card.backgroundColor,
                   border: `1px solid #E5E7EB`,
@@ -275,7 +281,18 @@ const SuperAdminDashboard = () => {
                   borderRadius: '8px',
                   padding: '20px',
                   position: 'relative',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  transformOrigin: 'center'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
                 }}
               >
                 <div className="flex items-start justify-between">
@@ -315,12 +332,12 @@ const SuperAdminDashboard = () => {
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Companies Chart */}
-            <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div onClick={() => navigate('/super-admin-companies')} style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}>
               <div className="flex items-center justify-between mb-6">
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
                   Companies
                 </h3>
-                <button style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
+                <button onClick={(e) => { e.stopPropagation(); }} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
                   This Week <ChevronDown size={16} />
                 </button>
               </div>
@@ -338,7 +355,7 @@ const SuperAdminDashboard = () => {
             </div>
 
             {/* Revenue Chart */}
-            <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }} className="lg:col-span-1">
+            <div onClick={() => navigate('/super-admin-purchase-transaction')} style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }} className="lg:col-span-1" onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}>
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', marginBottom: '10px', fontFamily: "'Poppins', sans-serif" }}>
@@ -351,7 +368,7 @@ const SuperAdminDashboard = () => {
                     📈 <span>40%</span> <span style={{ color: '#6B7280', fontWeight: '400' }}>increased from last year</span>
                   </div>
                 </div>
-                <button style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
+                <button onClick={(e) => { e.stopPropagation(); }} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
                   2025 <ChevronDown size={16} />
                 </button>
               </div>
@@ -366,12 +383,12 @@ const SuperAdminDashboard = () => {
             </div>
 
             {/* Top Plans Chart */}
-            <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div onClick={() => navigate('/super-admin-packages')} style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}>
               <div className="flex items-center justify-between mb-6">
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
                   Top Plans
                 </h3>
-                <button style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
+                <button onClick={(e) => { e.stopPropagation(); }} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
                   Last 30 Days <ChevronDown size={16} />
                 </button>
               </div>
@@ -419,7 +436,7 @@ const SuperAdminDashboard = () => {
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
                   Recent Transactions
                 </h3>
-                <button style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
+                <button onClick={() => navigate('/super-admin-purchase-transaction')} style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
                   View All
                 </button>
               </div>
@@ -468,7 +485,7 @@ const SuperAdminDashboard = () => {
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
                   Recently Registered
                 </h3>
-                <button style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
+                <button onClick={() => navigate('/super-admin-companies')} style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
                   View All
                 </button>
               </div>
@@ -515,7 +532,7 @@ const SuperAdminDashboard = () => {
                 <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
                   Recently Plan Expired
                 </h3>
-                <button style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
+                <button onClick={() => navigate('/super-admin-subscriptions')} style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
                   View All
                 </button>
               </div>

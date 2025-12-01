@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, MoreVertical, Search, Download, ArrowUpDown, Settings, ChevronRight, X } from 'lucide-react';
 import AddNewCompanyForm from './AddNewCompanyForm';
 import UpgradePlanModal from './UpgradePlanModal';
 import { companiesAPI } from '../services/api';
 
 const Companies = () => {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
   const [starred, setStarred] = useState({});
   const [toast, setToast] = useState({ message: '', type: '', show: false });
@@ -18,6 +20,7 @@ const Companies = () => {
   const [manageColsOpen, setManageColsOpen] = useState(false);
   const [filterExpanded, setFilterExpanded] = useState({});
   const [selectedDate, setSelectedDate] = useState('1 Dec 25 - 1 Dec 25');
+  const [openActionMenu, setOpenActionMenu] = useState(null);
   const [columnVisibility, setColumnVisibility] = useState({
     name: true,
     email: true,
@@ -446,10 +449,23 @@ const Companies = () => {
                           {company.status}
                         </span>
                       </td>
-                      <td style={{ padding: '16px 16px', textAlign: 'center', verticalAlign: 'middle' }}>
-                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '4px', transition: 'color 0.2s', fontSize: '16px' }} onMouseEnter={(e) => e.target.style.color = '#1F2937'} onMouseLeave={(e) => e.target.style.color = '#6B7280'}>
+                      <td style={{ padding: '16px 16px', textAlign: 'center', verticalAlign: 'middle', position: 'relative' }}>
+                        <button onClick={() => setOpenActionMenu(openActionMenu === company.id ? null : company.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '4px', transition: 'color 0.2s', fontSize: '16px' }} onMouseEnter={(e) => e.target.style.color = '#1F2937'} onMouseLeave={(e) => e.target.style.color = '#6B7280'}>
                           <MoreVertical size={16} />
                         </button>
+                        {openActionMenu === company.id && (
+                          <div style={{ position: 'absolute', top: '100%', right: '0', marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '180px' }}>
+                            <button onClick={() => { navigate('/super-admin-subscriptions'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                              <span>📋</span> Subscriptions
+                            </button>
+                            <button onClick={() => { navigate('/super-admin-domain'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                              <span>🌐</span> Domains
+                            </button>
+                            <button onClick={() => { navigate('/super-admin-purchase-transaction'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                              <span>💳</span> Transactions
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

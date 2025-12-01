@@ -249,6 +249,15 @@ app.post('/api/plans', async (req, res) => {
       .filter(key => planModules[key])
       .join(',');
 
+    const positionMap = {
+      'Basic': 1,
+      'Standard': 2,
+      'Premium': 3,
+      'Select': null
+    };
+    
+    const positionValue = positionMap[planPosition] !== undefined ? positionMap[planPosition] : null;
+
     await connection.query(
       `INSERT INTO company_plans 
       (plan_name, plan_type, plan_position, plan_currency, plan_currency_free, discount_type, discount, 
@@ -257,7 +266,7 @@ app.post('/api/plans', async (req, res) => {
       [
         planName,
         planType,
-        planPosition || null,
+        positionValue,
         planCurrency,
         planCurrencyFree || null,
         discountType || null,
