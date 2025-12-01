@@ -143,6 +143,8 @@ function App() {
         return <DealReport />;
       case 'contact-report':
         return <ContactReportsPage />;
+      case 'company-report':
+        return <CompanyReportsPage />;
       case 'super-admin':
         return <SuperAdminDashboard />;
       case 'super-admin-companies':
