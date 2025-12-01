@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, X, Home, Users, Building2, Settings, BarChart3, FileText, Briefcase, MessageCircle } from 'lucide-react';
+import { ChevronDown, X, Home, Users, Building2, Settings, BarChart3, FileText, Briefcase, MessageCircle, Shield, Trash2, Users2, FileJson, MapPin, MessageSquare, HelpCircle } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
   const [expandedMenus, setExpandedMenus] = useState({
@@ -12,6 +12,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
     crmSettings: false,
     userManagement: false,
     settings: false,
+    membership: false,
+    content: false,
+    blog: false,
+    location: false,
   });
 
   const toggleMenu = (menu) => {
@@ -113,6 +117,74 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       <SubmenuItem icon={BarChart3} label="Deal Reports" page="deal-report" />
       <SubmenuItem icon={BarChart3} label="Contact Reports" page="contact-report" />
       <SubmenuItem icon={BarChart3} label="Company Reports" page="company-report" />
+      <SubmenuItem icon={BarChart3} label="Project Reports" page="project-report" />
+      <SubmenuItem icon={BarChart3} label="Task Reports" page="task-report" />
+    </>
+  );
+
+  const userManagementItems = (
+    <>
+      <button
+        onClick={() => {
+          onNavigate('manage-users');
+          if (toggleSidebar) toggleSidebar();
+        }}
+        className={`menu-item w-full flex items-center gap-3 px-6 py-2 text-sm rounded-md transition-smooth ${
+          currentPage === 'manage-users'
+            ? 'bg-red-100 text-red-600 font-semibold shadow-sm'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        }`}
+      >
+        <div className={`w-6 h-6 rounded flex items-center justify-center ${currentPage === 'manage-users' ? 'bg-red-600 text-white' : 'bg-gray-200'}`}>
+          <Users size={16} />
+        </div>
+        <span>Manage Users</span>
+      </button>
+      <SubmenuItem icon={Shield} label="Roles & Permissions" page="roles-permissions" />
+      <SubmenuItem icon={Trash2} label="Delete Request" page="delete-request" />
+    </>
+  );
+
+  const membershipItems = (
+    <>
+      <SubmenuItem icon={Users2} label="Membership Plans" page="membership-plans" />
+      <SubmenuItem icon={Users2} label="Membership Addons" page="membership-addons" />
+      <SubmenuItem icon={Users2} label="Membership Transactions" page="membership-transactions" />
+    </>
+  );
+
+  const blogItems = (
+    <>
+      <SubmenuItem icon={FileJson} label="All Blogs" page="all-blogs" />
+      <SubmenuItem icon={FileJson} label="Blog Categories" page="blog-categories" />
+      <SubmenuItem icon={FileJson} label="Blog Comments" page="blog-comments" />
+      <SubmenuItem icon={FileJson} label="Blog Tags" page="blog-tags" />
+    </>
+  );
+
+  const locationItems = (
+    <>
+      <SubmenuItem icon={MapPin} label="Location" page="location" />
+    </>
+  );
+
+  const contentItems = (
+    <>
+      <SubmenuItem icon={FileText} label="Pages" page="pages" />
+      <MenuSection
+        title="Blog"
+        items={blogItems}
+        expanded={expandedMenus.blog}
+        onToggle={() => toggleMenu('blog')}
+      />
+      <MenuSection
+        title="Location"
+        items={locationItems}
+        expanded={expandedMenus.location}
+        onToggle={() => toggleMenu('location')}
+      />
+      <SubmenuItem icon={MessageSquare} label="Testimonials" page="testimonials" />
+      <SubmenuItem icon={HelpCircle} label="FAQ" page="faq" />
     </>
   );
 
@@ -198,6 +270,30 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
             items={reportsItems}
             expanded={expandedMenus.reports}
             onToggle={() => toggleMenu('reports')}
+          />
+
+          {/* User Management Section */}
+          <MenuSection
+            title="User Management"
+            items={userManagementItems}
+            expanded={expandedMenus.userManagement}
+            onToggle={() => toggleMenu('userManagement')}
+          />
+
+          {/* Membership Section */}
+          <MenuSection
+            title="Membership"
+            items={membershipItems}
+            expanded={expandedMenus.membership}
+            onToggle={() => toggleMenu('membership')}
+          />
+
+          {/* Content Section */}
+          <MenuSection
+            title="Content"
+            items={contentItems}
+            expanded={expandedMenus.content}
+            onToggle={() => toggleMenu('content')}
           />
 
           {/* Settings Section */}

@@ -42,6 +42,14 @@ import LeadReport from './components/LeadReport';
 import DealReport from './components/DealReport';
 import ContactReportsPage from './components/ContactReportsPage';
 import CompanyReportsPage from './components/CompanyReportsPage';
+import ProjectReportsPage from './components/ProjectReportsPage';
+import TaskReportsPage from './components/TaskReportsPage';
+import RolesPermissionsPage from './components/RolesPermissionsPage';
+import DeleteAccountRequestPage from './components/DeleteAccountRequestPage';
+import MembershipPlansPage from './components/MembershipPlansPage';
+import MembershipAddonsPage from './components/MembershipAddonsPage';
+import MembershipTransactionsPage from './components/MembershipTransactionsPage';
+import PagesPage from './components/PagesPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('deals');
@@ -145,6 +153,34 @@ function App() {
         return <ContactReportsPage />;
       case 'company-report':
         return <CompanyReportsPage />;
+      case 'project-report':
+        return <ProjectReportsPage />;
+      case 'task-report':
+        return <TaskReportsPage />;
+      case 'manage-users':
+        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Manage Users</h1><p className="text-gray-600">Manage Users page coming soon...</p></div></div>;
+      case 'roles-permissions':
+        return <RolesPermissionsPage />;
+      case 'delete-request':
+        return <DeleteAccountRequestPage />;
+      case 'membership':
+        return <MembershipPlansPage />;
+      case 'membership-plans':
+        return <MembershipPlansPage />;
+      case 'membership-addons':
+        return <MembershipAddonsPage />;
+      case 'membership-transactions':
+        return <MembershipTransactionsPage />;
+      case 'pages':
+        return <PagesPage />;
+      case 'blog':
+        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Blog</h1><p className="text-gray-600">Blog page coming soon...</p></div></div>;
+      case 'location':
+        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Location</h1><p className="text-gray-600">Location page coming soon...</p></div></div>;
+      case 'testimonials':
+        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Testimonials</h1><p className="text-gray-600">Testimonials page coming soon...</p></div></div>;
+      case 'faq':
+        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">FAQ</h1><p className="text-gray-600">FAQ page coming soon...</p></div></div>;
       case 'super-admin':
         return <SuperAdminDashboard />;
       case 'super-admin-companies':
