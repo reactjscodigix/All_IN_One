@@ -40,6 +40,8 @@ import ActivitiesPage from './components/ActivitiesPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import LeadReport from './components/LeadReport';
 import DealReport from './components/DealReport';
+import ContactReportsPage from './components/ContactReportsPage';
+import CompanyReportsPage from './components/CompanyReportsPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('deals');
@@ -139,6 +141,8 @@ function App() {
         return <LeadReport />;
       case 'deal-report':
         return <DealReport />;
+      case 'contact-report':
+        return <ContactReportsPage />;
       case 'super-admin':
         return <SuperAdminDashboard />;
       case 'super-admin-companies':
