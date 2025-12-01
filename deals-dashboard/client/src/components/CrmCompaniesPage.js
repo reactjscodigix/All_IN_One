@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, MoreVertical, Plus, Search, ChevronDown } from 'lucide-react';
 import companiesData from '../data/companiesListData.json';
+import AddNewCompanyForm from './AddNewCompanyForm';
 
 const CrmCompaniesPage = () => {
   const [companies] = useState(companiesData.companies);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCompanies, setFilteredCompanies] = useState(companies);
+  const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
 
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
@@ -41,7 +43,7 @@ const CrmCompaniesPage = () => {
               <span className="text-[#6B7280]">Companies</span>
             </div>
           </div>
-          <button className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]">
+          <button onClick={() => setIsAddCompanyOpen(true)} className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]">
             <Plus size={18} />
             Add Company
           </button>
@@ -111,6 +113,15 @@ const CrmCompaniesPage = () => {
           <button className="bg-[#F62416] text-white rounded-[8px] px-8 py-3 font-medium hover:opacity-90 transition text-[14px]">Load More</button>
         </div>
       </div>
+
+      <AddNewCompanyForm 
+        isOpen={isAddCompanyOpen}
+        onClose={() => setIsAddCompanyOpen(false)}
+        onSubmit={(formData) => {
+          console.log('Company form submitted:', formData);
+          setIsAddCompanyOpen(false);
+        }}
+      />
     </div>
   );
 };

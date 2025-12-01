@@ -2,10 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   Download,
   Filter,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  ChevronDown,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -219,7 +215,7 @@ function ContactsBySourceDonut({ data }) {
 }
 
 function CompaniesTable({ rows }) {
-  const [query, setQuery] = useState('');
+  const [query] = useState('');
   const [page, setPage] = useState(1);
   const perPage = 10;
 

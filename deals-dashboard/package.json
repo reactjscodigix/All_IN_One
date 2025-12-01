@@ -5,10 +5,13 @@
   "private": true,
   "scripts": {
     "setup": "cd server && npm install && cd ../client && npm install && cd ../server && npm run setup",
-    "start": "concurrently \"cd server && npm start\" \"cd client && npm start\"",
-    "server": "cd server && npm start",
+    "start": "concurrently \"cd server && npm run dev\" \"cd client && npm start\"",
+    "start:prod": "concurrently \"cd server && npm start\" \"cd client && npm run build:dev\"",
+    "server": "cd server && npm run dev",
+    "server:prod": "cd server && npm start",
     "client": "cd client && npm start",
     "build": "cd client && npm run build",
+    "build:dev": "cd client && npm run build:dev",
     "test": "cd server && npm test"
   },
   "keywords": [

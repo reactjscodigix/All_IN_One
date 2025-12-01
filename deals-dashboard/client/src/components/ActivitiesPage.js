@@ -3,6 +3,7 @@ import { MoreVertical, Download, Filter as FilterIcon, Search, Phone, Mail, Chec
 
 const ActivitiesPage = () => {
   const [selectedActivities, setSelectedActivities] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [sortBy, setSortBy] = useState('newest');
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');

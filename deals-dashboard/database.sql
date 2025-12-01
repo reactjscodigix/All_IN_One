@@ -31,10 +31,43 @@ CREATE TABLE IF NOT EXISTS companies (
   employee_count INT,
   annual_revenue DECIMAL(15, 2),
   status ENUM('Active', 'Inactive', 'Prospect') DEFAULT 'Active',
+  account_url VARCHAR(255),
+  logo LONGBLOB,
+  password VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_status (status),
   INDEX idx_created_at (created_at)
+);
+
+CREATE TABLE IF NOT EXISTS company_plans (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  plan_name VARCHAR(100) NOT NULL UNIQUE,
+  plan_type VARCHAR(50) NOT NULL,
+  price DECIMAL(10, 2),
+  currency VARCHAR(10) DEFAULT 'USD',
+  description TEXT,
+  features TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_plan_name (plan_name)
+);
+
+CREATE TABLE IF NOT EXISTS company_subscriptions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  company_id INT NOT NULL,
+  plan_name VARCHAR(100) NOT NULL,
+  plan_type VARCHAR(50) NOT NULL,
+  currency VARCHAR(10) DEFAULT 'USD',
+  language VARCHAR(50) DEFAULT 'English',
+  price DECIMAL(10, 2),
+  registered_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expiring_on DATE,
+  status ENUM('Active', 'Expired', 'Cancelled') DEFAULT 'Active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+  INDEX idx_company_id (company_id),
+  INDEX idx_status (status)
 );
 
 CREATE TABLE IF NOT EXISTS deals (
@@ -85,12 +118,29 @@ CREATE TABLE IF NOT EXISTS pipeline (
   INDEX idx_created_at (created_at)
 );
 
-INSERT INTO companies (company_name, industry, email, phone, website, employee_count, status) VALUES
-('SkyHigh Solutions', 'Technology', 'hello@skyhigh.com', '+1-234-567-8900', 'www.skyhigh.com', 250, 'Active'),
-('Enterprise Corp', 'Finance', 'info@enterprisecorp.com', '+1-234-567-8901', 'www.enterprisecorp.com', 500, 'Active'),
-('Tech Innovations Ltd', 'Software', 'contact@techinnovations.com', '+1-234-567-8902', 'www.techinnovations.com', 150, 'Active'),
-('Global Industries', 'Manufacturing', 'sales@globalindustries.com', '+1-234-567-8903', 'www.globalindustries.com', 1000, 'Active'),
-('StartUp Ventures', 'Startup', 'info@startupventures.com', '+1-234-567-8904', 'www.startupventures.com', 50, 'Prospect');
+INSERT INTO company_plans (plan_name, plan_type, price, currency, description, features) VALUES
+('Basic', 'Monthly', 29.99, 'USD', 'Basic plan for small teams', 'Basic features, up to 10 users'),
+('Basic', 'Yearly', 299.99, 'USD', 'Basic plan for small teams - Annual', 'Basic features, up to 10 users'),
+('Professional', 'Monthly', 99.99, 'USD', 'Professional plan for growing teams', 'Professional features, up to 50 users'),
+('Professional', 'Yearly', 999.99, 'USD', 'Professional plan - Annual', 'Professional features, up to 50 users'),
+('Advanced', 'Monthly', 199.99, 'USD', 'Advanced plan for enterprises', 'Advanced features, unlimited users'),
+('Advanced', 'Yearly', 1999.99, 'USD', 'Advanced plan - Annual', 'Advanced features, unlimited users'),
+('Enterprise', 'Monthly', 499.99, 'USD', 'Enterprise plan with dedicated support', 'All features, dedicated support, custom integrations'),
+('Enterprise', 'Yearly', 4999.99, 'USD', 'Enterprise plan - Annual', 'All features, dedicated support, custom integrations');
+
+INSERT INTO companies (company_name, industry, email, phone, website, account_url, employee_count, status) VALUES
+('NovaWave LLC', 'Technology', 'nova@llc.com', '+1-234-567-8900', 'www.novawave.com', 'nw.nova.com', 250, 'Active'),
+('BlueSky Industries', 'Finance', 'bluesky@ind.com', '+1-234-567-8901', 'www.bluesky.com', 'bl.blue.com', 500, 'Inactive'),
+('Silver Hawk', 'Software', 'silver@hawk.com', '+1-234-567-8902', 'www.silverhawk.com', 'sh.silver.com', 150, 'Active'),
+('Summit Peak', 'Manufacturing', 'sumpk@peak.com', '+1-234-567-8903', 'www.summitpeak.com', 'sp.summer.com', 1000, 'Active'),
+('RiverStone Venture', 'Startup', 'stone@river.com', '+1-234-567-8904', 'www.riverstone.com', 'ro.stone.com', 50, 'Active');
+
+INSERT INTO company_subscriptions (company_id, plan_name, plan_type, currency, language, price, registered_date, expiring_on) VALUES
+(1, 'Advanced', 'Monthly', 'USD', 'English', 199.99, '2024-09-12', '2024-10-11'),
+(2, 'Enterprise', 'Monthly', 'USD', 'English', 499.99, '2024-09-12', '2024-10-11'),
+(3, 'Advanced', 'Monthly', 'USD', 'English', 199.99, '2024-09-14', '2024-10-14'),
+(4, 'Advanced', 'Monthly', 'USD', 'English', 199.99, '2024-09-12', '2024-10-12'),
+(5, 'Basic', 'Monthly', 'USD', 'English', 29.99, '2024-09-28', '2024-10-28');
 
 INSERT INTO contacts (first_name, last_name, email, phone, company_id, position, status) VALUES
 ('John', 'Anderson', 'john.anderson@skyhigh.com', '+1-234-567-8900', 1, 'CEO', 'Active'),

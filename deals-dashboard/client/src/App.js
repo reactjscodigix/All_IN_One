@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
 import DealsDashboard from './components/DealsDashboard';
@@ -50,158 +51,179 @@ import MembershipPlansPage from './components/MembershipPlansPage';
 import MembershipAddonsPage from './components/MembershipAddonsPage';
 import MembershipTransactionsPage from './components/MembershipTransactionsPage';
 import PagesPage from './components/PagesPage';
+import AllBlogsPage from './components/AllBlogsPage';
+import BlogCategoriesPage from './components/BlogCategoriesPage';
+import BlogCommentsPage from './components/BlogCommentsPage';
+import BlogTagsPage from './components/BlogTagsPage';
 
-function App() {
-  const [currentPage, setCurrentPage] = useState('deals');
+const routeMap = {
+  '/': 'deals',
+  '/deals': 'deals',
+  '/leads-dashboard': 'leads-dashboard',
+  '/projects-dashboard': 'projects-dashboard',
+  '/project-details': 'project-details',
+  '/deals-list': 'deals-list',
+  '/contacts': 'contacts',
+  '/companies': 'companies',
+  '/company-details': 'company-details',
+  '/leads': 'leads',
+  '/pipeline': 'pipeline',
+  '/campaign': 'campaign',
+  '/projects': 'projects',
+  '/estimations': 'estimations',
+  '/chat': 'chat',
+  '/video-call': 'video-call',
+  '/audio-call': 'audio-call',
+  '/call-history': 'call-history',
+  '/calendar': 'calendar',
+  '/email': 'email',
+  '/todo': 'todo',
+  '/tasks': 'tasks',
+  '/proposals': 'proposals',
+  '/contracts': 'contracts',
+  '/notes': 'notes',
+  '/file-manager': 'file-manager',
+  '/social-feed': 'social-feed',
+  '/kanban': 'kanban',
+  '/invoices': 'invoices',
+  '/payments': 'payments',
+  '/activities': 'activities',
+  '/analytics': 'analytics',
+  '/lead-report': 'lead-report',
+  '/deal-report': 'deal-report',
+  '/contact-report': 'contact-report',
+  '/company-report': 'company-report',
+  '/project-report': 'project-report',
+  '/task-report': 'task-report',
+  '/manage-users': 'manage-users',
+  '/roles-permissions': 'roles-permissions',
+  '/delete-request': 'delete-request',
+  '/membership': 'membership',
+  '/membership-plans': 'membership-plans',
+  '/membership-addons': 'membership-addons',
+  '/membership-transactions': 'membership-transactions',
+  '/pages': 'pages',
+  '/all-blogs': 'all-blogs',
+  '/blog-categories': 'blog-categories',
+  '/blog-comments': 'blog-comments',
+  '/blog-tags': 'blog-tags',
+  '/blog': 'blog',
+  '/location': 'location',
+  '/testimonials': 'testimonials',
+  '/faq': 'faq',
+  '/super-admin': 'super-admin',
+  '/super-admin-companies': 'super-admin-companies',
+  '/super-admin-subscriptions': 'super-admin-subscriptions',
+  '/super-admin-packages': 'super-admin-packages',
+  '/super-admin-domain': 'super-admin-domain',
+  '/super-admin-purchase-transaction': 'super-admin-purchase-transaction',
+};
+
+function AppContent() {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPage = routeMap[location.pathname] || 'deals';
 
   const handleViewProjectDetails = (projectId) => {
     setSelectedProjectId(projectId);
-    setCurrentPage('project-details');
+    navigate('/project-details');
   };
 
   const handleBackFromProjectDetails = () => {
     setSelectedProjectId(null);
-    setCurrentPage('projects-dashboard');
+    navigate('/projects-dashboard');
   };
 
   const handleViewCompanyDetails = (company) => {
     setSelectedCompany(company);
-    setCurrentPage('company-details');
+    navigate('/company-details');
   };
 
   const handleBackFromCompanyDetails = () => {
     setSelectedCompany(null);
-    setCurrentPage('companies');
+    navigate('/companies');
   };
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'deals':
-        return <DealsDashboard />;
-      case 'leads-dashboard':
-        return <LeadsDashboard />;
-      case 'projects-dashboard':
-        return (
-          <ProjectsDashboard
-            onViewProjectDetails={handleViewProjectDetails}
-            onViewCompanyDetails={handleViewCompanyDetails}
-          />
-        );
-      case 'project-details':
-        return <ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />;
-      case 'deals-list':
-        return <CrmDealsPage />;
-      case 'contacts':
-        return <ContactsPage />;
-      case 'companies':
-        return <CrmCompaniesPage />;
-      case 'company-details':
-        return <CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />;
-      case 'leads':
-        return <CrmLeadsPage />;
-      case 'pipeline':
-        return <CrmPipelinePage />;
-      case 'campaign':
-        return <CrmCampaignPage />;
-      case 'projects':
-        return <CrmProjectsPage />;
-      case 'estimations':
-        return <EstimationsPage />;
-      case 'chat':
-        return <ChatPage />;
-      case 'video-call':
-        return <VideoCallPage />;
-      case 'audio-call':
-        return <AudioCallPage />;
-      case 'call-history':
-        return <CallHistoryPage />;
-      case 'calendar':
-        return <CalendarPage />;
-      case 'email':
-        return <EmailPage />;
-      case 'todo':
-        return <TodoPage />;
-      case 'tasks':
-        return <TasksPage />;
-      case 'proposals':
-        return <ProposalsPage />;
-      case 'contracts':
-        return <ContractsPage />;
-      case 'notes':
-        return <NotesPage />;
-      case 'file-manager':
-        return <FileManagerPage />;
-      case 'social-feed':
-        return <SocialFeedPage />;
-      case 'kanban':
-        return <KanbanPage />;
-      case 'invoices':
-        return <InvoicesPage />;
-      case 'payments':
-        return <PaymentsPage />;
-      case 'activities':
-        return <ActivitiesPage />;
-      case 'analytics':
-        return <AnalyticsPage />;
-      case 'lead-report':
-        return <LeadReport />;
-      case 'deal-report':
-        return <DealReport />;
-      case 'contact-report':
-        return <ContactReportsPage />;
-      case 'company-report':
-        return <CompanyReportsPage />;
-      case 'project-report':
-        return <ProjectReportsPage />;
-      case 'task-report':
-        return <TaskReportsPage />;
-      case 'manage-users':
-        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Manage Users</h1><p className="text-gray-600">Manage Users page coming soon...</p></div></div>;
-      case 'roles-permissions':
-        return <RolesPermissionsPage />;
-      case 'delete-request':
-        return <DeleteAccountRequestPage />;
-      case 'membership':
-        return <MembershipPlansPage />;
-      case 'membership-plans':
-        return <MembershipPlansPage />;
-      case 'membership-addons':
-        return <MembershipAddonsPage />;
-      case 'membership-transactions':
-        return <MembershipTransactionsPage />;
-      case 'pages':
-        return <PagesPage />;
-      case 'blog':
-        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Blog</h1><p className="text-gray-600">Blog page coming soon...</p></div></div>;
-      case 'location':
-        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Location</h1><p className="text-gray-600">Location page coming soon...</p></div></div>;
-      case 'testimonials':
-        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Testimonials</h1><p className="text-gray-600">Testimonials page coming soon...</p></div></div>;
-      case 'faq':
-        return <div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">FAQ</h1><p className="text-gray-600">FAQ page coming soon...</p></div></div>;
-      case 'super-admin':
-        return <SuperAdminDashboard />;
-      case 'super-admin-companies':
-        return <Companies />;
-      case 'super-admin-subscriptions':
-        return <Subscriptions />;
-      case 'super-admin-packages':
-        return <Packages />;
-      case 'super-admin-domain':
-        return <Domain />;
-      case 'super-admin-purchase-transaction':
-        return <PurchaseTransaction />;
-      default:
-        return <DealsDashboard />;
-    }
+  const handleNavigate = (page) => {
+    const routePath = Object.keys(routeMap).find(path => routeMap[path] === page) || '/';
+    navigate(routePath);
   };
 
   return (
-    <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-      {renderPage()}
+    <Layout currentPage={currentPage} onNavigate={handleNavigate}>
+      <Routes>
+        <Route path="/" element={<DealsDashboard />} />
+        <Route path="/deals" element={<DealsDashboard />} />
+        <Route path="/leads-dashboard" element={<LeadsDashboard />} />
+        <Route path="/projects-dashboard" element={<ProjectsDashboard onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
+        <Route path="/project-details" element={<ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />} />
+        <Route path="/deals-list" element={<CrmDealsPage />} />
+        <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/companies" element={<CrmCompaniesPage />} />
+        <Route path="/company-details" element={<CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />} />
+        <Route path="/leads" element={<CrmLeadsPage />} />
+        <Route path="/pipeline" element={<CrmPipelinePage />} />
+        <Route path="/campaign" element={<CrmCampaignPage />} />
+        <Route path="/projects" element={<CrmProjectsPage />} />
+        <Route path="/estimations" element={<EstimationsPage />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/video-call" element={<VideoCallPage />} />
+        <Route path="/audio-call" element={<AudioCallPage />} />
+        <Route path="/call-history" element={<CallHistoryPage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/email" element={<EmailPage />} />
+        <Route path="/todo" element={<TodoPage />} />
+        <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/proposals" element={<ProposalsPage />} />
+        <Route path="/contracts" element={<ContractsPage />} />
+        <Route path="/notes" element={<NotesPage />} />
+        <Route path="/file-manager" element={<FileManagerPage />} />
+        <Route path="/social-feed" element={<SocialFeedPage />} />
+        <Route path="/kanban" element={<KanbanPage />} />
+        <Route path="/invoices" element={<InvoicesPage />} />
+        <Route path="/payments" element={<PaymentsPage />} />
+        <Route path="/activities" element={<ActivitiesPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
+        <Route path="/lead-report" element={<LeadReport />} />
+        <Route path="/deal-report" element={<DealReport />} />
+        <Route path="/contact-report" element={<ContactReportsPage />} />
+        <Route path="/company-report" element={<CompanyReportsPage />} />
+        <Route path="/project-report" element={<ProjectReportsPage />} />
+        <Route path="/task-report" element={<TaskReportsPage />} />
+        <Route path="/manage-users" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Manage Users</h1><p className="text-gray-600">Manage Users page coming soon...</p></div></div>} />
+        <Route path="/roles-permissions" element={<RolesPermissionsPage />} />
+        <Route path="/delete-request" element={<DeleteAccountRequestPage />} />
+        <Route path="/membership" element={<MembershipPlansPage />} />
+        <Route path="/membership-plans" element={<MembershipPlansPage />} />
+        <Route path="/membership-addons" element={<MembershipAddonsPage />} />
+        <Route path="/membership-transactions" element={<MembershipTransactionsPage />} />
+        <Route path="/pages" element={<PagesPage />} />
+        <Route path="/all-blogs" element={<AllBlogsPage />} />
+        <Route path="/blog-categories" element={<BlogCategoriesPage />} />
+        <Route path="/blog-comments" element={<BlogCommentsPage />} />
+        <Route path="/blog-tags" element={<BlogTagsPage />} />
+        <Route path="/blog" element={<AllBlogsPage />} />
+        <Route path="/location" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Location</h1><p className="text-gray-600">Location page coming soon...</p></div></div>} />
+        <Route path="/testimonials" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Testimonials</h1><p className="text-gray-600">Testimonials page coming soon...</p></div></div>} />
+        <Route path="/faq" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">FAQ</h1><p className="text-gray-600">FAQ page coming soon...</p></div></div>} />
+        <Route path="/super-admin" element={<SuperAdminDashboard />} />
+        <Route path="/super-admin-companies" element={<Companies />} />
+        <Route path="/super-admin-subscriptions" element={<Subscriptions />} />
+        <Route path="/super-admin-packages" element={<Packages />} />
+        <Route path="/super-admin-domain" element={<Domain />} />
+        <Route path="/super-admin-purchase-transaction" element={<PurchaseTransaction />} />
+      </Routes>
     </Layout>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 
