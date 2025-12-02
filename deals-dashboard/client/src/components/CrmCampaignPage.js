@@ -1,12 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown, Filter, Plus, MoreVertical } from 'lucide-react';
+import AddNewCampaignModal from './AddNewCampaignModal';
+import { campaignAPI } from '../services/api';
 import campaignData from '../data/crmCampaignData.json';
 
 const CrmCampaignPage = () => {
   const [stats] = useState(campaignData.stats);
-  const [campaigns] = useState(campaignData.campaigns);
+  const [campaigns, setCampaigns] = useState(campaignData.campaigns);
   const [activeTab, setActiveTab] = useState('Active Campaign');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadCampaigns();
+  }, []);
+
+  const loadCampaigns = async () => {
+    setIsLoading(true);
+    try {
+      const data = await campaignAPI.getAll();
+      if (Array.isArray(data) && data.length > 0) {
+        setCampaigns(data);
+      }
+    } catch (error) {
+      console.error('Failed to load campaigns:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getStatusBadgeColor = (status) => {
     switch (status) {
@@ -55,7 +77,10 @@ const CrmCampaignPage = () => {
               <span className="text-gray-600">Campaign</span>
             </div>
           </div>
-          <button className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-sm">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-sm"
+          >
             <Plus size={16} /> Add New Campaign
           </button>
         </div>
@@ -137,34 +162,34 @@ const CrmCampaignPage = () => {
                       <input type="checkbox" className="w-4 h-4 rounded border-gray-300" />
                     </td>
                     <td className="px-4 py-3 font-semibold text-gray-900">{campaign.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{campaign.type}</td>
+                    <td className="px-4 py-3 text-gray-600">{campaign.campaign_type || campaign.type || 'N/A'}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-6 text-xs">
                         <div className="flex items-center gap-1">
-                          <span className="font-bold text-gray-900">{campaign.progress.opened.toFixed(1)}%</span>
+                          <span className="font-bold text-gray-900">{(campaign.progress?.opened || 0).toFixed(1)}%</span>
                           <span className="text-gray-500">Opened</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="font-bold text-gray-900">{campaign.progress.closed.toFixed(1)}%</span>
+                          <span className="font-bold text-gray-900">{(campaign.progress?.closed || 0).toFixed(1)}%</span>
                           <span className="text-gray-500">Closed</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="font-bold text-gray-900">{campaign.progress.unsubscribe.toFixed(1)}%</span>
+                          <span className="font-bold text-gray-900">{(campaign.progress?.unsubscribe || 0).toFixed(1)}%</span>
                           <span className="text-gray-500">Unsubscribe</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="font-bold text-gray-900">{campaign.progress.delivered.toFixed(1)}%</span>
+                          <span className="font-bold text-gray-900">{(campaign.progress?.delivered || 0).toFixed(1)}%</span>
                           <span className="text-gray-500">Delivered</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <span className="font-bold text-gray-900">{campaign.progress.conversation.toFixed(1)}%</span>
+                          <span className="font-bold text-gray-900">{(campaign.progress?.conversation || 0).toFixed(1)}%</span>
                           <span className="text-gray-500">Conversation</span>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex -space-x-2">
-                        {[...Array(Math.min(campaign.members, 3))].map((_, i) => (
+                        {[...Array(Math.min(campaign.members || 0, 3))].map((_, i) => (
                           <img
                             key={i}
                             src={`https://i.pravatar.cc/40?img=${idx * 3 + i}`}
@@ -175,8 +200,8 @@ const CrmCampaignPage = () => {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-block px-3 py-1 rounded text-xs font-semibold ${getStatusBadgeColor(campaign.status)}`}>
-                        {campaign.status}
+                      <span className={`inline-block px-3 py-1 rounded text-xs font-semibold ${getStatusBadgeColor(campaign.status || 'Draft')}`}>
+                        {campaign.status || 'Draft'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -212,6 +237,15 @@ const CrmCampaignPage = () => {
       <div className="px-6 py-4 border-t border-gray-200 bg-white text-center">
         <p className="text-xs text-gray-500">Copyright © 2025 <span className="text-red-600 font-semibold">Preadmin</span></p>
       </div>
+
+      <AddNewCampaignModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          loadCampaigns();
+        }}
+      />
     </div>
   );
 };

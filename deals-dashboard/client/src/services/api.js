@@ -94,6 +94,10 @@ export const plansAPI = {
 
 export const pipelineAPI = {
   getAll: () => apiService.get('/pipeline'),
+  getById: (id) => apiService.get(`/pipeline/${id}`),
+  create: (data) => apiService.post('/pipeline', data),
+  update: (id, data) => apiService.put(`/pipeline/${id}`, data),
+  delete: (id) => apiService.delete(`/pipeline/${id}`),
 };
 
 export const invoicesAPI = {
@@ -102,6 +106,22 @@ export const invoicesAPI = {
   create: (data) => apiService.post('/invoices', data),
   update: (id, data) => apiService.put(`/invoices/${id}`, data),
   delete: (id) => apiService.delete(`/invoices/${id}`),
+};
+
+export const campaignAPI = {
+  getAll: () => apiService.get('/campaigns'),
+  getById: (id) => apiService.get(`/campaigns/${id}`),
+  create: (data) => apiService.post('/campaigns', data),
+  update: (id, data) => apiService.put(`/campaigns/${id}`, data),
+  delete: (id) => apiService.delete(`/campaigns/${id}`),
+};
+
+export const projectAPI = {
+  getAll: () => apiService.get('/projects'),
+  getById: (id) => apiService.get(`/projects/${id}`),
+  create: (data) => apiService.post('/projects', data),
+  update: (id, data) => apiService.put(`/projects/${id}`, data),
+  delete: (id) => apiService.delete(`/projects/${id}`),
 };
 
 export default apiService;

@@ -1,11 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, MoreVertical, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import AddNewPipelineModal from './AddNewPipelineModal';
+import { pipelineAPI } from '../services/api';
 import pipelineData from '../data/crmPipelineData.json';
 
 const CrmPipelinePage = () => {
-  const [pipelines] = useState(pipelineData.pipelines);
+  const [pipelines, setPipelines] = useState(pipelineData.pipelines);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadPipelines();
+  }, []);
+
+  const loadPipelines = async () => {
+    setIsLoading(true);
+    try {
+      const data = await pipelineAPI.getAll();
+      if (Array.isArray(data) && data.length > 0) {
+        const formattedData = data.map(p => ({
+          id: p.id,
+          name: p.name,
+          dealValue: p.total_value || 0,
+          numDeals: p.total_deals || 0,
+          stage: p.stages ? p.stages.split(',')[0] : 'New',
+          stageColor: '#8b5cf6',
+          createdDate: new Date(p.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }),
+          status: p.status || 'Active'
+        }));
+        setPipelines(formattedData);
+      }
+    } catch (error) {
+      console.error('Failed to load pipelines:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatCurrency = (value) => {
     const formatted = (value / 100000).toFixed(2);
@@ -68,7 +100,10 @@ const CrmPipelinePage = () => {
               <span className="text-gray-600">Pipeline</span>
             </div>
           </div>
-          <button className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-sm">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-sm"
+          >
             <Plus size={18} /> Add Pipeline
           </button>
         </div>
@@ -205,6 +240,15 @@ const CrmPipelinePage = () => {
       <div className="px-6 py-4 border-t border-gray-200 bg-white text-center">
         <p className="text-xs text-gray-500">Copyright © 2025 <span className="text-red-600 font-semibold">Preadmin</span></p>
       </div>
+
+      <AddNewPipelineModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          loadPipelines();
+        }}
+      />
     </div>
   );
 };

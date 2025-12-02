@@ -1,11 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, MoreVertical, Plus, Star } from 'lucide-react';
 import projectsData from '../data/crmProjectsData.json';
+import AddNewProjectModal from './AddNewProjectModal';
+import { projectAPI } from '../services/api';
 
 const CrmProjectsPage = () => {
-  const [projects] = useState(projectsData.projects);
+  const [projects, setProjects] = useState(projectsData.projects);
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  const loadProjects = async () => {
+    setIsLoading(true);
+    try {
+      const data = await projectAPI.getAll();
+      if (Array.isArray(data) && data.length > 0) {
+        setProjects([...projectsData.projects, ...data]);
+      }
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatCurrency = (value) => {
     return `$${(value / 100000).toFixed(0)},${String((value % 100000) / 1000).padStart(2, '0')}`;
@@ -44,7 +66,9 @@ const CrmProjectsPage = () => {
             <button className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-600 transition">
               ⟳
             </button>
-            <button className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-sm">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-sm">
               <Plus size={16} /> Add New Project
             </button>
           </div>
@@ -181,6 +205,15 @@ const CrmProjectsPage = () => {
       <div className="px-6 py-4 border-t border-gray-200 bg-white text-center">
         <p className="text-xs text-gray-500">Copyright © 2025 <span className="text-red-600 font-semibold">Preadmin</span></p>
       </div>
+
+      <AddNewProjectModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          loadProjects();
+        }}
+      />
     </div>
   );
 };

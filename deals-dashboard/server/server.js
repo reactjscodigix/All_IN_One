@@ -807,6 +807,509 @@ app.delete('/api/invoices/:id', async (req, res) => {
   }
 });
 
+app.get('/api/pipeline', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [pipelines] = await connection.query(`
+      SELECT p.*, 
+             COUNT(ps.id) as stage_count,
+             GROUP_CONCAT(ps.stage_name) as stages
+      FROM pipeline p
+      LEFT JOIN pipeline_stages ps ON p.id = ps.pipeline_id
+      GROUP BY p.id
+      ORDER BY p.created_at DESC
+    `);
+    res.json(pipelines);
+  } catch (error) {
+    console.error('Error fetching pipelines:', error.message);
+    res.status(500).json({ error: 'Failed to fetch pipelines' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/pipeline/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [pipeline] = await connection.query(`
+      SELECT p.* FROM pipeline p WHERE p.id = ?
+    `, [id]);
+    
+    if (pipeline.length === 0) {
+      return res.status(404).json({ error: 'Pipeline not found' });
+    }
+
+    const [stages] = await connection.query(`
+      SELECT * FROM pipeline_stages WHERE pipeline_id = ? ORDER BY stage_order
+    `, [id]);
+
+    const [access] = await connection.query(`
+      SELECT * FROM pipeline_access WHERE pipeline_id = ?
+    `, [id]);
+
+    res.json({
+      ...pipeline[0],
+      stages,
+      access
+    });
+  } catch (error) {
+    console.error('Error fetching pipeline:', error.message);
+    res.status(500).json({ error: 'Failed to fetch pipeline' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/pipeline', async (req, res) => {
+  let connection;
+  try {
+    const {
+      name,
+      description,
+      stages,
+      access_type,
+      user_ids,
+      status
+    } = req.body;
+
+    if (!name || !stages || stages.length === 0) {
+      return res.status(400).json({ error: 'Missing required fields: name, stages' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(`
+      INSERT INTO pipeline (name, description, status, created_at, updated_at)
+      VALUES (?, ?, ?, NOW(), NOW())
+    `, [name, description || '', status || 'Active']);
+
+    const pipelineId = result.insertId;
+
+    for (let i = 0; i < stages.length; i++) {
+      await connection.query(`
+        INSERT INTO pipeline_stages (pipeline_id, stage_name, stage_order, created_at, updated_at)
+        VALUES (?, ?, ?, NOW(), NOW())
+      `, [pipelineId, stages[i], i + 1]);
+    }
+
+    if (access_type === 'All') {
+      await connection.query(`
+        INSERT INTO pipeline_access (pipeline_id, access_type)
+        VALUES (?, 'All')
+      `, [pipelineId]);
+    } else if (user_ids && user_ids.length > 0) {
+      for (const userId of user_ids) {
+        await connection.query(`
+          INSERT INTO pipeline_access (pipeline_id, access_type, user_id)
+          VALUES (?, 'Selected', ?)
+        `, [pipelineId, userId]);
+      }
+    }
+
+    res.json({ 
+      message: 'Pipeline created successfully', 
+      id: pipelineId 
+    });
+  } catch (error) {
+    console.error('Error creating pipeline:', error.message);
+    res.status(500).json({ error: 'Failed to create pipeline', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/pipeline/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      description,
+      stages,
+      access_type,
+      user_ids,
+      status
+    } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Missing required field: name' });
+    }
+
+    connection = await pool.getConnection();
+    
+    await connection.query(`
+      UPDATE pipeline 
+      SET name = ?, description = ?, status = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [name, description || '', status || 'Active', id]);
+
+    if (stages && stages.length > 0) {
+      await connection.query('DELETE FROM pipeline_stages WHERE pipeline_id = ?', [id]);
+      
+      for (let i = 0; i < stages.length; i++) {
+        await connection.query(`
+          INSERT INTO pipeline_stages (pipeline_id, stage_name, stage_order, created_at, updated_at)
+          VALUES (?, ?, ?, NOW(), NOW())
+        `, [id, stages[i], i + 1]);
+      }
+    }
+
+    if (access_type) {
+      await connection.query('DELETE FROM pipeline_access WHERE pipeline_id = ?', [id]);
+      
+      if (access_type === 'All') {
+        await connection.query(`
+          INSERT INTO pipeline_access (pipeline_id, access_type)
+          VALUES (?, 'All')
+        `, [id]);
+      } else if (user_ids && user_ids.length > 0) {
+        for (const userId of user_ids) {
+          await connection.query(`
+            INSERT INTO pipeline_access (pipeline_id, access_type, user_id)
+            VALUES (?, 'Selected', ?)
+          `, [id, userId]);
+        }
+      }
+    }
+
+    res.json({ message: 'Pipeline updated successfully' });
+  } catch (error) {
+    console.error('Error updating pipeline:', error.message);
+    res.status(500).json({ error: 'Failed to update pipeline', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/pipeline/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM pipeline WHERE id = ?', [id]);
+    res.json({ message: 'Pipeline deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting pipeline:', error.message);
+    res.status(500).json({ error: 'Failed to delete pipeline', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/campaigns', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [campaigns] = await connection.query(`
+      SELECT * FROM campaigns ORDER BY created_at DESC
+    `);
+    res.json(campaigns);
+  } catch (error) {
+    console.error('Error fetching campaigns:', error.message);
+    res.status(500).json({ error: 'Failed to fetch campaigns' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/campaigns/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [campaigns] = await connection.query(`
+      SELECT * FROM campaigns WHERE id = ?
+    `, [id]);
+    
+    if (campaigns.length === 0) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    res.json(campaigns[0]);
+  } catch (error) {
+    console.error('Error fetching campaign:', error.message);
+    res.status(500).json({ error: 'Failed to fetch campaign' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/campaigns', async (req, res) => {
+  let connection;
+  try {
+    const {
+      name,
+      campaign_type,
+      deal_value,
+      currency,
+      period,
+      period_value,
+      target_audience,
+      description,
+      attachment_data,
+      attachment_name,
+      attachment_size,
+      status
+    } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Missing required field: name' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const targetAudienceStr = Array.isArray(target_audience) ? target_audience.join(',') : target_audience || '';
+
+    const [result] = await connection.query(`
+      INSERT INTO campaigns (
+        name, campaign_type, deal_value, currency, period, period_value,
+        target_audience, description, attachment_data, attachment_name,
+        attachment_size, status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    `, [
+      name,
+      campaign_type || null,
+      deal_value || null,
+      currency || 'USD',
+      period || null,
+      period_value || null,
+      targetAudienceStr,
+      description || '',
+      attachment_data || null,
+      attachment_name || null,
+      attachment_size || null,
+      status || 'Draft'
+    ]);
+
+    res.json({ 
+      message: 'Campaign created successfully', 
+      id: result.insertId 
+    });
+  } catch (error) {
+    console.error('Error creating campaign:', error.message);
+    res.status(500).json({ error: 'Failed to create campaign', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/campaigns/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      campaign_type,
+      deal_value,
+      currency,
+      period,
+      period_value,
+      target_audience,
+      description,
+      attachment_data,
+      attachment_name,
+      attachment_size,
+      status
+    } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Missing required field: name' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const targetAudienceStr = Array.isArray(target_audience) ? target_audience.join(',') : target_audience || '';
+
+    await connection.query(`
+      UPDATE campaigns 
+      SET name = ?, campaign_type = ?, deal_value = ?, currency = ?, period = ?,
+          period_value = ?, target_audience = ?, description = ?,
+          attachment_data = ?, attachment_name = ?, attachment_size = ?, 
+          status = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [
+      name,
+      campaign_type || null,
+      deal_value || null,
+      currency || 'USD',
+      period || null,
+      period_value || null,
+      targetAudienceStr,
+      description || '',
+      attachment_data || null,
+      attachment_name || null,
+      attachment_size || null,
+      status || 'Draft',
+      id
+    ]);
+
+    res.json({ message: 'Campaign updated successfully' });
+  } catch (error) {
+    console.error('Error updating campaign:', error.message);
+    res.status(500).json({ error: 'Failed to update campaign', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/campaigns/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM campaigns WHERE id = ?', [id]);
+    res.json({ message: 'Campaign deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting campaign:', error.message);
+    res.status(500).json({ error: 'Failed to delete campaign', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/projects', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM projects ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching projects:', error.message);
+    res.status(500).json({ error: 'Failed to fetch projects', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM projects WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    const project = rows[0];
+    if (project.responsible_persons) {
+      project.responsible_persons = project.responsible_persons.split(',');
+    }
+    res.json(project);
+  } catch (error) {
+    console.error('Error fetching project:', error.message);
+    res.status(500).json({ error: 'Failed to fetch project', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/projects', async (req, res) => {
+  let connection;
+  try {
+    const {
+      name,
+      project_id,
+      project_type,
+      client,
+      category,
+      project_timing,
+      price,
+      responsible_persons,
+      team_leader,
+      start_date,
+      due_date,
+      priority,
+      status,
+      description
+    } = req.body;
+
+    if (!name || !project_id) {
+      return res.status(400).json({ error: 'Name and Project ID are required' });
+    }
+
+    connection = await pool.getConnection();
+    const responsiblePersonsStr = Array.isArray(responsible_persons) 
+      ? responsible_persons.join(',') 
+      : responsible_persons || '';
+
+    const [result] = await connection.query(
+      `INSERT INTO projects (name, project_id, project_type, client, category, project_timing, price, responsible_persons, team_leader, start_date, due_date, priority, status, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, project_id, project_type, client, category, project_timing, price, responsiblePersonsStr, team_leader, start_date, due_date, priority, status || 'Planning', description]
+    );
+
+    res.status(201).json({ 
+      message: 'Project created successfully',
+      id: result.insertId,
+      project: { id: result.insertId, name, project_id, status: status || 'Planning' }
+    });
+  } catch (error) {
+    console.error('Error creating project:', error.message);
+    res.status(500).json({ error: 'Failed to create project', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/projects/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      project_id,
+      project_type,
+      client,
+      category,
+      project_timing,
+      price,
+      responsible_persons,
+      team_leader,
+      start_date,
+      due_date,
+      priority,
+      status,
+      description
+    } = req.body;
+
+    connection = await pool.getConnection();
+    const responsiblePersonsStr = Array.isArray(responsible_persons) 
+      ? responsible_persons.join(',') 
+      : responsible_persons || '';
+
+    await connection.query(
+      `UPDATE projects SET name=?, project_id=?, project_type=?, client=?, category=?, project_timing=?, price=?, responsible_persons=?, team_leader=?, start_date=?, due_date=?, priority=?, status=?, description=?
+       WHERE id=?`,
+      [name, project_id, project_type, client, category, project_timing, price, responsiblePersonsStr, team_leader, start_date, due_date, priority, status, description, id]
+    );
+
+    res.json({ message: 'Project updated successfully' });
+  } catch (error) {
+    console.error('Error updating project:', error.message);
+    res.status(500).json({ error: 'Failed to update project', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM projects WHERE id = ?', [id]);
+    res.json({ message: 'Project deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting project:', error.message);
+    res.status(500).json({ error: 'Failed to delete project', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.use((err, req, res, next) => {

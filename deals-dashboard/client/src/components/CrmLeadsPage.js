@@ -22,9 +22,9 @@ const CrmLeadsPage = () => {
 
         if (leadsRes && Array.isArray(leadsRes)) {
           const formattedLeads = leadsRes.map(lead => {
-            const displayName = lead.name || lead.first_name && lead.last_name 
+            const displayName = lead.name || (lead.first_name && lead.last_name 
               ? `${lead.first_name} ${lead.last_name}` 
-              : 'Unknown';
+              : 'Unknown');
             const initials = displayName
               .split(' ')
               .slice(0, 2)
@@ -66,6 +66,8 @@ const CrmLeadsPage = () => {
         }
       } catch (err) {
         console.error('Error fetching data:', err);
+        setLeads(leadsData.leads);
+        setStatusStats(leadsData.statusStats);
       }
     };
 
@@ -77,17 +79,25 @@ const CrmLeadsPage = () => {
       const response = await leadsAPI.create(formData);
       
       if (response.id) {
+        const displayName = formData.name || 'New Lead';
+        const initials = displayName
+          .split(' ')
+          .slice(0, 2)
+          .map(n => n[0])
+          .join('')
+          .toUpperCase() || 'N/A';
+        
         const newLead = {
           id: response.id,
-          name: formData.name || 'New Lead',
+          name: displayName,
           email: formData.email || '',
           phone: formData.phone || '',
           company: formData.company || '',
           source: formData.source || 'Website',
           status: formData.status || 'Not Contacted',
           rating: formData.rating || 5,
-          initials: formData.name?.substring(0, 2).toUpperCase() || 'N/A',
-          value: (formData.value || 0) * 100000,
+          initials: initials,
+          value: parseInt(formData.value || 0) * 100000,
           location: formData.location || '',
           ...formData
         };
