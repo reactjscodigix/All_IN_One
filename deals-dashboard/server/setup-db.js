@@ -3,7 +3,7 @@ const mysql = require('mysql2/promise');
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'backend',
+  password: '',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -19,6 +19,16 @@ async function setupDatabase() {
     console.log('✓ Database created');
     
     await conn.query('USE deals_db');
+    
+    console.log('Dropping existing tables...');
+    await conn.query('DROP TABLE IF EXISTS company_subscriptions');
+    await conn.query('DROP TABLE IF EXISTS deals');
+    await conn.query('DROP TABLE IF EXISTS contacts');
+    await conn.query('DROP TABLE IF EXISTS company_plans');
+    await conn.query('DROP TABLE IF EXISTS companies');
+    await conn.query('DROP TABLE IF EXISTS leads');
+    await conn.query('DROP TABLE IF EXISTS pipeline');
+    console.log('✓ Old tables dropped');
     
     console.log('Creating tables...');
     
@@ -51,12 +61,25 @@ async function setupDatabase() {
     await conn.query(`
       CREATE TABLE IF NOT EXISTS company_plans (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        plan_name VARCHAR(100) NOT NULL UNIQUE,
+        plan_name VARCHAR(100) NOT NULL,
         plan_type VARCHAR(50) NOT NULL,
+        plan_position INT,
+        plan_currency VARCHAR(10) DEFAULT 'USD',
+        plan_currency_free VARCHAR(10),
+        discount_type VARCHAR(50),
+        discount DECIMAL(10, 2),
+        limitations_invoices INT,
+        max_customers INT,
+        product VARCHAR(255),
+        supplier VARCHAR(255),
+        modules TEXT,
+        access_trial TINYINT DEFAULT 0,
+        trial_days INT,
         price DECIMAL(10, 2),
         currency VARCHAR(10) DEFAULT 'USD',
         description TEXT,
         features TEXT,
+        status ENUM('Active', 'Inactive') DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_plan_name (plan_name)
       )
@@ -163,17 +186,15 @@ async function setupDatabase() {
     console.log('\nInserting sample data...');
     
     await conn.query(`
-      INSERT INTO company_plans (plan_name, plan_type, price, currency, description, features) VALUES
-      ('Basic', 'Monthly', 29.99, 'USD', 'Basic plan for small teams', 'Basic features, up to 10 users'),
-      ('Basic', 'Yearly', 299.99, 'USD', 'Basic plan for small teams - Annual', 'Basic features, up to 10 users'),
-      ('Professional', 'Monthly', 99.99, 'USD', 'Professional plan for growing teams', 'Professional features, up to 50 users'),
-      ('Professional', 'Yearly', 999.99, 'USD', 'Professional plan - Annual', 'Professional features, up to 50 users'),
-      ('Advanced', 'Monthly', 199.99, 'USD', 'Advanced plan for enterprises', 'Advanced features, unlimited users'),
-      ('Advanced', 'Yearly', 1999.99, 'USD', 'Advanced plan - Annual', 'Advanced features, unlimited users'),
-      ('Enterprise', 'Monthly', 499.99, 'USD', 'Enterprise plan with dedicated support', 'All features, dedicated support, custom integrations'),
-      ('Enterprise', 'Yearly', 4999.99, 'USD', 'Enterprise plan - Annual', 'All features, dedicated support, custom integrations')
+      INSERT INTO company_plans (plan_name, plan_type, plan_position, plan_currency, discount_type, discount, 
+                                  max_customers, modules, access_trial, trial_days, price, currency, 
+                                  description, features, status) VALUES
+      ('Basic', 'Monthly', 1, 'USD', NULL, NULL, 10, 'Contacts,Companies', 1, 14, 29.99, 'USD', 'Basic plan for small teams', 'Basic features, up to 10 users', 'Active'),
+      ('Standard', 'Monthly', 2, 'USD', NULL, NULL, 50, 'Contacts,Companies,Deals,Reports', 1, 30, 99.99, 'USD', 'Standard plan for growing teams', 'Standard features, up to 50 users', 'Active'),
+      ('Premium', 'Monthly', 3, 'USD', NULL, NULL, NULL, 'Contacts,Companies,Deals,Reports,Projects,Proposals', 1, 30, 199.99, 'USD', 'Premium plan for enterprises', 'Premium features, unlimited users', 'Active'),
+      ('Enterprise', 'Monthly', NULL, 'USD', NULL, NULL, NULL, 'Contacts,Companies,Deals,Reports,Projects,Proposals,Analytics', 1, 30, 499.99, 'USD', 'Enterprise plan with support', 'All features, dedicated support', 'Active')
     `);
-    console.log('✓ Inserted 8 company plans');
+    console.log('✓ Inserted 4 company plans');
     
     const [compResult] = await conn.query(`
       INSERT INTO companies (company_name, industry, email, phone, website, account_url, employee_count, status) VALUES
@@ -187,10 +208,10 @@ async function setupDatabase() {
     
     await conn.query(`
       INSERT INTO company_subscriptions (company_id, plan_name, plan_type, currency, language, price, registered_date, expiring_on) VALUES
-      (1, 'Advanced', 'Monthly', 'USD', 'English', 199.99, '2024-09-12', '2024-10-11'),
+      (1, 'Premium', 'Monthly', 'USD', 'English', 199.99, '2024-09-12', '2024-10-11'),
       (2, 'Enterprise', 'Monthly', 'USD', 'English', 499.99, '2024-09-12', '2024-10-11'),
-      (3, 'Advanced', 'Monthly', 'USD', 'English', 199.99, '2024-09-14', '2024-10-14'),
-      (4, 'Advanced', 'Monthly', 'USD', 'English', 199.99, '2024-09-12', '2024-10-12'),
+      (3, 'Premium', 'Monthly', 'USD', 'English', 199.99, '2024-09-14', '2024-10-14'),
+      (4, 'Premium', 'Monthly', 'USD', 'English', 199.99, '2024-09-12', '2024-10-12'),
       (5, 'Basic', 'Monthly', 'USD', 'English', 29.99, '2024-09-28', '2024-10-28')
     `);
     console.log('✓ Inserted 5 company subscriptions');

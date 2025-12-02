@@ -4,10 +4,12 @@ import { ChevronDown, MoreVertical, Search, Download, ArrowUpDown, Settings, Che
 import AddNewCompanyForm from './AddNewCompanyForm';
 import UpgradePlanModal from './UpgradePlanModal';
 import { companiesAPI } from '../services/api';
+import mockCompaniesData from '../data/companiesListData.json';
 
 const Companies = () => {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState([]);
+  const [mockCompanies, setMockCompanies] = useState([]);
   const [starred, setStarred] = useState({});
   const [toast, setToast] = useState({ message: '', type: '', show: false });
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
@@ -21,6 +23,7 @@ const Companies = () => {
   const [filterExpanded, setFilterExpanded] = useState({});
   const [selectedDate, setSelectedDate] = useState('1 Dec 25 - 1 Dec 25');
   const [openActionMenu, setOpenActionMenu] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [columnVisibility, setColumnVisibility] = useState({
     name: true,
     email: true,
@@ -32,15 +35,61 @@ const Companies = () => {
   });
   
   useEffect(() => {
-    fetchCompanies();
+    initializeCompanies();
   }, []);
+
+  const transformMockToApiFormat = (mockData) => {
+    return mockData.map((item, idx) => ({
+      id: item.id,
+      company_name: item.name,
+      email: item.email,
+      phone: item.phone,
+      account_url: `${item.name.toLowerCase().replace(/\s+/g, '-')}.com`,
+      status: 'Active',
+      created_at: new Date(2025, 0, idx + 1).toISOString(),
+      plan_name: 'Premium',
+      plan_type: 'Monthly'
+    }));
+  };
+  
+  const initializeCompanies = async () => {
+    setLoading(true);
+    try {
+      const transformedMock = transformMockToApiFormat(mockCompaniesData.companies);
+      setMockCompanies(transformedMock);
+      setCompanies(transformedMock);
+      
+      const data = await companiesAPI.getAll();
+      if (data && data.length > 0) {
+        setCompanies(data);
+        console.log('✅ Fetched companies from API:', data);
+      } else {
+        console.log('ℹ️ Using mock data (API returned empty)');
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch from API, using mock data:', error.message);
+      const transformedMock = transformMockToApiFormat(mockCompaniesData.companies);
+      setCompanies(transformedMock);
+      setMockCompanies(transformedMock);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const fetchCompanies = async () => {
     try {
       const data = await companiesAPI.getAll();
-      setCompanies(data);
+      if (data && data.length > 0) {
+        setCompanies(data);
+        console.log('✅ Companies refreshed from API');
+      } else {
+        setCompanies(mockCompanies);
+        console.log('ℹ️ Showing mock data');
+      }
     } catch (error) {
-      console.error('Failed to fetch companies:', error);
+      console.error('❌ Failed to fetch companies:', error);
+      setCompanies(mockCompanies);
+      showToast('Using local data (API unavailable)', 'info');
     }
   };
   
@@ -75,25 +124,64 @@ const Companies = () => {
 
   const handleAddCompanySubmit = async (formData) => {
     try {
-      await companiesAPI.create({
+      const submitData = {
         company_name: formData.companyName,
         email: formData.emailAddress,
+        email_opt_out: formData.emailOptOut,
         phone: formData.phoneNumber,
+        phone2: formData.phone2,
+        fax: formData.fax,
         website: formData.website,
         address: formData.address,
         account_url: formData.accountUrl,
-        status: formData.status,
-        planName: formData.planName,
-        planType: formData.planType,
+        status: formData.status || 'Active',
+        industry: formData.industryType,
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
+        reviews: formData.reviews,
+        owner: formData.owner,
+        tags: Array.isArray(formData.tags) ? formData.tags.join(',') : formData.tags || '',
+        source: formData.source,
         currency: formData.currency,
         language: formData.language,
-      });
+        description: formData.description,
+        planName: formData.planName,
+        planType: formData.planType,
+      };
+
+      const newLocalCompany = {
+        id: Math.max(...companies.map(c => c.id || 0), 0) + 1,
+        company_name: submitData.company_name,
+        email: submitData.email,
+        phone: submitData.phone,
+        account_url: submitData.account_url || `${submitData.company_name.toLowerCase().replace(/\s+/g, '-')}.com`,
+        status: submitData.status,
+        created_at: new Date().toISOString(),
+        plan_name: submitData.planName || 'Basic',
+        plan_type: submitData.planType || 'Monthly'
+      };
+
+      let apiSuccess = false;
+      try {
+        const response = await companiesAPI.create(submitData);
+        console.log('✅ Company created in API:', response);
+        apiSuccess = true;
+        if (response.id) {
+          newLocalCompany.id = response.id;
+        }
+      } catch (apiError) {
+        console.warn('⚠️ API create failed, saving to local storage:', apiError.message);
+      }
+
+      setCompanies(prev => [...prev, newLocalCompany]);
+      setMockCompanies(prev => [...prev, newLocalCompany]);
       
-      await fetchCompanies();
       setIsAddCompanyOpen(false);
       showToast(`Company "${formData.companyName}" created successfully!`, 'success');
+      
     } catch (error) {
-      console.error('Failed to create company:', error);
+      console.error('❌ Failed to create company:', error);
       showToast('Failed to create company. Please try again.', 'error');
     }
   };
@@ -118,7 +206,7 @@ const Companies = () => {
             position: 'fixed',
             top: '20px',
             right: '20px',
-            backgroundColor: toast.type === 'success' ? '#10B981' : '#EF4444',
+            backgroundColor: toast.type === 'success' ? '#10B981' : toast.type === 'error' ? '#EF4444' : '#3B82F6',
             color: '#FFF',
             padding: '16px 24px',
             borderRadius: '8px',
@@ -390,89 +478,99 @@ const Companies = () => {
 
         {/* Table */}
         <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
-                  <th style={{ padding: '16px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '50px' }}>
-                    <input type="checkbox" style={{ cursor: 'pointer' }} />
-                  </th>
-                  <th style={{ padding: '16px 8px', textAlign: 'center', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '50px' }}></th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '260px' }}>Name</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '220px' }}>Email</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '200px' }}>Account URL</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '240px' }}>Plan</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '200px' }}>Created Dated</th>
-                  <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '120px' }}>Status</th>
-                  <th style={{ padding: '16px 16px', textAlign: 'center', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '60px' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {companies.map((company) => {
-                  const statusColor = getStatusColor(company.status);
-                  const planDisplay = company.plan_name ? `${company.plan_name} (${company.plan_type})` : 'No Plan';
-                  const createdDate = company.created_at ? new Date(company.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
-                  return (
-                    <tr key={company.id} style={{ borderBottom: '1px solid #E5E7EB', transition: 'background-color 0.2s', height: '72px' }} onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}>
-                      <td style={{ padding: '16px 16px', textAlign: 'left', verticalAlign: 'middle' }}>
-                        <input type="checkbox" style={{ cursor: 'pointer' }} />
-                      </td>
-                      <td style={{ padding: '16px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
-                        <span 
-                          onClick={() => toggleStar(company.id)} 
-                          style={{ fontSize: '18px', cursor: 'pointer', display: 'inline-block', color: starred[company.id] ? '#FFC107' : '#D1D5DB', marginLeft: '3px' }}
-                        >
-                          {starred[company.id] ? '★' : '☆'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", fontWeight: '600', verticalAlign: 'middle' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: getAvatarColor(company.id), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '14px', fontWeight: '700', flexShrink: 0 }}>
-                            {getInitials(company.company_name)}
+          {loading ? (
+            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#9CA3AF', fontFamily: "'Poppins', sans-serif" }}>
+              <p style={{ fontSize: '14px' }}>⏳ Loading companies...</p>
+            </div>
+          ) : companies && companies.length > 0 ? (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                    <th style={{ padding: '16px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '50px' }}>
+                      <input type="checkbox" style={{ cursor: 'pointer' }} />
+                    </th>
+                    <th style={{ padding: '16px 8px', textAlign: 'center', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '50px' }}></th>
+                    <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '260px' }}>Name</th>
+                    <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '220px' }}>Email</th>
+                    <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '200px' }}>Account URL</th>
+                    <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '240px' }}>Plan</th>
+                    <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '200px' }}>Created Dated</th>
+                    <th style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '120px' }}>Status</th>
+                    <th style={{ padding: '16px 16px', textAlign: 'center', fontSize: '13px', fontWeight: '500', color: '#475467', fontFamily: "'Poppins', sans-serif", width: '60px' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {companies.map((company) => {
+                    const statusColor = getStatusColor(company.status);
+                    const planDisplay = company.plan_name ? `${company.plan_name} (${company.plan_type})` : 'No Plan';
+                    const createdDate = company.created_at ? new Date(company.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A';
+                    return (
+                      <tr key={company.id} style={{ borderBottom: '1px solid #E5E7EB', transition: 'background-color 0.2s', height: '72px' }} onMouseEnter={(e) => e.target.parentElement.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.parentElement.style.backgroundColor = 'transparent'}>
+                        <td style={{ padding: '16px 16px', textAlign: 'left', verticalAlign: 'middle' }}>
+                          <input type="checkbox" style={{ cursor: 'pointer' }} />
+                        </td>
+                        <td style={{ padding: '16px 8px', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <span 
+                            onClick={() => toggleStar(company.id)} 
+                            style={{ fontSize: '18px', cursor: 'pointer', display: 'inline-block', color: starred[company.id] ? '#FFC107' : '#D1D5DB', marginLeft: '3px' }}
+                          >
+                            {starred[company.id] ? '★' : '☆'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", fontWeight: '600', verticalAlign: 'middle' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: getAvatarColor(company.id), display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '14px', fontWeight: '700', flexShrink: 0 }}>
+                              {getInitials(company.company_name)}
+                            </div>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{company.company_name}</span>
                           </div>
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{company.company_name}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', color: '#6B7280', fontFamily: "'Poppins', sans-serif", verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{company.email}</td>
-                      <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', color: '#6B7280', fontFamily: "'Poppins', sans-serif", verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{company.account_url}</td>
-                      <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontFamily: "'Poppins', sans-serif", verticalAlign: 'middle' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: '#6B7280' }}>{planDisplay}</span>
-                          <button onClick={() => handleUpgradeClick(company.id)} style={{ background: 'none', border: 'none', padding: '2px 8px', fontSize: '12px', color: '#2771FF', fontFamily: "'Poppins', sans-serif", fontWeight: '600', cursor: 'pointer', backgroundColor: '#EEF5FF', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#E0EBFF'} onMouseLeave={(e) => e.target.style.backgroundColor = '#EEF5FF'}>
-                            Upgrade
+                        </td>
+                        <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', color: '#6B7280', fontFamily: "'Poppins', sans-serif", verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{company.email}</td>
+                        <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', color: '#6B7280', fontFamily: "'Poppins', sans-serif", verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{company.account_url}</td>
+                        <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', fontFamily: "'Poppins', sans-serif", verticalAlign: 'middle' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ color: '#6B7280' }}>{planDisplay}</span>
+                            <button onClick={() => handleUpgradeClick(company.id)} style={{ background: 'none', border: 'none', padding: '2px 8px', fontSize: '12px', color: '#2771FF', fontFamily: "'Poppins', sans-serif", fontWeight: '600', cursor: 'pointer', backgroundColor: '#EEF5FF', borderRadius: '4px', transition: 'all 0.2s' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#E0EBFF'} onMouseLeave={(e) => e.target.style.backgroundColor = '#EEF5FF'}>
+                              Upgrade
+                            </button>
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', color: '#6B7280', fontFamily: "'Poppins', sans-serif", verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{createdDate}</td>
+                        <td style={{ padding: '16px 12px', textAlign: 'left', verticalAlign: 'middle' }}>
+                          <span style={{ backgroundColor: statusColor.bg, color: statusColor.color, padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', fontFamily: "'Poppins', sans-serif", display: 'inline-block' }}>
+                            {company.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 16px', textAlign: 'center', verticalAlign: 'middle', position: 'relative' }}>
+                          <button onClick={() => setOpenActionMenu(openActionMenu === company.id ? null : company.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '4px', transition: 'color 0.2s', fontSize: '16px' }} onMouseEnter={(e) => e.target.style.color = '#1F2937'} onMouseLeave={(e) => e.target.style.color = '#6B7280'}>
+                            <MoreVertical size={16} />
                           </button>
-                        </div>
-                      </td>
-                      <td style={{ padding: '16px 12px', textAlign: 'left', fontSize: '13px', color: '#6B7280', fontFamily: "'Poppins', sans-serif", verticalAlign: 'middle', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{createdDate}</td>
-                      <td style={{ padding: '16px 12px', textAlign: 'left', verticalAlign: 'middle' }}>
-                        <span style={{ backgroundColor: statusColor.bg, color: statusColor.color, padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', fontFamily: "'Poppins', sans-serif", display: 'inline-block' }}>
-                          {company.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '16px 16px', textAlign: 'center', verticalAlign: 'middle', position: 'relative' }}>
-                        <button onClick={() => setOpenActionMenu(openActionMenu === company.id ? null : company.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', padding: '4px', transition: 'color 0.2s', fontSize: '16px' }} onMouseEnter={(e) => e.target.style.color = '#1F2937'} onMouseLeave={(e) => e.target.style.color = '#6B7280'}>
-                          <MoreVertical size={16} />
-                        </button>
-                        {openActionMenu === company.id && (
-                          <div style={{ position: 'absolute', top: '100%', right: '0', marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '180px' }}>
-                            <button onClick={() => { navigate('/super-admin-subscriptions'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
-                              <span>📋</span> Subscriptions
-                            </button>
-                            <button onClick={() => { navigate('/super-admin-domain'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
-                              <span>🌐</span> Domains
-                            </button>
-                            <button onClick={() => { navigate('/super-admin-purchase-transaction'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
-                              <span>💳</span> Transactions
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                          {openActionMenu === company.id && (
+                            <div style={{ position: 'absolute', top: '100%', right: '0', marginTop: '8px', backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '180px' }}>
+                              <button onClick={() => { navigate('/super-admin-subscriptions'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                                <span>📋</span> Subscriptions
+                              </button>
+                              <button onClick={() => { navigate('/super-admin-domain'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                                <span>🌐</span> Domains
+                              </button>
+                              <button onClick={() => { navigate('/super-admin-purchase-transaction'); setOpenActionMenu(null); }} style={{ width: '100%', textAlign: 'left', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#1F2937', fontFamily: "'Poppins', sans-serif", borderTop: '1px solid #E5E7EB', transition: 'background-color 0.2s', display: 'flex', alignItems: 'center', gap: '8px' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F9FAFB'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                                <span>💳</span> Transactions
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div style={{ padding: '60px 20px', textAlign: 'center', color: '#9CA3AF', fontFamily: "'Poppins', sans-serif" }}>
+              <p style={{ fontSize: '14px' }}>📭 No companies found. Add one to get started!</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

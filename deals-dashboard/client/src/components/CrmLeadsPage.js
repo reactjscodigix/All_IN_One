@@ -1,12 +1,121 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, Plus, MoreVertical } from 'lucide-react';
 import leadsData from '../data/crmLeadsData.json';
+import AddNewLeadModal from './AddNewLeadModal';
+import { leadsAPI, companiesAPI } from '../services/api';
 
 const CrmLeadsPage = () => {
-  const [leads] = useState(leadsData.leads);
-  const [statusStats] = useState(leadsData.statusStats);
+  const [leads, setLeads] = useState(leadsData.leads);
+  const [statusStats, setStatusStats] = useState(leadsData.statusStats);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [companies, setCompanies] = useState([]);
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [leadsRes, companiesRes] = await Promise.all([
+          leadsAPI.getAll(),
+          companiesAPI.getAll(),
+        ]);
+
+        if (leadsRes && Array.isArray(leadsRes)) {
+          const formattedLeads = leadsRes.map(lead => {
+            const displayName = lead.name || lead.first_name && lead.last_name 
+              ? `${lead.first_name} ${lead.last_name}` 
+              : 'Unknown';
+            const initials = displayName
+              .split(' ')
+              .slice(0, 2)
+              .map(n => n[0])
+              .join('')
+              .toUpperCase() || 'N/A';
+            
+            return {
+              id: lead.id,
+              name: displayName,
+              email: lead.email || '',
+              phone: lead.phone || '',
+              company: lead.company || lead.company_name || '',
+              source: lead.source || 'Website',
+              status: lead.status || 'Not Contacted',
+              rating: lead.rating || 5,
+              initials: initials,
+              value: (lead.value || 0) * 100000,
+              location: lead.location || '',
+              ...lead
+            };
+          });
+          setLeads(formattedLeads);
+
+          const uniqueStatuses = [...new Set(formattedLeads.map(l => l.status))];
+          const newStatusStats = uniqueStatuses.map(status => {
+            const statusLeads = formattedLeads.filter(l => l.status === status);
+            return {
+              status,
+              leads: statusLeads.length,
+              value: statusLeads.reduce((sum, l) => sum + (l.value || 0), 0)
+            };
+          });
+          setStatusStats(newStatusStats);
+        }
+
+        if (companiesRes && Array.isArray(companiesRes)) {
+          setCompanies(companiesRes);
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleCreateLead = async (formData) => {
+    try {
+      const response = await leadsAPI.create(formData);
+      
+      if (response.id) {
+        const newLead = {
+          id: response.id,
+          name: formData.name || 'New Lead',
+          email: formData.email || '',
+          phone: formData.phone || '',
+          company: formData.company || '',
+          source: formData.source || 'Website',
+          status: formData.status || 'Not Contacted',
+          rating: formData.rating || 5,
+          initials: formData.name?.substring(0, 2).toUpperCase() || 'N/A',
+          value: (formData.value || 0) * 100000,
+          location: formData.location || '',
+          ...formData
+        };
+        
+        setLeads(prev => [newLead, ...prev]);
+        
+        const existingStatusIndex = statusStats.findIndex(s => s.status === newLead.status);
+        if (existingStatusIndex >= 0) {
+          setStatusStats(prev => {
+            const updated = [...prev];
+            updated[existingStatusIndex].leads += 1;
+            updated[existingStatusIndex].value += newLead.value;
+            return updated;
+          });
+        } else {
+          setStatusStats(prev => [...prev, {
+            status: newLead.status,
+            leads: 1,
+            value: newLead.value
+          }]);
+        }
+        
+        setIsModalOpen(false);
+      }
+    } catch (err) {
+      throw new Error(err.message || 'Failed to create lead');
+    }
+  };
 
   const formatCurrency = (value) => {
     return `$${(value / 100000).toFixed(2).replace('.', ',')}`;
@@ -21,12 +130,12 @@ const CrmLeadsPage = () => {
 
   const getInitialColor = (status) => {
     const colors = {
-      'Contacted': '#60A5FA',
-      'Not Contacted': '#FCA5A5',
-      'Closed': '#86EFAC',
-      'Lost': '#FCA5A5'
+      'Contacted': '#F59E0B',
+      'Not Contacted': '#3B82F6',
+      'Closed': '#10B981',
+      'Lost': '#EF4444'
     };
-    return colors[status] || '#A78BFA';
+    return colors[status] || '#3B82F6';
   };
 
   const groupedLeads = statusStats.map(stat => ({
@@ -53,7 +162,9 @@ const CrmLeadsPage = () => {
             <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-[13px] font-medium text-gray-700 transition bg-white flex items-center gap-2">
               Export
             </button>
-            <button className="bg-teal-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-teal-600 transition text-[13px]">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-teal-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-teal-600 transition text-[13px]">
               Add Lead
             </button>
           </div>
@@ -83,7 +194,7 @@ const CrmLeadsPage = () => {
             className="flex gap-4 h-full overflow-x-auto overflow-y-auto pr-2 pb-4"
           >
             {groupedLeads.map((group) => {
-              const colors = statusColors[group.status];
+              const colors = statusColors[group.status] || statusColors['Not Contacted'];
               return (
                 <div key={group.status} className="flex-shrink-0 w-96">
                   <div className="bg-white rounded-lg overflow-hidden border border-gray-200 h-full flex flex-col">
@@ -179,6 +290,13 @@ const CrmLeadsPage = () => {
       <div className="px-6 py-4 border-t border-gray-200 bg-white text-center">
         <p className="text-[12px] text-gray-500 font-medium">Copyright © 2025 <span className="text-red-600 font-semibold">Preadmin</span></p>
       </div>
+
+      <AddNewLeadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateLead}
+        companies={companies}
+      />
     </div>
   );
 };

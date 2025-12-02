@@ -4,7 +4,9 @@ const apiService = {
   
   get: async (endpoint) => {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`);
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        cache: 'no-store'
+      });
       if (!response.ok) throw new Error(`API Error: ${response.status}`);
       return await response.json();
     } catch (error) {
@@ -69,7 +71,10 @@ export const companiesAPI = {
 
 export const dealsAPI = {
   getAll: () => apiService.get('/deals'),
+  getById: (id) => apiService.get(`/deals/${id}`),
   create: (data) => apiService.post('/deals', data),
+  update: (id, data) => apiService.put(`/deals/${id}`, data),
+  delete: (id) => apiService.delete(`/deals/${id}`),
 };
 
 export const contactsAPI = {
@@ -89,6 +94,14 @@ export const plansAPI = {
 
 export const pipelineAPI = {
   getAll: () => apiService.get('/pipeline'),
+};
+
+export const invoicesAPI = {
+  getAll: () => apiService.get('/invoices'),
+  getById: (id) => apiService.get(`/invoices/${id}`),
+  create: (data) => apiService.post('/invoices', data),
+  update: (id, data) => apiService.put(`/invoices/${id}`, data),
+  delete: (id) => apiService.delete(`/invoices/${id}`),
 };
 
 export default apiService;

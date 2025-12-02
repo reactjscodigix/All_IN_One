@@ -4,7 +4,7 @@ import companiesData from '../data/companiesListData.json';
 import AddNewCompanyForm from './AddNewCompanyForm';
 
 const CrmCompaniesPage = () => {
-  const [companies] = useState(companiesData.companies);
+  const [companies, setCompanies] = useState(companiesData.companies);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCompanies, setFilteredCompanies] = useState(companies);
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
@@ -35,7 +35,7 @@ const CrmCompaniesPage = () => {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-[28px] font-bold text-gray-900">Companies</h1>
-              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] font-bold">125</span>
+              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] font-bold">{companies.length}</span>
             </div>
             <div className="flex items-center gap-1 text-[13px] mt-1">
               <button className="text-[#F97316] hover:text-[#EA580C] font-medium bg-transparent border-none cursor-pointer p-0">Home</button>
@@ -118,8 +118,26 @@ const CrmCompaniesPage = () => {
         isOpen={isAddCompanyOpen}
         onClose={() => setIsAddCompanyOpen(false)}
         onSubmit={(formData) => {
-          console.log('Company form submitted:', formData);
-          setIsAddCompanyOpen(false);
+          const newCompany = {
+            id: Math.max(...companies.map(c => c.id || 0), 0) + 1,
+            name: formData.companyName,
+            email: formData.emailAddress,
+            phone: formData.phoneNumber,
+            country: formData.country || 'USA',
+            rating: 4.5,
+            tags: Array.isArray(formData.tags) ? formData.tags : ['New'],
+            icon: 'bg-blue-500'
+          };
+          const updatedCompanies = [...companies, newCompany];
+          setCompanies(updatedCompanies);
+          
+          if (!searchTerm || 
+              newCompany.name.toLowerCase().includes(searchTerm) ||
+              newCompany.email.toLowerCase().includes(searchTerm)) {
+            setFilteredCompanies([...filteredCompanies, newCompany]);
+          }
+          
+          console.log('✅ Company added:', newCompany);
         }}
       />
     </div>

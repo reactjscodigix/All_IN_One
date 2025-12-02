@@ -45,6 +45,7 @@ import ContactReportsPage from './components/ContactReportsPage';
 import CompanyReportsPage from './components/CompanyReportsPage';
 import ProjectReportsPage from './components/ProjectReportsPage';
 import TaskReportsPage from './components/TaskReportsPage';
+import ContactDetailsPage from './components/ContactDetailsPage';
 import RolesPermissionsPage from './components/RolesPermissionsPage';
 import DeleteAccountRequestPage from './components/DeleteAccountRequestPage';
 import MembershipPlansPage from './components/MembershipPlansPage';
@@ -64,6 +65,7 @@ const routeMap = {
   '/project-details': 'project-details',
   '/deals-list': 'deals-list',
   '/contacts': 'contacts',
+  '/contact-details': 'contact-details',
   '/companies': 'companies',
   '/company-details': 'company-details',
   '/leads': 'leads',
@@ -122,6 +124,7 @@ const routeMap = {
 function AppContent() {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [selectedContactId, setSelectedContactId] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const currentPage = routeMap[location.pathname] || 'deals';
@@ -146,6 +149,11 @@ function AppContent() {
     navigate('/companies');
   };
 
+  const handleBackFromContactDetails = () => {
+    setSelectedContactId(null);
+    navigate('/contacts');
+  };
+
   const handleNavigate = (page) => {
     const routePath = Object.keys(routeMap).find(path => routeMap[path] === page) || '/';
     navigate(routePath);
@@ -161,6 +169,7 @@ function AppContent() {
         <Route path="/project-details" element={<ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />} />
         <Route path="/deals-list" element={<CrmDealsPage />} />
         <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/contact-details" element={<ContactDetailsPage contactId={selectedContactId} onBack={handleBackFromContactDetails} />} />
         <Route path="/companies" element={<CrmCompaniesPage />} />
         <Route path="/company-details" element={<CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />} />
         <Route path="/leads" element={<CrmLeadsPage />} />

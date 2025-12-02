@@ -18,7 +18,15 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.set('etag', false);
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -33,37 +41,226 @@ const pool = mysql.createPool({
 console.log(`Server running in ${NODE_ENV} mode`);
 console.log(`Database: ${process.env.DB_HOST}/${process.env.DB_NAME}`);
 
-app.get('/api/deals', async (req, res) => {
+async function testConnection() {
   try {
-    const connection = await pool.getConnection();
+    const conn = await pool.getConnection();
+    await conn.query('SELECT 1');
+    conn.release();
+    console.log('✓ Database connection successful');
+  } catch (err) {
+    console.error('✗ Database connection failed:', err.code || err.message);
+  }
+}
+
+app.get('/api/deals', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
     const [rows] = await connection.query(`
-      SELECT d.*, c.company_name, ct.first_name, ct.last_name 
+      SELECT d.*, c.company_name, ct.first_name, ct.last_name,
+             a.first_name as assignee_first_name, a.last_name as assignee_last_name
       FROM deals d 
       LEFT JOIN companies c ON d.company_id = c.id 
       LEFT JOIN contacts ct ON d.contact_id = ct.id 
+      LEFT JOIN contacts a ON d.assignee_id = a.id
       ORDER BY d.created_at DESC
     `);
-    connection.release();
     res.json(rows);
   } catch (error) {
-    console.error(error);
+    console.error('Error fetching deals:', error.message);
     res.status(500).json({ error: 'Failed to fetch deals' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/deals/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT d.*, c.company_name, ct.first_name, ct.last_name,
+             a.first_name as assignee_first_name, a.last_name as assignee_last_name
+      FROM deals d 
+      LEFT JOIN companies c ON d.company_id = c.id 
+      LEFT JOIN contacts ct ON d.contact_id = ct.id 
+      LEFT JOIN contacts a ON d.assignee_id = a.id
+      WHERE d.id = ?
+    `, [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Deal not found' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching deal:', error.message);
+    res.status(500).json({ error: 'Failed to fetch deal' });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
 app.post('/api/deals', async (req, res) => {
+  let connection;
   try {
-    const { deal_name, stage, deal_value, status, company_id, contact_id } = req.body;
-    const connection = await pool.getConnection();
-    await connection.query('INSERT INTO deals (deal_name, stage, deal_value, status, company_id, contact_id) VALUES (?, ?, ?, ?, ?, ?)', 
-      [deal_name, stage, deal_value, status, company_id, contact_id]);
-    connection.release();
-    res.json({ message: 'Deal created successfully' });
+    const {
+      deal_name,
+      pipeline,
+      status,
+      deal_value,
+      currency,
+      period,
+      period_value,
+      contact_id,
+      project_ids,
+      due_date,
+      expected_close_date,
+      assignee_id,
+      follow_up_date,
+      source,
+      tags,
+      priority,
+      description,
+      company_id
+    } = req.body;
+
+    if (!deal_name || !deal_value) {
+      return res.status(400).json({ error: 'Missing required fields: deal_name, deal_value' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const tagsString = Array.isArray(tags) ? tags.join(',') : tags || '';
+    const projectString = Array.isArray(project_ids) ? project_ids.join(',') : project_ids || '';
+
+    const [result] = await connection.query(`
+      INSERT INTO deals (
+        deal_name, pipeline, status, deal_value, currency, period, period_value,
+        contact_id, project_id, due_date, expected_close_date, assignee_id,
+        follow_up_date, source, tags, priority, description, company_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      deal_name,
+      pipeline || null,
+      status || 'Pending',
+      deal_value,
+      currency || 'USD',
+      period || null,
+      period_value || null,
+      contact_id || null,
+      projectString || null,
+      due_date || null,
+      expected_close_date || null,
+      assignee_id || null,
+      follow_up_date || null,
+      source || null,
+      tagsString,
+      priority || 'Medium',
+      description || '',
+      company_id || null
+    ]);
+
+    res.json({ 
+      message: 'Deal created successfully', 
+      id: result.insertId 
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create deal' });
+    console.error('Error creating deal:', error.message);
+    res.status(500).json({ error: 'Failed to create deal', details: error.message });
+  } finally {
+    if (connection) connection.release();
   }
 });
+
+app.put('/api/deals/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const {
+      deal_name,
+      pipeline,
+      status,
+      deal_value,
+      currency,
+      period,
+      period_value,
+      contact_id,
+      project_ids,
+      due_date,
+      expected_close_date,
+      assignee_id,
+      follow_up_date,
+      source,
+      tags,
+      priority,
+      description,
+      company_id
+    } = req.body;
+
+    connection = await pool.getConnection();
+    
+    const tagsString = Array.isArray(tags) ? tags.join(',') : tags || '';
+    const projectString = Array.isArray(project_ids) ? project_ids.join(',') : project_ids || '';
+
+    await connection.query(`
+      UPDATE deals 
+      SET deal_name = ?, pipeline = ?, status = ?, deal_value = ?, currency = ?,
+          period = ?, period_value = ?, contact_id = ?, project_id = ?,
+          due_date = ?, expected_close_date = ?, assignee_id = ?,
+          follow_up_date = ?, source = ?, tags = ?, priority = ?,
+          description = ?, company_id = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [
+      deal_name || null,
+      pipeline || null,
+      status || 'Pending',
+      deal_value || null,
+      currency || 'USD',
+      period || null,
+      period_value || null,
+      contact_id || null,
+      projectString || null,
+      due_date || null,
+      expected_close_date || null,
+      assignee_id || null,
+      follow_up_date || null,
+      source || null,
+      tagsString,
+      priority || 'Medium',
+      description || '',
+      company_id || null,
+      id
+    ]);
+
+    res.json({ message: 'Deal updated successfully' });
+  } catch (error) {
+    console.error('Error updating deal:', error.message);
+    res.status(500).json({ error: 'Failed to update deal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/deals/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM deals WHERE id = ?', [id]);
+    res.json({ message: 'Deal deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting deal:', error.message);
+    res.status(500).json({ error: 'Failed to delete deal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+
+
+
 
 app.get('/api/contacts', async (req, res) => {
   try {
@@ -82,36 +279,111 @@ app.get('/api/contacts', async (req, res) => {
   }
 });
 
-app.post('/api/contacts', async (req, res) => {
+app.get('/api/contacts/:id', async (req, res) => {
   try {
-    const { first_name, last_name, email, phone, company_id, position, status } = req.body;
+    const { id } = req.params;
     const connection = await pool.getConnection();
-    await connection.query('INSERT INTO contacts (first_name, last_name, email, phone, company_id, position, status) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-      [first_name, last_name, email, phone, company_id, position, status]);
+    const [rows] = await connection.query(`
+      SELECT c.*, co.company_name 
+      FROM contacts c 
+      LEFT JOIN companies co ON c.company_id = co.id 
+      WHERE c.id = ?
+    `, [id]);
     connection.release();
-    res.json({ message: 'Contact created successfully' });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+    res.json(rows[0]);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to create contact' });
+    res.status(500).json({ error: 'Failed to fetch contact' });
+  }
+});
+
+app.post('/api/contacts', async (req, res) => {
+  let connection;
+  try {
+    if (!req.body) {
+      return res.status(400).json({ error: 'Request body is empty' });
+    }
+    
+    const { first_name, last_name, email, phone, company_id, position, status } = req.body;
+    
+    if (!first_name || !last_name || !email) {
+      return res.status(400).json({ error: 'Missing required fields: first_name, last_name, email' });
+    }
+
+    connection = await pool.getConnection();
+    const [result] = await connection.query('INSERT INTO contacts (first_name, last_name, email, phone, company_id, position, status) VALUES (?, ?, ?, ?, ?, ?, ?)', 
+      [first_name, last_name, email, phone, company_id || null, position || '', status || 'Active']);
+    res.json({ message: 'Contact created successfully', id: result.insertId });
+  } catch (error) {
+    console.error('Error creating contact:', error.message, error.code);
+    res.status(500).json({ error: 'Failed to create contact', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/contacts/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { first_name, last_name, email, phone, company_id, position, status } = req.body;
+
+    if (!first_name || !last_name || !email) {
+      return res.status(400).json({ error: 'Missing required fields: first_name, last_name, email' });
+    }
+
+    connection = await pool.getConnection();
+    await connection.query(
+      'UPDATE contacts SET first_name = ?, last_name = ?, email = ?, phone = ?, company_id = ?, position = ?, status = ?, updated_at = NOW() WHERE id = ?',
+      [first_name, last_name, email, phone, company_id || null, position || '', status || 'Active', id]
+    );
+    connection.release();
+    res.json({ message: 'Contact updated successfully' });
+  } catch (error) {
+    console.error('Error updating contact:', error.message, error.code);
+    res.status(500).json({ error: 'Failed to update contact', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/contacts/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM contacts WHERE id = ?', [id]);
+    connection.release();
+    res.json({ message: 'Contact deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting contact:', error.message);
+    res.status(500).json({ error: 'Failed to delete contact', details: error.message });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
 app.get('/api/companies', async (req, res) => {
   try {
     const connection = await pool.getConnection();
-    const [rows, fields] = await connection.query(`
-      SELECT c.*, cs.plan_name, cs.plan_type, cs.currency, cs.language, cs.price, cs.registered_date, cs.expiring_on
+    const [rows] = await connection.query(`
+      SELECT 
+        c.id, c.company_name, c.industry, c.email, c.email_opt_out, c.phone, c.phone2, c.fax, 
+        c.website, c.address, c.city, c.state, c.country, c.employee_count, c.annual_revenue,
+        c.status, c.account_url, c.logo, c.password, c.created_at, c.updated_at,
+        c.reviews, c.owner, c.tags, c.source, c.currency, c.language, c.description,
+        cs.plan_name, cs.plan_type, cs.price, cs.registered_date, cs.expiring_on
       FROM companies c
       LEFT JOIN company_subscriptions cs ON c.id = cs.company_id AND cs.status = 'Active'
       ORDER BY c.created_at DESC
     `);
     connection.release();
-    const fs = require('fs');
-    const logMsg = `Fields: ${fields.map(f => f.name).join(', ')}\nFirst row keys: ${Object.keys(rows[0] || {}).join(', ')}\nFirst row: ${JSON.stringify(rows[0])}\n`;
-    fs.appendFileSync('./api.log', logMsg);
     res.json(rows);
   } catch (error) {
-    console.error('Error in /api/companies:', error.message, error.sql);
+    console.error('Error in /api/companies:', error.code || error.message || error);
     res.status(500).json({ error: 'Failed to fetch companies' });
   }
 });
@@ -121,7 +393,12 @@ app.get('/api/companies/:id', async (req, res) => {
     const { id } = req.params;
     const connection = await pool.getConnection();
     const [rows] = await connection.query(`
-      SELECT c.*, cs.plan_name, cs.plan_type, cs.currency, cs.language, cs.price, cs.registered_date, cs.expiring_on
+      SELECT 
+        c.id, c.company_name, c.industry, c.email, c.email_opt_out, c.phone, c.phone2, c.fax, 
+        c.website, c.address, c.city, c.state, c.country, c.employee_count, c.annual_revenue,
+        c.status, c.account_url, c.logo, c.password, c.created_at, c.updated_at,
+        c.reviews, c.owner, c.tags, c.source, c.currency, c.language, c.description,
+        cs.plan_name, cs.plan_type, cs.price, cs.registered_date, cs.expiring_on
       FROM companies c
       LEFT JOIN company_subscriptions cs ON c.id = cs.company_id AND cs.status = 'Active'
       WHERE c.id = ?
@@ -130,7 +407,9 @@ app.get('/api/companies/:id', async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Company not found' });
     }
-    res.json(rows[0]);
+    const company = rows[0];
+    console.log(`[DEBUG] Company ${id} - currency:${company.currency}, language:${company.language}`);
+    res.json(company);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch company' });
@@ -139,12 +418,32 @@ app.get('/api/companies/:id', async (req, res) => {
 
 app.post('/api/companies', async (req, res) => {
   try {
-    const { company_name, email, phone, website, address, account_url, status, planName, planType, currency, language } = req.body;
+    if (!req.body) {
+      return res.status(400).json({ error: 'Request body is empty' });
+    }
+
+    const { 
+      company_name, email, email_opt_out, phone, phone2, fax, website, address, 
+      account_url, status, industry, city, state, country, reviews, owner, 
+      tags, source, currency, language, description, planName, planType 
+    } = req.body;
+    
+    if (!company_name || !email || !phone) {
+      return res.status(400).json({ error: 'Missing required fields: company_name, email, phone' });
+    }
+    
     const connection = await pool.getConnection();
     
     const [result] = await connection.query(
-      'INSERT INTO companies (company_name, email, phone, website, address, account_url, status) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-      [company_name, email, phone, website, address, account_url, status || 'Active']
+      `INSERT INTO companies 
+       (company_name, email, email_opt_out, phone, phone2, fax, website, address, account_url, 
+        status, industry, city, state, country, reviews, owner, tags, source, 
+        currency, language, description) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+      [company_name, email, email_opt_out || false, phone, phone2 || null, fax || null, website || null, address || null, 
+       account_url || null, status || 'Active', industry || null, city || null, state || null, 
+       country || null, reviews || null, owner || null, tags || null, source || null, 
+       currency || 'USD', language || 'English', description || null]
     );
     
     const companyId = result.insertId;
@@ -162,8 +461,8 @@ app.post('/api/companies', async (req, res) => {
     connection.release();
     res.json({ message: 'Company created successfully', id: companyId });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create company' });
+    console.error('Error creating company:', error);
+    res.status(500).json({ error: 'Failed to create company', details: error.message });
   }
 });
 
@@ -285,8 +584,8 @@ app.post('/api/plans', async (req, res) => {
     connection.release();
     res.json({ message: 'Plan created successfully' });
   } catch (error) {
-    console.error('Error creating plan:', error);
-    res.status(500).json({ error: 'Failed to create plan' });
+    console.error('Error creating plan:', error.code || error.message, error.sql);
+    res.status(500).json({ error: 'Failed to create plan', details: error.message });
   }
 });
 
@@ -307,7 +606,13 @@ app.get('/api/leads', async (req, res) => {
     const connection = await pool.getConnection();
     const [rows] = await connection.query('SELECT * FROM leads ORDER BY created_at DESC');
     connection.release();
-    res.json(rows);
+    const formatted = rows.map(r => ({
+      ...r,
+      name: r.lead_name,
+      source: r.lead_source,
+      status: r.lead_status
+    }));
+    res.json(formatted);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch leads' });
@@ -316,14 +621,26 @@ app.get('/api/leads', async (req, res) => {
 
 app.post('/api/leads', async (req, res) => {
   try {
-    const { lead_name, email, phone, company, lead_source, lead_status, rating, notes } = req.body;
+    const { name, email, phone, company, source, status, rating, description } = req.body;
     const connection = await pool.getConnection();
-    await connection.query(
+    
+    const result = await connection.query(
       'INSERT INTO leads (lead_name, email, phone, company, lead_source, lead_status, rating, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
-      [lead_name, email, phone, company, lead_source, lead_status, rating, notes]
+      [name, email, phone, company || null, source || 'Website', status || 'Not Contacted', rating || 5, description || null]
     );
+    
     connection.release();
-    res.json({ message: 'Lead created successfully' });
+    res.json({ 
+      id: result[0].insertId,
+      name,
+      email,
+      phone,
+      company,
+      source: source || 'Website',
+      status: status || 'Not Contacted',
+      rating: rating || 5,
+      message: 'Lead created successfully'
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to create lead' });
@@ -342,6 +659,154 @@ app.get('/api/pipeline', async (req, res) => {
   }
 });
 
+app.get('/api/invoices', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT i.*, c.company_name 
+      FROM invoices i
+      LEFT JOIN companies c ON i.client_id = c.id
+      ORDER BY i.created_at DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching invoices:', error.message);
+    res.status(500).json({ error: 'Failed to fetch invoices' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/invoices/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [invoiceRows] = await connection.query(`
+      SELECT i.*, c.company_name 
+      FROM invoices i
+      LEFT JOIN companies c ON i.client_id = c.id
+      WHERE i.id = ?
+    `, [id]);
+    
+    if (invoiceRows.length === 0) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    const [items] = await connection.query(`
+      SELECT * FROM invoice_items WHERE invoice_id = ?
+    `, [id]);
+
+    res.json({ ...invoiceRows[0], items });
+  } catch (error) {
+    console.error('Error fetching invoice:', error.message);
+    res.status(500).json({ error: 'Failed to fetch invoice' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/invoices', async (req, res) => {
+  let connection;
+  try {
+    const { 
+      client, billTo, shipTo, project, amount, currency, 
+      date, openTill, paymentMethod, status, description, 
+      items, subtotal, discount2, extraDiscount0, tax, total, 
+      notes, termsConditions 
+    } = req.body;
+
+    if (!client || !billTo || !amount) {
+      return res.status(400).json({ error: 'Missing required fields: client, billTo, amount' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const invoiceNumber = `INV-${Date.now()}`;
+    
+    const [result] = await connection.query(`
+      INSERT INTO invoices (
+        invoice_number, client_id, bill_to, ship_to, project_id, amount, currency,
+        invoice_date, open_till, payment_method, status, description,
+        subtotal, discount_percentage, discount_amount,
+        extra_discount_percentage, extra_discount_amount,
+        tax_percentage, tax_amount, total, notes, terms_conditions
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      invoiceNumber, client, billTo, shipTo, project || null, amount, currency,
+      date || null, openTill || null, paymentMethod || null, status || 'Draft', description || '',
+      subtotal || 0, 0, 0, 0, 0, 0, 0, total || amount, notes || '', termsConditions || ''
+    ]);
+
+    const invoiceId = result.insertId;
+
+    if (items && items.length > 0) {
+      for (const item of items) {
+        if (item.item && item.price && item.quantity) {
+          await connection.query(`
+            INSERT INTO invoice_items (
+              invoice_id, item_name, quantity, price, 
+              discount_percentage, discount_amount, amount
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          `, [
+            invoiceId, item.item, item.quantity, item.price,
+            0, 0, (item.quantity * item.price) || 0
+          ]);
+        }
+      }
+    }
+
+    res.json({ 
+      message: 'Invoice created successfully', 
+      id: invoiceId,
+      invoiceNumber 
+    });
+  } catch (error) {
+    console.error('Error creating invoice:', error.message);
+    res.status(500).json({ error: 'Failed to create invoice', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/invoices/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { status, paymentMethod, notes } = req.body;
+
+    connection = await pool.getConnection();
+    await connection.query(`
+      UPDATE invoices 
+      SET status = ?, payment_method = ?, notes = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [status || 'Draft', paymentMethod || null, notes || '', id]);
+
+    res.json({ message: 'Invoice updated successfully' });
+  } catch (error) {
+    console.error('Error updating invoice:', error.message);
+    res.status(500).json({ error: 'Failed to update invoice', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/invoices/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM invoices WHERE id = ?', [id]);
+    res.json({ message: 'Invoice deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting invoice:', error.message);
+    res.status(500).json({ error: 'Failed to delete invoice', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.use((err, req, res, next) => {
@@ -351,10 +816,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`✓ Server running on port ${PORT}`);
   console.log(`✓ Environment: ${NODE_ENV}`);
   console.log(`✓ CORS origin: ${process.env.CORS_ORIGIN}`);
+  await testConnection();
 });
 
 process.on('SIGTERM', () => {

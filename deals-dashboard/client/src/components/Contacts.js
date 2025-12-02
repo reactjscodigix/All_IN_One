@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
-import { Mail, Phone, MapPin, MoreVertical, Plus, MessageCircle, Users } from 'lucide-react';
-import contactsData from '../data/contactsData.json';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Mail, Phone, MapPin, Plus, MessageCircle, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import AddContactModal from './AddContactModal';
+import ContactActionDropdown from './ContactActionDropdown';
 
 const Contacts = () => {
-  const [contacts] = useState(contactsData.contacts);
+  const navigate = useNavigate();
+  const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredContacts, setFilteredContacts] = useState(contacts);
+  const [filteredContacts, setFilteredContacts] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
 
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
@@ -46,6 +52,118 @@ const Contacts = () => {
       return { bg: '#FFF4DE', text: '#FFA200' };
     }
     return { bg: '#F3F4F6', text: '#6B7280' };
+  };
+
+  const fetchContacts = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/contacts');
+      const data = await response.json();
+      const transformedData = transformContactData(data);
+      setContacts(transformedData);
+      setFilteredContacts(transformedData);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchContacts();
+  }, [fetchContacts]);
+
+  const transformContactData = (apiContacts) => {
+    return apiContacts.map((contact) => {
+      const initials = `${contact.first_name?.charAt(0) || ''}${contact.last_name?.charAt(0) || ''}`.toUpperCase();
+      return {
+        id: contact.id,
+        name: `${contact.first_name} ${contact.last_name}`,
+        email: contact.email || '',
+        phone: contact.phone || '',
+        position: contact.position || '',
+        country: contact.company_name || 'USA',
+        avatar: initials,
+        tags: ['Collab'],
+        collaborators: [
+          { avatar: initials }
+        ]
+      };
+    });
+  };
+
+  const handleAddContact = async (formData) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        alert('Contact created successfully!');
+        setIsModalOpen(false);
+        fetchContacts();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || 'Failed to create contact'}`);
+      }
+    } catch (error) {
+      console.error('Error creating contact:', error);
+      alert('Error creating contact. Check console for details.');
+    }
+  };
+
+  const handleEdit = (contact) => {
+    setSelectedContact(contact);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = async (contactId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/contacts/${contactId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('Contact deleted successfully!');
+        fetchContacts();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || 'Failed to delete contact'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+      alert('Error deleting contact. Check console for details.');
+    }
+  };
+
+  const handlePreview = (contact) => {
+    navigate('/contact-details', { state: { contactId: contact.id, contact } });
+  };
+
+  const handleUpdateContact = async (formData) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/contacts/${selectedContact.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        alert('Contact updated successfully!');
+        setIsEditModalOpen(false);
+        setSelectedContact(null);
+        fetchContacts();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || 'Failed to update contact'}`);
+      }
+    } catch (error) {
+      console.error('Error updating contact:', error);
+      alert('Error updating contact. Check console for details.');
+    }
   };
 
   return (
@@ -98,12 +216,32 @@ const Contacts = () => {
             </button>
           </div>
 
-          <button className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]"
+          >
             <Plus size={18} strokeWidth={2.5} />
             Add Contacts
           </button>
         </div>
       </div>
+
+      <AddContactModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddContact}
+      />
+
+      <AddContactModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedContact(null);
+        }}
+        onSubmit={handleUpdateContact}
+        initialData={selectedContact}
+        isEditMode={true}
+      />
 
       <div className="px-6 pb-8">
         <div className="grid grid-cols-4 gap-6">
@@ -129,9 +267,12 @@ const Contacts = () => {
                     </p>
                   </div>
                 </div>
-                <button className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded-md transition flex-shrink-0">
-                  <MoreVertical size={16} strokeWidth={2} />
-                </button>
+                <ContactActionDropdown
+                  contact={contact}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onPreview={handlePreview}
+                />
               </div>
 
               <div className="space-y-1.5 mb-4">
@@ -171,16 +312,16 @@ const Contacts = () => {
 
               <div className="pt-3 border-t border-[#F3F4F6] flex items-center justify-between">
                 <div className="flex gap-4 text-[#6B7280]">
-                  <button className="hover:text-gray-900 transition p-0.5" title="Email">
+                  <a href={`mailto:${contact.email}`} className="hover:text-gray-900 transition p-0.5" title="Email">
                     <Mail size={15} strokeWidth={1.5} />
-                  </button>
-                  <button className="hover:text-gray-900 transition p-0.5" title="Phone">
+                  </a>
+                  <a href={`tel:${contact.phone}`} className="hover:text-gray-900 transition p-0.5" title="Phone">
                     <Phone size={15} strokeWidth={1.5} />
-                  </button>
-                  <button className="hover:text-gray-900 transition p-0.5" title="Chat">
+                  </a>
+                  <button className="hover:text-gray-900 transition p-0.5" title="Chat" onClick={() => alert(`Message for ${contact.name}`)}>
                     <MessageCircle size={15} strokeWidth={1.5} />
                   </button>
-                  <button className="hover:text-gray-900 transition p-0.5" title="Users">
+                  <button className="hover:text-gray-900 transition p-0.5" title="Users" onClick={() => alert(`Collaborators: ${contact.collaborators.map(c => c.avatar).join(', ')}`)}>
                     <Users size={15} strokeWidth={1.5} />
                   </button>
                 </div>

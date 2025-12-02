@@ -22,7 +22,10 @@ CREATE TABLE IF NOT EXISTS companies (
   company_name VARCHAR(255) NOT NULL,
   industry VARCHAR(100),
   email VARCHAR(150),
+  email_opt_out BOOLEAN DEFAULT FALSE,
   phone VARCHAR(20),
+  phone2 VARCHAR(20),
+  fax VARCHAR(20),
   website VARCHAR(255),
   address VARCHAR(500),
   city VARCHAR(100),
@@ -34,10 +37,18 @@ CREATE TABLE IF NOT EXISTS companies (
   account_url VARCHAR(255),
   logo LONGBLOB,
   password VARCHAR(255),
+  reviews VARCHAR(100),
+  owner VARCHAR(255),
+  tags VARCHAR(500),
+  source VARCHAR(100),
+  currency VARCHAR(10) DEFAULT 'USD',
+  language VARCHAR(50) DEFAULT 'English',
+  description TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_status (status),
-  INDEX idx_created_at (created_at)
+  INDEX idx_created_at (created_at),
+  INDEX idx_source (source)
 );
 
 CREATE TABLE IF NOT EXISTS company_plans (

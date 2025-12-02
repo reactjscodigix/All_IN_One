@@ -142,6 +142,10 @@
     }
   ],
   "stageStats": [
+    { "stage": "Sales Pipeline", "leads": 0, "value": 0 },
+    { "stage": "Marketing Pipeline", "leads": 0, "value": 0 },
+    { "stage": "Email Pipeline", "leads": 0, "value": 0 },
+    { "stage": "Partnership Pipeline", "leads": 0, "value": 0 },
     { "stage": "Qualify To Buy", "leads": 45, "value": 1544540 },
     { "stage": "Contact Made", "leads": 30, "value": 1994938 },
     { "stage": "Presentation", "leads": 25, "value": 1036390 },

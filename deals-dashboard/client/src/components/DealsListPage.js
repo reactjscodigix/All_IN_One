@@ -1,9 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Plus } from 'lucide-react';
 import DataTable from './DataTable';
+import AddNewDealModal from './AddNewDealModal';
+import { dealsAPI, contactsAPI, companiesAPI } from '../services/api';
 import dealsData from '../data/dealsData.json';
+import projectsData from '../data/crmProjectsData.json';
 
 const DealsListPage = () => {
-  const [deals] = useState(dealsData.deals);
+  const [deals, setDeals] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        const [dealsRes, contactsRes, companiesRes] = await Promise.all([
+          dealsAPI.getAll(),
+          contactsAPI.getAll(),
+          companiesAPI.getAll(),
+        ]);
+        
+        setDeals(dealsRes || dealsData.deals);
+        setContacts(contactsRes || []);
+        setCompanies(companiesRes || []);
+        setProjects(projectsData.projects || []);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setDeals(dealsData.deals);
+        setProjects(projectsData.projects || []);
+        setError('Failed to load data from server');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleCreateDeal = async (formData) => {
+    try {
+      const response = await dealsAPI.create(formData);
+      
+      if (response.id) {
+        const newDeal = {
+          id: response.id,
+          ...formData,
+          created_at: new Date().toISOString(),
+        };
+        
+        setDeals(prev => [newDeal, ...prev]);
+        setIsModalOpen(false);
+      }
+    } catch (err) {
+      throw new Error(err.message || 'Failed to create deal');
+    }
+  };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
@@ -62,18 +118,49 @@ const DealsListPage = () => {
     }
   ];
 
+  if (isLoading) {
+    return (
+      <div className="p-2 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Loading deals...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-2 bg-gray-50 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-[1.250025rem] font-bold text-gray-900">Deals</h1>
-        <p className="text-gray-600 text-sm mt-2">Manage all your deals in one place</p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-[1.250025rem] font-bold text-gray-900">Deals</h1>
+          <p className="text-gray-600 text-sm mt-2">Manage all your deals in one place</p>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition flex items-center gap-2"
+        >
+          <Plus size={18} /> Add New Deal
+        </button>
       </div>
+
+      {error && (
+        <div className="p-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-700">{error}</p>
+        </div>
+      )}
 
       <DataTable 
         columns={columns}
         data={deals}
         title="All Deals"
-        searchKeys={['name', 'company', 'contact']}
+        searchKeys={['deal_name', 'company_name', 'first_name']}
+      />
+
+      <AddNewDealModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateDeal}
+        contacts={contacts}
+        companies={companies}
+        projects={projects}
       />
     </div>
   );

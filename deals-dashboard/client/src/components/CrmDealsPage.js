@@ -1,12 +1,77 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, Download, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import dealsData from '../data/crmDealsData.json';
+import AddNewDealModal from './AddNewDealModal';
+import { dealsAPI, contactsAPI, companiesAPI } from '../services/api';
+import projectsData from '../data/crmProjectsData.json';
 
 const CrmDealsPage = () => {
-  const [deals] = useState(dealsData.deals);
-  const [stageStats] = useState(dealsData.stageStats);
+  const [deals, setDeals] = useState(dealsData.deals);
+  const [stageStats, setStageStats] = useState(dealsData.stageStats);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [contacts, setContacts] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [projects, setProjects] = useState([]);
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [dealsRes, contactsRes, companiesRes] = await Promise.all([
+          dealsAPI.getAll(),
+          contactsAPI.getAll(),
+          companiesAPI.getAll(),
+        ]);
+        
+        if (dealsRes && Array.isArray(dealsRes)) {
+          const formattedDeals = dealsRes.map(deal => ({
+            id: deal.id,
+            stage: deal.stage || deal.pipeline || 'Qualify To Buy',
+            company: deal.company_name || deal.deal_name || 'Unknown Company',
+            initials: ((deal.company_name || deal.deal_name || 'UC').substring(0, 2)).toUpperCase(),
+            value: parseFloat(deal.deal_value) || 0,
+            email: deal.email || 'contact@example.com',
+            phone: deal.phone || '+1 (555) 000-0000',
+            location: deal.location || 'Unknown',
+            owner: deal.assignee_first_name && deal.assignee_last_name 
+              ? `${deal.assignee_first_name} ${deal.assignee_last_name}` 
+              : deal.first_name && deal.last_name 
+              ? `${deal.first_name} ${deal.last_name}`
+              : 'Unassigned',
+            ownerImage: 'avatar-1',
+            progress: deal.probability || 10,
+            date: deal.due_date ? new Date(deal.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+            ...deal
+          }));
+          setDeals(formattedDeals);
+          
+          const uniqueStages = [...new Set(formattedDeals.map(d => d.stage).filter(s => s))];
+          const updatedStats = uniqueStages.map(stage => {
+            const stageDeals = formattedDeals.filter(d => d.stage === stage);
+            return {
+              stage,
+              leads: stageDeals.length,
+              value: stageDeals.reduce((sum, d) => sum + (d.value || 0), 0)
+            };
+          });
+          setStageStats(updatedStats);
+        } else {
+          setDeals(dealsData.deals);
+        }
+        
+        setContacts(contactsRes || []);
+        setCompanies(companiesRes || []);
+        setProjects(projectsData.projects || []);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setDeals(dealsData.deals);
+        setProjects(projectsData.projects || []);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const formatCurrency = (value) => {
     const formatted = (value / 100000).toFixed(2);
@@ -22,8 +87,60 @@ const CrmDealsPage = () => {
 
   const getInitialsBgColor = (initials) => {
     const colors = ['#10b981', '#ec4899', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4', '#ef4444'];
+    if (!initials) return colors[0];
     const index = initials.charCodeAt(0) % colors.length;
     return colors[index];
+  };
+
+  const handleCreateDeal = async (formData) => {
+    try {
+      const response = await dealsAPI.create(formData);
+      
+      if (response.id) {
+        const selectedCompany = companies.find(c => c.id === parseInt(formData.company_id));
+        const selectedContact = contacts.find(c => c.id === parseInt(formData.contact_id));
+        
+        const companyName = selectedCompany?.name || formData.deal_name || 'New Deal';
+        const initials = companyName.substring(0, 2).toUpperCase();
+        
+        const dealValue = parseFloat(formData.deal_value) || 0;
+        const dealStage = formData.pipeline || 'Qualify To Buy';
+        
+        const newDeal = {
+          id: response.id,
+          stage: dealStage,
+          company: companyName,
+          initials: initials,
+          value: dealValue,
+          email: selectedContact?.email || 'contact@example.com',
+          phone: selectedContact?.phone || '+1 (555) 000-0000',
+          location: selectedContact?.location || 'Unknown',
+          owner: selectedContact?.name || 'Unassigned',
+          ownerImage: 'avatar-1',
+          progress: 10,
+          date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+          deal_name: formData.deal_name,
+          pipeline: formData.pipeline,
+          status: formData.status,
+          currency: formData.currency,
+          priority: formData.priority,
+          tags: formData.tags,
+          created_at: new Date().toISOString(),
+        };
+        
+        setDeals(prev => [newDeal, ...prev]);
+        
+        setStageStats(prev => prev.map(stat => 
+          stat.stage === dealStage 
+            ? { ...stat, leads: stat.leads + 1, value: stat.value + dealValue }
+            : stat
+        ));
+        
+        setIsModalOpen(false);
+      }
+    } catch (err) {
+      throw new Error(err.message || 'Failed to create deal');
+    }
   };
 
   const scroll = (direction) => {
@@ -60,7 +177,9 @@ const CrmDealsPage = () => {
             <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-[13px] font-medium text-gray-700 transition bg-white flex items-center gap-2">
               <Download size={16} /> Export
             </button>
-            <button className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-[13px]">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-[13px]">
               Add Deal
             </button>
           </div>
@@ -115,9 +234,9 @@ const CrmDealsPage = () => {
                       <div className="flex items-start justify-between mb-2">
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xs"
-                          style={{ backgroundColor: getInitialsBgColor(deal.initials) }}
+                          style={{ backgroundColor: getInitialsBgColor(deal.initials || deal.company) }}
                         >
-                          {deal.initials}
+                          {deal.initials || deal.company?.substring(0, 2).toUpperCase() || 'N/A'}
                         </div>
                         <button className="text-gray-400 hover:bg-gray-100 p-1 rounded-md transition">
                           <MoreVertical size={14} strokeWidth={1.5} />
@@ -189,6 +308,15 @@ const CrmDealsPage = () => {
       <div className="px-6 py-4 border-t border-gray-200 bg-white text-center">
         <p className="text-[12px] text-gray-500 font-medium">Copyright © 2025 <span className="text-red-600 font-semibold">Preadmin</span></p>
       </div>
+
+      <AddNewDealModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateDeal}
+        contacts={contacts}
+        companies={companies}
+        projects={projects}
+      />
     </div>
   );
 };
