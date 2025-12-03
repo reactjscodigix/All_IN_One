@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS companies (
   annual_revenue DECIMAL(15, 2),
   status ENUM('Active', 'Inactive', 'Prospect') DEFAULT 'Active',
   account_url VARCHAR(255),
-  logo LONGBLOB,
+  logo LONGTEXT,
   password VARCHAR(255),
   reviews VARCHAR(100),
   owner VARCHAR(255),

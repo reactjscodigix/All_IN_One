@@ -1,13 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, MoreVertical, Plus, Search, ChevronDown } from 'lucide-react';
-import companiesData from '../data/companiesListData.json';
-import AddNewCompanyForm from './AddNewCompanyForm';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const CrmCompaniesPage = () => {
-  const [companies, setCompanies] = useState(companiesData.companies);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [companies, setCompanies] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredCompanies, setFilteredCompanies] = useState(companies);
-  const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
+  const [filteredCompanies, setFilteredCompanies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  useEffect(() => {
+    if (location.state?.newCompanyAdded) {
+      fetchCompanies();
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  const fetchCompanies = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/companies');
+      if (response.ok) {
+        const data = await response.json();
+        const companiesWithDefaults = data.map(company => ({
+          ...company,
+          name: company.company_name || company.name,
+          rating: company.rating || 4.5,
+          tags: company.tags ? (typeof company.tags === 'string' ? company.tags.split(',').map(t => t.trim()) : company.tags) : [],
+          icon: 'bg-blue-500',
+          id: company.id || Math.random(),
+          country: company.country || 'USA'
+        }));
+        setCompanies(companiesWithDefaults);
+        setFilteredCompanies(companiesWithDefaults);
+      } else {
+        setCompanies([]);
+        setFilteredCompanies([]);
+      }
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+      setCompanies([]);
+      setFilteredCompanies([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
@@ -17,6 +62,66 @@ const CrmCompaniesPage = () => {
       c.email.toLowerCase().includes(term)
     );
     setFilteredCompanies(filtered);
+  };
+
+  const seedMockCompanies = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/seed-mock-companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ ${data.count} mock companies added successfully!`);
+        fetchCompanies();
+      } else {
+        alert('Failed to seed mock companies');
+      }
+    } catch (error) {
+      console.error('Error seeding companies:', error);
+      alert('Error seeding mock companies: ' + error.message);
+    }
+  };
+
+  const handleEdit = (e, company) => {
+    e.stopPropagation();
+    navigate('/add-company', { state: { company, isEdit: true } });
+    setOpenMenuId(null);
+  };
+
+  const handleDelete = async (e, companyId) => {
+    e.stopPropagation();
+    if (deleteConfirm === companyId) {
+      setIsDeleting(true);
+      try {
+        const response = await fetch(`http://localhost:5000/api/companies/${companyId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (response.ok) {
+          setCompanies(companies.filter(c => c.id !== companyId));
+          setFilteredCompanies(filteredCompanies.filter(c => c.id !== companyId));
+          setDeleteConfirm(null);
+          alert('Company deleted successfully!');
+        } else {
+          alert('Failed to delete company');
+        }
+      } catch (error) {
+        console.error('Error deleting company:', error);
+        alert('Error deleting company: ' + error.message);
+      } finally {
+        setIsDeleting(false);
+      }
+    } else {
+      setDeleteConfirm(companyId);
+    }
+    setOpenMenuId(null);
+  };
+
+  const handlePreview = (e, company) => {
+    e.stopPropagation();
+    navigate('/company-details', { state: { company } });
+    setOpenMenuId(null);
   };
 
   const renderStars = (rating) => {
@@ -43,10 +148,19 @@ const CrmCompaniesPage = () => {
               <span className="text-[#6B7280]">Companies</span>
             </div>
           </div>
-          <button onClick={() => setIsAddCompanyOpen(true)} className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]">
-            <Plus size={18} />
-            Add Company
-          </button>
+          <div className="flex gap-2 items-center">
+            <button onClick={() => navigate('/add-company')} className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]">
+              <Plus size={18} />
+              Add Company
+            </button>
+            <button 
+              onClick={seedMockCompanies}
+              className="bg-gray-400 text-white px-4 py-2 rounded-lg font-medium text-[13px] hover:opacity-90 transition"
+              title="Add mock companies for testing"
+            >
+              Seed Data
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -69,12 +183,59 @@ const CrmCompaniesPage = () => {
       <div className="px-6 pb-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCompanies.map((company) => (
-            <div key={company.id} className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow">
+            <div 
+              key={company.id}
+              className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+            >
               <div className="flex justify-between items-start mb-3">
-                <div className={`w-12 h-12 rounded-lg ${company.icon} flex items-center justify-center text-white font-bold text-lg`}>
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c1.1 0 2 .9 2 2v2.5c0 .3-.2.5-.5.5s-.5.2-.5.5v1c0 .3.2.5.5.5s.5.2.5.5V10c0 .3-.2.5-.5.5s-.5.2-.5.5v1c0 .3.2.5.5.5s.5.2.5.5v1.5c0 1.1-.9 2-2 2h-8c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h8zm0 18c5.5 0 10-4.5 10-10S17.5 0 12 0 2 4.5 2 10s4.5 10 10 10z" /></svg>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg overflow-hidden flex-shrink-0 ${company.logo && company.logo.startsWith('data:') ? 'bg-white' : 'bg-gradient-to-br from-blue-400 to-blue-600'} shadow-sm`}>
+                  {company.logo && company.logo.startsWith('data:') ? (
+                    <img 
+                      src={company.logo} 
+                      alt={company.name} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                  {!company.logo || !company.logo.startsWith('data:') ? (
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c1.1 0 2 .9 2 2v2.5c0 .3-.2.5-.5.5s-.5.2-.5.5v1c0 .3.2.5.5.5s.5.2.5.5V10c0 .3-.2.5-.5.5s-.5.2-.5.5v1c0 .3.2.5.5.5s.5.2.5.5v1.5c0 1.1-.9 2-2 2h-8c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h8zm0 18c5.5 0 10-4.5 10-10S17.5 0 12 0 2 4.5 2 10s4.5 10 10 10z" /></svg>
+                  ) : null}
                 </div>
-                <button className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded-md transition"><MoreVertical size={16} strokeWidth={2} /></button>
+                <div className="relative">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId(openMenuId === company.id ? null : company.id);
+                    }}
+                    className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded-md transition"
+                  >
+                    <MoreVertical size={16} strokeWidth={2} />
+                  </button>
+                  {openMenuId === company.id && (
+                    <div className="absolute right-0 top-full mt-1 bg-white border border-[#E5E7EB] rounded-lg shadow-lg z-10 min-w-[120px]">
+                      <button
+                        onClick={(e) => handlePreview(e, company)}
+                        className="w-full text-left px-4 py-2 text-[13px] text-[#1F2937] hover:bg-gray-50 flex items-center gap-2 transition"
+                      >
+                        👁️ Preview
+                      </button>
+                      <button
+                        onClick={(e) => handleEdit(e, company)}
+                        className="w-full text-left px-4 py-2 text-[13px] text-[#1F2937] hover:bg-gray-50 border-t border-[#E5E7EB] flex items-center gap-2 transition"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, company.id)}
+                        className="w-full text-left px-4 py-2 text-[13px] text-[#DC2626] hover:bg-red-50 border-t border-[#E5E7EB] flex items-center gap-2 transition"
+                      >
+                        🗑️ {deleteConfirm === company.id ? 'Confirm Delete?' : 'Delete'}
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <h3 className="text-[15px] font-semibold text-gray-900 truncate mb-1">{company.name}</h3>
@@ -114,32 +275,34 @@ const CrmCompaniesPage = () => {
         </div>
       </div>
 
-      <AddNewCompanyForm 
-        isOpen={isAddCompanyOpen}
-        onClose={() => setIsAddCompanyOpen(false)}
-        onSubmit={(formData) => {
-          const newCompany = {
-            id: Math.max(...companies.map(c => c.id || 0), 0) + 1,
-            name: formData.companyName,
-            email: formData.emailAddress,
-            phone: formData.phoneNumber,
-            country: formData.country || 'USA',
-            rating: 4.5,
-            tags: Array.isArray(formData.tags) ? formData.tags : ['New'],
-            icon: 'bg-blue-500'
-          };
-          const updatedCompanies = [...companies, newCompany];
-          setCompanies(updatedCompanies);
-          
-          if (!searchTerm || 
-              newCompany.name.toLowerCase().includes(searchTerm) ||
-              newCompany.email.toLowerCase().includes(searchTerm)) {
-            setFilteredCompanies([...filteredCompanies, newCompany]);
-          }
-          
-          console.log('✅ Company added:', newCompany);
-        }}
-      />
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm mx-4">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <span className="text-2xl">🗑️</span>
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Delete Confirmation</h3>
+            <p className="text-sm text-gray-600 text-center mb-6">Are you sure you want to remove company you selected?</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-6 py-2 border border-[#E5E7EB] rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={(e) => handleDelete(e, deleteConfirm)}
+                disabled={isDeleting}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

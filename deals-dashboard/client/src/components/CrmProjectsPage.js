@@ -9,14 +9,12 @@ const CrmProjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadProjects();
   }, []);
 
   const loadProjects = async () => {
-    setIsLoading(true);
     try {
       const data = await projectAPI.getAll();
       if (Array.isArray(data) && data.length > 0) {
@@ -24,8 +22,6 @@ const CrmProjectsPage = () => {
       }
     } catch (error) {
       console.error('Failed to load projects:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

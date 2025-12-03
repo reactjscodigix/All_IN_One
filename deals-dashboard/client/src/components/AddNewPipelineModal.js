@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { pipelineAPI } from '../services/api';
 
 const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {

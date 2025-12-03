@@ -7,6 +7,10 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('activities');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [notes, setNotes] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [newNote, setNewNote] = useState('');
+  const [showAddNote, setShowAddNote] = useState(false);
   const location = useLocation();
   const contactIdFromState = location.state?.contactId || contactId;
   const contactFromState = location.state?.contact;
@@ -32,6 +36,58 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
     }
   }, [contactIdFromState]);
 
+  const fetchNotes = useCallback(async () => {
+    try {
+      if (!contactIdFromState) return;
+      const response = await fetch(`http://localhost:5000/api/contacts/${contactIdFromState}/notes`);
+      if (response.ok) {
+        const data = await response.json();
+        setNotes(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  }, [contactIdFromState]);
+
+  const fetchActivities = useCallback(async () => {
+    try {
+      if (!contactIdFromState) return;
+      const response = await fetch(`http://localhost:5000/api/contacts/${contactIdFromState}/activities`);
+      if (response.ok) {
+        const data = await response.json();
+        setActivities(data);
+      }
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+    }
+  }, [contactIdFromState]);
+
+  const handleAddNote = async () => {
+    if (!newNote.trim()) {
+      alert('Please enter a note');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/contacts/${contactIdFromState}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note_text: newNote, created_by: 'Current User' }),
+      });
+
+      if (response.ok) {
+        setNewNote('');
+        setShowAddNote(false);
+        fetchNotes();
+      } else {
+        alert('Failed to create note');
+      }
+    } catch (error) {
+      console.error('Error creating note:', error);
+      alert('Error creating note');
+    }
+  };
+
   useEffect(() => {
     if (contactFromState) {
       setContact({
@@ -49,6 +105,13 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
       fetchContactDetails();
     }
   }, [contactIdFromState, contactFromState, fetchContactDetails]);
+
+  useEffect(() => {
+    if (contactIdFromState) {
+      fetchNotes();
+      fetchActivities();
+    }
+  }, [contactIdFromState, fetchNotes, fetchActivities]);
 
   if (loading) {
     return (
@@ -77,54 +140,6 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
 
   const initials = `${contact.first_name?.charAt(0) || ''}${contact.last_name?.charAt(0) || ''}`.toUpperCase();
   const avatarColor = getAvatarColor(initials);
-
-  const activities = [
-    {
-      id: 1,
-      type: 'message',
-      icon: '💬',
-      text: 'You sent 1 Message to the contact.',
-      time: '10:25 pm',
-      date: '28 May 2025',
-      color: 'bg-blue-100'
-    },
-    {
-      id: 2,
-      type: 'call',
-      icon: '📞',
-      text: 'Denwar responded to your appointment schedule question by call at 09:30pm.',
-      time: '09:25 pm',
-      date: '28 May 2025',
-      color: 'bg-green-100'
-    },
-    {
-      id: 3,
-      type: 'note',
-      icon: '📝',
-      text: 'Notes added by Antony\nPlease accept my apologies for the inconvenience caused. It would be much appreciated if it\'s possible to reschedule to 6:00 PM, or any other day that week.',
-      time: '10:00 pm',
-      date: '27 May 2025',
-      color: 'bg-red-100'
-    },
-    {
-      id: 4,
-      type: 'meeting',
-      icon: '📅',
-      text: 'Meeting With Abraham\nScheduled on 05:00 pm',
-      time: '09:25 pm',
-      date: '27 May 2025',
-      color: 'bg-yellow-100'
-    },
-    {
-      id: 5,
-      type: 'call',
-      icon: '📞',
-      text: 'Drain responded to your appointment schedule question.',
-      time: '09:25 pm',
-      date: '27 May 2025',
-      color: 'bg-green-100'
-    }
-  ];
 
   return (
     <div className="w-full bg-[#f5f6fa] min-h-screen">
@@ -317,35 +332,95 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
                       <span>Activities</span>
                     </h3>
                     <div className="space-y-4">
-                      {activities.map((activity) => (
-                        <div key={activity.id} className="border border-[#E5E7EB] rounded-lg p-4 hover:shadow-sm transition">
-                          <div className="flex items-start gap-4">
-                            <div className={`${activity.color} w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-lg`}>
-                              {activity.icon}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm text-gray-900 font-medium">{activity.text}</p>
+                      {activities && activities.length > 0 ? (
+                        activities.map((activity) => (
+                          <div key={activity.id} className="border border-[#E5E7EB] rounded-lg p-4 hover:shadow-sm transition">
+                            <div className="flex items-start gap-4">
+                              <div className="bg-blue-100 w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-lg">
+                                {activity.activity_icon || '📊'}
                               </div>
-                              <p className="text-xs text-gray-500">{activity.time}</p>
-                              {activity.date && (
-                                <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
-                                  <p className="text-xs text-blue-600 font-medium">📅 {activity.date}</p>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-sm text-gray-900 font-medium">{activity.activity_text || activity.activity_type}</p>
                                 </div>
-                              )}
+                                <p className="text-xs text-gray-500">{activity.created_by || 'Unknown'}</p>
+                                <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
+                                  <p className="text-xs text-blue-600 font-medium">📅 {new Date(activity.created_at).toLocaleDateString()}</p>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-sm">No activities yet</p>
+                      )}
                       <div className="flex justify-center pt-4">
                         <button className="px-4 py-2 text-blue-600 text-sm font-medium hover:bg-blue-50 rounded-lg transition">
-                          📅 Upcoming Activity
+                          📅 Add Activity
                         </button>
                       </div>
                     </div>
                   </div>
                 )}
-                {activeTab !== 'activities' && (
+                {activeTab === 'notes' && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-6 flex items-center justify-between">
+                      <span>Notes</span>
+                      <button
+                        onClick={() => setShowAddNote(!showAddNote)}
+                        className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition"
+                      >
+                        + Add Note
+                      </button>
+                    </h3>
+                    {showAddNote && (
+                      <div className="mb-6 p-4 border border-[#E5E7EB] rounded-lg bg-gray-50">
+                        <textarea
+                          value={newNote}
+                          onChange={(e) => setNewNote(e.target.value)}
+                          placeholder="Write your note here..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-500"
+                          rows="3"
+                        />
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={handleAddNote}
+                            className="px-4 py-2 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition"
+                          >
+                            Save Note
+                          </button>
+                          <button
+                            onClick={() => setShowAddNote(false)}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded hover:bg-gray-100 transition"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-4">
+                      {notes && notes.length > 0 ? (
+                        notes.map((note) => (
+                          <div key={note.id} className="border border-[#E5E7EB] rounded-lg p-4 hover:shadow-sm transition">
+                            <div className="flex items-start gap-4">
+                              <div className="bg-red-100 w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-lg">
+                                📝
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm text-gray-900 font-medium">{note.note_text}</p>
+                                <p className="text-xs text-gray-500 mt-1">{note.created_by || 'Unknown'}</p>
+                                <p className="text-xs text-gray-400">{new Date(note.created_at).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-sm">No notes yet</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {activeTab !== 'activities' && activeTab !== 'notes' && (
                   <p className="text-gray-600 text-sm">
                     {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} content goes here...
                   </p>

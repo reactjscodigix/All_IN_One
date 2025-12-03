@@ -10,14 +10,12 @@ const CrmCampaignPage = () => {
   const [activeTab, setActiveTab] = useState('Active Campaign');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadCampaigns();
   }, []);
 
   const loadCampaigns = async () => {
-    setIsLoading(true);
     try {
       const data = await campaignAPI.getAll();
       if (Array.isArray(data) && data.length > 0) {
@@ -25,8 +23,6 @@ const CrmCampaignPage = () => {
       }
     } catch (error) {
       console.error('Failed to load campaigns:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

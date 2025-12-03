@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, MoreVertical, Download, ChevronDown } from 'lucide-react';
 
-const rolesData = [
+const dummyRolesData = [
   {
     id: 1,
     name: 'Admin',
@@ -36,25 +37,130 @@ const rolesData = [
 
 const RolesPermissionsPage = () => {
   const [query, setQuery] = useState('');
+  const [roles, setRoles] = useState(dummyRolesData);
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
   const [showEditRoleModal, setShowEditRoleModal] = useState(false);
-  const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [roleName, setRoleName] = useState('');
+  const [roleDescription, setRoleDescription] = useState('');
+  const [newRoleName, setNewRoleName] = useState('');
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
+  const fetchRoles = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/roles');
+      if (!response.ok) throw new Error('Failed to fetch roles');
+      const data = await response.json();
+      
+      const formattedRoles = data.map(role => ({
+        id: role.id,
+        name: role.name,
+        created: new Date(role.created_at).toLocaleString('en-GB', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      }));
+      
+      setRoles(formattedRoles.length > 0 ? formattedRoles : dummyRolesData);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      setRoles(dummyRolesData);
+    }
+  };
 
   const handleEditRole = (role) => {
+    setSelectedRole(role);
     setRoleName(role.name);
+    setNewRoleName(role.name);
     setShowEditRoleModal(true);
     setOpenMenuId(null);
   };
 
   const handlePermission = (role) => {
-    setRoleName(role.name);
-    setShowPermissionModal(true);
-    setOpenMenuId(null);
+    setSelectedRole(role);
+    navigate('/role-permissions-detail', { state: { roleId: role.id, roleName: role.name } });
   };
 
-  const filteredRoles = rolesData.filter(role =>
+  const handleAddRole = async () => {
+    if (!newRoleName.trim()) {
+      alert('Role name is required');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newRoleName, description: roleDescription })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error);
+      }
+
+      setNewRoleName('');
+      setRoleDescription('');
+      setShowAddRoleModal(false);
+      await fetchRoles();
+    } catch (error) {
+      alert('Error creating role: ' + error.message);
+    }
+  };
+
+  const handleUpdateRole = async () => {
+    if (!roleName.trim()) {
+      alert('Role name is required');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/roles/${selectedRole.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: roleName, description: roleDescription })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error);
+      }
+
+      setShowEditRoleModal(false);
+      await fetchRoles();
+    } catch (error) {
+      alert('Error updating role: ' + error.message);
+    }
+  };
+
+  const handleDeleteRole = async (roleId) => {
+    if (window.confirm('Are you sure you want to delete this role?')) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/roles/${roleId}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error);
+        }
+
+        await fetchRoles();
+      } catch (error) {
+        alert('Error deleting role: ' + error.message);
+      }
+    }
+  };
+
+  const filteredRoles = roles.filter(role =>
     role.name.toLowerCase().includes(query.toLowerCase())
   );
 
@@ -149,15 +255,21 @@ const RolesPermissionsPage = () => {
                           <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                             <button
                               onClick={() => handleEditRole(role)}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-100"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => handlePermission(role)}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-t border-gray-200"
+                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-100"
                             >
                               Permission
+                            </button>
+                            <button
+                              onClick={() => handleDeleteRole(role.id)}
+                              className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600"
+                            >
+                              Delete
                             </button>
                           </div>
                         )}
@@ -208,20 +320,39 @@ const RolesPermissionsPage = () => {
               </label>
               <input
                 type="text"
-                value={roleName}
-                onChange={(e) => setRoleName(e.target.value)}
+                value={newRoleName}
+                onChange={(e) => setNewRoleName(e.target.value)}
                 placeholder="Enter role name"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-sm"
               />
             </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                value={roleDescription}
+                onChange={(e) => setRoleDescription(e.target.value)}
+                placeholder="Enter role description"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-sm"
+                rows="3"
+              />
+            </div>
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => setShowAddRoleModal(false)}
+                onClick={() => {
+                  setShowAddRoleModal(false);
+                  setNewRoleName('');
+                  setRoleDescription('');
+                }}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
-              <button className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+              <button 
+                onClick={handleAddRole}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+              >
                 Create
               </button>
             </div>
@@ -246,6 +377,18 @@ const RolesPermissionsPage = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-sm"
               />
             </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                value={roleDescription}
+                onChange={(e) => setRoleDescription(e.target.value)}
+                placeholder="Enter role description"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-sm"
+                rows="3"
+              />
+            </div>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowEditRoleModal(false)}
@@ -253,7 +396,10 @@ const RolesPermissionsPage = () => {
               >
                 Cancel
               </button>
-              <button className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
+              <button 
+                onClick={handleUpdateRole}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+              >
                 Save Changes
               </button>
             </div>
@@ -261,43 +407,7 @@ const RolesPermissionsPage = () => {
         </div>
       )}
 
-      {/* Permission Modal */}
-      {showPermissionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Permissions for {roleName}</h2>
-            <div className="space-y-3 mb-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="cursor-pointer" defaultChecked />
-                <span className="text-sm text-gray-700">View Roles</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="cursor-pointer" defaultChecked />
-                <span className="text-sm text-gray-700">Create Role</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="cursor-pointer" defaultChecked />
-                <span className="text-sm text-gray-700">Edit Role</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="cursor-pointer" />
-                <span className="text-sm text-gray-700">Delete Role</span>
-              </label>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowPermissionModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">
-                Save Permissions
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

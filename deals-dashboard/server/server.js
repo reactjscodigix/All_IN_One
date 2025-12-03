@@ -41,12 +41,122 @@ const pool = mysql.createPool({
 console.log(`Server running in ${NODE_ENV} mode`);
 console.log(`Database: ${process.env.DB_HOST}/${process.env.DB_NAME}`);
 
+async function initializeDatabase() {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        first_name VARCHAR(100) NOT NULL,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        email VARCHAR(150) UNIQUE NOT NULL,
+        email_opt_out BOOLEAN DEFAULT FALSE,
+        password VARCHAR(255) NOT NULL,
+        phone1 VARCHAR(20),
+        phone1_country VARCHAR(5) DEFAULT 'US',
+        phone2 VARCHAR(20),
+        phone2_country VARCHAR(5) DEFAULT 'US',
+        location VARCHAR(100),
+        avatar LONGTEXT,
+        role_id INT,
+        status ENUM('Active', 'Inactive') DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_username (username),
+        INDEX idx_status (status),
+        INDEX idx_role_id (role_id)
+      )
+    `);
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS roles (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name)
+      )
+    `);
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS permissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        role_id INT NOT NULL,
+        module_name VARCHAR(100) NOT NULL,
+        can_create BOOLEAN DEFAULT FALSE,
+        can_read BOOLEAN DEFAULT FALSE,
+        can_update BOOLEAN DEFAULT FALSE,
+        can_delete BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_module_per_role (role_id, module_name),
+        INDEX idx_role_id (role_id)
+      )
+    `);
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS delete_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        reason TEXT NOT NULL,
+        status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+        requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        reviewed_by INT,
+        reviewed_at TIMESTAMP NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status)
+      )
+    `);
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS modules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    console.log('✓ All tables initialized successfully');
+    
+    const [existingRoles] = await connection.query('SELECT COUNT(*) as count FROM roles');
+    if (existingRoles[0].count === 0) {
+      const defaultRoles = ['Admin', 'Manager', 'Sales', 'Support', 'Viewer'];
+      for (const role of defaultRoles) {
+        await connection.query('INSERT INTO roles (name) VALUES (?)', [role]);
+      }
+      console.log('✓ Default roles created');
+    }
+    
+    const [existingModules] = await connection.query('SELECT COUNT(*) as count FROM modules');
+    if (existingModules[0].count === 0) {
+      const defaultModules = ['Dashboard', 'Contacts', 'Companies', 'Leads', 'Deals', 'Pipelines', 'Campaign', 'Projects', 'Tasks', 'Activity'];
+      for (const module of defaultModules) {
+        await connection.query('INSERT INTO modules (name) VALUES (?)', [module]);
+      }
+      console.log('✓ Default modules created');
+    }
+    
+    connection.release();
+  } catch (error) {
+    console.error('Database initialization error:', error.message);
+    if (connection) connection.release();
+  }
+}
+
 async function testConnection() {
   try {
     const conn = await pool.getConnection();
     await conn.query('SELECT 1');
     conn.release();
     console.log('✓ Database connection successful');
+    await initializeDatabase();
   } catch (err) {
     console.error('✗ Database connection failed:', err.code || err.message);
   }
@@ -307,15 +417,15 @@ app.post('/api/contacts', async (req, res) => {
       return res.status(400).json({ error: 'Request body is empty' });
     }
     
-    const { first_name, last_name, email, phone, company_id, position, status } = req.body;
+    const { first_name, last_name, email, phone, company_id, position, status, avatar } = req.body;
     
     if (!first_name || !last_name || !email) {
       return res.status(400).json({ error: 'Missing required fields: first_name, last_name, email' });
     }
 
     connection = await pool.getConnection();
-    const [result] = await connection.query('INSERT INTO contacts (first_name, last_name, email, phone, company_id, position, status) VALUES (?, ?, ?, ?, ?, ?, ?)', 
-      [first_name, last_name, email, phone, company_id || null, position || '', status || 'Active']);
+    const [result] = await connection.query('INSERT INTO contacts (first_name, last_name, email, phone, company_id, position, status, avatar) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
+      [first_name, last_name, email, phone, company_id || null, position || '', status || 'Active', avatar || null]);
     res.json({ message: 'Contact created successfully', id: result.insertId });
   } catch (error) {
     console.error('Error creating contact:', error.message, error.code);
@@ -329,7 +439,7 @@ app.put('/api/contacts/:id', async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
-    const { first_name, last_name, email, phone, company_id, position, status } = req.body;
+    const { first_name, last_name, email, phone, company_id, position, status, avatar } = req.body;
 
     if (!first_name || !last_name || !email) {
       return res.status(400).json({ error: 'Missing required fields: first_name, last_name, email' });
@@ -337,8 +447,8 @@ app.put('/api/contacts/:id', async (req, res) => {
 
     connection = await pool.getConnection();
     await connection.query(
-      'UPDATE contacts SET first_name = ?, last_name = ?, email = ?, phone = ?, company_id = ?, position = ?, status = ?, updated_at = NOW() WHERE id = ?',
-      [first_name, last_name, email, phone, company_id || null, position || '', status || 'Active', id]
+      'UPDATE contacts SET first_name = ?, last_name = ?, email = ?, phone = ?, company_id = ?, position = ?, status = ?, avatar = ?, updated_at = NOW() WHERE id = ?',
+      [first_name, last_name, email, phone, company_id || null, position || '', status || 'Active', avatar || null, id]
     );
     connection.release();
     res.json({ message: 'Contact updated successfully' });
@@ -363,6 +473,131 @@ app.delete('/api/contacts/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete contact', details: error.message });
   } finally {
     if (connection) connection.release();
+  }
+});
+
+app.get('/api/companies/:companyId/contacts', async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT c.*, co.company_name 
+      FROM contacts c 
+      LEFT JOIN companies co ON c.company_id = co.id 
+      WHERE c.company_id = ?
+      ORDER BY c.created_at DESC
+    `, [companyId]);
+    connection.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching company contacts:', error.message);
+    res.status(500).json({ error: 'Failed to fetch company contacts' });
+  }
+});
+
+app.get('/api/contacts/:contactId/notes', async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT * FROM contact_notes
+      WHERE contact_id = ?
+      ORDER BY created_at DESC
+    `, [contactId]);
+    connection.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching contact notes:', error.message);
+    res.status(500).json({ error: 'Failed to fetch contact notes' });
+  }
+});
+
+app.post('/api/contacts/:contactId/notes', async (req, res) => {
+  let connection;
+  try {
+    const { contactId } = req.params;
+    const { note_text, created_by } = req.body;
+
+    if (!note_text) {
+      return res.status(400).json({ error: 'Note text is required' });
+    }
+
+    connection = await pool.getConnection();
+    const [result] = await connection.query(
+      'INSERT INTO contact_notes (contact_id, note_text, created_by) VALUES (?, ?, ?)',
+      [contactId, note_text, created_by || 'Unknown']
+    );
+    connection.release();
+    res.json({ message: 'Note created successfully', id: result.insertId });
+  } catch (error) {
+    console.error('Error creating note:', error.message);
+    res.status(500).json({ error: 'Failed to create note', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/contacts/:contactId/activities', async (req, res) => {
+  try {
+    const { contactId } = req.params;
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT * FROM contact_activities
+      WHERE contact_id = ?
+      ORDER BY created_at DESC
+    `, [contactId]);
+    connection.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching contact activities:', error.message);
+    res.status(500).json({ error: 'Failed to fetch contact activities' });
+  }
+});
+
+app.post('/api/contacts/:contactId/activities', async (req, res) => {
+  let connection;
+  try {
+    const { contactId } = req.params;
+    const { activity_type, activity_text, activity_icon, created_by } = req.body;
+
+    if (!activity_type) {
+      return res.status(400).json({ error: 'Activity type is required' });
+    }
+
+    connection = await pool.getConnection();
+    const [result] = await connection.query(
+      'INSERT INTO contact_activities (contact_id, activity_type, activity_text, activity_icon, created_by) VALUES (?, ?, ?, ?, ?)',
+      [contactId, activity_type, activity_text || '', activity_icon || '📊', created_by || 'Unknown']
+    );
+    connection.release();
+    res.json({ message: 'Activity created successfully', id: result.insertId });
+  } catch (error) {
+    console.error('Error creating activity:', error.message);
+    res.status(500).json({ error: 'Failed to create activity', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/companies/:companyId/deals', async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT d.*, c.company_name, ct.first_name, ct.last_name,
+             a.first_name as assignee_first_name, a.last_name as assignee_last_name
+      FROM deals d 
+      LEFT JOIN companies c ON d.company_id = c.id 
+      LEFT JOIN contacts ct ON d.contact_id = ct.id 
+      LEFT JOIN contacts a ON d.assignee_id = a.id
+      WHERE d.company_id = ?
+      ORDER BY d.created_at DESC
+    `, [companyId]);
+    connection.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching company deals:', error.message);
+    res.status(500).json({ error: 'Failed to fetch company deals' });
   }
 });
 
@@ -425,7 +660,7 @@ app.post('/api/companies', async (req, res) => {
     const { 
       company_name, email, email_opt_out, phone, phone2, fax, website, address, 
       account_url, status, industry, city, state, country, reviews, owner, 
-      tags, source, currency, language, description, planName, planType 
+      tags, source, currency, language, description, planName, planType, logo 
     } = req.body;
     
     if (!company_name || !email || !phone) {
@@ -438,12 +673,12 @@ app.post('/api/companies', async (req, res) => {
       `INSERT INTO companies 
        (company_name, email, email_opt_out, phone, phone2, fax, website, address, account_url, 
         status, industry, city, state, country, reviews, owner, tags, source, 
-        currency, language, description) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        currency, language, description, logo) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
       [company_name, email, email_opt_out || false, phone, phone2 || null, fax || null, website || null, address || null, 
        account_url || null, status || 'Active', industry || null, city || null, state || null, 
        country || null, reviews || null, owner || null, tags || null, source || null, 
-       currency || 'USD', language || 'English', description || null]
+       currency || 'USD', language || 'English', description || null, logo || null]
     );
     
     const companyId = result.insertId;
@@ -469,12 +704,12 @@ app.post('/api/companies', async (req, res) => {
 app.put('/api/companies/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { company_name, email, phone, website, address, account_url, status } = req.body;
+    const { company_name, email, phone, website, address, account_url, status, logo } = req.body;
     const connection = await pool.getConnection();
     
     await connection.query(
-      'UPDATE companies SET company_name = ?, email = ?, phone = ?, website = ?, address = ?, account_url = ?, status = ?, updated_at = NOW() WHERE id = ?',
-      [company_name, email, phone, website, address, account_url, status, id]
+      'UPDATE companies SET company_name = ?, email = ?, phone = ?, website = ?, address = ?, account_url = ?, status = ?, logo = ?, updated_at = NOW() WHERE id = ?',
+      [company_name, email, phone, website, address, account_url, status, logo || null, id]
     );
     
     connection.release();
@@ -1307,6 +1542,611 @@ app.delete('/api/projects/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete project', details: error.message });
   } finally {
     if (connection) connection.release();
+  }
+});
+
+app.get('/api/users', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT u.*, r.name as role_name
+      FROM users u
+      LEFT JOIN roles r ON u.role_id = r.id
+      ORDER BY u.created_at DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching users:', error.message);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/users/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT u.*, r.name as role_name
+      FROM users u
+      LEFT JOIN roles r ON u.role_id = r.id
+      WHERE u.id = ?
+    `, [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching user:', error.message);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  let connection;
+  try {
+    const { first_name, username, email, password, phone1, phone1_country, phone2, phone2_country, location, avatar, role_id, email_opt_out, status } = req.body;
+    
+    if (!first_name || !username || !email || !password) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    connection = await pool.getConnection();
+    const [result] = await connection.query(
+      'INSERT INTO users (first_name, username, email, password, phone1, phone1_country, phone2, phone2_country, location, avatar, role_id, email_opt_out, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [first_name, username, email, password, phone1, phone1_country || 'US', phone2, phone2_country || 'US', location, avatar, role_id || 5, email_opt_out || false, status || 'Active']
+    );
+    
+    const [newUser] = await connection.query(
+      'SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?',
+      [result.insertId]
+    );
+    
+    res.status(201).json(newUser[0]);
+  } catch (error) {
+    console.error('Error creating user:', error.message);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Username or email already exists' });
+    }
+    res.status(500).json({ error: 'Failed to create user', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { first_name, username, email, phone1, phone1_country, phone2, phone2_country, location, avatar, role_id, email_opt_out, status } = req.body;
+    
+    connection = await pool.getConnection();
+    await connection.query(
+      'UPDATE users SET first_name = ?, username = ?, email = ?, phone1 = ?, phone1_country = ?, phone2 = ?, phone2_country = ?, location = ?, avatar = ?, role_id = ?, email_opt_out = ?, status = ? WHERE id = ?',
+      [first_name, username, email, phone1, phone1_country, phone2, phone2_country, location, avatar, role_id, email_opt_out, status, id]
+    );
+    
+    const [updatedUser] = await connection.query(
+      'SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?',
+      [id]
+    );
+    
+    res.json(updatedUser[0]);
+  } catch (error) {
+    console.error('Error updating user:', error.message);
+    res.status(500).json({ error: 'Failed to update user', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM users WHERE id = ?', [id]);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error.message);
+    res.status(500).json({ error: 'Failed to delete user' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/roles', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM roles ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching roles:', error.message);
+    res.status(500).json({ error: 'Failed to fetch roles' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/roles', async (req, res) => {
+  let connection;
+  try {
+    const { name, description } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Role name is required' });
+    }
+    
+    connection = await pool.getConnection();
+    const [result] = await connection.query(
+      'INSERT INTO roles (name, description) VALUES (?, ?)',
+      [name, description || null]
+    );
+    
+    const [newRole] = await connection.query('SELECT * FROM roles WHERE id = ?', [result.insertId]);
+    res.status(201).json(newRole[0]);
+  } catch (error) {
+    console.error('Error creating role:', error.message);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Role name already exists' });
+    }
+    res.status(500).json({ error: 'Failed to create role', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/roles/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+    
+    connection = await pool.getConnection();
+    await connection.query(
+      'UPDATE roles SET name = ?, description = ? WHERE id = ?',
+      [name, description, id]
+    );
+    
+    const [updatedRole] = await connection.query('SELECT * FROM roles WHERE id = ?', [id]);
+    res.json(updatedRole[0]);
+  } catch (error) {
+    console.error('Error updating role:', error.message);
+    res.status(500).json({ error: 'Failed to update role', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/roles/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [usersWithRole] = await connection.query('SELECT COUNT(*) as count FROM users WHERE role_id = ?', [id]);
+    if (usersWithRole[0].count > 0) {
+      connection.release();
+      return res.status(400).json({ error: 'Cannot delete role with assigned users' });
+    }
+    
+    await connection.query('DELETE FROM roles WHERE id = ?', [id]);
+    res.json({ message: 'Role deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting role:', error.message);
+    res.status(500).json({ error: 'Failed to delete role', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/permissions/role/:roleId', async (req, res) => {
+  let connection;
+  try {
+    const { roleId } = req.params;
+    connection = await pool.getConnection();
+    
+    const [rows] = await connection.query(`
+      SELECT p.*, m.name as module_name
+      FROM permissions p
+      LEFT JOIN modules m ON p.module_name = m.name
+      WHERE p.role_id = ?
+      ORDER BY m.name
+    `, [roleId]);
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching permissions:', error.message);
+    res.status(500).json({ error: 'Failed to fetch permissions' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/modules', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM modules ORDER BY name');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching modules:', error.message);
+    res.status(500).json({ error: 'Failed to fetch modules' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/permissions/role/:roleId', async (req, res) => {
+  let connection;
+  try {
+    const { roleId } = req.params;
+    const { permissions } = req.body;
+    
+    if (!Array.isArray(permissions)) {
+      return res.status(400).json({ error: 'Permissions must be an array' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    await connection.query('DELETE FROM permissions WHERE role_id = ?', [roleId]);
+    
+    for (const perm of permissions) {
+      await connection.query(
+        'INSERT INTO permissions (role_id, module_name, can_create, can_read, can_update, can_delete) VALUES (?, ?, ?, ?, ?, ?)',
+        [roleId, perm.module_name, perm.can_create || false, perm.can_read || false, perm.can_update || false, perm.can_delete || false]
+      );
+    }
+    
+    const [updatedPermissions] = await connection.query(`
+      SELECT p.*, m.name as module_name
+      FROM permissions p
+      LEFT JOIN modules m ON p.module_name = m.name
+      WHERE p.role_id = ?
+      ORDER BY m.name
+    `, [roleId]);
+    
+    res.json(updatedPermissions);
+  } catch (error) {
+    console.error('Error updating permissions:', error.message);
+    res.status(500).json({ error: 'Failed to update permissions', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/delete-requests', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT dr.*, u.first_name, u.email, u.avatar, r.first_name as reviewer_name
+      FROM delete_requests dr
+      LEFT JOIN users u ON dr.user_id = u.id
+      LEFT JOIN users r ON dr.reviewed_by = r.id
+      ORDER BY dr.requested_at DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching delete requests:', error.message);
+    res.status(500).json({ error: 'Failed to fetch delete requests' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/delete-requests/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT dr.*, u.first_name, u.email, u.avatar, r.first_name as reviewer_name
+      FROM delete_requests dr
+      LEFT JOIN users u ON dr.user_id = u.id
+      LEFT JOIN users r ON dr.reviewed_by = r.id
+      WHERE dr.id = ?
+    `, [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Delete request not found' });
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching delete request:', error.message);
+    res.status(500).json({ error: 'Failed to fetch delete request' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/delete-requests', async (req, res) => {
+  let connection;
+  try {
+    const { user_id, reason } = req.body;
+    
+    if (!user_id || !reason) {
+      return res.status(400).json({ error: 'Missing required fields: user_id, reason' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [existing] = await connection.query(
+      'SELECT id FROM delete_requests WHERE user_id = ? AND status = ?',
+      [user_id, 'Pending']
+    );
+    
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'You already have a pending delete request' });
+    }
+    
+    const [result] = await connection.query(
+      'INSERT INTO delete_requests (user_id, reason) VALUES (?, ?)',
+      [user_id, reason]
+    );
+    
+    res.json({ message: 'Delete request created successfully', id: result.insertId });
+  } catch (error) {
+    console.error('Error creating delete request:', error.message);
+    res.status(500).json({ error: 'Failed to create delete request', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/delete-requests/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { status, reviewed_by } = req.body;
+    
+    if (!status || !['Pending', 'Approved', 'Rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    if (status === 'Approved') {
+      const [request] = await connection.query('SELECT user_id FROM delete_requests WHERE id = ?', [id]);
+      if (request.length > 0) {
+        await connection.query('UPDATE users SET status = ? WHERE id = ?', ['Inactive', request[0].user_id]);
+      }
+    }
+    
+    await connection.query(
+      'UPDATE delete_requests SET status = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?',
+      [status, reviewed_by || null, id]
+    );
+    
+    res.json({ message: `Delete request ${status.toLowerCase()} successfully` });
+  } catch (error) {
+    console.error('Error updating delete request:', error.message);
+    res.status(500).json({ error: 'Failed to update delete request', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/delete-requests/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [request] = await connection.query('SELECT user_id FROM delete_requests WHERE id = ?', [id]);
+    if (request.length > 0) {
+      await connection.query('DELETE FROM users WHERE id = ?', [request[0].user_id]);
+    }
+    
+    await connection.query('DELETE FROM delete_requests WHERE id = ?', [id]);
+    res.json({ message: 'User and delete request deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error.message);
+    res.status(500).json({ error: 'Failed to delete user', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/seed-mock-companies', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const mockCompanies = [
+      {
+        company_name: 'TechVision Inc',
+        email: 'contact@techvision.com',
+        phone: '+1-555-0101',
+        website: 'www.techvision.com',
+        address: '123 Innovation Drive',
+        city: 'San Francisco',
+        state: 'CA',
+        country: 'USA',
+        industry: 'Technology',
+        tags: 'Enterprise,Active',
+        source: 'Referral',
+        description: 'Leading technology solutions provider'
+      },
+      {
+        company_name: 'Global Health Solutions',
+        email: 'info@globalhealthsolutions.com',
+        phone: '+1-555-0102',
+        website: 'www.globalhealthsolutions.com',
+        address: '456 Medical Plaza',
+        city: 'Boston',
+        state: 'MA',
+        country: 'USA',
+        industry: 'Healthcare',
+        tags: 'Healthcare,Growing',
+        source: 'Direct',
+        description: 'Healthcare management and consulting'
+      },
+      {
+        company_name: 'Finance Pro Corp',
+        email: 'sales@financeprocorp.com',
+        phone: '+1-555-0103',
+        website: 'www.financeprocorp.com',
+        address: '789 Wall Street',
+        city: 'New York',
+        state: 'NY',
+        country: 'USA',
+        industry: 'Finance',
+        tags: 'Finance,Trusted',
+        source: 'Paid Campaign',
+        description: 'Financial services and investment solutions'
+      },
+      {
+        company_name: 'Smart Retail Ltd',
+        email: 'support@smartretail.com',
+        phone: '+1-555-0104',
+        website: 'www.smartretail.com',
+        address: '321 Commerce Ave',
+        city: 'Chicago',
+        state: 'IL',
+        country: 'USA',
+        industry: 'Retail',
+        tags: 'Retail,Partner',
+        source: 'Website',
+        description: 'Innovative retail solutions and consulting'
+      },
+      {
+        company_name: 'Industrial Manufacturing Co',
+        email: 'info@industrialmanufacturing.com',
+        phone: '+1-555-0105',
+        website: 'www.industrialmanufacturing.com',
+        address: '654 Industrial Park',
+        city: 'Detroit',
+        state: 'MI',
+        country: 'USA',
+        industry: 'Manufacturing',
+        tags: 'Manufacturing,Established',
+        source: 'Direct',
+        description: 'Premium industrial manufacturing services'
+      },
+      {
+        company_name: 'EduTech Innovations',
+        email: 'hello@edutechinnovations.com',
+        phone: '+1-555-0106',
+        website: 'www.edutechinnovations.com',
+        address: '987 Campus Drive',
+        city: 'Austin',
+        state: 'TX',
+        country: 'USA',
+        industry: 'Education',
+        tags: 'Education,Tech',
+        source: 'Referral',
+        description: 'Educational technology and training solutions'
+      },
+      {
+        company_name: 'Prime Real Estate Group',
+        email: 'contact@primerealestate.com',
+        phone: '+1-555-0107',
+        website: 'www.primerealestate.com',
+        address: '147 Property Lane',
+        city: 'Miami',
+        state: 'FL',
+        country: 'USA',
+        industry: 'Real Estate',
+        tags: 'RealEstate,Active',
+        source: 'Event',
+        description: 'Luxury real estate investment and management'
+      },
+      {
+        company_name: 'Hospitality Plus',
+        email: 'reservations@hospitalityplus.com',
+        phone: '+1-555-0108',
+        website: 'www.hospitalityplus.com',
+        address: '258 Hotel Boulevard',
+        city: 'Las Vegas',
+        state: 'NV',
+        country: 'USA',
+        industry: 'Hospitality',
+        tags: 'Hospitality,Growing',
+        source: 'Paid Campaign',
+        description: 'Premier hospitality and tourism services'
+      }
+    ];
+    
+    for (const company of mockCompanies) {
+      await connection.query(`
+        INSERT INTO companies 
+        (company_name, email, phone, website, address, city, state, country, industry, tags, source, description, currency, language, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'USD', 'English', 'Active')
+      `, [
+        company.company_name,
+        company.email,
+        company.phone,
+        company.website,
+        company.address,
+        company.city,
+        company.state,
+        company.country,
+        company.industry,
+        company.tags,
+        company.source,
+        company.description
+      ]);
+    }
+    
+    res.json({ message: 'Mock companies added successfully', count: mockCompanies.length });
+  } catch (error) {
+    console.error('Error seeding mock companies:', error.message);
+    res.status(500).json({ error: 'Failed to seed mock companies', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/sources', async (req, res) => {
+  try {
+    const sources = [
+      { id: 1, name: 'Direct' },
+      { id: 2, name: 'Referral' },
+      { id: 3, name: 'Website' },
+      { id: 4, name: 'Event' },
+      { id: 5, name: 'Other' },
+      { id: 6, name: 'Paid Campaign' },
+      { id: 7, name: 'Social Media' },
+      { id: 8, name: 'Partner' }
+    ];
+    res.json(sources);
+  } catch (error) {
+    console.error('Error fetching sources:', error.message);
+    res.status(500).json({ error: 'Failed to fetch sources' });
+  }
+});
+
+app.get('/api/industries', async (req, res) => {
+  try {
+    const industries = [
+      { id: 1, name: 'Technology' },
+      { id: 2, name: 'Healthcare' },
+      { id: 3, name: 'Finance' },
+      { id: 4, name: 'Retail' },
+      { id: 5, name: 'Manufacturing' },
+      { id: 6, name: 'Education' },
+      { id: 7, name: 'Real Estate' },
+      { id: 8, name: 'Hospitality' },
+      { id: 9, name: 'Transportation' },
+      { id: 10, name: 'Telecommunications' },
+      { id: 11, name: 'Energy' },
+      { id: 12, name: 'Media & Entertainment' },
+      { id: 13, name: 'Aviation Tech' },
+      { id: 14, name: 'Consulting' },
+      { id: 15, name: 'Legal Services' }
+    ];
+    res.json(industries);
+  } catch (error) {
+    console.error('Error fetching industries:', error.message);
+    res.status(500).json({ error: 'Failed to fetch industries' });
   }
 });
 

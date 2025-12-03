@@ -9,14 +9,12 @@ const CrmPipelinePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     loadPipelines();
   }, []);
 
   const loadPipelines = async () => {
-    setIsLoading(true);
     try {
       const data = await pipelineAPI.getAll();
       if (Array.isArray(data) && data.length > 0) {
@@ -34,8 +32,6 @@ const CrmPipelinePage = () => {
       }
     } catch (error) {
       console.error('Failed to load pipelines:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

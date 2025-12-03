@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import Layout from './components/Layout';
@@ -8,6 +8,7 @@ import ProjectsDashboard from './components/ProjectsDashboard';
 import ProjectDetailsPage from './components/ProjectDetailsPage';
 import ContactsPage from './components/ContactsPage';
 import CrmCompaniesPage from './components/CrmCompaniesPage';
+import AddCompanyPage from './components/AddCompanyPage';
 import CrmDealsPage from './components/CrmDealsPage';
 import CrmLeadsPage from './components/CrmLeadsPage';
 import CrmPipelinePage from './components/CrmPipelinePage';
@@ -56,6 +57,8 @@ import AllBlogsPage from './components/AllBlogsPage';
 import BlogCategoriesPage from './components/BlogCategoriesPage';
 import BlogCommentsPage from './components/BlogCommentsPage';
 import BlogTagsPage from './components/BlogTagsPage';
+import ManageUsersPage from './components/ManageUsersPage';
+import RolePermissionsDetailPage from './components/RolePermissionsDetailPage';
 
 const routeMap = {
   '/': 'deals',
@@ -67,6 +70,7 @@ const routeMap = {
   '/contacts': 'contacts',
   '/contact-details': 'contact-details',
   '/companies': 'companies',
+  '/add-company': 'add-company',
   '/company-details': 'company-details',
   '/leads': 'leads',
   '/pipeline': 'pipeline',
@@ -99,6 +103,7 @@ const routeMap = {
   '/task-report': 'task-report',
   '/manage-users': 'manage-users',
   '/roles-permissions': 'roles-permissions',
+  '/role-permissions-detail': 'role-permissions-detail',
   '/delete-request': 'delete-request',
   '/membership': 'membership',
   '/membership-plans': 'membership-plans',
@@ -128,6 +133,12 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPage = routeMap[location.pathname] || 'deals';
+
+  useEffect(() => {
+    if (location.state?.company) {
+      setSelectedCompany(location.state.company);
+    }
+  }, [location.state?.company]);
 
   const handleViewProjectDetails = (projectId) => {
     setSelectedProjectId(projectId);
@@ -171,6 +182,7 @@ function AppContent() {
         <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/contact-details" element={<ContactDetailsPage contactId={selectedContactId} onBack={handleBackFromContactDetails} />} />
         <Route path="/companies" element={<CrmCompaniesPage />} />
+        <Route path="/add-company" element={<AddCompanyPage />} />
         <Route path="/company-details" element={<CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />} />
         <Route path="/leads" element={<CrmLeadsPage />} />
         <Route path="/pipeline" element={<CrmPipelinePage />} />
@@ -201,8 +213,9 @@ function AppContent() {
         <Route path="/company-report" element={<CompanyReportsPage />} />
         <Route path="/project-report" element={<ProjectReportsPage />} />
         <Route path="/task-report" element={<TaskReportsPage />} />
-        <Route path="/manage-users" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Manage Users</h1><p className="text-gray-600">Manage Users page coming soon...</p></div></div>} />
+        <Route path="/manage-users" element={<ManageUsersPage />} />
         <Route path="/roles-permissions" element={<RolesPermissionsPage />} />
+        <Route path="/role-permissions-detail" element={<RolePermissionsDetailPage />} />
         <Route path="/delete-request" element={<DeleteAccountRequestPage />} />
         <Route path="/membership" element={<MembershipPlansPage />} />
         <Route path="/membership-plans" element={<MembershipPlansPage />} />

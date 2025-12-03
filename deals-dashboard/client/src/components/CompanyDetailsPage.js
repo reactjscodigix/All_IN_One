@@ -47,15 +47,16 @@ const getEmailStatusStyle = (status = 'sent') => emailStatusStyles[status] || em
 
 const CompanyDetailsPage = ({ company = {}, onBack }) => {
   const companyProfile = {
-    id: company.id ?? 'NVW-88912',
-    name: company.name ?? 'NovaWave LLC',
-    rating: company.rating ?? '5.0',
-    address: company.address ?? '22, Ave Street, Newyork, USA',
-    email: company.email ?? 'novawave@gmail.com',
-    phone: company.phone ?? '+1-12445-47878',
-    website: company.website ?? 'www.novawavellc.com',
-    industry: company.industry ?? 'Aviation Tech',
-    createdAt: company.createdAt ?? '27 Sep 2025, 11:45 PM'
+    id: company?.id ?? 'NVW-88912',
+    name: company?.name ?? 'NovaWave LLC',
+    rating: company?.rating ?? '5.0',
+    address: company?.address ?? '22, Ave Street, Newyork, USA',
+    email: company?.email ?? 'novawave@gmail.com',
+    phone: company?.phone ?? '+1-12445-47878',
+    website: company?.website ?? 'www.novawavellc.com',
+    industry: company?.industry ?? 'Aviation Tech',
+    createdAt: company?.createdAt ?? '27 Sep 2025, 11:45 PM',
+    logo: company?.logo || null
   };
 
   const companyData = {
@@ -403,6 +404,10 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [isComposeEmailOpen, setIsComposeEmailOpen] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [companyContacts, setCompanyContacts] = useState([]);
+  const [companyDeals, setCompanyDeals] = useState([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [loadingDeals, setLoadingDeals] = useState(false);
 
   useEffect(() => {
     const handleClick = () => {
@@ -413,6 +418,43 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
   }, []);
+
+  useEffect(() => {
+    if (companyProfile.id && companyProfile.id !== 'NVW-88912') {
+      fetchCompanyContacts();
+      fetchCompanyDeals();
+    }
+  }, [companyProfile.id]);
+
+  const fetchCompanyContacts = async () => {
+    setLoadingContacts(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/companies/${companyProfile.id}/contacts`);
+      if (response.ok) {
+        const data = await response.json();
+        setCompanyContacts(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching company contacts:', error);
+    } finally {
+      setLoadingContacts(false);
+    }
+  };
+
+  const fetchCompanyDeals = async () => {
+    setLoadingDeals(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/companies/${companyProfile.id}/deals`);
+      if (response.ok) {
+        const data = await response.json();
+        setCompanyDeals(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching company deals:', error);
+    } finally {
+      setLoadingDeals(false);
+    }
+  };
 
   useEffect(() => {
     if (isCreateDocumentOpen || isAddNoteOpen || isCreateCallOpen) {
@@ -509,7 +551,21 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
       <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-5 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-indigo-500 text-white flex items-center justify-center text-2xl">✈️</div>
+            <div className={`w-14 h-14 rounded-full text-white flex items-center justify-center text-2xl overflow-hidden flex-shrink-0 shadow-md ${companyProfile.logo && companyProfile.logo.startsWith('data:') ? 'bg-white' : 'bg-gradient-to-br from-indigo-400 to-indigo-600'}`}>
+              {companyProfile.logo && companyProfile.logo.startsWith('data:') ? (
+                <img 
+                  src={companyProfile.logo} 
+                  alt={companyProfile.name} 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : null}
+              {!companyProfile.logo || !companyProfile.logo.startsWith('data:') ? (
+                '✈️'
+              ) : null}
+            </div>
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-semibold text-gray-900">{companyData.name}</h2>
@@ -664,12 +720,12 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
 
         <div className="flex-1 space-y-5">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="flex gap-8 px-6 border-b border-gray-200">
-              {['Activities', 'Notes', 'Calls', 'Files', 'Email'].map((tab) => (
+            <div className="flex gap-8 px-6 border-b border-gray-200 overflow-x-auto">
+              {['Contacts', 'Deals', 'Activities', 'Notes', 'Calls', 'Files', 'Email'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab.toLowerCase())}
-                  className={`py-3 text-sm font-medium transition-colors ${
+                  className={`py-3 text-sm font-medium transition-colors whitespace-nowrap ${
                     activeTab === tab.toLowerCase()
                       ? 'text-red-500 border-b-2 border-red-500'
                       : 'text-gray-600 hover:text-gray-900'
@@ -681,6 +737,96 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
             </div>
 
             <div className="p-5">
+              {activeTab === 'contacts' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-bold text-gray-900">Contacts ({companyContacts.length})</h3>
+                    <button className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md text-xs text-gray-700 hover:bg-gray-50 font-medium bg-red-500 text-white hover:bg-red-600">
+                      + Add Contact
+                    </button>
+                  </div>
+
+                  {loadingContacts ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Loading contacts...</p>
+                    </div>
+                  ) : companyContacts.length === 0 ? (
+                    <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
+                      <p className="text-gray-500">No contacts linked to this company yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {companyContacts.map((contact) => (
+                        <div key={contact.id} className="border border-gray-200 rounded-lg p-4 flex justify-between items-start hover:bg-gray-50 transition">
+                          <div className="flex gap-3 flex-1">
+                            <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                              {contact.first_name?.[0]}{contact.last_name?.[0]}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-gray-900 text-sm font-medium">{contact.first_name} {contact.last_name}</p>
+                              <p className="text-gray-600 text-xs">{contact.email}</p>
+                              {contact.phone && <p className="text-gray-600 text-xs">{contact.phone}</p>}
+                              {contact.position && <p className="text-gray-500 text-xs">{contact.position}</p>}
+                            </div>
+                          </div>
+                          <div className="flex gap-2 ml-2">
+                            <button className="text-gray-400 hover:text-gray-600 p-1">✎</button>
+                            <button className="text-gray-400 hover:text-red-600 p-1">✕</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'deals' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-bold text-gray-900">Deals ({companyDeals.length})</h3>
+                    <button className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md text-xs text-gray-700 hover:bg-gray-50 font-medium bg-red-500 text-white hover:bg-red-600">
+                      + Add Deal
+                    </button>
+                  </div>
+
+                  {loadingDeals ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">Loading deals...</p>
+                    </div>
+                  ) : companyDeals.length === 0 ? (
+                    <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
+                      <p className="text-gray-500">No deals linked to this company yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {companyDeals.map((deal) => (
+                        <div key={deal.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <p className="text-gray-900 text-sm font-semibold">{deal.deal_name}</p>
+                              <p className="text-gray-600 text-xs mt-1">Value: {deal.currency} {deal.deal_value}</p>
+                            </div>
+                            <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                              deal.status === 'Won' ? 'bg-green-50 text-green-700' :
+                              deal.status === 'Lost' ? 'bg-red-50 text-red-700' :
+                              'bg-blue-50 text-blue-700'
+                            }`}>
+                              {deal.status || 'Pending'}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-2">
+                            {deal.contact_id && <p>Contact: {deal.first_name} {deal.last_name}</p>}
+                            {deal.assignee_id && <p>Assignee: {deal.assignee_first_name} {deal.assignee_last_name}</p>}
+                            {deal.expected_close_date && <p>Close Date: {new Date(deal.expected_close_date).toLocaleDateString()}</p>}
+                            {deal.priority && <p>Priority: {deal.priority}</p>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {activeTab === 'activities' && (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center mb-3">

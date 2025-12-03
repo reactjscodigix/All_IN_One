@@ -1,9 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { X } from 'lucide-react';
+import React, { useState } from 'react';
 import { projectAPI } from '../services/api';
 
 const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
-  const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,8 +21,6 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
     status: '',
     description: '',
   });
-
-  const [newPerson, setNewPerson] = useState('');
 
   const projectTypes = [
     'Web Development',
@@ -171,7 +167,6 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
       status: '',
       description: '',
     });
-    setNewPerson('');
     setError('');
     onClose();
   };

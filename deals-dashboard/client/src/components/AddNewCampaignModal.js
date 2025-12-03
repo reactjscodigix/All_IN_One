@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Upload, Download } from 'lucide-react';
+import { Upload, Download } from 'lucide-react';
 import { campaignAPI } from '../services/api';
 
 const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {

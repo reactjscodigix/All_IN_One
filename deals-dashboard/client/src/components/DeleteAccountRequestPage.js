@@ -1,156 +1,310 @@
-import React, { useState, useMemo } from 'react';
-import { Search, MoreVertical, Download, ChevronDown, Filter } from 'lucide-react';
-
-const deleteRequestsData = [
-  {
-    id: 1,
-    name: 'Darlee Robertson',
-    role: 'Facility Manager',
-    avatar: 'https://i.pravatar.cc/100?img=32',
-    requisitionDate: '25 Sep 2025, 12:12 pm',
-    deleteDate: '25 Sep 2025, 12:12 pm',
-    reason: 'No longer using service',
-    status: 'Rejected',
-  },
-  {
-    id: 2,
-    name: 'Sharon Roy',
-    role: 'Installer',
-    avatar: 'https://i.pravatar.cc/100?img=12',
-    requisitionDate: '27 Sep 2025, 07:40 am',
-    deleteDate: '27 Sep 2025, 07:40 am',
-    reason: 'Privacy concerns',
-    status: 'Pending',
-  },
-  {
-    id: 3,
-    name: 'Vaughan Lewis',
-    role: 'Senior Manager',
-    avatar: 'https://i.pravatar.cc/100?img=22',
-    requisitionDate: '29 Sep 2025, 08:20 am',
-    deleteDate: '29 Sep 2025, 08:20 am',
-    reason: 'Duplicate account',
-    status: 'Rejected',
-  },
-  {
-    id: 4,
-    name: 'Jessica Louise',
-    role: 'Test Engineer',
-    avatar: 'https://i.pravatar.cc/100?img=8',
-    requisitionDate: '25 Sep 2025, 12:12 pm',
-    deleteDate: '25 Sep 2025, 12:12 pm',
-    reason: 'Technical issues',
-    status: 'Rejected',
-  },
-  {
-    id: 5,
-    name: 'Carol Thomas',
-    role: 'UI / UX Designer',
-    avatar: 'https://i.pravatar.cc/100?img=3',
-    requisitionDate: '02 Oct 2025, 10:10 am',
-    deleteDate: '02 Oct 2025, 10:10 am',
-    reason: 'Receiving too many emails',
-    status: 'Pending',
-  },
-  {
-    id: 6,
-    name: 'Dawn Mercha',
-    role: 'Technician',
-    avatar: 'https://i.pravatar.cc/100?img=11',
-    requisitionDate: '17 Oct 2025, 04:25 pm',
-    deleteDate: '17 Oct 2025, 04:25 pm',
-    reason: 'Privacy concerns',
-    status: 'Pending',
-  },
-  {
-    id: 7,
-    name: 'Rachel Hampton',
-    role: 'Software Developer',
-    avatar: 'https://i.pravatar.cc/100?img=5',
-    requisitionDate: '28 Oct 2025, 07:16 am',
-    deleteDate: '28 Oct 2025, 07:16 am',
-    reason: 'Duplicate account',
-    status: 'Pending',
-  },
-  {
-    id: 8,
-    name: 'Jonelle Curtiss',
-    role: 'Supervisor',
-    avatar: 'https://i.pravatar.cc/100?img=7',
-    requisitionDate: '08 Nov 2025, 06:10 am',
-    deleteDate: '08 Nov 2025, 06:10 am',
-    reason: 'No longer using service',
-    status: 'Pending',
-  },
-  {
-    id: 9,
-    name: 'Jonathan Smith',
-    role: 'Team Lead Dev',
-    avatar: 'https://i.pravatar.cc/100?img=9',
-    requisitionDate: '15 Nov 2025, 11:50 am',
-    deleteDate: '15 Nov 2025, 11:50 am',
-    reason: 'No longer using service',
-    status: 'Pending',
-  },
-  {
-    id: 10,
-    name: 'Brook Carter',
-    role: 'Team Lead Dev',
-    avatar: 'https://i.pravatar.cc/100?img=10',
-    requisitionDate: '25 Nov 2025, 06:34 pm',
-    deleteDate: '25 Nov 2025, 06:34 pm',
-    reason: 'Privacy concerns',
-    status: 'Pending',
-  },
-];
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, MoreVertical, Download, ChevronDown, Filter, Check, AlertCircle } from 'lucide-react';
+import DeleteRequestModal from './DeleteRequestModal';
+import ColumnFilterDropdown from './ColumnFilterDropdown';
+import DeleteRequestFilterPanel from './DeleteRequestFilterPanel';
 
 const StatusBadge = ({ status }) => {
   if (status === 'Rejected') {
     return <span className="inline-flex items-center px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-800">Rejected</span>;
   }
+  if (status === 'Approved') {
+    return <span className="inline-flex items-center px-3 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">Approved</span>;
+  }
   return <span className="inline-flex items-center px-3 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">Pending</span>;
 };
 
+const ApprovalModal = ({ isOpen, request, onApprove, onReject, onClose, loading }) => {
+  if (!isOpen || !request) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-shrink-0">
+            <Check className="h-6 w-6 text-yellow-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Review Delete Request</h3>
+        </div>
+        
+        <div className="mb-6">
+          <p className="text-sm text-gray-600 mb-4">
+            <strong>{request.first_name}</strong> ({request.email}) has requested account deletion.
+          </p>
+          <p className="text-sm text-gray-600 mb-2"><strong>Reason:</strong></p>
+          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">{request.reason}</p>
+        </div>
+        
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onReject(request.id)}
+            disabled={loading}
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Reject
+          </button>
+          <button
+            onClick={() => onApprove(request.id)}
+            disabled={loading}
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Approve
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const columnOptions = [
+  { key: 'user', label: 'User' },
+  { key: 'email', label: 'Email' },
+  { key: 'requested_date', label: 'Requested Date' },
+  { key: 'reason', label: 'Reason' },
+  { key: 'status', label: 'Status' },
+  { key: 'action', label: 'Action' },
+];
+
 const DeleteAccountRequestPage = () => {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [openMenuId, setOpenMenuId] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [approvalLoading, setApprovalLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showDeleteRequestModal, setShowDeleteRequestModal] = useState(false);
+  const [userDeleteRequest, setUserDeleteRequest] = useState(null);
+  const [visibleColumns, setVisibleColumns] = useState(columnOptions.map(col => col.key));
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState({
+    statuses: [],
+    users: [],
+  });
+
+  const handleFilterPanelApply = (filters) => {
+    setAppliedFilters(filters);
+    setPage(1);
+  };
+
+  const handleFilterReset = () => {
+    setAppliedFilters({
+      statuses: [],
+      users: [],
+    });
+    setPage(1);
+  };
+
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchDeleteRequests(),
+        fetchCurrentUser()
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/users');
+      if (!response.ok) throw new Error('Failed to fetch users');
+      const data = await response.json();
+      if (data && data.length > 0) {
+        setCurrentUser(data[0]);
+        
+        const deleteReq = await fetchUserDeleteRequest(data[0].id);
+        if (deleteReq) {
+          setUserDeleteRequest(deleteReq);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+
+  const fetchUserDeleteRequest = async (userId) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/delete-requests');
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
+      return data.find(req => req.user_id === userId);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const fetchDeleteRequests = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/delete-requests');
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
+      setRequests(data || []);
+    } catch (error) {
+      console.error('Error fetching delete requests:', error);
+      setRequests([]);
+    }
+  };
+
+  const handleApprove = async (id) => {
+    setApprovalLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/delete-requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Approved', reviewed_by: 1 })
+      });
+      if (!response.ok) throw new Error('Failed to approve');
+      setSuccessMessage('Request approved successfully');
+      setShowApprovalModal(false);
+      await fetchDeleteRequests();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert('Failed to approve request');
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
+
+  const handleReject = async (id) => {
+    setApprovalLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/delete-requests/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Rejected', reviewed_by: 1 })
+      });
+      if (!response.ok) throw new Error('Failed to reject');
+      setSuccessMessage('Request rejected successfully');
+      setShowApprovalModal(false);
+      await fetchDeleteRequests();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert('Failed to reject request');
+    } finally {
+      setApprovalLoading(false);
+    }
+  };
+
+  const handleDeleteRequestSuccess = () => {
+    setShowDeleteRequestModal(false);
+    setSuccessMessage('Delete request submitted successfully');
+    setTimeout(() => setSuccessMessage(''), 3000);
+    fetchData();
+  };
 
   const filtered = useMemo(() => {
-    let list = deleteRequestsData;
-    if (filterStatus !== 'All') {
-      list = list.filter((r) => r.status === filterStatus);
+    let list = requests;
+    
+    if (appliedFilters.statuses && appliedFilters.statuses.length > 0) {
+      list = list.filter((r) => appliedFilters.statuses.includes(r.status));
     }
+    
+    if (appliedFilters.users && appliedFilters.users.length > 0) {
+      list = list.filter((r) => appliedFilters.users.includes(r.first_name));
+    }
+    
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(
         (r) =>
-          r.name.toLowerCase().includes(q) ||
-          r.role.toLowerCase().includes(q) ||
-          r.reason.toLowerCase().includes(q)
+          r.first_name?.toLowerCase().includes(q) ||
+          r.email?.toLowerCase().includes(q) ||
+          r.reason?.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [query, filterStatus]);
+  }, [query, appliedFilters, requests]);
 
-  const pages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const pageData = filtered.slice((page - 1) * perPage, page * perPage);
+  const pageSize = 10;
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageData = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  if (loading) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          <p className="mt-4 text-gray-600">Loading delete requests...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      {successMessage && (
+        <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-40 animate-fadeIn">
+          {successMessage}
+        </div>
+      )}
+
+      {/* Current User Section */}
+      {currentUser && (
+        <div className="bg-white border-b border-gray-200 px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <img
+                src={currentUser.avatar || `https://i.pravatar.cc/100?u=${currentUser.email}`}
+                alt={currentUser.first_name}
+                className="w-16 h-16 rounded-full object-cover"
+                onError={(e) => {e.target.src = `https://i.pravatar.cc/100?u=${currentUser.email}`}}
+              />
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">{currentUser.first_name}</h2>
+                <p className="text-sm text-gray-600">{currentUser.email}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Member since {new Date(currentUser.created_at).toLocaleDateString('en-GB')}
+                </p>
+              </div>
+            </div>
+            {userDeleteRequest ? (
+              <div className="text-right">
+                <p className="text-sm text-gray-600 mb-2">Your Delete Request Status:</p>
+                <StatusBadge status={userDeleteRequest.status} />
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowDeleteRequestModal(true)}
+                className="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Request Account Deletion
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">Delete Account Request</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Delete Account Requests</h1>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                152
+                {requests.length}
               </span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Home › Delete Account Request</p>
+            <p className="text-xs text-gray-500 mt-1">Home › Delete Account Requests</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative group">
@@ -182,38 +336,37 @@ const DeleteAccountRequestPage = () => {
         </div>
       </div>
 
-      {/* Filters Row */}
+      {/* Filters */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50">
+          <div className="flex items-center gap-3 relative">
+            <button
+              onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-blue-50 hover:border-blue-300 transition-colors font-medium"
+            >
               <Filter size={16} />
               Filter
+              {(appliedFilters.statuses.length > 0 || appliedFilters.users.length > 0) && (
+                <span className="ml-1 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full font-semibold">
+                  {appliedFilters.statuses.length + appliedFilters.users.length}
+                </span>
+              )}
             </button>
-            <select
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setPage(1);
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700"
-            >
-              <option value="All">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Rejected">Rejected</option>
-            </select>
+            <DeleteRequestFilterPanel
+              isOpen={isFilterPanelOpen}
+              onClose={() => setIsFilterPanelOpen(false)}
+              requests={requests}
+              onFilter={handleFilterPanelApply}
+              onReset={handleFilterReset}
+            />
             <div className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700">
-              1 Dec 25 - 1 Dec 25
+              {new Date().toLocaleDateString('en-GB')}
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50">
-              Sort By
-              <ChevronDown size={16} />
-            </button>
-            <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-gray-50">
-              Manage Columns
-            </button>
+            <ColumnFilterDropdown
+              columns={columnOptions}
+              visibleColumns={visibleColumns}
+              onColumnsChange={setVisibleColumns}
+            />
           </div>
         </div>
       </div>
@@ -221,112 +374,181 @@ const DeleteAccountRequestPage = () => {
       {/* Table */}
       <div className="p-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="py-3 px-4 text-left w-8">
-                    <input type="checkbox" className="cursor-pointer" />
-                  </th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">User Name</th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">Requisition Date</th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">Delete Request Date</th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">Reason for Deletion</th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">Status</th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageData.map((request) => (
-                  <tr key={request.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-4">
-                      <input type="checkbox" className="cursor-pointer" />
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={request.avatar}
-                          alt={request.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <p className="font-medium text-gray-900">{request.name}</p>
-                          <p className="text-xs text-gray-500">{request.role}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-gray-600">{request.requisitionDate}</td>
-                    <td className="py-3 px-4 text-gray-600">{request.deleteDate}</td>
-                    <td className="py-3 px-4 text-gray-600">{request.reason}</td>
-                    <td className="py-3 px-4">
-                      <StatusBadge status={request.status} />
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="relative">
-                        <button
-                          onClick={() => setOpenMenuId(openMenuId === request.id ? null : request.id)}
-                          className="p-1 hover:bg-gray-200 rounded transition-colors"
-                        >
-                          <MoreVertical size={16} className="text-gray-400" />
-                        </button>
-                        {openMenuId === request.id && (
-                          <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                            <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">
-                              Approve
-                            </button>
-                            <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-t border-gray-200">
-                              Reject
-                            </button>
-                          </div>
+          {requests.length === 0 ? (
+            <div className="p-12 text-center">
+              <AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Delete Requests</h3>
+              <p className="text-gray-600">No account deletion requests at the moment.</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-blue-50 border-b border-gray-200">
+                      <th className="py-3 px-4 text-left w-8">
+                        <input type="checkbox" className="cursor-pointer" />
+                      </th>
+                      {visibleColumns.includes('user') && (
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">User</th>
+                      )}
+                      {visibleColumns.includes('email') && (
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Email</th>
+                      )}
+                      {visibleColumns.includes('requested_date') && (
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Requested Date</th>
+                      )}
+                      {visibleColumns.includes('reason') && (
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Reason</th>
+                      )}
+                      {visibleColumns.includes('status') && (
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Status</th>
+                      )}
+                      {visibleColumns.includes('action') && (
+                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Action</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageData.map((request) => (
+                      <tr key={request.id} className="border-b border-gray-200 hover:bg-blue-50 transition-colors">
+                        <td className="py-3 px-4">
+                          <input type="checkbox" className="cursor-pointer" />
+                        </td>
+                        {visibleColumns.includes('user') && (
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={request.avatar || `https://i.pravatar.cc/100?u=${request.email}`}
+                                alt={request.first_name}
+                                className="w-10 h-10 rounded-full object-cover"
+                                onError={(e) => {e.target.src = `https://i.pravatar.cc/100?u=${request.email}`}}
+                              />
+                              <div>
+                                <p className="font-medium text-gray-900">{request.first_name || 'N/A'}</p>
+                              </div>
+                            </div>
+                          </td>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        {visibleColumns.includes('email') && (
+                          <td className="py-3 px-4 text-gray-600">{request.email || 'N/A'}</td>
+                        )}
+                        {visibleColumns.includes('requested_date') && (
+                          <td className="py-3 px-4 text-gray-600 whitespace-nowrap">
+                            {new Date(request.requested_at).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                        )}
+                        {visibleColumns.includes('reason') && (
+                          <td className="py-3 px-4 text-gray-600 max-w-xs truncate" title={request.reason}>
+                            {request.reason}
+                          </td>
+                        )}
+                        {visibleColumns.includes('status') && (
+                          <td className="py-3 px-4">
+                            <StatusBadge status={request.status} />
+                          </td>
+                        )}
+                        {visibleColumns.includes('action') && (
+                          <td className="py-3 px-4">
+                            <div className="relative">
+                              <button
+                                onClick={() => setOpenMenuId(openMenuId === request.id ? null : request.id)}
+                                className="p-1 hover:bg-gray-200 rounded transition-colors"
+                              >
+                                <MoreVertical size={16} className="text-gray-400" />
+                              </button>
+                              {openMenuId === request.id && (
+                                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                                  {request.status === 'Pending' && (
+                                    <>
+                                      <button
+                                        onClick={() => {
+                                          setSelectedRequest(request);
+                                          setShowApprovalModal(true);
+                                          setOpenMenuId(null);
+                                        }}
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
+                                      >
+                                        Review Request
+                                      </button>
+                                      <div className="border-t border-gray-200"></div>
+                                    </>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setOpenMenuId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
+                                  >
+                                    View Details
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <div className="text-sm text-gray-600">
-              Show{' '}
-              <select
-                value={perPage}
-                onChange={(e) => {
-                  setPerPage(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="border border-gray-300 px-2 py-1 rounded text-sm bg-white"
-              >
-                <option>10</option>
-                <option>25</option>
-                <option>50</option>
-              </select>{' '}
-              entries
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPage((s) => Math.max(1, s - 1))}
-                className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
-                disabled={page === 1}
-              >
-                &lt;
-              </button>
-              <button className="px-3 py-1 bg-red-600 text-white rounded text-sm">{page}</button>
-              <button
-                onClick={() => setPage((s) => Math.min(pages, s + 1))}
-                className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
-                disabled={page === pages}
-              >
-                &gt;
-              </button>
-            </div>
-          </div>
+              {pageData.length > 0 && (
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+                  <div className="text-sm text-gray-600">
+                    Showing {pageData.length} of {filtered.length} entries
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPage((s) => Math.max(1, s - 1))}
+                      className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
+                      disabled={page === 1}
+                    >
+                      &lt;
+                    </button>
+                    <button className="px-3 py-1 bg-red-600 text-white rounded text-sm">{page}</button>
+                    <button
+                      onClick={() => setPage((s) => Math.min(pages, s + 1))}
+                      className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
+                      disabled={page === pages}
+                    >
+                      &gt;
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
-      {/* Footer */}
+      <ApprovalModal
+        isOpen={showApprovalModal}
+        request={selectedRequest}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        onClose={() => {
+          setShowApprovalModal(false);
+          setSelectedRequest(null);
+        }}
+        loading={approvalLoading}
+      />
+
+      {currentUser && (
+        <DeleteRequestModal
+          isOpen={showDeleteRequestModal}
+          onClose={() => setShowDeleteRequestModal(false)}
+          userId={currentUser.id}
+          onSuccess={handleDeleteRequestSuccess}
+        />
+      )}
+
       <div className="text-center text-xs text-gray-500 py-6 border-t border-gray-200 bg-white">
         <span>
           Copyright © 2025{' '}

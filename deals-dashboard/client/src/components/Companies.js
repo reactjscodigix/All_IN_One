@@ -36,7 +36,7 @@ const Companies = () => {
   
   useEffect(() => {
     initializeCompanies();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const transformMockToApiFormat = (mockData) => {
     return mockData.map((item, idx) => ({
@@ -162,11 +162,9 @@ const Companies = () => {
         plan_type: submitData.planType || 'Monthly'
       };
 
-      let apiSuccess = false;
       try {
         const response = await companiesAPI.create(submitData);
         console.log('✅ Company created in API:', response);
-        apiSuccess = true;
         if (response.id) {
           newLocalCompany.id = response.id;
         }

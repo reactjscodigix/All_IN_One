@@ -4,6 +4,7 @@ import { Upload } from 'lucide-react';
 const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEditMode = false }) => {
   const [companies, setCompanies] = useState([]);
   const [avatar, setAvatar] = useState(null);
+  const fileInputRef = React.useRef(null);
   const [openPanels, setOpenPanels] = useState({
     basic: true,
     address: false,
@@ -107,8 +108,11 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setAvatar(url);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setAvatar(event.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -128,6 +132,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
       email: form.email,
       phone: form.phone,
       status: 'Active',
+      avatar: avatar,
     };
 
     onSubmit(submitData);
@@ -197,6 +202,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
                   <div className="flex-1">
                     <button
                       type="button"
+                      onClick={() => fileInputRef.current?.click()}
                       className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
                     >
                       <Upload size={16} />
@@ -204,6 +210,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
                     </button>
                     <p className="text-xs text-gray-500 mt-2">JPG, GIF or PNG. Max size of 800K</p>
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handleFile}
