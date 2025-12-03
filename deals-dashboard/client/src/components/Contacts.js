@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Phone, MapPin, Plus, MessageCircle, Users, ChevronDown, X } from 'lucide-react';
+import { Mail, Phone, MapPin, Plus, MessageCircle, Users, ChevronDown, X, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddContactModal from './AddContactModal';
 import ContactActionDropdown from './ContactActionDropdown';
@@ -310,21 +310,22 @@ const Contacts = () => {
 
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="relative w-full max-w-xs">
+            <div className="relative flex-1 max-w-xs">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={handleSearch}
-                className="w-full px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-gray-400 text-[13px] bg-white"
+                className="w-full pl-9 pr-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-gray-400 text-[13px] bg-white"
               />
             </div>
             <div className="relative">
               <button
                 onClick={() => setShowFilter(!showFilter)}
-                className="bg-[#F62416] text-white px-4 py-2 rounded-lg hover:bg-red-700 text-[13px] font-medium flex items-center gap-2 transition"
+                className="px-4 py-2 border border-[#E5E7EB] rounded-lg hover:bg-gray-50 text-[13px] font-medium text-gray-700 transition bg-white flex items-center gap-2"
               >
-                ☰ Filter
+                Filter <ChevronDown size={16} />
               </button>
               {showFilter && (
                 <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-[#E5E7EB] rounded-lg p-5 max-h-[calc(100vh-200px)] overflow-y-auto z-50 shadow-lg">
