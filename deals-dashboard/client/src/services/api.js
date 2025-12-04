@@ -7,10 +7,15 @@ const apiService = {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         cache: 'no-store'
       });
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
-      return await response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error ${response.status}: ${errorText}`);
+      }
+      const data = await response.json();
+      console.log(`✅ GET ${endpoint}:`, data);
+      return data;
     } catch (error) {
-      console.error(`GET ${endpoint} failed:`, error);
+      console.error(`❌ GET ${endpoint} failed:`, error);
       throw error;
     }
   },
@@ -22,7 +27,10 @@ const apiService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error ${response.status}: ${errorText}`);
+      }
       return await response.json();
     } catch (error) {
       console.error(`POST ${endpoint} failed:`, error);
@@ -37,7 +45,10 @@ const apiService = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error ${response.status}: ${errorText}`);
+      }
       return await response.json();
     } catch (error) {
       console.error(`PUT ${endpoint} failed:`, error);
@@ -51,7 +62,10 @@ const apiService = {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error ${response.status}: ${errorText}`);
+      }
       return await response.json();
     } catch (error) {
       console.error(`DELETE ${endpoint} failed:`, error);
@@ -173,5 +187,31 @@ export const proposalsAPI = {
   getHistory: (id) => apiService.get(`/proposals/${id}/history`),
   convertToInvoice: (id, data) => apiService.post(`/proposals/${id}/convert-to-invoice`, data),
 };
+
+export const contractsAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/contracts${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => apiService.get(`/contracts/${id}`),
+  create: (data) => apiService.post('/contracts', data),
+  update: (id, data) => apiService.put(`/contracts/${id}`, data),
+  delete: (id) => apiService.delete(`/contracts/${id}`),
+};
+
+export const estimationsAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/estimations${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => apiService.get(`/estimations/${id}`),
+  create: (data) => apiService.post('/estimations', data),
+  update: (id, data) => apiService.put(`/estimations/${id}`, data),
+  delete: (id) => apiService.delete(`/estimations/${id}`),
+  send: (id, data) => apiService.post(`/estimations/${id}/send`, data),
+  convertToInvoice: (id, data) => apiService.post(`/estimations/${id}/convert-to-invoice`, data),
+};
+
+export const createContract = (data) => contractsAPI.create(data);
 
 export default apiService;

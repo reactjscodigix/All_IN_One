@@ -10,6 +10,9 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
   const [projects, setProjects] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [localCompanies, setLocalCompanies] = useState([]);
+  const [localContacts, setLocalContacts] = useState([]);
+  const [localDeals, setLocalDeals] = useState([]);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -29,9 +32,37 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
 
   useEffect(() => {
     if (isOpen) {
+      console.log('🔵 Modal opened - syncing data from props:', { 
+        companies: companies?.length, 
+        contacts: contacts?.length, 
+        deals: deals?.length 
+      });
+      console.log('📦 Full data:', { companies, contacts, deals });
+      
       fetchUsersAndProjects();
+      
+      if (companies && companies.length > 0) {
+        setLocalCompanies(companies);
+        console.log('✅ Companies set:', companies.length);
+      } else {
+        console.warn('⚠️ No companies received');
+      }
+      
+      if (contacts && contacts.length > 0) {
+        setLocalContacts(contacts);
+        console.log('✅ Contacts set:', contacts.length);
+      } else {
+        console.warn('⚠️ No contacts received');
+      }
+      
+      if (deals && deals.length > 0) {
+        setLocalDeals(deals);
+        console.log('✅ Deals set:', deals.length);
+      } else {
+        console.warn('⚠️ No deals received');
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, companies, contacts, deals]);
 
   const fetchUsersAndProjects = async () => {
     setLoadingData(true);
@@ -113,13 +144,16 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
 
     setIsLoading(true);
     try {
+      console.log('📤 Submitting proposal with data:', formData);
       if (onSubmit) {
         await onSubmit(formData);
+        console.log('✅ Proposal created successfully');
       }
       handleCancel();
     } catch (err) {
-      setError(err.message || 'Failed to create proposal');
-      console.error('Form submission error:', err);
+      const errorMsg = err.message || 'Failed to create proposal';
+      setError(errorMsg);
+      console.error('❌ Form submission error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +177,7 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
     });
     setError('');
     setTagInput('');
+    setShowUserDropdown(false);
     onClose();
   };
 
@@ -221,11 +256,15 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
             >
               <option value="">Choose</option>
-              {companies.map(company => (
-                <option key={company.id} value={company.id}>
-                  {company.company_name}
-                </option>
-              ))}
+              {localCompanies && localCompanies.length > 0 ? (
+                localCompanies.map(company => (
+                  <option key={company.id} value={company.id}>
+                    {company.company_name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>No companies available</option>
+              )}
             </select>
           </div>
 
@@ -263,6 +302,15 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
             >
               <option value="">Choose</option>
+              {localContacts && localContacts.length > 0 ? (
+                localContacts.map(contact => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.first_name} {contact.last_name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>No contacts available</option>
+              )}
             </select>
           </div>
 
@@ -278,11 +326,15 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
               >
                 <option value="">Choose</option>
-                {deals.map(deal => (
-                  <option key={deal.id} value={deal.id}>
-                    {deal.deal_name}
-                  </option>
-                ))}
+                {localDeals && localDeals.length > 0 ? (
+                  localDeals.map(deal => (
+                    <option key={deal.id} value={deal.id}>
+                      {deal.deal_name}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No deals available</option>
+                )}
               </select>
             </div>
             <button type="button" className="text-red-500 hover:text-red-700 text-lg font-bold mb-1" title="Add New">+</button>
@@ -327,16 +379,53 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Assigned to
             </label>
-            <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white">
-              {getSelectedUser() ? (
-                <>
-                  <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
-                    {getInitials(getSelectedUser().first_name, getSelectedUser().last_name)}
-                  </div>
-                  <span className="text-sm text-gray-700">{getSelectedUser().first_name} {getSelectedUser().last_name}</span>
-                </>
-              ) : (
-                <span className="text-sm text-gray-500">No user assigned</span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                disabled={loadingData}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition disabled:opacity-50 text-left flex items-center justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  {getSelectedUser() ? (
+                    <>
+                      <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold">
+                        {getInitials(getSelectedUser().first_name, getSelectedUser().last_name)}
+                      </div>
+                      <span>{getSelectedUser().first_name} {getSelectedUser().last_name}</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">{loadingData ? 'Loading...' : 'Select'}</span>
+                  )}
+                </span>
+                <span className="text-gray-400">▼</span>
+              </button>
+
+              {showUserDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  {users.map(user => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          assigned_to: user.id.toString()
+                        }));
+                        setShowUserDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                        {getInitials(user.first_name, user.last_name)}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{user.first_name} {user.last_name}</div>
+                        <div className="text-xs text-gray-500">{user.email || 'No email'}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           </div>

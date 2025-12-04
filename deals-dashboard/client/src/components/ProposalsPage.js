@@ -28,20 +28,60 @@ const ProposalsPage = ({ onViewDetails }) => {
       if (filterStatus) filters.status = filterStatus;
       if (searchText) filters.search = searchText;
 
-      const [proposalsData, companiesData, contactsData, dealsData] = await Promise.all([
-        proposalsAPI.getAll(filters),
-        companiesAPI.getAll(),
-        contactsAPI.getAll(),
-        dealsAPI.getAll()
-      ]);
+      console.log('🚀 Starting API calls...');
 
-      setProposals(proposalsData || []);
-      setCompanies(companiesData || []);
-      setContacts(contactsData || []);
-      setDeals(dealsData || []);
+      let proposalsData = [];
+      let companiesData = [];
+      let contactsData = [];
+      let dealsData = [];
+
+      try {
+        proposalsData = await proposalsAPI.getAll(filters);
+        console.log('✅ Proposals loaded:', proposalsData?.length);
+      } catch (err) {
+        console.warn('⚠️ Proposals fetch failed (non-critical):', err.message);
+        proposalsData = [];
+      }
+
+      try {
+        companiesData = await companiesAPI.getAll();
+        console.log('✅ Companies loaded:', companiesData?.length);
+      } catch (err) {
+        console.error('❌ Companies failed:', err.message);
+        companiesData = [];
+      }
+
+      try {
+        contactsData = await contactsAPI.getAll();
+        console.log('✅ Contacts loaded:', contactsData?.length);
+      } catch (err) {
+        console.error('❌ Contacts failed:', err.message);
+        contactsData = [];
+      }
+
+      try {
+        dealsData = await dealsAPI.getAll();
+        console.log('✅ Deals loaded:', dealsData?.length);
+      } catch (err) {
+        console.error('❌ Deals failed:', err.message);
+        dealsData = [];
+      }
+
+      console.log('📊 Final data summary:', {
+        proposals: proposalsData?.length,
+        companies: companiesData?.length,
+        contacts: contactsData?.length,
+        deals: dealsData?.length
+      });
+
+      setProposals(proposalsData);
+      setCompanies(companiesData);
+      setContacts(contactsData);
+      setDeals(dealsData);
     } catch (err) {
-      setError('Failed to load proposals: ' + err.message);
-      console.error('Load error:', err);
+      const errorMsg = err.message || 'Unknown error';
+      setError('Failed to load proposals: ' + errorMsg);
+      console.error('❌ Load error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -49,14 +89,20 @@ const ProposalsPage = ({ onViewDetails }) => {
 
   const handleCreateProposal = async (formData) => {
     try {
-      await proposalsAPI.create({
+      console.log('📝 Creating proposal in ProposalsPage:', formData);
+      const proposal_number = `PROP-${Date.now()}`;
+      const response = await proposalsAPI.create({
         ...formData,
+        proposal_number,
         created_by: 1,
       });
+      console.log('✅ Proposal created:', response);
       setShowCreateModal(false);
       await loadInitialData();
     } catch (err) {
-      alert('Failed to create proposal: ' + err.message);
+      const errorMsg = err.message || 'Unknown error';
+      console.error('❌ Failed to create proposal:', err);
+      alert('Failed to create proposal: ' + errorMsg);
     }
   };
 
@@ -111,79 +157,103 @@ const ProposalsPage = ({ onViewDetails }) => {
     const company = companies.find(c => c.id === proposal.client_id);
     const currency = proposal.currency || 'USD';
     
+    const getCompanyInitials = (name) => {
+      return name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'CP';
+    };
+    
+    const getCompanyColor = (companyId) => {
+      const colors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'];
+      return colors[(companyId || 0) % colors.length];
+    };
+    
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-        <div className="flex items-start justify-between mb-3">
-          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">
-            {proposal.proposal_number}
-          </span>
-          <div className="relative">
-            <button 
-              onClick={() => setShowActionMenu(showActionMenu === proposal.id ? null : proposal.id)}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
-            >
-              <MoreVertical size={18} className="text-gray-400" />
-            </button>
-            {showActionMenu === proposal.id && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-300 rounded shadow-lg z-10">
-                <button
-                  onClick={() => handleStatusChange(proposal.id, 'Sent')}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <Send size={14} /> Send
-                </button>
-                <button
-                  onClick={() => handleStatusChange(proposal.id, 'Approved')}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <CheckCircle size={14} /> Approve
-                </button>
-                <button
-                  onClick={() => handleStatusChange(proposal.id, 'Rejected')}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <XCircle size={14} /> Reject
-                </button>
-                {proposal.status === 'Accepted' && (
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-200">
+        <div className="p-4 pb-3">
+          <div className="flex items-start justify-between mb-3">
+            <span className="text-sm font-semibold text-blue-600">{proposal.proposal_number}</span>
+            <div className="relative">
+              <button 
+                onClick={() => setShowActionMenu(showActionMenu === proposal.id ? null : proposal.id)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <MoreVertical size={16} className="text-gray-400" />
+              </button>
+              {showActionMenu === proposal.id && (
+                <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
                   <button
-                    onClick={() => handleConvertToInvoice(proposal.id)}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 border-t"
+                    onClick={() => handleStatusChange(proposal.id, 'Sent')}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
                   >
-                    <Download size={14} /> Convert to Invoice
+                    <Send size={14} /> Send
                   </button>
-                )}
-                <button
-                  onClick={() => handleDeleteProposal(proposal.id)}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-red-100 text-red-700 flex items-center gap-2 border-t"
-                >
-                  <XCircle size={14} /> Delete
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={() => handleStatusChange(proposal.id, 'Approved')}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <CheckCircle size={14} /> Approve
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(proposal.id, 'Rejected')}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                  >
+                    <XCircle size={14} /> Reject
+                  </button>
+                  {proposal.status === 'Accepted' && (
+                    <button
+                      onClick={() => handleConvertToInvoice(proposal.id)}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 border-t"
+                    >
+                      <Download size={14} /> Convert to Invoice
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteProposal(proposal.id)}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-red-100 text-red-700 flex items-center gap-2 border-t"
+                  >
+                    <XCircle size={14} /> Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <h3 className="font-semibold text-gray-900 text-sm mb-2">{proposal.title}</h3>
+          <p className="text-xs text-gray-500 mb-3">{proposal.description || 'Proposal'}</p>
+
+          <div className="space-y-1 mb-4 text-xs text-gray-600">
+            <div className="flex items-center gap-1.5">
+              <span>📅</span>
+              <span>Date: {new Date(proposal.proposal_date).toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span>⏳</span>
+              <span>Valid Till: {proposal.validity_date ? new Date(proposal.validity_date).toLocaleDateString() : 'N/A'}</span>
+            </div>
           </div>
         </div>
 
-        <h3 className="font-semibold text-gray-900 mb-1">{proposal.title}</h3>
-        <p className="text-xs text-gray-500 mb-3">Client: {company?.company_name || 'Unknown'}</p>
+        <div className="border-t pt-3 px-4 pb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`w-12 h-12 rounded-full ${getCompanyColor(company?.id)} text-white flex items-center justify-center font-semibold text-sm flex-shrink-0`}>
+              {company ? getCompanyInitials(company.company_name) : 'N/A'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 text-sm truncate">
+                {company?.company_name || 'Unknown Company'}
+              </p>
+              <p className="text-xs text-gray-500">Client</p>
+            </div>
+          </div>
 
-        <div className="space-y-2 mb-4 text-xs text-gray-600">
-          <div className="flex items-center gap-2">
-            <span>💰</span>
-            <span>Total: {currency} {proposal.total_amount || 0}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>📅</span>
-            <span>Date: {new Date(proposal.proposal_date).toLocaleDateString()}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span>⏳</span>
-            <span>Valid Till: {proposal.validity_date ? new Date(proposal.validity_date).toLocaleDateString() : 'N/A'}</span>
+          <div className="flex items-center justify-between">
+            <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getStatusColor(proposal.status)}`}>
+              {proposal.status}
+            </span>
+            <span className="text-sm font-semibold text-gray-900">
+              💰 {currency} {(proposal.total_amount || 0).toLocaleString()}
+            </span>
           </div>
         </div>
-
-        <span className={`text-xs px-3 py-1 rounded-full font-semibold ${getStatusColor(proposal.status)}`}>
-          {proposal.status}
-        </span>
       </div>
     );
   };
@@ -340,7 +410,7 @@ const ProposalsPage = ({ onViewDetails }) => {
       </div>
 
       {/* Main Content */}
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-6">
         {error && (
           <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
@@ -353,10 +423,11 @@ const ProposalsPage = ({ onViewDetails }) => {
           </div>
         ) : proposals.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">No proposals found</p>
+            <p className="text-gray-500 text-lg">No proposals found</p>
+            <p className="text-gray-400 text-sm mt-2">Create your first proposal to get started</p>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {proposals.map((proposal) => (
               <ProposalCard key={proposal.id} proposal={proposal} />
             ))}

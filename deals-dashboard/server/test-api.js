@@ -1,39 +1,50 @@
 const http = require('http');
 
-const options = {
-  hostname: 'localhost',
-  port: 5000,
-  path: '/api/deals',
-  method: 'GET'
-};
+function request(method, path, data = null) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'localhost',
+      port: 5000,
+      path: path,
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    };
 
-const req = http.request(options, (res) => {
-  let data = '';
-  
-  res.on('data', (chunk) => {
-    data += chunk;
-  });
-  
-  res.on('end', () => {
-    try {
-      const deals = JSON.parse(data);
-      console.log('✅ API Response Successful!');
-      console.log(`Total deals: ${deals.length}`);
-      console.log('\nFirst 3 deals:');
-      deals.slice(0, 3).forEach((deal, idx) => {
-        console.log(`  ${idx + 1}. ${deal.deal_name} - $${Number(deal.deal_value).toLocaleString()} (${deal.status})`);
+    const req = http.request(options, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(body);
+          resolve({ status: res.statusCode, data: json });
+        } catch {
+          resolve({ status: res.statusCode, data: body });
+        }
       });
-      process.exit(0);
-    } catch (err) {
-      console.error('Failed to parse response:', err.message);
-      process.exit(1);
-    }
+    });
+
+    req.on('error', reject);
+    if (data) req.write(JSON.stringify(data));
+    req.end();
   });
-});
+}
 
-req.on('error', (err) => {
-  console.error('❌ API Error:', err.message);
-  process.exit(1);
-});
+async function test() {
+  console.log('Testing GET /api/estimations...');
+  const get = await request('GET', '/api/estimations');
+  console.log('Status:', get.status, 'Data:', get.data);
 
-req.end();
+  console.log('\nTesting POST /api/estimations...');
+  const post = await request('POST', '/api/estimations', {
+    client_id: 1,
+    amount: 5000,
+    currency: 'USD'
+  });
+  console.log('Status:', post.status, 'Data:', post.data);
+
+  process.exit(0);
+}
+
+test();

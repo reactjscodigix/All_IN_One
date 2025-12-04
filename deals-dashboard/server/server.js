@@ -226,6 +226,30 @@ async function initializeDatabase() {
         FOREIGN KEY (proposal_id) REFERENCES proposals(id) ON DELETE CASCADE
       )
     `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS contracts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        subject VARCHAR(255) NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        client_id INT NOT NULL,
+        contract_type VARCHAR(100) NOT NULL,
+        contract_value DECIMAL(15, 2) NOT NULL,
+        description LONGTEXT,
+        status ENUM('Draft', 'Active', 'Completed', 'Terminated') DEFAULT 'Draft',
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_client_id (client_id),
+        INDEX idx_start_date (start_date),
+        INDEX idx_end_date (end_date),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
     
     console.log('✓ All tables initialized successfully');
     
@@ -3100,7 +3124,7 @@ app.get('/api/proposals', async (req, res) => {
     
     let query = `
       SELECT p.*, c.company_name, ct.first_name, ct.last_name,
-             u.first_name as creator_first_name, u.last_name as creator_last_name
+             u.first_name as creator_first_name
       FROM proposals p
       LEFT JOIN companies c ON p.client_id = c.id
       LEFT JOIN contacts ct ON p.contact_id = ct.id
@@ -3147,7 +3171,7 @@ app.get('/api/proposals/:id', async (req, res) => {
     
     const [proposal] = await connection.query(`
       SELECT p.*, c.company_name, ct.first_name, ct.last_name,
-             u.first_name as creator_first_name, u.last_name as creator_last_name
+             u.first_name as creator_first_name
       FROM proposals p
       LEFT JOIN companies c ON p.client_id = c.id
       LEFT JOIN contacts ct ON p.contact_id = ct.id
@@ -3164,7 +3188,7 @@ app.get('/api/proposals/:id', async (req, res) => {
     `, [id]);
     
     const [history] = await connection.query(`
-      SELECT ph.*, u.first_name, u.last_name
+      SELECT ph.*, u.first_name
       FROM proposal_history ph
       LEFT JOIN users u ON ph.action_by = u.id
       WHERE ph.proposal_id = ?
@@ -3698,6 +3722,533 @@ app.get('/api/proposals/:id/history', async (req, res) => {
   } catch (error) {
     console.error('Error fetching proposal history:', error.message);
     res.status(500).json({ error: 'Failed to fetch proposal history' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/estimations', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const { status, client_id, search } = req.query;
+    
+    let query = `
+      SELECT e.*, c.company_name, p.name as project_name, u.first_name as creator_first_name
+      FROM estimations e
+      LEFT JOIN companies c ON e.client_id = c.id
+      LEFT JOIN projects p ON e.project_id = p.id
+      LEFT JOIN users u ON e.estimate_by = u.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (status) {
+      query += ' AND e.status = ?';
+      params.push(status);
+    }
+    if (client_id) {
+      query += ' AND e.client_id = ?';
+      params.push(client_id);
+    }
+    if (search) {
+      query += ' AND (e.estimation_number LIKE ? OR c.company_name LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    query += ' ORDER BY e.created_at DESC';
+    
+    const [rows] = await connection.query(query, params);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching estimations:', error.message);
+    res.status(500).json({ error: 'Failed to fetch estimations' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/estimations/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(`
+      SELECT e.*, c.company_name, p.name as project_name, u.first_name as creator_first_name
+      FROM estimations e
+      LEFT JOIN companies c ON e.client_id = c.id
+      LEFT JOIN projects p ON e.project_id = p.id
+      LEFT JOIN users u ON e.estimate_by = u.id
+      WHERE e.id = ?
+    `, [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Estimation not found' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching estimation:', error.message);
+    res.status(500).json({ error: 'Failed to fetch estimation' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/estimations', async (req, res) => {
+  let connection;
+  try {
+    const {
+      client_id,
+      contact_id,
+      project_id,
+      bill_to,
+      ship_to,
+      amount,
+      currency,
+      estimate_date,
+      expiry_date,
+      status,
+      tags,
+      description,
+      estimate_by
+    } = req.body;
+
+    if (!client_id || !amount) {
+      return res.status(400).json({ error: 'Missing required fields: client_id, amount' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const estimation_number = `EST-${Date.now()}`;
+    const tagsString = Array.isArray(tags) ? tags.join(',') : (tags || null);
+
+    const [result] = await connection.query(`
+      INSERT INTO estimations (
+        client_id, contact_id, project_id, estimation_number, bill_to, ship_to, amount, currency,
+        estimate_date, expiry_date, status, tags, description, estimate_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      client_id,
+      contact_id || null,
+      project_id || null,
+      estimation_number,
+      bill_to || null,
+      ship_to || null,
+      amount,
+      currency || 'USD',
+      estimate_date || null,
+      expiry_date || null,
+      status || 'Draft',
+      tagsString,
+      description || null,
+      estimate_by || null
+    ]);
+
+    res.status(201).json({
+      id: result.insertId,
+      estimation_number,
+      client_id,
+      contact_id,
+      project_id,
+      bill_to,
+      ship_to,
+      amount,
+      currency,
+      estimate_date,
+      expiry_date,
+      status: status || 'Draft',
+      tags: tagsString,
+      description,
+      estimate_by
+    });
+  } catch (error) {
+    console.error('Error creating estimation:', error.message, error);
+    res.status(500).json({ error: 'Failed to create estimation', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/estimations/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const {
+      client_id,
+      contact_id,
+      project_id,
+      bill_to,
+      ship_to,
+      amount,
+      currency,
+      estimate_date,
+      expiry_date,
+      status,
+      tags,
+      description,
+      estimate_by
+    } = req.body;
+
+    connection = await pool.getConnection();
+    
+    const tagsString = Array.isArray(tags) ? tags.join(',') : (tags || null);
+
+    const [result] = await connection.query(`
+      UPDATE estimations SET
+        client_id = ?,
+        contact_id = ?,
+        project_id = ?,
+        bill_to = ?,
+        ship_to = ?,
+        amount = ?,
+        currency = ?,
+        estimate_date = ?,
+        expiry_date = ?,
+        status = ?,
+        tags = ?,
+        description = ?,
+        estimate_by = ?
+      WHERE id = ?
+    `, [
+      client_id,
+      contact_id || null,
+      project_id || null,
+      bill_to || null,
+      ship_to || null,
+      amount,
+      currency || 'USD',
+      estimate_date || null,
+      expiry_date || null,
+      status || 'Draft',
+      tagsString,
+      description || null,
+      estimate_by || null,
+      id
+    ]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Estimation not found' });
+    }
+
+    res.json({ success: true, message: 'Estimation updated successfully' });
+  } catch (error) {
+    console.error('Error updating estimation:', error.message);
+    res.status(500).json({ error: 'Failed to update estimation' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/estimations/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query('DELETE FROM estimations WHERE id = ?', [id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Estimation not found' });
+    }
+    
+    res.json({ success: true, message: 'Estimation deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting estimation:', error.message);
+    res.status(500).json({ error: 'Failed to delete estimation' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/estimations/:id/send', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query('UPDATE estimations SET status = ? WHERE id = ?', ['Sent', id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Estimation not found' });
+    }
+    
+    res.json({ success: true, message: 'Estimation sent successfully' });
+  } catch (error) {
+    console.error('Error sending estimation:', error.message);
+    res.status(500).json({ error: 'Failed to send estimation' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/estimations/:id/convert-to-invoice', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [estimation] = await connection.query('SELECT * FROM estimations WHERE id = ?', [id]);
+    
+    if (estimation.length === 0) {
+      return res.status(404).json({ error: 'Estimation not found' });
+    }
+
+    const est = estimation[0];
+    const invoice_number = `INV-${Date.now()}`;
+
+    const [result] = await connection.query(`
+      INSERT INTO invoices (
+        invoice_number, client_id, project_id, amount, currency,
+        invoice_date, due_date, status, description, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      invoice_number,
+      est.client_id,
+      est.project_id,
+      est.amount,
+      est.currency,
+      new Date().toISOString().split('T')[0],
+      est.expiry_date,
+      'Draft',
+      est.description,
+      est.estimate_by
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Estimation converted to invoice successfully',
+      invoice_id: result.insertId,
+      invoice_number
+    });
+  } catch (error) {
+    console.error('Error converting estimation to invoice:', error.message);
+    res.status(500).json({ error: 'Failed to convert estimation to invoice' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/contracts', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const { status, client_id, search } = req.query;
+    
+    let query = `
+      SELECT c.*, co.company_name, u.first_name as creator_first_name
+      FROM contracts c
+      LEFT JOIN companies co ON c.client_id = co.id
+      LEFT JOIN users u ON c.created_by = u.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (status) {
+      query += ' AND c.status = ?';
+      params.push(status);
+    }
+    if (client_id) {
+      query += ' AND c.client_id = ?';
+      params.push(client_id);
+    }
+    if (search) {
+      query += ' AND (c.subject LIKE ? OR c.contract_type LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    query += ' ORDER BY c.created_at DESC';
+    
+    const [rows] = await connection.query(query, params);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching contracts:', error.message);
+    res.status(500).json({ error: 'Failed to fetch contracts' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/contracts/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [contract] = await connection.query(`
+      SELECT c.*, co.company_name, u.first_name as creator_first_name
+      FROM contracts c
+      LEFT JOIN companies co ON c.client_id = co.id
+      LEFT JOIN users u ON c.created_by = u.id
+      WHERE c.id = ?
+    `, [id]);
+    
+    if (contract.length === 0) {
+      return res.status(404).json({ error: 'Contract not found' });
+    }
+    
+    res.json(contract[0]);
+  } catch (error) {
+    console.error('Error fetching contract:', error.message);
+    res.status(500).json({ error: 'Failed to fetch contract' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/contracts', async (req, res) => {
+  let connection;
+  try {
+    const {
+      subject,
+      start_date,
+      end_date,
+      client_id,
+      contract_type,
+      contract_value,
+      description,
+      created_by
+    } = req.body;
+    
+    if (!subject || !start_date || !end_date || !client_id || !contract_type || !contract_value) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(`
+      INSERT INTO contracts (
+        subject, start_date, end_date, client_id, contract_type, 
+        contract_value, description, created_by, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Draft')
+    `, [
+      subject,
+      start_date,
+      end_date,
+      client_id,
+      contract_type,
+      contract_value,
+      description || '',
+      created_by || null
+    ]);
+    
+    connection.release();
+    
+    res.json({ 
+      message: 'Contract created successfully',
+      contractId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error creating contract:', error.message);
+    res.status(500).json({ error: 'Failed to create contract', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/contracts/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const {
+      subject,
+      start_date,
+      end_date,
+      client_id,
+      contract_type,
+      contract_value,
+      description,
+      status
+    } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [contract] = await connection.query('SELECT * FROM contracts WHERE id = ?', [id]);
+    if (contract.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Contract not found' });
+    }
+    
+    const updateFields = [];
+    const updateValues = [];
+    
+    if (subject !== undefined) {
+      updateFields.push('subject = ?');
+      updateValues.push(subject);
+    }
+    if (start_date !== undefined) {
+      updateFields.push('start_date = ?');
+      updateValues.push(start_date);
+    }
+    if (end_date !== undefined) {
+      updateFields.push('end_date = ?');
+      updateValues.push(end_date);
+    }
+    if (client_id !== undefined) {
+      updateFields.push('client_id = ?');
+      updateValues.push(client_id);
+    }
+    if (contract_type !== undefined) {
+      updateFields.push('contract_type = ?');
+      updateValues.push(contract_type);
+    }
+    if (contract_value !== undefined) {
+      updateFields.push('contract_value = ?');
+      updateValues.push(contract_value);
+    }
+    if (description !== undefined) {
+      updateFields.push('description = ?');
+      updateValues.push(description);
+    }
+    if (status !== undefined) {
+      updateFields.push('status = ?');
+      updateValues.push(status);
+    }
+    
+    if (updateFields.length === 0) {
+      connection.release();
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    updateFields.push('updated_at = NOW()');
+    updateValues.push(id);
+    
+    await connection.query(
+      `UPDATE contracts SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateValues
+    );
+    
+    connection.release();
+    res.json({ message: 'Contract updated successfully' });
+  } catch (error) {
+    console.error('Error updating contract:', error.message);
+    res.status(500).json({ error: 'Failed to update contract', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/contracts/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [contract] = await connection.query('SELECT * FROM contracts WHERE id = ?', [id]);
+    if (contract.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Contract not found' });
+    }
+    
+    await connection.query('DELETE FROM contracts WHERE id = ?', [id]);
+    connection.release();
+    
+    res.json({ message: 'Contract deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting contract:', error.message);
+    res.status(500).json({ error: 'Failed to delete contract', details: error.message });
   } finally {
     if (connection) connection.release();
   }
