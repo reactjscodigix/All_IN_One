@@ -84,7 +84,13 @@ export const contactsAPI = {
 
 export const leadsAPI = {
   getAll: () => apiService.get('/leads'),
+  getById: (id) => apiService.get(`/leads/${id}`),
   create: (data) => apiService.post('/leads', data),
+  update: (id, data) => apiService.put(`/leads/${id}`, data),
+  delete: (id) => apiService.delete(`/leads/${id}`),
+  convertToContact: (id, data) => apiService.post(`/leads/${id}/convert-to-contact`, data),
+  convertToCompany: (id, data) => apiService.post(`/leads/${id}/convert-to-company`, data),
+  convertToDeal: (id, data) => apiService.post(`/leads/${id}/convert-to-deal`, data),
 };
 
 export const plansAPI = {
@@ -122,6 +128,50 @@ export const projectAPI = {
   create: (data) => apiService.post('/projects', data),
   update: (id, data) => apiService.put(`/projects/${id}`, data),
   delete: (id) => apiService.delete(`/projects/${id}`),
+  convertDealToProject: (dealId, data) => apiService.post(`/deals/${dealId}/convert-to-project`, data),
+  getActivity: (projectId) => apiService.get(`/projects/${projectId}/activity`),
+};
+
+export const taskAPI = {
+  create: (projectId, data) => apiService.post(`/projects/${projectId}/tasks`, data),
+  getAll: (projectId) => apiService.get(`/projects/${projectId}/tasks`),
+  update: (projectId, taskId, data) => apiService.put(`/projects/${projectId}/tasks/${taskId}`, data),
+  delete: (projectId, taskId) => apiService.delete(`/projects/${projectId}/tasks/${taskId}`),
+  
+  createGeneral: (data) => apiService.post('/tasks', data),
+  getAllGeneral: () => apiService.get('/tasks'),
+  getById: (taskId) => apiService.get(`/tasks/${taskId}`),
+  updateGeneral: (taskId, data) => apiService.put(`/tasks/${taskId}`, data),
+  deleteGeneral: (taskId) => apiService.delete(`/tasks/${taskId}`),
+};
+
+export const projectCommentAPI = {
+  create: (projectId, data) => apiService.post(`/projects/${projectId}/comments`, data),
+  getAll: (projectId) => apiService.get(`/projects/${projectId}/comments`),
+};
+
+export const projectTeamAPI = {
+  addMember: (projectId, data) => apiService.post(`/projects/${projectId}/team`, data),
+  getMembers: (projectId) => apiService.get(`/projects/${projectId}/team`),
+  removeMember: (projectId, userId) => apiService.delete(`/projects/${projectId}/team/${userId}`),
+};
+
+export const proposalsAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/proposals${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => apiService.get(`/proposals/${id}`),
+  create: (data) => apiService.post('/proposals', data),
+  update: (id, data) => apiService.put(`/proposals/${id}`, data),
+  delete: (id) => apiService.delete(`/proposals/${id}`),
+  updateStatus: (id, data) => apiService.post(`/proposals/${id}/status`, data),
+  submit: (id, data) => apiService.post(`/proposals/${id}/submit`, data),
+  approve: (id, data) => apiService.post(`/proposals/${id}/approve`, data),
+  reject: (id, data) => apiService.post(`/proposals/${id}/reject`, data),
+  send: (id, data) => apiService.post(`/proposals/${id}/send`, data),
+  getHistory: (id) => apiService.get(`/proposals/${id}/history`),
+  convertToInvoice: (id, data) => apiService.post(`/proposals/${id}/convert-to-invoice`, data),
 };
 
 export default apiService;

@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { projectAPI } from '../services/api';
 
 const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState('');
+  const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -22,6 +25,38 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
     description: '',
   });
 
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsersAndCompanies();
+    }
+  }, [isOpen]);
+
+  const fetchUsersAndCompanies = async () => {
+    setIsFetching(true);
+    try {
+      const [usersRes, companiesRes] = await Promise.all([
+        fetch('http://localhost:5000/api/contacts'),
+        fetch('http://localhost:5000/api/companies')
+      ]);
+      
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(Array.isArray(usersData) ? usersData : []);
+      }
+      
+      if (companiesRes.ok) {
+        const companiesData = await companiesRes.json();
+        setCompanies(Array.isArray(companiesData) ? companiesData : []);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setUsers([]);
+      setCompanies([]);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
   const projectTypes = [
     'Web Development',
     'Mobile App',
@@ -30,15 +65,6 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
     'Cloud Migration',
     'API Integration',
     'UI/UX Design'
-  ];
-
-  const clients = [
-    'Acme Corporation',
-    'Tech Solutions Inc',
-    'Digital Innovations',
-    'Global Enterprises',
-    'StartUp Labs',
-    'Enterprise Solutions'
   ];
 
   const categories = [
@@ -61,13 +87,17 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
   const priorities = ['High', 'Medium', 'Low'];
   const statuses = ['Planning', 'In Progress', 'On Hold', 'Completed', 'Cancelled'];
 
-  const teamMembers = [
-    { id: 1, name: 'Robert Johnson', avatar: 'https://i.pravatar.cc/40?img=1' },
-    { id: 2, name: 'Darlee Robertson', avatar: 'https://i.pravatar.cc/40?img=2' },
-    { id: 3, name: 'Sarah Williams', avatar: 'https://i.pravatar.cc/40?img=3' },
-    { id: 4, name: 'Michael Davis', avatar: 'https://i.pravatar.cc/40?img=4' },
-    { id: 5, name: 'Emily Chen', avatar: 'https://i.pravatar.cc/40?img=5' },
-  ];
+  const getInitials = (firstName, lastName) => {
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
+  };
+
+  const getResponsiblePersonUser = (userId) => {
+    return users.find(u => u.id === userId);
+  };
+
+  const getTeamLeaderUser = (userId) => {
+    return users.find(u => u.id === userId);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -77,19 +107,20 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
     }));
   };
 
-  const handleAddPerson = (person) => {
-    if (person && !formData.responsible_persons.includes(person)) {
+  const handleAddPerson = (userId) => {
+    const id = parseInt(userId);
+    if (id && !formData.responsible_persons.includes(id)) {
       setFormData(prev => ({
         ...prev,
-        responsible_persons: [...prev.responsible_persons, person]
+        responsible_persons: [...prev.responsible_persons, id]
       }));
     }
   };
 
-  const handleRemovePerson = (person) => {
+  const handleRemovePerson = (userId) => {
     setFormData(prev => ({
       ...prev,
-      responsible_persons: prev.responsible_persons.filter(p => p !== person)
+      responsible_persons: prev.responsible_persons.filter(p => p !== userId)
     }));
   };
 
@@ -117,6 +148,16 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
       return;
     }
 
+    if (formData.responsible_persons.length === 0) {
+      setError('At least one responsible person is required');
+      return;
+    }
+
+    if (!formData.team_leader) {
+      setError('Team leader is required');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const payload = {
@@ -128,7 +169,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
         project_timing: formData.project_timing,
         price: parseFloat(formData.price),
         responsible_persons: formData.responsible_persons,
-        team_leader: formData.team_leader,
+        team_leader: parseInt(formData.team_leader),
         start_date: formData.start_date,
         due_date: formData.due_date,
         priority: formData.priority,
@@ -180,7 +221,10 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white">
-          <h2 className="text-lg font-semibold text-gray-900">Add New Project</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-gray-900">Add New Project</h2>
+            {isFetching && <span className="text-xs text-gray-500">(Loading data...)</span>}
+          </div>
           <button
             onClick={handleCancel}
             disabled={isLoading}
@@ -206,8 +250,9 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
               name="name"
               value={formData.name}
               onChange={handleInputChange}
+              disabled={isFetching}
               placeholder="Enter project name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
             />
           </div>
 
@@ -221,8 +266,9 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="project_id"
                 value={formData.project_id}
                 onChange={handleInputChange}
+                disabled={isFetching}
                 placeholder="e.g., #12145"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               />
             </div>
             <div>
@@ -233,7 +279,8 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="project_type"
                 value={formData.project_type}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Choose</option>
                 {projectTypes.map(type => (
@@ -252,11 +299,14 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="client"
                 value={formData.client}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
-                <option value="">Select</option>
-                {clients.map(client => (
-                  <option key={client} value={client}>{client}</option>
+                <option value="">{isFetching ? 'Loading companies...' : 'Select'}</option>
+                {companies.map(company => (
+                  <option key={company.id} value={company.id}>
+                    {company.company_name || company.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -268,7 +318,8 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Select</option>
                 {categories.map(cat => (
@@ -287,7 +338,8 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="project_timing"
                 value={formData.project_timing}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Select</option>
                 {timings.map(timing => (
@@ -304,8 +356,9 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="price"
                 value={formData.price}
                 onChange={handleInputChange}
+                disabled={isFetching}
                 placeholder="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               />
             </div>
           </div>
@@ -321,31 +374,37 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                   if (e.target.value) handleAddPerson(e.target.value);
                   e.target.value = '';
                 }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching || users.length === 0}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
-                <option value="">+ Add person</option>
-                {teamMembers.map(member => (
-                  <option key={member.id} value={member.name}>
-                    {member.name}
+                <option value="">{isFetching ? 'Loading users...' : '+ Add person'}</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name}
                   </option>
                 ))}
               </select>
             </div>
             {formData.responsible_persons.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {formData.responsible_persons.map((person, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200">
-                    <span>👤</span>
-                    {person}
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePerson(person)}
-                      className="text-blue-500 hover:text-red-600 font-bold"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+                {formData.responsible_persons.map((userId) => {
+                  const user = getResponsiblePersonUser(userId);
+                  return user ? (
+                    <div key={userId} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200">
+                      <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                        {getInitials(user.first_name, user.last_name)}
+                      </div>
+                      <span>{user.first_name} {user.last_name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePerson(userId)}
+                        className="text-blue-500 hover:text-red-600 font-bold"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : null;
+                })}
               </div>
             )}
           </div>
@@ -354,19 +413,42 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
             <label className="block text-sm font-semibold text-gray-900 mb-1">
               Team Leader <span className="text-red-500">*</span>
             </label>
-            <select
-              name="team_leader"
-              value={formData.team_leader}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
-            >
-              <option value="">Select</option>
-              {teamMembers.map(member => (
-                <option key={member.id} value={member.name}>
-                  {member.name}
-                </option>
-              ))}
-            </select>
+            {formData.team_leader ? (
+              (() => {
+                const teamLeader = getTeamLeaderUser(parseInt(formData.team_leader));
+                return teamLeader ? (
+                  <div className="relative mb-3">
+                    <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                      <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                        {getInitials(teamLeader.first_name, teamLeader.last_name)}
+                      </div>
+                      <span className="text-sm text-gray-900 flex-1">{teamLeader.first_name} {teamLeader.last_name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, team_leader: '' }))}
+                        className="text-gray-400 hover:text-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ) : null;
+              })()
+            ) : (
+              <select
+                value=""
+                onChange={(e) => setFormData(prev => ({ ...prev, team_leader: e.target.value }))}
+                disabled={isFetching || users.length === 0}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+              >
+                <option value="">{isFetching ? 'Loading team members...' : 'Select'}</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -379,7 +461,8 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="start_date"
                 value={formData.start_date}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               />
             </div>
             <div>
@@ -391,7 +474,8 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="due_date"
                 value={formData.due_date}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               />
             </div>
           </div>
@@ -405,7 +489,8 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="priority"
                 value={formData.priority}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Select</option>
                 {priorities.map(p => (
@@ -421,7 +506,8 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                disabled={isFetching}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Select</option>
                 {statuses.map(s => (
@@ -439,9 +525,10 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
               name="description"
               value={formData.description}
               onChange={handleInputChange}
+              disabled={isFetching}
               placeholder="Description"
               rows="4"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-none"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-none disabled:opacity-50"
             />
           </div>
 
@@ -449,17 +536,17 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
             <button
               type="button"
               onClick={handleCancel}
-              disabled={isLoading}
+              disabled={isLoading || isFetching}
               className="px-6 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isFetching || users.length === 0}
               className="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50"
             >
-              {isLoading ? 'Creating...' : 'Create New'}
+              {isLoading ? 'Creating...' : isFetching ? 'Loading data...' : 'Create New'}
             </button>
           </div>
         </form>

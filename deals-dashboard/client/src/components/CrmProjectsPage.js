@@ -9,10 +9,27 @@ const CrmProjectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   useEffect(() => {
     loadProjects();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const target = e.target;
+      if (!target.closest('[data-menu-trigger]') && !target.closest('[data-menu-content]')) {
+        setOpenMenuId(null);
+      }
+    };
+    
+    if (openMenuId) {
+      setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openMenuId]);
 
   const loadProjects = async () => {
     try {
@@ -25,8 +42,47 @@ const CrmProjectsPage = () => {
     }
   };
 
-  const formatCurrency = (value) => {
-    return `$${(value / 100000).toFixed(0)},${String((value % 100000) / 1000).padStart(2, '0')}`;
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No due date';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatPrice = (price) => {
+    if (!price) return '$0';
+    return `$${(price / 100000).toFixed(0)},${String((price % 100000) / 1000).padStart(2, '0')}`;
+  };
+
+  const getProjectDisplay = (project) => {
+    const price = project.price || project.value || 0;
+    const dueDate = project.due_date || project.dueDate || project.end_date;
+    const teamLeader = project.team_leader;
+    const responsiblePersons = project.responsible_persons || [];
+    const teamMembers = responsiblePersons.length > 0 ? responsiblePersons.length : (project.members || 0);
+    
+    return {
+      title: project.title || project.name || 'Untitled Project',
+      subtitle: project.subtitle || project.project_type || 'Project',
+      description: project.description || 'No description',
+      priority: project.priority || 'Medium',
+      status: project.status || 'Planning',
+      value: price,
+      dueDate: formatDate(dueDate),
+      members: teamMembers,
+      totalHours: project.totalHours || 0,
+      teamLeader: teamLeader,
+      responsiblePersons: responsiblePersons,
+      initials: project.initials || (project.name || 'P').substring(0, 2).toUpperCase(),
+      avatarBg: project.avatarBg || '#F97316'
+    };
+  };
+
+  const getInitials = (firstName, lastName) => {
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
   const toggleFavorite = (id) => {
@@ -36,9 +92,43 @@ const CrmProjectsPage = () => {
     }));
   };
 
-  const filteredProjects = projects.filter(p =>
-    p.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleEditProject = (projectId) => {
+    console.log('Edit project:', projectId);
+    setOpenMenuId(null);
+  };
+
+  const handleDeleteProject = (projectId) => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+      setOpenMenuId(null);
+    }
+  };
+
+  const handleCloneProject = (project) => {
+    const clonedProject = {
+      ...project,
+      id: Math.max(...projects.map(p => p.id), 0) + 1,
+      title: `${project.title} (Copy)`
+    };
+    setProjects(prev => [...prev, clonedProject]);
+    setOpenMenuId(null);
+  };
+
+  const handlePrintProject = (project) => {
+    console.log('Print project:', project);
+    window.print();
+    setOpenMenuId(null);
+  };
+
+  const handleAddTask = (projectId) => {
+    console.log('Add task to project:', projectId);
+    setOpenMenuId(null);
+  };
+
+  const filteredProjects = projects.filter(p => {
+    const projectTitle = (p.title || p.name || '').toLowerCase();
+    return projectTitle.includes(searchTerm.toLowerCase());
+  });
 
   return (
     <div className="w-full bg-gray-50 min-h-screen flex flex-col">
@@ -95,18 +185,20 @@ const CrmProjectsPage = () => {
 
       <div className="flex-1 px-6 pb-6 overflow-y-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProjects.map(project => (
+          {filteredProjects.map(project => {
+            const display = getProjectDisplay(project);
+            return (
             <div
               key={project.id}
-              className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all p-4 flex flex-col"
+              className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all p-4 flex flex-col relative overflow-visible"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-600 font-semibold">
-                    {project.priority}
+                    {display.priority}
                   </span>
                   <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-600 font-semibold">
-                    {project.status}
+                    {display.status}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -120,26 +212,88 @@ const CrmProjectsPage = () => {
                       <Star size={18} />
                     )}
                   </button>
-                  <button className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded transition">
-                    <MoreVertical size={16} strokeWidth={1.5} />
-                  </button>
+                  <div className="relative" data-menu-container>
+                    <button
+                      data-menu-trigger
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(openMenuId === project.id ? null : project.id);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded transition"
+                    >
+                      <MoreVertical size={16} strokeWidth={1.5} />
+                    </button>
+                    {openMenuId === project.id && (
+                      <div
+                        data-menu-content
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-48"
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditProject(project.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 first:rounded-t-lg"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProject(project.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-b border-gray-100"
+                        >
+                          🗑️ Delete
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCloneProject(project);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+                        >
+                          📋 Clone this Project
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintProject(project);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+                        >
+                          🖨️ Print
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddTask(project.id);
+                          }}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 last:rounded-b-lg"
+                        >
+                          ➕ Add New Task
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 mb-3">
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                  style={{ backgroundColor: project.avatarBg }}
+                  style={{ backgroundColor: display.avatarBg }}
                 >
-                  {project.initials}
+                  {display.initials}
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">{project.title}</h3>
-                  <p className="text-xs text-gray-500">{project.subtitle}</p>
+                  <h3 className="text-sm font-semibold text-gray-900">{display.title}</h3>
+                  <p className="text-xs text-gray-500">{display.subtitle}</p>
                 </div>
               </div>
 
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{project.description}</p>
+              <p className="text-sm text-gray-600 mb-4 line-clamp-2">{display.description}</p>
 
               <div className="space-y-2 mb-4 text-xs text-gray-600">
                 <div className="flex items-center gap-2">
@@ -148,38 +302,70 @@ const CrmProjectsPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-400">💰</span>
-                  <span>Value : <span className="font-semibold text-gray-900">{formatCurrency(project.value)}</span></span>
+                  <span>Value : <span className="font-semibold text-gray-900">{formatPrice(display.value)}</span></span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-gray-400">📅</span>
-                  <span>Due Date : <span className="font-semibold text-gray-900">{project.dueDate}</span></span>
+                  <span>Due Date : <span className="font-semibold text-gray-900">{display.dueDate}</span></span>
                 </div>
               </div>
 
               <div className="mt-auto">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex -space-x-2">
-                    {[...Array(Math.min(project.members, 3))].map((_, i) => (
-                      <img
-                        key={i}
-                        src={`https://i.pravatar.cc/32?img=${project.id * 3 + i}`}
-                        alt="team member"
-                        className="w-7 h-7 rounded-full border-2 border-white"
-                      />
-                    ))}
-                    {project.members > 3 && (
-                      <div className="w-7 h-7 rounded-full border-2 border-white bg-gray-200 text-xs flex items-center justify-center text-gray-600 font-semibold">
-                        +{project.members - 3}
-                      </div>
-                    )}
+                {display.members > 0 && (
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex -space-x-2">
+                      {display.members <= 3 && (
+                        <>
+                          {[...Array(display.members)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="w-7 h-7 rounded-full border-2 border-white bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xs flex items-center justify-center font-semibold"
+                              title={`Team Member ${i + 1}`}
+                            >
+                              {String.fromCharCode(65 + i)}
+                            </div>
+                          ))}
+                        </>
+                      )}
+                      {display.members > 3 && (
+                        <>
+                          {[...Array(3)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="w-7 h-7 rounded-full border-2 border-white bg-gradient-to-br from-blue-400 to-blue-600 text-white text-xs flex items-center justify-center font-semibold"
+                              title={`Team Member ${i + 1}`}
+                            >
+                              {String.fromCharCode(65 + i)}
+                            </div>
+                          ))}
+                          <div className="w-7 h-7 rounded-full border-2 border-white bg-gray-200 text-xs flex items-center justify-center text-gray-600 font-semibold hover:bg-gray-300 transition cursor-pointer">
+                            +{display.members - 3}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <span className="text-gray-400">🔗</span>
                   </div>
-                  <span className="text-gray-400">🔗</span>
-                </div>
+                )}
 
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 font-semibold">
-                    Total Hours : {project.totalHours}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    {display.totalHours > 0 && (
+                      <span className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 font-semibold">
+                        ⏱️ {display.totalHours} Hrs
+                      </span>
+                    )}
+                    {display.members > 0 && (
+                      <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-600 font-semibold">
+                        👥 {display.members} Team
+                      </span>
+                    )}
+                    {display.totalHours === 0 && display.members === 0 && (
+                      <span className="text-xs px-2 py-1 rounded bg-gray-50 text-gray-500 font-semibold">
+                        No data yet
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 text-gray-500">
                     <span className="text-sm cursor-pointer hover:text-gray-700">💬</span>
                     <span className="text-sm cursor-pointer hover:text-gray-700">👁️</span>
@@ -188,7 +374,8 @@ const CrmProjectsPage = () => {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="flex justify-center mt-8">

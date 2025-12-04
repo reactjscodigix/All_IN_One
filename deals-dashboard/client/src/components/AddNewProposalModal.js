@@ -1,0 +1,467 @@
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, Plus, X, CheckCircle, Upload } from 'lucide-react';
+
+const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contacts = [], deals = [] }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [tagInput, setTagInput] = useState('');
+  const [descriptionFocused, setDescriptionFocused] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  const [formData, setFormData] = useState({
+    title: '',
+    proposal_date: new Date().toISOString().split('T')[0],
+    validity_date: '',
+    client_id: '',
+    project_id: '',
+    related_to: '',
+    deal_id: '',
+    currency: 'USD',
+    status: 'Draft',
+    assigned_to: '',
+    tags: [],
+    description: '',
+    attachments: []
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsersAndProjects();
+    }
+  }, [isOpen]);
+
+  const fetchUsersAndProjects = async () => {
+    setLoadingData(true);
+    try {
+      const [usersRes, projectsRes] = await Promise.all([
+        fetch('http://localhost:5000/api/contacts'),
+        fetch('http://localhost:5000/api/projects')
+      ]);
+      
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(Array.isArray(usersData) ? usersData : []);
+      }
+      
+      if (projectsRes.ok) {
+        const projectsData = await projectsRes.json();
+        setProjects(Array.isArray(projectsData) ? projectsData : []);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setUsers([]);
+      setProjects([]);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const addTag = (e) => {
+    e.preventDefault();
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }));
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tag) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(t => t !== tag)
+    }));
+  };
+
+  const getInitials = (firstName, lastName) => {
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
+  };
+
+  const getSelectedUser = () => {
+    if (!formData.assigned_to) return null;
+    return users.find(u => u.id === parseInt(formData.assigned_to));
+  };
+
+  const handleFileUpload = (e) => {
+    const files = Array.from(e.target.files);
+    setFormData(prev => ({
+      ...prev,
+      attachments: [...prev.attachments, ...files]
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!formData.title || !formData.client_id) {
+      setError('Please fill in required fields: Subject and Client');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (onSubmit) {
+        await onSubmit(formData);
+      }
+      handleCancel();
+    } catch (err) {
+      setError(err.message || 'Failed to create proposal');
+      console.error('Form submission error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      title: '',
+      proposal_date: new Date().toISOString().split('T')[0],
+      validity_date: '',
+      client_id: '',
+      project_id: '',
+      related_to: '',
+      deal_id: '',
+      currency: 'USD',
+      status: 'Draft',
+      assigned_to: '',
+      tags: [],
+      description: '',
+      attachments: []
+    });
+    setError('');
+    setTagInput('');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/20">
+      <div className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200">
+        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white z-10">
+          <h2 className="text-lg font-semibold text-gray-900">Create New Proposal</h2>
+          <button
+            onClick={handleCancel}
+            disabled={isLoading}
+            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+          >
+            ×
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700 font-medium">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Subject<span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              placeholder="Enter subject"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                name="proposal_date"
+                value={formData.proposal_date}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Open Till<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                name="validity_date"
+                value={formData.validity_date}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Client<span className="text-red-500">*</span>
+            </label>
+            <select
+              name="client_id"
+              value={formData.client_id}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
+            >
+              <option value="">Choose</option>
+              {companies.map(company => (
+                <option key={company.id} value={company.id}>
+                  {company.company_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Project
+              </label>
+              <select
+                name="project_id"
+                value={formData.project_id}
+                onChange={handleInputChange}
+                disabled={loadingData}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition disabled:opacity-50"
+              >
+                <option value="">Choose</option>
+                {projects.map(project => (
+                  <option key={project.id} value={project.id}>
+                    {project.project_name || project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="button" className="text-red-500 hover:text-red-700 text-lg font-bold mb-1" title="Add New">+</button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Related to
+            </label>
+            <select
+              name="related_to"
+              value={formData.related_to}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
+            >
+              <option value="">Choose</option>
+            </select>
+          </div>
+
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Deals
+              </label>
+              <select
+                name="deal_id"
+                value={formData.deal_id}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
+              >
+                <option value="">Choose</option>
+                {deals.map(deal => (
+                  <option key={deal.id} value={deal.id}>
+                    {deal.deal_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="button" className="text-red-500 hover:text-red-700 text-lg font-bold mb-1" title="Add New">+</button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Currency
+              </label>
+              <select
+                name="currency"
+                value={formData.currency}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="INR">INR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-blue-500 transition"
+              >
+                <option value="Draft">Draft</option>
+                <option value="Accepted">Accepted</option>
+                <option value="Declined">Declined</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Assigned to
+            </label>
+            <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-white">
+              {getSelectedUser() ? (
+                <>
+                  <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                    {getInitials(getSelectedUser().first_name, getSelectedUser().last_name)}
+                  </div>
+                  <span className="text-sm text-gray-700">{getSelectedUser().first_name} {getSelectedUser().last_name}</span>
+                </>
+              ) : (
+                <span className="text-sm text-gray-500">No user assigned</span>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Attachment
+            </label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition cursor-pointer">
+              <input
+                type="file"
+                multiple
+                onChange={handleFileUpload}
+                className="hidden"
+                id="file-upload"
+              />
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <div className="flex flex-col items-center gap-2">
+                  <Upload size={32} className="text-gray-400" />
+                  <p className="text-sm text-gray-600">Drop your files here or <span className="text-blue-500 hover:underline">browse</span></p>
+                  <p className="text-xs text-gray-500">Maximum size: 50 MB</p>
+                </div>
+              </label>
+            </div>
+            {formData.attachments.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {formData.attachments.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded">
+                    <span className="text-gray-700">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        attachments: prev.attachments.filter((_, i) => i !== idx)
+                      }))}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tags
+            </label>
+            <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-lg bg-white min-h-[40px]">
+              {formData.tags.map((tag, idx) => (
+                <span key={idx} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-gray-200">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="text-gray-500 hover:text-gray-700 font-bold"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                placeholder="Enter value separated by comma"
+                className="flex-1 outline-none text-sm min-w-[100px]"
+                onKeyPress={(e) => e.key === 'Enter' && addTag(e)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <div className="border border-gray-300 rounded-lg overflow-hidden">
+              <div className="flex items-center gap-1 p-2 bg-gray-50 border-b border-gray-300">
+                <select defaultValue="Normal" className="px-2 py-1 border border-gray-300 rounded text-xs bg-white">
+                  <option>Normal</option>
+                  <option>Heading</option>
+                  <option>Code</option>
+                </select>
+                <button type="button" className="px-2 py-1 hover:bg-gray-200 rounded text-sm font-bold">B</button>
+                <button type="button" className="px-2 py-1 hover:bg-gray-200 rounded text-sm italic">I</button>
+                <button type="button" className="px-2 py-1 hover:bg-gray-200 rounded text-sm underline">U</button>
+                <button type="button" className="px-2 py-1 hover:bg-gray-200 rounded">🔗</button>
+                <button type="button" className="px-2 py-1 hover:bg-gray-200 rounded">•</button>
+                <button type="button" className="px-2 py-1 hover:bg-gray-200 rounded">1.</button>
+                <button type="button" className="px-2 py-1 hover:bg-gray-200 rounded">a/A</button>
+              </div>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                onFocus={() => setDescriptionFocused(true)}
+                onBlur={() => setDescriptionFocused(false)}
+                placeholder="Enter description..."
+                rows="4"
+                className="w-full px-3 py-2 text-sm focus:outline-none resize-none"
+              />
+            </div>
+          </div>
+        </form>
+
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex gap-3 justify-end">
+          <button
+            onClick={handleCancel}
+            disabled={isLoading}
+            className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition disabled:opacity-50"
+          >
+            {isLoading ? 'Creating...' : 'Create'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AddNewProposalModal;

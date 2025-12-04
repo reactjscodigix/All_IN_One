@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DataTable from './DataTable';
 import leadsData from '../data/leadsData.json';
-import { Star, Plus } from 'lucide-react';
+import { Star, Plus, Filter } from 'lucide-react';
 import AddNewLeadModal from './AddNewLeadModal';
 import { leadsAPI, companiesAPI } from '../services/api';
 
 const LeadsPage = () => {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState(leadsData.leads);
   const [companies, setCompanies] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('All');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -98,33 +101,52 @@ const LeadsPage = () => {
     );
   };
 
+  const getFilteredLeads = () => {
+    if (selectedStatus === 'All') return leads;
+    return leads.filter(lead => (lead.status || lead.lead_status) === selectedStatus);
+  };
+
   const columns = [
     {
       key: 'name',
       label: 'Lead Name',
       sortable: true,
-      render: (value) => <span className="font-medium">{value}</span>
+      render: (value, row) => (
+        <button
+          onClick={() => navigate(`/lead/${row.id}`)}
+          className="font-medium text-red-600 hover:text-red-700 hover:underline cursor-pointer transition"
+        >
+          {value}
+        </button>
+      )
     },
     {
       key: 'email',
       label: 'Email',
       sortable: true,
-      render: (value) => <a href={`mailto:${value}`} className="text-red-600 hover:text-red-700 text-sm">{value}</a>
+      render: (value) => <a href={`mailto:${value}`} className="text-gray-600 hover:text-red-600 text-sm">{value}</a>
     },
     {
       key: 'phone',
       label: 'Phone',
-      sortable: false
+      sortable: false,
+      render: (value) => <span className="text-sm text-gray-600">{value || '-'}</span>
     },
     {
       key: 'company',
       label: 'Company',
-      sortable: true
+      sortable: true,
+      render: (value) => <span className="text-sm text-gray-600">{value || '-'}</span>
     },
     {
       key: 'source',
       label: 'Source',
-      sortable: true
+      sortable: true,
+      render: (value) => (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {value}
+        </span>
+      )
     },
     {
       key: 'rating',
@@ -144,6 +166,8 @@ const LeadsPage = () => {
     }
   ];
 
+  const filteredLeads = getFilteredLeads();
+
   return (
     <div className="p-2 bg-gray-50 min-h-screen">
       <div className="mb-8 flex items-center justify-between">
@@ -158,10 +182,35 @@ const LeadsPage = () => {
         </button>
       </div>
 
+      <div className="mb-6 bg-white rounded-lg shadow p-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Filter size={18} className="text-gray-600" />
+          <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
+          {['All', 'New', 'Contacted', 'Qualified', 'Unqualified'].map(status => (
+            <button
+              key={status}
+              onClick={() => setSelectedStatus(status)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                selectedStatus === status
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {status}
+              {status !== 'All' && (
+                <span className="ml-2 text-xs">
+                  ({leads.filter(l => (l.status || l.lead_status) === status).length})
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <DataTable 
         columns={columns}
-        data={leads}
-        title="All Leads"
+        data={filteredLeads}
+        title={selectedStatus === 'All' ? 'All Leads' : `${selectedStatus} Leads`}
         searchKeys={['name', 'email', 'company']}
       />
 

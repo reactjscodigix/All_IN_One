@@ -1,16 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Plus, MoreVertical } from 'lucide-react';
 import leadsData from '../data/crmLeadsData.json';
 import AddNewLeadModal from './AddNewLeadModal';
 import { leadsAPI, companiesAPI } from '../services/api';
 
 const CrmLeadsPage = () => {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState(leadsData.leads);
   const [statusStats, setStatusStats] = useState(leadsData.statusStats);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [companies, setCompanies] = useState([]);
+  const [openMenuId, setOpenMenuId] = useState(null);
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    if (openMenuId) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [openMenuId]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -131,6 +142,38 @@ const CrmLeadsPage = () => {
     return `$${(value / 100000).toFixed(2).replace('.', ',')}`;
   };
 
+  const handleEditLead = (leadId) => {
+    console.log('Edit lead:', leadId);
+    setOpenMenuId(null);
+  };
+
+  const handleDeleteLead = (leadId) => {
+    if (window.confirm('Are you sure you want to delete this lead?')) {
+      setLeads(prev => prev.filter(l => l.id !== leadId));
+      setOpenMenuId(null);
+    }
+  };
+
+  const handleCloneLead = (lead) => {
+    const clonedLead = {
+      ...lead,
+      id: Math.max(...leads.map(l => l.id), 0) + 1,
+      name: `${lead.name} (Copy)`
+    };
+    setLeads(prev => [...prev, clonedLead]);
+    setOpenMenuId(null);
+  };
+
+  const handleConvertLead = (lead) => {
+    console.log('Convert lead to deal:', lead);
+    setOpenMenuId(null);
+  };
+
+  const handleSendEmail = (lead) => {
+    console.log('Send email to:', lead.email);
+    setOpenMenuId(null);
+  };
+
   const statusColors = {
     'Contacted': { hex: '#F59E0B', rgb: 'rgb(245, 158, 11)', dot: 'bg-yellow-400', light: 'bg-yellow-50' },
     'Not Contacted': { hex: '#3B82F6', rgb: 'rgb(59, 130, 246)', dot: 'bg-blue-400', light: 'bg-blue-50' },
@@ -242,17 +285,90 @@ const CrmLeadsPage = () => {
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs cursor-pointer"
                               style={{ backgroundColor: getInitialColor(group.status) }}
+                              onClick={() => navigate(`/lead/${lead.id}`)}
                             >
                               {lead.initials}
                             </div>
-                            <button className="text-gray-400 hover:bg-gray-200 p-0.5 rounded transition">
-                              <MoreVertical size={14} strokeWidth={1.5} />
-                            </button>
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenMenuId(openMenuId === lead.id ? null : lead.id);
+                                }}
+                                className="text-gray-400 hover:bg-gray-200 p-0.5 rounded transition"
+                              >
+                                <MoreVertical size={14} strokeWidth={1.5} />
+                              </button>
+                              {openMenuId === lead.id && (
+                                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 min-w-40">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/lead/${lead.id}`);
+                                      setOpenMenuId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+                                  >
+                                    👁️ View
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditLead(lead.id);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+                                  >
+                                    ✏️ Edit
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteLead(lead.id);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 border-b border-gray-100"
+                                  >
+                                    🗑️ Delete
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCloneLead(lead);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+                                  >
+                                    📋 Clone
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleConvertLead(lead);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+                                  >
+                                    🔄 Convert to Deal
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSendEmail(lead);
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    ✉️ Send Email
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          <h3 className="text-[13px] font-semibold text-gray-900 mb-2 line-clamp-2">{lead.name}</h3>
+                          <h3
+                            onClick={() => navigate(`/lead/${lead.id}`)}
+                            className="text-[13px] font-semibold text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-blue-600 transition"
+                          >
+                            {lead.name}
+                          </h3>
 
                           <div className="space-y-1 mb-3 text-[12px]">
                             <div className="flex items-center gap-1.5">

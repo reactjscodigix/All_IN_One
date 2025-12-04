@@ -1,14 +1,11 @@
-import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 
 const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [openPanels, setOpenPanels] = useState({
-    basic: true,
-    contact: true,
-    advanced: true,
-  });
+  const [loadingData, setLoadingData] = useState(true);
+  const [users, setUsers] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,18 +18,52 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
     source: 'Website',
     industry: '',
     owner: '',
-    status: 'Not Contacted',
-    rating: 5,
+    status: 'New',
     tags: [],
     description: '',
-    location: '',
     visibility: 'Public',
+    selectedPeople: [],
   });
 
   const [tagInput, setTagInput] = useState('');
+  const [ownerDropdownOpen, setOwnerDropdownOpen] = useState(false);
+  const [selectPeopleDropdownOpen, setSelectPeopleDropdownOpen] = useState(false);
 
-  const togglePanel = (name) => {
-    setOpenPanels((p) => ({ ...p, [name]: !p[name] }));
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen]);
+
+  const fetchUsers = async () => {
+    setLoadingData(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/contacts');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setUsers([]);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const getSelectedOwner = () => {
+    if (!formData.owner) return null;
+    return users.find(u => u.id === parseInt(formData.owner));
+  };
+
+  const getInitials = (firstName, lastName) => {
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
+  };
+
+  const getSelectedPeopleNames = () => {
+    return formData.selectedPeople
+      .map(id => users.find(u => u.id === parseInt(id)))
+      .filter(Boolean);
   };
 
   const handleInputChange = (e) => {
@@ -65,8 +96,8 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
     e.preventDefault();
     setError('');
     
-    if (!formData.name || !formData.email) {
-      setError('Please fill in required fields: Lead Name and Email');
+    if (!formData.name) {
+      setError('Please fill in the required field: Lead Name');
       return;
     }
 
@@ -96,28 +127,28 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
       source: 'Website',
       industry: '',
       owner: '',
-      status: 'Not Contacted',
-      rating: 5,
+      status: 'New',
       tags: [],
       description: '',
-      location: '',
       visibility: 'Public',
+      selectedPeople: [],
     });
     setError('');
     setTagInput('');
+    setOwnerDropdownOpen(false);
+    setSelectPeopleDropdownOpen(false);
     onClose();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/20" onClick={handleCancel}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/20">
       <div 
-        className="h-full w-full md:w-[80%] lg:w-[70%] xl:w-[65%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
-        onClick={(e) => e.stopPropagation()}
+        className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
       >
         <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">Add New Lead</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Add New Lead</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
@@ -133,368 +164,387 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
           </div>
         )}
 
-        <form id="add-lead-form" onSubmit={handleSubmit} className="p-6 space-y-0">
+        <form id="add-lead-form" onSubmit={handleSubmit} className="p-6 space-y-5">
           
-          {/* Basic Info Panel */}
-          <div className="border-b border-[#EAECF0]">
-            <button
-              type="button"
-              onClick={() => togglePanel('basic')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
-                  👤
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">Lead Information</span>
-              </div>
-              <ChevronDown 
-                size={18} 
-                className={`text-gray-500 transition ${openPanels.basic ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {openPanels.basic && (
-              <div className="px-4 py-5 space-y-5 border-t border-[#EAECF0] bg-white">
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lead Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter lead name"
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Lead Type
-                    </label>
-                    <select
-                      name="lead_type"
-                      value={formData.lead_type}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="Person">Person</option>
-                      <option value="Organization">Organization</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status
-                    </label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="Not Contacted">Not Contacted</option>
-                      <option value="Contacted">Contacted</option>
-                      <option value="Closed">Closed</option>
-                      <option value="Lost">Lost</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company Name
-                  </label>
-                  <select
-                    name="company"
-                    value={formData.company}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                  >
-                    <option value="">Select Company</option>
-                    {companies.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.company_name || c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lead Name<span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Enter lead name"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+            />
           </div>
 
-          {/* Contact Info Panel */}
-          <div className="border-b border-[#EAECF0]">
-            <button
-              type="button"
-              onClick={() => togglePanel('contact')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-blue-500 text-white font-semibold text-base">
-                  📧
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">Contact Information</span>
-              </div>
-              <ChevronDown 
-                size={18} 
-                className={`text-gray-500 transition ${openPanels.contact ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {openPanels.contact && (
-              <div className="px-4 py-5 space-y-5 border-t border-[#EAECF0] bg-white">
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter email address"
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="Enter phone number"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Source
-                    </label>
-                    <select
-                      name="source"
-                      value={formData.source}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="Website">Website</option>
-                      <option value="Referral">Referral</option>
-                      <option value="Cold Call">Cold Call</option>
-                      <option value="Email">Email</option>
-                      <option value="Social Media">Social Media</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Value
-                    </label>
-                    <input
-                      type="number"
-                      name="value"
-                      value={formData.value}
-                      onChange={handleInputChange}
-                      placeholder="0.00"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Currency
-                    </label>
-                    <select
-                      name="currency"
-                      value={formData.currency}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="INR">INR</option>
-                      <option value="GBP">GBP</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lead Type
+            </label>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="lead_type"
+                  value="Person"
+                  checked={formData.lead_type === 'Person'}
+                  onChange={handleInputChange}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-gray-700">Person</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="lead_type"
+                  value="Organization"
+                  checked={formData.lead_type === 'Organization'}
+                  onChange={handleInputChange}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-gray-700">Organization</span>
+              </label>
+            </div>
           </div>
 
-          {/* Advanced Info Panel */}
-          <div className="border-b border-[#EAECF0]">
-            <button
-              type="button"
-              onClick={() => togglePanel('advanced')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Company Name
+            </label>
+            <select
+              name="company"
+              value={formData.company}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-purple-500 text-white font-semibold text-base">
-                  ⚙️
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">Advanced Information</span>
-              </div>
-              <ChevronDown 
-                size={18} 
-                className={`text-gray-500 transition ${openPanels.advanced ? 'rotate-180' : ''}`}
+              <option value="">Select</option>
+              {companies.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.company_name || c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Value<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="value"
+                value={formData.value}
+                onChange={handleInputChange}
+                placeholder="0.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
               />
-            </button>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Currency<span className="text-red-500">*</span>
+              </label>
+              <select
+                name="currency"
+                value={formData.currency}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              >
+                <option value="">Select</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="INR">INR</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
+          </div>
 
-            {openPanels.advanced && (
-              <div className="px-4 py-5 space-y-5 border-t border-[#EAECF0] bg-white">
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Industry
-                    </label>
-                    <input
-                      type="text"
-                      name="industry"
-                      value={formData.industry}
-                      onChange={handleInputChange}
-                      placeholder="Enter industry"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Owner
-                    </label>
-                    <input
-                      type="text"
-                      name="owner"
-                      value={formData.owner}
-                      onChange={handleInputChange}
-                      placeholder="Enter owner name"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Phone<span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              placeholder="Enter phone number"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+            />
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rating
-                  </label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map(i => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, rating: i }))}
-                        className={`text-2xl ${i <= formData.rating ? '⭐' : '☆'}`}
-                      >
-                        {i <= formData.rating ? '⭐' : '☆'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Source<span className="text-red-500">*</span>
+              </label>
+              <select
+                name="source"
+                value={formData.source}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              >
+                <option value="">Select</option>
+                <option value="Website">Website</option>
+                <option value="Facebook">Facebook</option>
+                <option value="Instagram">Instagram</option>
+                <option value="LinkedIn">LinkedIn</option>
+                <option value="Twitter">Twitter</option>
+                <option value="Google Ads">Google Ads</option>
+                <option value="Referral">Referral</option>
+                <option value="Cold Call">Cold Call</option>
+                <option value="Email Campaign">Email Campaign</option>
+                <option value="Event">Event</option>
+                <option value="Trade Show">Trade Show</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Industry<span className="text-red-500">*</span>
+              </label>
+              <select
+                name="industry"
+                value={formData.industry}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              >
+                <option value="">Select</option>
+                <option value="Technology">Technology</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Finance">Finance</option>
+                <option value="Retail">Retail</option>
+                <option value="Manufacturing">Manufacturing</option>
+                <option value="Education">Education</option>
+                <option value="Real Estate">Real Estate</option>
+                <option value="Hospitality">Hospitality</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Telecommunications">Telecommunications</option>
+                <option value="Energy">Energy</option>
+                <option value="Media & Entertainment">Media & Entertainment</option>
+                <option value="Consulting">Consulting</option>
+              </select>
+            </div>
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tags
-                  </label>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      placeholder="Add tag"
-                      className="flex-1 px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                      onKeyPress={(e) => e.key === 'Enter' && addTag(e)}
-                    />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Owner
+            </label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setOwnerDropdownOpen(!ownerDropdownOpen)}
+                disabled={loadingData}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50 text-left flex items-center justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  {getSelectedOwner() ? (
+                    <>
+                      <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold">
+                        {getInitials(getSelectedOwner().first_name, getSelectedOwner().last_name)}
+                      </div>
+                      <span>{getSelectedOwner().first_name} {getSelectedOwner().last_name}</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">{loadingData ? 'Loading...' : 'Select'}</span>
+                  )}
+                </span>
+                <span className="text-gray-400">▼</span>
+              </button>
+
+              {ownerDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                  {users.map(user => (
                     <button
+                      key={user.id}
                       type="button"
-                      onClick={addTag}
-                      className="px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          owner: user.id.toString()
+                        }));
+                        setOwnerDropdownOpen(false);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-b-0"
                     >
-                      Add
+                      <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                        {getInitials(user.first_name, user.last_name)}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{user.first_name} {user.last_name}</div>
+                        <div className="text-xs text-gray-500">{user.email || 'No email'}</div>
+                      </div>
                     </button>
-                  </div>
-                  {formData.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {formData.tags.map(tag => (
-                        <span
-                          key={tag}
-                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-full text-sm text-red-700"
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tags
+            </label>
+            <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-lg bg-white min-h-[40px]">
+              {formData.tags.map((tag, idx) => (
+                <span key={idx} className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-red-200">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                placeholder="Add tag"
+                className="flex-1 outline-none text-sm min-w-[100px]"
+                onKeyPress={(e) => e.key === 'Enter' && addTag(e)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description<span className="text-red-500">*</span>
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Enter description"
+              rows="3"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Visibility
+            </label>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="Public"
+                  checked={formData.visibility === 'Public'}
+                  onChange={handleInputChange}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-gray-700">Public</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="Private"
+                  checked={formData.visibility === 'Private'}
+                  onChange={handleInputChange}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-gray-700">Private</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="visibility"
+                  value="Select People"
+                  checked={formData.visibility === 'Select People'}
+                  onChange={handleInputChange}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm text-gray-700">Select People</span>
+              </label>
+            </div>
+
+            {formData.visibility === 'Select People' && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Users
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSelectPeopleDropdownOpen(!selectPeopleDropdownOpen)}
+                    disabled={loadingData}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50 text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {getSelectedPeopleNames().length > 0 ? (
+                          <>
+                            <div className="flex -space-x-2">
+                              {getSelectedPeopleNames().slice(0, 3).map(user => (
+                                <div key={user.id} className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold border border-white">
+                                  {getInitials(user.first_name, user.last_name)}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-sm text-gray-700">
+                              {getSelectedPeopleNames().length} user{getSelectedPeopleNames().length !== 1 ? 's' : ''} selected
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-gray-500">Select users</span>
+                        )}
+                      </div>
+                      <span className="text-gray-400">▼</span>
+                    </div>
+                  </button>
+
+                  {selectPeopleDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                      {users.map(user => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => {
+                            const isSelected = formData.selectedPeople.includes(user.id.toString());
+                            setFormData(prev => ({
+                              ...prev,
+                              selectedPeople: isSelected
+                                ? prev.selectedPeople.filter(id => id !== user.id.toString())
+                                : [...prev.selectedPeople, user.id.toString()]
+                            }));
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-b-0"
                         >
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => removeTag(tag)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            ×
-                          </button>
-                        </span>
+                          <input
+                            type="checkbox"
+                            checked={formData.selectedPeople.includes(user.id.toString())}
+                            readOnly
+                            className="w-4 h-4"
+                          />
+                          <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                            {getInitials(user.first_name, user.last_name)}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{user.first_name} {user.last_name}</div>
+                            <div className="text-xs text-gray-500">{user.email || 'No email'}</div>
+                          </div>
+                        </button>
                       ))}
                     </div>
                   )}
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Enter description"
-                    rows="4"
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="Enter location (e.g., New York, United States)"
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Visibility
-                  </label>
-                  <div className="space-y-2">
-                    {['Public', 'Private'].map(vis => (
-                      <label key={vis} className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="visibility"
-                          value={vis}
-                          checked={formData.visibility === vis}
-                          onChange={handleInputChange}
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm text-gray-700">{vis}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                <p className="text-xs text-gray-500 mt-1">Click users to select/deselect</p>
               </div>
             )}
           </div>
+
         </form>
 
-        <div className="sticky bottom-0 bg-white border-t border-[#EAECF0] p-6 flex gap-3 justify-end">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex gap-3 justify-end">
           <button
             onClick={handleCancel}
             disabled={isLoading}

@@ -123,6 +123,110 @@ async function initializeDatabase() {
       )
     `);
     
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS general_tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        status ENUM('Open', 'In Progress', 'Completed', 'On Hold') DEFAULT 'Open',
+        priority ENUM('Low', 'Medium', 'High', 'Critical') DEFAULT 'Medium',
+        assigned_to JSON,
+        due_date DATE,
+        tags JSON,
+        linked_type ENUM('General', 'Deal', 'Project') DEFAULT 'General',
+        linked_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_status (status),
+        INDEX idx_priority (priority),
+        INDEX idx_due_date (due_date),
+        INDEX idx_linked_type (linked_type),
+        INDEX idx_linked_id (linked_id)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS proposals (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        proposal_number VARCHAR(50) UNIQUE NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        client_id INT NOT NULL,
+        contact_id INT,
+        deal_id INT,
+        created_by INT,
+        status ENUM('Draft', 'Submitted', 'Approved', 'Rejected', 'Sent', 'Accepted', 'Declined') DEFAULT 'Draft',
+        proposal_date DATE,
+        validity_date DATE,
+        total_amount DECIMAL(15, 2),
+        discount_amount DECIMAL(15, 2) DEFAULT 0,
+        tax_amount DECIMAL(15, 2) DEFAULT 0,
+        currency VARCHAR(10) DEFAULT 'USD',
+        terms_conditions LONGTEXT,
+        notes LONGTEXT,
+        version INT DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_proposal_number (proposal_number),
+        INDEX idx_client_id (client_id),
+        INDEX idx_deal_id (deal_id),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS proposal_line_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        proposal_id INT NOT NULL,
+        item_name VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        quantity DECIMAL(10, 2) NOT NULL,
+        rate DECIMAL(15, 2) NOT NULL,
+        discount_percent DECIMAL(5, 2) DEFAULT 0,
+        discount_amount DECIMAL(15, 2) DEFAULT 0,
+        tax_percent DECIMAL(5, 2) DEFAULT 0,
+        tax_amount DECIMAL(15, 2) DEFAULT 0,
+        subtotal DECIMAL(15, 2),
+        total DECIMAL(15, 2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_proposal_id (proposal_id),
+        FOREIGN KEY (proposal_id) REFERENCES proposals(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS proposal_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        proposal_id INT NOT NULL,
+        action VARCHAR(100) NOT NULL,
+        action_by INT,
+        old_status VARCHAR(50),
+        new_status VARCHAR(50),
+        comments LONGTEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_proposal_id (proposal_id),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (proposal_id) REFERENCES proposals(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS proposal_attachments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        proposal_id INT NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_type VARCHAR(100),
+        file_size INT,
+        file_data LONGBLOB,
+        uploaded_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_proposal_id (proposal_id),
+        FOREIGN KEY (proposal_id) REFERENCES proposals(id) ON DELETE CASCADE
+      )
+    `);
+    
     console.log('✓ All tables initialized successfully');
     
     const [existingRoles] = await connection.query('SELECT COUNT(*) as count FROM roles');
@@ -368,7 +472,148 @@ app.delete('/api/deals/:id', async (req, res) => {
   }
 });
 
+app.post('/api/deals/:id/convert-to-project', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { name, description, budget, startDate, dueDate, status } = req.body;
 
+    connection = await pool.getConnection();
+
+    const [deal] = await connection.query('SELECT * FROM deals WHERE id = ?', [id]);
+    if (deal.length === 0) {
+      return res.status(404).json({ error: 'Deal not found' });
+    }
+
+    const [result] = await connection.query(`
+      INSERT INTO projects (
+        title, description, budget, start_date, due_date, status, company_id, contact_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      name || deal[0].deal_name,
+      description || deal[0].description,
+      budget || deal[0].deal_value,
+      startDate || null,
+      dueDate || deal[0].expected_close_date,
+      status || 'Active',
+      deal[0].company_id,
+      deal[0].contact_id
+    ]);
+
+    await connection.query(`
+      UPDATE deals SET status = 'Converted to Project', updated_at = NOW() WHERE id = ?
+    `, [id]);
+
+    res.json({ 
+      message: 'Deal converted to project successfully',
+      projectId: result.insertId,
+      dealId: id
+    });
+  } catch (error) {
+    console.error('Error converting deal to project:', error.message);
+    res.status(500).json({ error: 'Failed to convert deal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/deals/:id/convert-to-invoice', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { name, description, budget, startDate, dueDate } = req.body;
+
+    connection = await pool.getConnection();
+
+    const [deal] = await connection.query('SELECT * FROM deals WHERE id = ?', [id]);
+    if (deal.length === 0) {
+      return res.status(404).json({ error: 'Deal not found' });
+    }
+
+    const invoiceNumber = `INV-${Date.now()}`;
+
+    const [result] = await connection.query(`
+      INSERT INTO invoices (
+        invoice_number, title, description, amount, issue_date, due_date, company_id, contact_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      invoiceNumber,
+      name || deal[0].deal_name,
+      description || deal[0].description,
+      budget || deal[0].deal_value,
+      startDate || new Date().toISOString().split('T')[0],
+      dueDate || deal[0].expected_close_date,
+      deal[0].company_id,
+      deal[0].contact_id,
+      'Draft'
+    ]);
+
+    await connection.query(`
+      UPDATE deals SET status = 'Converted to Invoice', updated_at = NOW() WHERE id = ?
+    `, [id]);
+
+    res.json({ 
+      message: 'Deal converted to invoice successfully',
+      invoiceId: result.insertId,
+      invoiceNumber: invoiceNumber,
+      dealId: id
+    });
+  } catch (error) {
+    console.error('Error converting deal to invoice:', error.message);
+    res.status(500).json({ error: 'Failed to convert deal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/deals/:id/convert-to-estimate', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { name, description, budget, startDate, dueDate, status } = req.body;
+
+    connection = await pool.getConnection();
+
+    const [deal] = await connection.query('SELECT * FROM deals WHERE id = ?', [id]);
+    if (deal.length === 0) {
+      return res.status(404).json({ error: 'Deal not found' });
+    }
+
+    const estimateNumber = `EST-${Date.now()}`;
+
+    const [result] = await connection.query(`
+      INSERT INTO estimates (
+        estimate_number, title, description, amount, issue_date, due_date, company_id, contact_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      estimateNumber,
+      name || deal[0].deal_name,
+      description || deal[0].description,
+      budget || deal[0].deal_value,
+      startDate || new Date().toISOString().split('T')[0],
+      dueDate || deal[0].expected_close_date,
+      deal[0].company_id,
+      deal[0].contact_id,
+      status || 'Draft'
+    ]);
+
+    await connection.query(`
+      UPDATE deals SET status = 'Converted to Estimate', updated_at = NOW() WHERE id = ?
+    `, [id]);
+
+    res.json({ 
+      message: 'Deal converted to estimate successfully',
+      estimateId: result.insertId,
+      estimateNumber: estimateNumber,
+      dealId: id
+    });
+  } catch (error) {
+    console.error('Error converting deal to estimate:', error.message);
+    res.status(500).json({ error: 'Failed to convert deal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
 
 
 
@@ -857,11 +1102,16 @@ app.get('/api/leads', async (req, res) => {
 app.post('/api/leads', async (req, res) => {
   try {
     const { name, email, phone, company, source, status, rating, description } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Lead name is required' });
+    }
+    
     const connection = await pool.getConnection();
     
     const result = await connection.query(
       'INSERT INTO leads (lead_name, email, phone, company, lead_source, lead_status, rating, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
-      [name, email, phone, company || null, source || 'Website', status || 'Not Contacted', rating || 5, description || null]
+      [name, email || null, phone || null, company || null, source || 'Website', status || 'New', rating || 5, description || null]
     );
     
     connection.release();
@@ -872,13 +1122,210 @@ app.post('/api/leads', async (req, res) => {
       phone,
       company,
       source: source || 'Website',
-      status: status || 'Not Contacted',
+      status: status || 'New',
       rating: rating || 5,
       message: 'Lead created successfully'
     });
   } catch (error) {
+    console.error('Error creating lead:', error);
+    res.status(500).json({ error: 'Failed to create lead', details: error.message });
+  }
+});
+
+app.get('/api/leads/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM leads WHERE id = ?', [id]);
+    connection.release();
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    
+    const lead = rows[0];
+    res.json({
+      ...lead,
+      name: lead.lead_name,
+      source: lead.lead_source,
+      status: lead.lead_status
+    });
+  } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to create lead' });
+    res.status(500).json({ error: 'Failed to fetch lead' });
+  }
+});
+
+app.put('/api/leads/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { lead_name, email, phone, company, lead_source, lead_status, rating, notes } = req.body;
+    const connection = await pool.getConnection();
+    
+    await connection.query(
+      'UPDATE leads SET lead_name = ?, email = ?, phone = ?, company = ?, lead_source = ?, lead_status = ?, rating = ?, notes = ?, updated_at = NOW() WHERE id = ?',
+      [lead_name, email, phone, company || null, lead_source, lead_status, rating || 5, notes || null, id]
+    );
+    
+    connection.release();
+    res.json({ message: 'Lead updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update lead' });
+  }
+});
+
+app.delete('/api/leads/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const connection = await pool.getConnection();
+    await connection.query('DELETE FROM leads WHERE id = ?', [id]);
+    connection.release();
+    res.json({ message: 'Lead deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete lead' });
+  }
+});
+
+app.post('/api/leads/:id/convert-to-contact', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { first_name, last_name, company_id, position, status: contactStatus } = req.body;
+    
+    if (!first_name || !last_name) {
+      return res.status(400).json({ error: 'Missing required fields: first_name, last_name' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [lead] = await connection.query('SELECT * FROM leads WHERE id = ?', [id]);
+    if (lead.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    
+    const leadData = lead[0];
+    const [result] = await connection.query(
+      'INSERT INTO contacts (first_name, last_name, email, phone, company_id, position, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [first_name, last_name, leadData.email, leadData.phone, company_id || null, position || '', contactStatus || 'Active']
+    );
+    
+    const contactId = result.insertId;
+    
+    res.json({
+      message: 'Lead converted to contact successfully',
+      contactId,
+      contact: {
+        id: contactId,
+        first_name,
+        last_name,
+        email: leadData.email,
+        phone: leadData.phone,
+        company_id,
+        position,
+        status: contactStatus || 'Active'
+      }
+    });
+  } catch (error) {
+    console.error('Error converting lead to contact:', error.message);
+    res.status(500).json({ error: 'Failed to convert lead to contact', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/leads/:id/convert-to-company', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { company_name, industry, email, phone, website, address, status: companyStatus } = req.body;
+    
+    if (!company_name) {
+      return res.status(400).json({ error: 'Missing required field: company_name' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [lead] = await connection.query('SELECT * FROM leads WHERE id = ?', [id]);
+    if (lead.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    
+    const leadData = lead[0];
+    const [result] = await connection.query(
+      'INSERT INTO companies (company_name, industry, email, phone, website, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [company_name, industry || null, email || leadData.email, phone || leadData.phone, website || null, address || null, companyStatus || 'Active']
+    );
+    
+    const companyId = result.insertId;
+    
+    res.json({
+      message: 'Lead converted to company successfully',
+      companyId,
+      company: {
+        id: companyId,
+        company_name,
+        industry,
+        email: email || leadData.email,
+        phone: phone || leadData.phone,
+        website,
+        address,
+        status: companyStatus || 'Active'
+      }
+    });
+  } catch (error) {
+    console.error('Error converting lead to company:', error.message);
+    res.status(500).json({ error: 'Failed to convert lead to company', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/leads/:id/convert-to-deal', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { deal_name, deal_value, currency, contact_id, company_id, pipeline, status: dealStatus, description } = req.body;
+    
+    if (!deal_name || !deal_value) {
+      return res.status(400).json({ error: 'Missing required fields: deal_name, deal_value' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [lead] = await connection.query('SELECT * FROM leads WHERE id = ?', [id]);
+    if (lead.length === 0) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+    
+    const [result] = await connection.query(
+      'INSERT INTO deals (deal_name, company_id, contact_id, deal_value, currency, pipeline, status, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [deal_name, company_id || null, contact_id || null, deal_value, currency || 'USD', pipeline || null, dealStatus || 'Pending', description || null]
+    );
+    
+    const dealId = result.insertId;
+    
+    res.json({
+      message: 'Lead converted to deal successfully',
+      dealId,
+      deal: {
+        id: dealId,
+        deal_name,
+        deal_value,
+        currency: currency || 'USD',
+        contact_id,
+        company_id,
+        pipeline,
+        status: dealStatus || 'Pending',
+        description
+      }
+    });
+  } catch (error) {
+    console.error('Error converting lead to deal:', error.message);
+    res.status(500).json({ error: 'Failed to convert lead to deal', details: error.message });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
@@ -2157,6 +2604,1103 @@ app.use((err, req, res, next) => {
   res.status(500).json({ 
     error: NODE_ENV === 'production' ? 'Internal server error' : err.message 
   });
+});
+
+app.post('/api/projects', async (req, res) => {
+  let connection;
+  try {
+    const { name, project_id, project_type, client, category, project_timing, price, responsible_persons, team_leader, start_date, due_date, priority, status, description, deal_id, created_by, visibility } = req.body;
+    
+    if (!name || !project_id) {
+      return res.status(400).json({ error: 'Project name and ID are required' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(
+      `INSERT INTO projects (name, project_id, project_type, client, category, project_timing, price, responsible_persons, team_leader, start_date, due_date, priority, status, description, deal_id, created_by, visibility)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, project_id, project_type || null, client || null, category || null, project_timing || null, price || 0, JSON.stringify(responsible_persons || []), team_leader || null, start_date || null, due_date || null, priority || 'Medium', status || 'Planning', description || null, deal_id || null, created_by || null, visibility || 'Public']
+    );
+
+    connection.release();
+    res.json({ id: result.insertId, message: 'Project created successfully' });
+  } catch (error) {
+    console.error('Error creating project:', error.message);
+    res.status(500).json({ error: 'Failed to create project', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/projects', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM projects ORDER BY created_at DESC');
+    connection.release();
+    
+    const projects = rows.map(p => ({
+      ...p,
+      responsible_persons: p.responsible_persons ? JSON.parse(p.responsible_persons) : []
+    }));
+    
+    res.json(projects);
+  } catch (error) {
+    console.error('Error fetching projects:', error.message);
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM projects WHERE id = ?', [id]);
+    connection.release();
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    const project = rows[0];
+    project.responsible_persons = project.responsible_persons ? JSON.parse(project.responsible_persons) : [];
+    
+    res.json(project);
+  } catch (error) {
+    console.error('Error fetching project:', error.message);
+    res.status(500).json({ error: 'Failed to fetch project' });
+  }
+});
+
+app.put('/api/projects/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { name, project_type, client, category, project_timing, price, responsible_persons, team_leader, start_date, due_date, priority, status, description, visibility } = req.body;
+    
+    connection = await pool.getConnection();
+    await connection.query(
+      `UPDATE projects SET name = ?, project_type = ?, client = ?, category = ?, project_timing = ?, price = ?, responsible_persons = ?, team_leader = ?, start_date = ?, due_date = ?, priority = ?, status = ?, description = ?, visibility = ?, updated_at = NOW() WHERE id = ?`,
+      [name, project_type, client, category, project_timing, price, JSON.stringify(responsible_persons || []), team_leader, start_date, due_date, priority, status, description, visibility, id]
+    );
+    
+    connection.release();
+    res.json({ message: 'Project updated successfully' });
+  } catch (error) {
+    console.error('Error updating project:', error.message);
+    res.status(500).json({ error: 'Failed to update project' });
+  }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM projects WHERE id = ?', [id]);
+    connection.release();
+    res.json({ message: 'Project deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting project:', error.message);
+    res.status(500).json({ error: 'Failed to delete project' });
+  }
+});
+
+app.post('/api/projects/:projectId/tasks', async (req, res) => {
+  let connection;
+  try {
+    const { projectId } = req.params;
+    const { title, description, status, priority, assigned_to, assigned_by, due_date, start_date, estimated_hours } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ error: 'Task title is required' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(
+      `INSERT INTO project_tasks (project_id, title, description, status, priority, assigned_to, assigned_by, due_date, start_date, estimated_hours)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [projectId, title, description || null, status || 'Todo', priority || 'Medium', assigned_to || null, assigned_by || null, due_date || null, start_date || null, estimated_hours || null]
+    );
+
+    connection.release();
+    res.json({ id: result.insertId, message: 'Task created successfully' });
+  } catch (error) {
+    console.error('Error creating task:', error.message);
+    res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+app.get('/api/projects/:projectId/tasks', async (req, res) => {
+  let connection;
+  try {
+    const { projectId } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM project_tasks WHERE project_id = ? ORDER BY order_index ASC, created_at ASC', [projectId]);
+    connection.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching tasks:', error.message);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+app.put('/api/projects/:projectId/tasks/:taskId', async (req, res) => {
+  let connection;
+  try {
+    const { projectId, taskId } = req.params;
+    const { title, description, status, priority, assigned_to, due_date, start_date, estimated_hours, actual_hours, progress, order_index } = req.body;
+    
+    connection = await pool.getConnection();
+    await connection.query(
+      `UPDATE project_tasks SET title = ?, description = ?, status = ?, priority = ?, assigned_to = ?, due_date = ?, start_date = ?, estimated_hours = ?, actual_hours = ?, progress = ?, order_index = ?, updated_at = NOW() WHERE id = ? AND project_id = ?`,
+      [title, description, status, priority, assigned_to, due_date, start_date, estimated_hours, actual_hours, progress, order_index, taskId, projectId]
+    );
+    
+    connection.release();
+    res.json({ message: 'Task updated successfully' });
+  } catch (error) {
+    console.error('Error updating task:', error.message);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+app.delete('/api/projects/:projectId/tasks/:taskId', async (req, res) => {
+  let connection;
+  try {
+    const { projectId, taskId } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM project_tasks WHERE id = ? AND project_id = ?', [taskId, projectId]);
+    connection.release();
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting task:', error.message);
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+app.post('/api/tasks', async (req, res) => {
+  let connection;
+  try {
+    const { title, description, priority, status, assigned_to, due_date, linked_type, linked_id, tags } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ error: 'Task title is required' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(
+      `INSERT INTO general_tasks (title, description, status, priority, assigned_to, due_date, linked_type, linked_id, tags)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        title,
+        description || null,
+        status || 'Open',
+        priority || 'Medium',
+        assigned_to ? JSON.stringify(assigned_to) : JSON.stringify([]),
+        due_date || null,
+        linked_type || 'General',
+        linked_id || null,
+        tags ? JSON.stringify(tags) : JSON.stringify([])
+      ]
+    );
+
+    connection.release();
+    res.json({ 
+      id: result.insertId,
+      title,
+      description,
+      status: status || 'Open',
+      priority: priority || 'Medium',
+      assigned_to: assigned_to || [],
+      due_date: due_date || null,
+      linked_type: linked_type || 'General',
+      linked_id: linked_id || null,
+      tags: tags || [],
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+  } catch (error) {
+    console.error('Error creating task:', error.message);
+    res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+app.get('/api/tasks', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM general_tasks ORDER BY created_at DESC');
+    
+    const tasks = rows.map(task => ({
+      ...task,
+      assigned_to: typeof task.assigned_to === 'string' ? JSON.parse(task.assigned_to) : (task.assigned_to || []),
+      tags: typeof task.tags === 'string' ? JSON.parse(task.tags) : (task.tags || [])
+    }));
+    
+    connection.release();
+    res.json(tasks);
+  } catch (error) {
+    console.error('Error fetching tasks:', error.message);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+app.get('/api/tasks/:taskId', async (req, res) => {
+  let connection;
+  try {
+    const { taskId } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM general_tasks WHERE id = ?', [taskId]);
+    
+    if (rows.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    const task = rows[0];
+    task.assigned_to = typeof task.assigned_to === 'string' ? JSON.parse(task.assigned_to) : (task.assigned_to || []);
+    task.tags = typeof task.tags === 'string' ? JSON.parse(task.tags) : (task.tags || []);
+    
+    connection.release();
+    res.json(task);
+  } catch (error) {
+    console.error('Error fetching task:', error.message);
+    res.status(500).json({ error: 'Failed to fetch task' });
+  }
+});
+
+app.put('/api/tasks/:taskId', async (req, res) => {
+  let connection;
+  try {
+    const { taskId } = req.params;
+    const { title, description, status, priority, assigned_to, due_date, linked_type, linked_id, tags } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    await connection.query(
+      `UPDATE general_tasks SET title = ?, description = ?, status = ?, priority = ?, assigned_to = ?, due_date = ?, linked_type = ?, linked_id = ?, tags = ?, updated_at = NOW() WHERE id = ?`,
+      [
+        title,
+        description || null,
+        status || 'Open',
+        priority || 'Medium',
+        assigned_to ? JSON.stringify(assigned_to) : JSON.stringify([]),
+        due_date || null,
+        linked_type || 'General',
+        linked_id || null,
+        tags ? JSON.stringify(tags) : JSON.stringify([]),
+        taskId
+      ]
+    );
+    
+    connection.release();
+    res.json({ message: 'Task updated successfully' });
+  } catch (error) {
+    console.error('Error updating task:', error.message);
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+app.delete('/api/tasks/:taskId', async (req, res) => {
+  let connection;
+  try {
+    const { taskId } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM general_tasks WHERE id = ?', [taskId]);
+    connection.release();
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting task:', error.message);
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+app.post('/api/projects/:projectId/comments', async (req, res) => {
+  let connection;
+  try {
+    const { projectId } = req.params;
+    const { task_id, user_id, comment_text, file_id } = req.body;
+    
+    if (!user_id || !comment_text) {
+      return res.status(400).json({ error: 'User ID and comment text are required' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(
+      `INSERT INTO project_comments (project_id, task_id, user_id, comment_text, file_id)
+       VALUES (?, ?, ?, ?, ?)`,
+      [projectId, task_id || null, user_id, comment_text, file_id || null]
+    );
+
+    connection.release();
+    res.json({ id: result.insertId, message: 'Comment added successfully' });
+  } catch (error) {
+    console.error('Error adding comment:', error.message);
+    res.status(500).json({ error: 'Failed to add comment' });
+  }
+});
+
+app.get('/api/projects/:projectId/comments', async (req, res) => {
+  let connection;
+  try {
+    const { projectId } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(
+      `SELECT pc.*, u.first_name, u.last_name, u.avatar FROM project_comments pc 
+       LEFT JOIN users u ON pc.user_id = u.id
+       WHERE pc.project_id = ? ORDER BY pc.created_at DESC`,
+      [projectId]
+    );
+    connection.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching comments:', error.message);
+    res.status(500).json({ error: 'Failed to fetch comments' });
+  }
+});
+
+app.post('/api/projects/:projectId/team', async (req, res) => {
+  let connection;
+  try {
+    const { projectId } = req.params;
+    const { user_id, role, added_by } = req.body;
+    
+    if (!user_id) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(
+      `INSERT INTO project_team (project_id, user_id, role, added_by)
+       VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE role = ?, added_at = NOW()`,
+      [projectId, user_id, role || 'Member', added_by || null, role || 'Member']
+    );
+
+    connection.release();
+    res.json({ message: 'Team member added successfully' });
+  } catch (error) {
+    console.error('Error adding team member:', error.message);
+    res.status(500).json({ error: 'Failed to add team member' });
+  }
+});
+
+app.get('/api/projects/:projectId/team', async (req, res) => {
+  let connection;
+  try {
+    const { projectId } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(
+      `SELECT pt.*, u.first_name, u.last_name, u.email, u.avatar FROM project_team pt 
+       LEFT JOIN users u ON pt.user_id = u.id
+       WHERE pt.project_id = ? ORDER BY pt.added_at DESC`,
+      [projectId]
+    );
+    connection.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching team members:', error.message);
+    res.status(500).json({ error: 'Failed to fetch team members' });
+  }
+});
+
+app.delete('/api/projects/:projectId/team/:userId', async (req, res) => {
+  let connection;
+  try {
+    const { projectId, userId } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM project_team WHERE project_id = ? AND user_id = ?', [projectId, userId]);
+    connection.release();
+    res.json({ message: 'Team member removed successfully' });
+  } catch (error) {
+    console.error('Error removing team member:', error.message);
+    res.status(500).json({ error: 'Failed to remove team member' });
+  }
+});
+
+app.post('/api/deals/:dealId/convert-to-project', async (req, res) => {
+  let connection;
+  try {
+    const { dealId } = req.params;
+    const { name, project_type, category, start_date, due_date, priority, created_by } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Project name is required' });
+    }
+
+    connection = await pool.getConnection();
+    
+    const [deal] = await connection.query('SELECT * FROM deals WHERE id = ?', [dealId]);
+    if (deal.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Deal not found' });
+    }
+
+    const dealData = deal[0];
+    const projectId = `PRJ-${Date.now()}`;
+    
+    const [result] = await connection.query(
+      `INSERT INTO projects (name, project_id, project_type, deal_id, start_date, due_date, priority, status, category, price, description, created_by, visibility)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, projectId, project_type || 'Custom', dealId, start_date || null, due_date || dealData.expected_close_date, priority || 'High', 'Planning', category || 'Development', dealData.deal_value, dealData.description, created_by || null, 'Public']
+    );
+
+    const projectIdInserted = result.insertId;
+
+    const [updateDeal] = await connection.query(
+      'UPDATE deals SET status = "Won" WHERE id = ?',
+      [dealId]
+    );
+
+    connection.release();
+    
+    res.json({ 
+      message: 'Deal converted to project successfully',
+      projectId: projectIdInserted,
+      project_number: projectId
+    });
+  } catch (error) {
+    console.error('Error converting deal to project:', error.message);
+    res.status(500).json({ error: 'Failed to convert deal to project', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/projects/:projectId/activity', async (req, res) => {
+  let connection;
+  try {
+    const { projectId } = req.params;
+    connection = await pool.getConnection();
+    const [rows] = await connection.query(
+      `SELECT pa.*, u.first_name, u.last_name, u.avatar FROM project_activity pa 
+       LEFT JOIN users u ON pa.user_id = u.id
+       WHERE pa.project_id = ? ORDER BY pa.created_at DESC`,
+      [projectId]
+    );
+    connection.release();
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching activity:', error.message);
+    res.status(500).json({ error: 'Failed to fetch activity' });
+  }
+});
+
+app.get('/api/proposals', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const { status, client_id, deal_id, search } = req.query;
+    
+    let query = `
+      SELECT p.*, c.company_name, ct.first_name, ct.last_name,
+             u.first_name as creator_first_name, u.last_name as creator_last_name
+      FROM proposals p
+      LEFT JOIN companies c ON p.client_id = c.id
+      LEFT JOIN contacts ct ON p.contact_id = ct.id
+      LEFT JOIN users u ON p.created_by = u.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (status) {
+      query += ' AND p.status = ?';
+      params.push(status);
+    }
+    if (client_id) {
+      query += ' AND p.client_id = ?';
+      params.push(client_id);
+    }
+    if (deal_id) {
+      query += ' AND p.deal_id = ?';
+      params.push(deal_id);
+    }
+    if (search) {
+      query += ' AND (p.title LIKE ? OR p.proposal_number LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    query += ' ORDER BY p.created_at DESC';
+    
+    const [rows] = await connection.query(query, params);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching proposals:', error.message);
+    res.status(500).json({ error: 'Failed to fetch proposals' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/proposals/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [proposal] = await connection.query(`
+      SELECT p.*, c.company_name, ct.first_name, ct.last_name,
+             u.first_name as creator_first_name, u.last_name as creator_last_name
+      FROM proposals p
+      LEFT JOIN companies c ON p.client_id = c.id
+      LEFT JOIN contacts ct ON p.contact_id = ct.id
+      LEFT JOIN users u ON p.created_by = u.id
+      WHERE p.id = ?
+    `, [id]);
+    
+    if (proposal.length === 0) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    const [lineItems] = await connection.query(`
+      SELECT * FROM proposal_line_items WHERE proposal_id = ? ORDER BY id ASC
+    `, [id]);
+    
+    const [history] = await connection.query(`
+      SELECT ph.*, u.first_name, u.last_name
+      FROM proposal_history ph
+      LEFT JOIN users u ON ph.action_by = u.id
+      WHERE ph.proposal_id = ?
+      ORDER BY ph.created_at DESC
+    `, [id]);
+    
+    res.json({
+      ...proposal[0],
+      lineItems,
+      history
+    });
+  } catch (error) {
+    console.error('Error fetching proposal:', error.message);
+    res.status(500).json({ error: 'Failed to fetch proposal' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/proposals', async (req, res) => {
+  let connection;
+  try {
+    const {
+      title,
+      proposal_number,
+      description,
+      client_id,
+      contact_id,
+      deal_id,
+      created_by,
+      proposal_date,
+      validity_date,
+      currency,
+      terms_conditions,
+      notes,
+      lineItems
+    } = req.body;
+    
+    if (!title || !proposal_number || !client_id) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    let totalAmount = 0;
+    let totalDiscount = 0;
+    let totalTax = 0;
+    
+    if (Array.isArray(lineItems) && lineItems.length > 0) {
+      for (const item of lineItems) {
+        const subtotal = item.quantity * item.rate;
+        const discount = (subtotal * item.discount_percent) / 100;
+        const tax = ((subtotal - discount) * item.tax_percent) / 100;
+        totalAmount += subtotal - discount + tax;
+        totalDiscount += discount;
+        totalTax += tax;
+      }
+    }
+    
+    const [result] = await connection.query(`
+      INSERT INTO proposals (
+        proposal_number, title, description, client_id, contact_id, deal_id,
+        created_by, proposal_date, validity_date, total_amount, discount_amount,
+        tax_amount, currency, terms_conditions, notes
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      proposal_number,
+      title,
+      description || '',
+      client_id,
+      contact_id || null,
+      deal_id || null,
+      created_by || null,
+      proposal_date || null,
+      validity_date || null,
+      totalAmount,
+      totalDiscount,
+      totalTax,
+      currency || 'USD',
+      terms_conditions || '',
+      notes || ''
+    ]);
+    
+    const proposalId = result.insertId;
+    
+    if (Array.isArray(lineItems) && lineItems.length > 0) {
+      for (const item of lineItems) {
+        const subtotal = item.quantity * item.rate;
+        const discount = (subtotal * item.discount_percent) / 100;
+        const itemTax = ((subtotal - discount) * item.tax_percent) / 100;
+        const itemTotal = subtotal - discount + itemTax;
+        
+        await connection.query(`
+          INSERT INTO proposal_line_items (
+            proposal_id, item_name, description, quantity, rate,
+            discount_percent, discount_amount, tax_percent, tax_amount,
+            subtotal, total
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          proposalId,
+          item.item_name,
+          item.description || '',
+          item.quantity,
+          item.rate,
+          item.discount_percent || 0,
+          discount,
+          item.tax_percent || 0,
+          itemTax,
+          subtotal,
+          itemTotal
+        ]);
+      }
+    }
+    
+    await connection.query(`
+      INSERT INTO proposal_history (proposal_id, action, action_by, new_status)
+      VALUES (?, 'Created', ?, 'Draft')
+    `, [proposalId, created_by || null]);
+    
+    res.json({ 
+      message: 'Proposal created successfully', 
+      id: proposalId,
+      proposal_number: proposal_number
+    });
+  } catch (error) {
+    console.error('Error creating proposal:', error.message);
+    res.status(500).json({ error: 'Failed to create proposal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/proposals/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      description,
+      contact_id,
+      deal_id,
+      proposal_date,
+      validity_date,
+      currency,
+      terms_conditions,
+      notes,
+      lineItems
+    } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    let totalAmount = 0;
+    let totalDiscount = 0;
+    let totalTax = 0;
+    
+    if (Array.isArray(lineItems) && lineItems.length > 0) {
+      for (const item of lineItems) {
+        const subtotal = item.quantity * item.rate;
+        const discount = (subtotal * item.discount_percent) / 100;
+        const tax = ((subtotal - discount) * item.tax_percent) / 100;
+        totalAmount += subtotal - discount + tax;
+        totalDiscount += discount;
+        totalTax += tax;
+      }
+    }
+    
+    await connection.query(`
+      UPDATE proposals 
+      SET title = ?, description = ?, contact_id = ?, deal_id = ?,
+          proposal_date = ?, validity_date = ?, total_amount = ?,
+          discount_amount = ?, tax_amount = ?, currency = ?,
+          terms_conditions = ?, notes = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [
+      title,
+      description || '',
+      contact_id || null,
+      deal_id || null,
+      proposal_date || null,
+      validity_date || null,
+      totalAmount,
+      totalDiscount,
+      totalTax,
+      currency || 'USD',
+      terms_conditions || '',
+      notes || '',
+      id
+    ]);
+    
+    await connection.query('DELETE FROM proposal_line_items WHERE proposal_id = ?', [id]);
+    
+    if (Array.isArray(lineItems) && lineItems.length > 0) {
+      for (const item of lineItems) {
+        const subtotal = item.quantity * item.rate;
+        const discount = (subtotal * item.discount_percent) / 100;
+        const itemTax = ((subtotal - discount) * item.tax_percent) / 100;
+        const itemTotal = subtotal - discount + itemTax;
+        
+        await connection.query(`
+          INSERT INTO proposal_line_items (
+            proposal_id, item_name, description, quantity, rate,
+            discount_percent, discount_amount, tax_percent, tax_amount,
+            subtotal, total
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          id,
+          item.item_name,
+          item.description || '',
+          item.quantity,
+          item.rate,
+          item.discount_percent || 0,
+          discount,
+          item.tax_percent || 0,
+          itemTax,
+          subtotal,
+          itemTotal
+        ]);
+      }
+    }
+    
+    res.json({ message: 'Proposal updated successfully' });
+  } catch (error) {
+    console.error('Error updating proposal:', error.message);
+    res.status(500).json({ error: 'Failed to update proposal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/proposals/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    await connection.query('DELETE FROM proposals WHERE id = ?', [id]);
+    res.json({ message: 'Proposal deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting proposal:', error.message);
+    res.status(500).json({ error: 'Failed to delete proposal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/proposals/:id/status', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { status, comments, action_by } = req.body;
+    
+    const validStatuses = ['Draft', 'Submitted', 'Approved', 'Rejected', 'Sent', 'Accepted', 'Declined'];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [proposal] = await connection.query('SELECT status FROM proposals WHERE id = ?', [id]);
+    if (proposal.length === 0) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    const oldStatus = proposal[0].status;
+    
+    await connection.query(`
+      UPDATE proposals SET status = ?, updated_at = NOW() WHERE id = ?
+    `, [status, id]);
+    
+    await connection.query(`
+      INSERT INTO proposal_history (proposal_id, action, action_by, old_status, new_status, comments)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [id, 'Status Changed', action_by || null, oldStatus, status, comments || '']);
+    
+    res.json({ message: 'Proposal status updated successfully' });
+  } catch (error) {
+    console.error('Error updating proposal status:', error.message);
+    res.status(500).json({ error: 'Failed to update proposal status', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/proposals/:id/convert-to-invoice', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { created_by } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [proposal] = await connection.query(`
+      SELECT * FROM proposals WHERE id = ?
+    `, [id]);
+    
+    if (proposal.length === 0) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    const prop = proposal[0];
+    
+    const [lineItems] = await connection.query(`
+      SELECT * FROM proposal_line_items WHERE proposal_id = ?
+    `, [id]);
+    
+    const [result] = await connection.query(`
+      INSERT INTO invoices (
+        invoice_number, title, description, client_id, contact_id, deal_id,
+        created_by, invoice_date, due_date, total_amount, discount_amount,
+        tax_amount, currency, terms_conditions, notes, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Draft')
+    `, [
+      `INV-${Date.now()}`,
+      prop.title,
+      prop.description,
+      prop.client_id,
+      prop.contact_id,
+      prop.deal_id,
+      created_by || prop.created_by,
+      new Date().toISOString().split('T')[0],
+      prop.validity_date,
+      prop.total_amount,
+      prop.discount_amount,
+      prop.tax_amount,
+      prop.currency,
+      prop.terms_conditions,
+      prop.notes
+    ]);
+    
+    const invoiceId = result.insertId;
+    
+    for (const item of lineItems) {
+      await connection.query(`
+        INSERT INTO invoice_line_items (
+          invoice_id, item_name, description, quantity, rate,
+          discount_percent, discount_amount, tax_percent, tax_amount,
+          subtotal, total
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        invoiceId,
+        item.item_name,
+        item.description,
+        item.quantity,
+        item.rate,
+        item.discount_percent,
+        item.discount_amount,
+        item.tax_percent,
+        item.tax_amount,
+        item.subtotal,
+        item.total
+      ]);
+    }
+    
+    await connection.query(`
+      UPDATE proposals SET status = 'Accepted', updated_at = NOW() WHERE id = ?
+    `, [id]);
+    
+    await connection.query(`
+      INSERT INTO proposal_history (proposal_id, action, action_by, new_status)
+      VALUES (?, 'Converted to Invoice', ?, 'Accepted')
+    `, [id, created_by || null]);
+    
+    res.json({ 
+      message: 'Proposal converted to invoice successfully',
+      invoiceId,
+      invoiceNumber: `INV-${Date.now()}`
+    });
+  } catch (error) {
+    console.error('Error converting proposal to invoice:', error.message);
+    res.status(500).json({ error: 'Failed to convert proposal to invoice', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/proposals/:id/submit', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { created_by, comments } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [proposal] = await connection.query('SELECT status FROM proposals WHERE id = ?', [id]);
+    if (proposal.length === 0) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    if (proposal[0].status !== 'Draft') {
+      return res.status(400).json({ error: 'Only draft proposals can be submitted' });
+    }
+    
+    await connection.query(`
+      UPDATE proposals SET status = 'Submitted', updated_at = NOW() WHERE id = ?
+    `, [id]);
+    
+    await connection.query(`
+      INSERT INTO proposal_history (proposal_id, action, action_by, old_status, new_status, comments)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [id, 'Submitted for Approval', created_by || null, 'Draft', 'Submitted', comments || '']);
+    
+    res.json({ message: 'Proposal submitted for approval successfully' });
+  } catch (error) {
+    console.error('Error submitting proposal:', error.message);
+    res.status(500).json({ error: 'Failed to submit proposal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/proposals/:id/approve', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { action_by, comments } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [proposal] = await connection.query('SELECT status FROM proposals WHERE id = ?', [id]);
+    if (proposal.length === 0) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    if (proposal[0].status !== 'Submitted') {
+      return res.status(400).json({ error: 'Only submitted proposals can be approved' });
+    }
+    
+    await connection.query(`
+      UPDATE proposals SET status = 'Approved', updated_at = NOW() WHERE id = ?
+    `, [id]);
+    
+    await connection.query(`
+      INSERT INTO proposal_history (proposal_id, action, action_by, old_status, new_status, comments)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [id, 'Approved', action_by || null, 'Submitted', 'Approved', comments || '']);
+    
+    res.json({ message: 'Proposal approved successfully' });
+  } catch (error) {
+    console.error('Error approving proposal:', error.message);
+    res.status(500).json({ error: 'Failed to approve proposal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/proposals/:id/reject', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { action_by, reason, comments } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [proposal] = await connection.query('SELECT status FROM proposals WHERE id = ?', [id]);
+    if (proposal.length === 0) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    if (proposal[0].status !== 'Submitted') {
+      return res.status(400).json({ error: 'Only submitted proposals can be rejected' });
+    }
+    
+    await connection.query(`
+      UPDATE proposals SET status = 'Rejected', updated_at = NOW() WHERE id = ?
+    `, [id]);
+    
+    await connection.query(`
+      INSERT INTO proposal_history (proposal_id, action, action_by, old_status, new_status, comments)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [id, 'Rejected', action_by || null, 'Submitted', 'Rejected', reason || comments || '']);
+    
+    res.json({ message: 'Proposal rejected successfully' });
+  } catch (error) {
+    console.error('Error rejecting proposal:', error.message);
+    res.status(500).json({ error: 'Failed to reject proposal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/proposals/:id/send', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { action_by, client_email, comments } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [proposal] = await connection.query('SELECT status FROM proposals WHERE id = ?', [id]);
+    if (proposal.length === 0) {
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    if (proposal[0].status !== 'Approved') {
+      return res.status(400).json({ error: 'Only approved proposals can be sent' });
+    }
+    
+    await connection.query(`
+      UPDATE proposals SET status = 'Sent', updated_at = NOW() WHERE id = ?
+    `, [id]);
+    
+    await connection.query(`
+      INSERT INTO proposal_history (proposal_id, action, action_by, old_status, new_status, comments)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [id, 'Sent to Client', action_by || null, 'Approved', 'Sent', `Sent to ${client_email || 'client'}`]);
+    
+    res.json({ message: 'Proposal sent to client successfully' });
+  } catch (error) {
+    console.error('Error sending proposal:', error.message);
+    res.status(500).json({ error: 'Failed to send proposal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/proposals/:id/history', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [history] = await connection.query(`
+      SELECT ph.*, u.first_name, u.last_name, u.email
+      FROM proposal_history ph
+      LEFT JOIN users u ON ph.action_by = u.id
+      WHERE ph.proposal_id = ?
+      ORDER BY ph.created_at DESC
+    `, [id]);
+    
+    res.json(history);
+  } catch (error) {
+    console.error('Error fetching proposal history:', error.message);
+    res.status(500).json({ error: 'Failed to fetch proposal history' });
+  } finally {
+    if (connection) connection.release();
+  }
 });
 
 const server = app.listen(PORT, async () => {

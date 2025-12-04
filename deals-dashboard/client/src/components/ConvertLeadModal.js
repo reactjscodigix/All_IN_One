@@ -1,0 +1,376 @@
+import React, { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+
+const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, companies = [] }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({});
+
+  React.useEffect(() => {
+    if (leadData) {
+      setFormData({
+        first_name: '',
+        last_name: '',
+        company_name: '',
+        deal_name: '',
+        deal_value: '',
+        currency: 'USD',
+        industry: '',
+        position: '',
+        website: '',
+        address: '',
+        description: ''
+      });
+    }
+  }, [leadData, isOpen]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (convertType === 'contact' && (!formData.first_name || !formData.last_name)) {
+      setError('Please fill in required fields: First Name and Last Name');
+      return;
+    }
+
+    if (convertType === 'company' && !formData.company_name) {
+      setError('Please fill in required field: Company Name');
+      return;
+    }
+
+    if (convertType === 'deal' && (!formData.deal_name || !formData.deal_value)) {
+      setError('Please fill in required fields: Deal Name and Value');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (onSubmit) {
+        await onSubmit(formData);
+      }
+      handleCancel();
+    } catch (err) {
+      setError(err.message || 'Conversion failed');
+      console.error('Conversion error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setFormData({});
+    setError('');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  const getTitle = () => {
+    switch (convertType) {
+      case 'contact':
+        return 'Convert Lead to Contact';
+      case 'company':
+        return 'Convert Lead to Company';
+      case 'deal':
+        return 'Convert Lead to Deal';
+      default:
+        return 'Convert Lead';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
+        <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <h2 className="text-xl font-semibold text-gray-900">{getTitle()}</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Converting: <span className="font-medium">{leadData?.name || leadData?.lead_name}</span>
+          </p>
+        </div>
+
+        {error && (
+          <div className="p-4 mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-700 font-medium">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {convertType === 'contact' && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    value={formData.first_name || ''}
+                    onChange={handleInputChange}
+                    placeholder="First name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    value={formData.last_name || ''}
+                    onChange={handleInputChange}
+                    placeholder="Last name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email (Pre-filled)
+                </label>
+                <input
+                  type="email"
+                  value={leadData?.email || ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company
+                </label>
+                <select
+                  name="company_id"
+                  value={formData.company_id || ''}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                >
+                  <option value="">Select or leave empty</option>
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.company_name || c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Position
+                </label>
+                <input
+                  type="text"
+                  name="position"
+                  value={formData.position || ''}
+                  onChange={handleInputChange}
+                  placeholder="e.g., CEO, Manager"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                />
+              </div>
+            </>
+          )}
+
+          {convertType === 'company' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="company_name"
+                  value={formData.company_name || ''}
+                  onChange={handleInputChange}
+                  placeholder="Company name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Industry
+                  </label>
+                  <input
+                    type="text"
+                    name="industry"
+                    value={formData.industry || ''}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Technology"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Website
+                  </label>
+                  <input
+                    type="text"
+                    name="website"
+                    value={formData.website || ''}
+                    onChange={handleInputChange}
+                    placeholder="www.example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email (Pre-filled)
+                </label>
+                <input
+                  type="email"
+                  value={leadData?.email || ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone (Pre-filled)
+                </label>
+                <input
+                  type="tel"
+                  value={leadData?.phone || ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address || ''}
+                  onChange={handleInputChange}
+                  placeholder="Full address"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                />
+              </div>
+            </>
+          )}
+
+          {convertType === 'deal' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Deal Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="deal_name"
+                  value={formData.deal_name || ''}
+                  onChange={handleInputChange}
+                  placeholder="Deal name"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Deal Value <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="deal_value"
+                    value={formData.deal_value || ''}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Currency
+                  </label>
+                  <select
+                    name="currency"
+                    value={formData.currency || 'USD'}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="INR">INR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company
+                </label>
+                <select
+                  name="company_id"
+                  value={formData.company_id || ''}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                >
+                  <option value="">Select or leave empty</option>
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.company_name || c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description || ''}
+                  onChange={handleInputChange}
+                  placeholder="Deal description"
+                  rows="2"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500 resize-none"
+                />
+              </div>
+            </>
+          )}
+
+          <div className="flex gap-3 pt-4 border-t">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+            >
+              {isLoading ? 'Converting...' : 'Convert'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default ConvertLeadModal;

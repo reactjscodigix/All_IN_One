@@ -59,10 +59,15 @@ import BlogCommentsPage from './components/BlogCommentsPage';
 import BlogTagsPage from './components/BlogTagsPage';
 import ManageUsersPage from './components/ManageUsersPage';
 import RolePermissionsDetailPage from './components/RolePermissionsDetailPage';
+import LeadDetailsPage from './components/LeadDetailsPage';
+import DealsKanbanBoard from './components/DealsKanbanBoard';
+import DealDetailsPage from './components/DealDetailsPage';
 
 const routeMap = {
   '/': 'deals',
   '/deals': 'deals',
+  '/deals-kanban': 'deals-kanban',
+  '/deal/:id': 'deal-details',
   '/leads-dashboard': 'leads-dashboard',
   '/projects-dashboard': 'projects-dashboard',
   '/project-details': 'project-details',
@@ -130,6 +135,7 @@ function AppContent() {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedContactId, setSelectedContactId] = useState(null);
+  const [selectedDealId, setSelectedDealId] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const currentPage = routeMap[location.pathname] || 'deals';
@@ -165,6 +171,16 @@ function AppContent() {
     navigate('/contacts');
   };
 
+  const handleViewDealDetails = (deal) => {
+    setSelectedDealId(deal.id);
+    navigate(`/deal/${deal.id}`);
+  };
+
+  const handleBackFromDealDetails = () => {
+    setSelectedDealId(null);
+    navigate('/deals-kanban');
+  };
+
   const handleNavigate = (page) => {
     const routePath = Object.keys(routeMap).find(path => routeMap[path] === page) || '/';
     navigate(routePath);
@@ -175,6 +191,8 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<DealsDashboard />} />
         <Route path="/deals" element={<DealsDashboard />} />
+        <Route path="/deals-kanban" element={<DealsKanbanBoard onDealClick={handleViewDealDetails} />} />
+        <Route path="/deal/:id" element={<DealDetailsPage dealId={selectedDealId} onBack={handleBackFromDealDetails} />} />
         <Route path="/leads-dashboard" element={<LeadsDashboard />} />
         <Route path="/projects-dashboard" element={<ProjectsDashboard onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
         <Route path="/project-details" element={<ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />} />
@@ -185,6 +203,7 @@ function AppContent() {
         <Route path="/add-company" element={<AddCompanyPage />} />
         <Route path="/company-details" element={<CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />} />
         <Route path="/leads" element={<CrmLeadsPage />} />
+        <Route path="/lead/:id" element={<LeadDetailsPage />} />
         <Route path="/pipeline" element={<CrmPipelinePage />} />
         <Route path="/campaign" element={<CrmCampaignPage />} />
         <Route path="/projects" element={<CrmProjectsPage />} />
