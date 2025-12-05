@@ -27,7 +27,7 @@ const CrmDealsPage = () => {
         if (dealsRes && Array.isArray(dealsRes)) {
           const formattedDeals = dealsRes.map(deal => ({
             id: deal.id,
-            stage: deal.stage || deal.pipeline || 'Qualify To Buy',
+            stage: deal.deal_stage || deal.pipeline || 'Qualify To Buy',
             company: deal.company_name || deal.deal_name || 'Unknown Company',
             initials: ((deal.company_name || deal.deal_name || 'UC').substring(0, 2)).toUpperCase(),
             value: parseFloat(deal.deal_value) || 0,

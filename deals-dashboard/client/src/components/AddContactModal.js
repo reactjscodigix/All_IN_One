@@ -3,6 +3,7 @@ import { Upload } from 'lucide-react';
 
 const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEditMode = false }) => {
   const [companies, setCompanies] = useState([]);
+  const [deals, setDeals] = useState([]);
   const [avatar, setAvatar] = useState(null);
   const fileInputRef = React.useRef(null);
   const [openPanels, setOpenPanels] = useState({
@@ -47,7 +48,31 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
   useEffect(() => {
     fetchCompanies();
+    fetchDeals();
   }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/companies`);
+      const data = await response.json();
+      setCompanies(data);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    }
+  };
+
+  const fetchDeals = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/deals`);
+      const data = await response.json();
+      setDeals(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching deals:', error);
+      setDeals([]);
+    }
+  };
 
   useEffect(() => {
     if (isEditMode && initialData) {
@@ -85,17 +110,6 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
       });
     }
   }, [isEditMode, initialData]);
-
-  const fetchCompanies = async () => {
-    try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/companies`);
-      const data = await response.json();
-      setCompanies(data);
-    } catch (error) {
-      console.error('Error fetching companies:', error);
-    }
-  };
 
   const togglePanel = (name) => {
     setOpenPanels((p) => ({ ...p, [name]: !p[name] }));
@@ -410,9 +424,12 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
                         onChange={handleChange}
                         className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:border-gray-400"
                       >
-                        <option>Select</option>
-                        <option>Deal 1</option>
-                        <option>Deal 2</option>
+                        <option value="">Select</option>
+                        {deals.map((deal) => (
+                          <option key={deal.id} value={deal.id}>
+                            {deal.deal_name || deal.name}
+                          </option>
+                        ))}
                       </select>
                       <button type="button" className="text-red-500 font-bold text-lg hover:opacity-80">+</button>
                     </div>

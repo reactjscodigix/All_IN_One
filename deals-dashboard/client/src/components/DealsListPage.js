@@ -25,7 +25,23 @@ const DealsListPage = () => {
           companiesAPI.getAll(),
         ]);
         
-        setDeals(dealsRes || dealsData.deals);
+        const transformedDeals = dealsRes && Array.isArray(dealsRes) 
+          ? dealsRes.map(deal => ({
+              id: deal.id,
+              name: deal.deal_name,
+              company: deal.company_name || 'Unknown',
+              contact: deal.contact_id ? `${deal.first_name || ''} ${deal.last_name || ''}`.trim() : 'N/A',
+              stage: deal.deal_stage || deal.pipeline || 'N/A',
+              value: parseFloat(deal.deal_value) || 0,
+              status: deal.status || 'Pending',
+              deal_name: deal.deal_name,
+              company_id: deal.company_id,
+              contact_id: deal.contact_id,
+              ...deal
+            }))
+          : dealsData.deals;
+        
+        setDeals(transformedDeals);
         setContacts(contactsRes || []);
         setCompanies(companiesRes || []);
         setProjects(projectsData.projects || []);
@@ -151,7 +167,7 @@ const DealsListPage = () => {
         columns={columns}
         data={deals}
         title="All Deals"
-        searchKeys={['deal_name', 'company_name', 'first_name']}
+        searchKeys={['name', 'company', 'contact', 'stage']}
       />
 
       <AddNewDealModal

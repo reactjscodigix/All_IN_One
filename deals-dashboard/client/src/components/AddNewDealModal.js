@@ -84,6 +84,21 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
       return;
     }
 
+    if (!formData.company_id) {
+      setError('Please select a Company');
+      return;
+    }
+
+    if (!formData.contact_id) {
+      setError('Please select a Contact');
+      return;
+    }
+
+    if (!formData.pipeline) {
+      setError('Please select a Pipeline');
+      return;
+    }
+
     setIsLoading(true);
     try {
       if (onSubmit) {
@@ -198,7 +213,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Pipeline <span className="text-red-500">*</span>
+                      Stage/Pipeline <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="pipeline"
@@ -206,11 +221,15 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                       onChange={handleInputChange}
                       className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
                     >
-                      <option value="">Choose</option>
-                      <option value="Sales Pipeline">Sales Pipeline</option>
-                      <option value="Marketing Pipeline">Marketing Pipeline</option>
-                      <option value="Email Pipeline">Email Pipeline</option>
-                      <option value="Partnership Pipeline">Partnership Pipeline</option>
+                      <option value="">Select a Stage</option>
+                      <option value="New">New</option>
+                      <option value="Discovery">Discovery</option>
+                      <option value="Proposal Sent">Proposal Sent</option>
+                      <option value="Negotiation">Negotiation</option>
+                      <option value="Qualified To Buy">Qualified To Buy</option>
+                      <option value="Inpipeline">Inpipeline</option>
+                      <option value="Follow Up">Follow Up</option>
+                      <option value="Conversation">Conversation</option>
                     </select>
                   </div>
                   <div>
