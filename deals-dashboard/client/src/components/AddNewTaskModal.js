@@ -32,10 +32,11 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
   const fetchData = async () => {
     setLoadingData(true);
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const [usersRes, dealsRes, projectsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/contacts').then(r => r.json()),
-        fetch('http://localhost:5000/api/deals').then(r => r.json()),
-        fetch('http://localhost:5000/api/projects').then(r => r.json()),
+        fetch(`${apiUrl}/contacts`).then(r => r.json()),
+        fetch(`${apiUrl}/deals`).then(r => r.json()),
+        fetch(`${apiUrl}/projects`).then(r => r.json()),
       ]).catch(err => {
         console.error('Error fetching data:', err);
         return [[], [], []];

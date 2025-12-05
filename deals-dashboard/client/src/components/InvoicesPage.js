@@ -1,26 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Layout as LayoutIcon, Grid3x3 } from 'lucide-react';
 import AddNewInvoiceModal from './AddNewInvoiceModal';
-import { invoicesAPI, companiesAPI } from '../services/api';
+import EditInvoiceModal from './EditInvoiceModal';
+import InvoiceDetailPage from './InvoiceDetailPage';
+import InvoiceActionDropdown from './InvoiceActionDropdown';
+import { invoicesAPI, companiesAPI, projectAPI } from '../services/api';
 
 const InvoicesPage = () => {
   const [showAddInvoiceModal, setShowAddInvoiceModal] = useState(false);
+  const [showEditInvoiceModal, setShowEditInvoiceModal] = useState(false);
+  const [editingInvoiceId, setEditingInvoiceId] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
         setError('');
-        const [invoicesData, companiesData] = await Promise.all([
+        const [invoicesData, companiesData, projectsData] = await Promise.all([
           invoicesAPI.getAll(),
-          companiesAPI.getAll()
+          companiesAPI.getAll(),
+          projectAPI.getAll()
         ]);
         setInvoices(invoicesData || []);
         setCompanies(companiesData || []);
+        setProjects(projectsData || []);
       } catch (err) {
         console.error('Error loading data:', err);
         setError('Failed to load invoices');
@@ -70,6 +83,23 @@ const InvoicesPage = () => {
     return colors[index % colors.length];
   };
 
+  const filteredInvoices = invoices.filter(invoice => {
+    const matchesSearch = 
+      (invoice.invoice_number || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (invoice.company_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (invoice.bill_to || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = filterStatus === 'All' || invoice.status === filterStatus;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const paginatedInvoices = filteredInvoices.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const formatCurrency = (value, currency = 'USD') => {
     if (!value) return '$0.00';
     const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -107,6 +137,90 @@ const InvoicesPage = () => {
     }
   };
 
+  const handleEditInvoice = (invoice) => {
+    setEditingInvoiceId(invoice.id);
+    setShowEditInvoiceModal(true);
+  };
+
+  const handleEditInvoiceSubmit = async (formData) => {
+    try {
+      const updateData = {
+        client_id: formData.client,
+        bill_to: formData.billTo,
+        ship_to: formData.shipTo,
+        project_id: formData.project,
+        currency: formData.currency,
+        invoice_date: formData.date,
+        open_till: formData.openTill,
+        payment_method: formData.paymentMethod,
+        status: formData.status,
+        notes: formData.notes,
+        terms_conditions: formData.termsConditions,
+        bank_details: formData.bankDetails,
+        company_details: formData.companyDetails,
+        amount: formData.total,
+        total: formData.total,
+        items: formData.items || formData.lineItems
+      };
+
+      const response = await invoicesAPI.update(editingInvoiceId, updateData);
+      
+      const updatedInvoice = {
+        ...response,
+        client_id: formData.client,
+        company_name: companies.find(c => c.id === formData.client)?.company_name || 'Unknown',
+        bill_to: formData.billTo,
+        ship_to: formData.shipTo,
+        amount: formData.total,
+        currency: formData.currency,
+        invoice_date: formData.date,
+        open_till: formData.openTill,
+        payment_method: formData.paymentMethod,
+        status: formData.status,
+        total: formData.total,
+      };
+
+      setInvoices(invoices.map(inv => inv.id === editingInvoiceId ? updatedInvoice : inv));
+      setShowEditInvoiceModal(false);
+      setEditingInvoiceId(null);
+    } catch (err) {
+      console.error('Error updating invoice:', err);
+      throw err;
+    }
+  };
+
+  const handleDeleteInvoice = (invoiceId) => {
+    invoicesAPI.delete(invoiceId).then(() => {
+      setInvoices(invoices.filter(inv => inv.id !== invoiceId));
+    }).catch(err => {
+      console.error('Error deleting invoice:', err);
+      alert('Failed to delete invoice');
+    });
+  };
+
+  const handlePreviewInvoice = (invoice) => {
+    setSelectedInvoiceId(invoice.id);
+  };
+
+  const handleStatusChange = (invoiceId, status) => {
+    const updatedInvoices = invoices.map(inv =>
+      inv.id === invoiceId ? { ...inv, status } : inv
+    );
+    setInvoices(updatedInvoices);
+    invoicesAPI.update(invoiceId, { status }).catch(err => {
+      console.error('Error updating invoice status:', err);
+      setInvoices(invoices);
+    });
+  };
+
+  const handlePrintInvoice = (invoice) => {
+    window.print();
+  };
+
+  const handleSendInvoice = (invoice) => {
+    alert(`Send invoice ${invoice.invoice_number} to client`);
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -116,7 +230,7 @@ const InvoicesPage = () => {
             <div className="flex items-center gap-3 mb-3">
               <h1 className="text-5xl font-bold text-gray-900">Invoices</h1>
               <span className="bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold">
-                {invoices.length}
+                {filteredInvoices.length}
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
@@ -154,17 +268,48 @@ const InvoicesPage = () => {
         )}
 
         {/* Filter Bar */}
-        <div className="mb-6 flex items-center gap-3">
-          <button className="border border-gray-300 px-4 py-2.5 rounded-lg bg-white text-sm font-medium flex items-center gap-2 hover:bg-gray-50 transition shadow-sm">
-            🔍 Filter
-          </button>
+        <div className="mb-6 flex items-center gap-3 flex-wrap">
           <div className="relative">
+            <select
+              value={filterStatus}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="border border-gray-300 px-4 py-2.5 rounded-lg bg-white text-sm font-medium hover:bg-gray-50 transition shadow-sm appearance-none pr-8"
+            >
+              <option value="All">All Status</option>
+              <option value="Draft">Draft</option>
+              <option value="Sent">Sent</option>
+              <option value="Paid">Paid</option>
+              <option value="Partially Paid">Partially Paid</option>
+              <option value="Unpaid">Unpaid</option>
+              <option value="Overdue">Overdue</option>
+            </select>
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+          </div>
+          <div className="relative flex-1 max-w-md">
             <input
               type="text"
-              placeholder="Search Keyword"
-              className="border border-gray-300 px-4 py-2.5 rounded-lg text-sm w-80 font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              placeholder="Search by invoice #, client, or bill to..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
-            <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">✕</button>
+            {searchQuery && (
+              <button 
+                onClick={() => {
+                  setSearchQuery('');
+                  setCurrentPage(1);
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 
@@ -183,11 +328,18 @@ const InvoicesPage = () => {
               <p className="text-gray-500 text-sm mt-2">Click "Add New Invoice" to create your first invoice</p>
             </div>
           </div>
+        ) : filteredInvoices.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <p className="text-gray-600 font-medium text-lg">No invoices match your search</p>
+              <p className="text-gray-500 text-sm mt-2">Try adjusting your filters or search criteria</p>
+            </div>
+          </div>
         ) : (
           <>
             {/* Invoice Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-              {invoices.map((invoice, idx) => {
+              {paginatedInvoices.map((invoice, idx) => {
                 const statusStyles = getStatusStyles(invoice.status);
                 const companyName = invoice.company_name || 'Unknown';
                 const companyLogo = getCompanyLogo(companyName);
@@ -196,14 +348,25 @@ const InvoicesPage = () => {
                 return (
                   <div 
                     key={invoice.id} 
-                    className="bg-white rounded-2xl p-5 shadow border border-gray-100 hover:shadow-lg transition-all duration-300 flex flex-col"
+                    className="bg-white rounded-2xl p-5 shadow border border-gray-100 hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer"
+                    onClick={() => setSelectedInvoiceId(invoice.id)}
                   >
                     {/* Card Header */}
                     <div className="flex justify-between items-start mb-3">
-                      <span className="text-xs font-bold text-blue-600 cursor-pointer hover:text-blue-700">
+                      <span className="text-xs font-bold text-blue-600 hover:text-blue-700">
                         {invoice.invoice_number || `#${invoice.id}`}
                       </span>
-                      <button className="text-gray-400 hover:text-gray-600 text-lg">⋮</button>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <InvoiceActionDropdown
+                          invoice={invoice}
+                          onEdit={handleEditInvoice}
+                          onDelete={handleDeleteInvoice}
+                          onPreview={handlePreviewInvoice}
+                          onStatusChange={handleStatusChange}
+                          onPrint={handlePrintInvoice}
+                          onSend={handleSendInvoice}
+                        />
+                      </div>
                     </div>
 
                     {/* Company Info */}
@@ -266,12 +429,55 @@ const InvoicesPage = () => {
               })}
             </div>
 
-            {/* Load More Button */}
-            <div className="flex justify-center mb-10">
-              <button className="bg-red-600 text-white px-12 py-3 rounded-lg shadow-sm hover:bg-red-700 transition text-base font-semibold flex items-center gap-2">
-                🔄 Load More
-              </button>
-            </div>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mb-10">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  ← Previous
+                </button>
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+                    return pageNumber >= 1 && pageNumber <= totalPages ? (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                          currentPage === pageNumber
+                            ? 'bg-red-600 text-white'
+                            : 'border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    ) : null;
+                  })}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  Next →
+                </button>
+                <span className="text-sm text-gray-600 ml-4">
+                  Page {currentPage} of {totalPages}
+                </span>
+              </div>
+            )}
           </>
         )}
 
@@ -287,7 +493,38 @@ const InvoicesPage = () => {
         onClose={() => setShowAddInvoiceModal(false)}
         onSubmit={handleAddInvoice}
         companies={companies}
+        projects={projects}
       />
+
+      {/* Edit Invoice Modal */}
+      <EditInvoiceModal 
+        isOpen={showEditInvoiceModal}
+        invoiceId={editingInvoiceId}
+        onClose={() => {
+          setShowEditInvoiceModal(false);
+          setEditingInvoiceId(null);
+        }}
+        onSubmit={handleEditInvoiceSubmit}
+        companies={companies}
+        projects={projects}
+      />
+
+      {/* Invoice Detail Modal */}
+      {selectedInvoiceId && (
+        <InvoiceDetailPage 
+          invoiceId={selectedInvoiceId}
+          onClose={() => setSelectedInvoiceId(null)}
+          onEdit={(id) => console.log('Edit invoice', id)}
+          onDelete={(id) => {
+            if (window.confirm('Are you sure you want to delete this invoice?')) {
+              invoicesAPI.delete(id).then(() => {
+                setInvoices(invoices.filter(inv => inv.id !== id));
+                setSelectedInvoiceId(null);
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -79,7 +79,8 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
           ...formData
         };
 
-        const response = await fetch(`http://localhost:5000/api/deals/${deal.id}/convert-to-${conversionType}`, {
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/deals/${deal.id}/convert-to-${conversionType}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(conversionData)

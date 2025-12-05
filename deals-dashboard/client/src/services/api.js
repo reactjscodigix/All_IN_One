@@ -8,7 +8,13 @@ const apiService = {
         cache: 'no-store'
       });
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorText = errorJson.error || errorText;
+        } catch (e) {
+          errorText = errorText.substring(0, 200);
+        }
         throw new Error(`API Error ${response.status}: ${errorText}`);
       }
       const data = await response.json();
@@ -28,7 +34,13 @@ const apiService = {
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorText = errorJson.error || errorText;
+        } catch (e) {
+          errorText = errorText.substring(0, 200);
+        }
         throw new Error(`API Error ${response.status}: ${errorText}`);
       }
       return await response.json();
@@ -46,7 +58,13 @@ const apiService = {
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorText = errorJson.error || errorText;
+        } catch (e) {
+          errorText = errorText.substring(0, 200);
+        }
         throw new Error(`API Error ${response.status}: ${errorText}`);
       }
       return await response.json();
@@ -63,7 +81,13 @@ const apiService = {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorText = errorJson.error || errorText;
+        } catch (e) {
+          errorText = errorText.substring(0, 200);
+        }
         throw new Error(`API Error ${response.status}: ${errorText}`);
       }
       return await response.json();
@@ -126,6 +150,13 @@ export const invoicesAPI = {
   create: (data) => apiService.post('/invoices', data),
   update: (id, data) => apiService.put(`/invoices/${id}`, data),
   delete: (id) => apiService.delete(`/invoices/${id}`),
+  getMetrics: () => apiService.get('/invoices/metrics/summary'),
+  getBreakdown: () => apiService.get('/invoices/status/breakdown'),
+  getByCompany: (companyId) => apiService.get(`/companies/${companyId}/invoices`),
+  getByDeal: (dealId) => apiService.get(`/deals/${dealId}/invoices`),
+  linkToDeal: (invoiceId, dealId) => apiService.post(`/invoices/${invoiceId}/link-to-deal/${dealId}`, {}),
+  linkToClient: (invoiceId, clientId) => apiService.post(`/invoices/${invoiceId}/link-to-client/${clientId}`, {}),
+  getItems: (invoiceId) => apiService.get(`/invoices/${invoiceId}/items`),
 };
 
 export const campaignAPI = {
@@ -210,6 +241,20 @@ export const estimationsAPI = {
   delete: (id) => apiService.delete(`/estimations/${id}`),
   send: (id, data) => apiService.post(`/estimations/${id}/send`, data),
   convertToInvoice: (id, data) => apiService.post(`/estimations/${id}/convert-to-invoice`, data),
+};
+
+export const paymentsAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/invoices${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => apiService.get(`/invoices/${id}`),
+  create: (data) => apiService.post('/invoices', data),
+  update: (id, data) => apiService.put(`/invoices/${id}`, data),
+  delete: (id) => apiService.delete(`/invoices/${id}`),
+  getByInvoice: (invoiceId) => apiService.get(`/invoices/${invoiceId}/items`),
+  getMetrics: () => apiService.get('/invoices/metrics/summary'),
+  markAsRefunded: (id, data) => apiService.post(`/invoices/${id}/refund`, data),
 };
 
 export const createContract = (data) => contractsAPI.create(data);

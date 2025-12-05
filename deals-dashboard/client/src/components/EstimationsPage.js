@@ -285,15 +285,23 @@ const EstimationsPage = () => {
 
   const getCardValue = (item, field) => {
     const fieldMap = {
-      company: () => item.company || item.client_name || 'N/A',
+      company: () => {
+        const name = item.company || item.company_name || item.client_name;
+        return name && name !== 'N/A' ? name : 'N/A';
+      },
       type: () => item.type || item.project_name || 'N/A',
       desc: () => item.desc || item.description || 'N/A',
       estimateId: () => item.estimateId || item.estimate_id || item.estimation_number || 'N/A',
-      amount: () => item.amount ? `$${parseFloat(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
+      amount: () => item.amount ? `${item.currency || '$'}${parseFloat(item.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'N/A',
       date: () => item.date || item.estimate_date || 'N/A',
       expiry: () => item.expiry || item.expiry_date || 'N/A',
-      avatar: () => item.avatar || (item.company || item.client_name || 'N')[0],
-      owner: () => item.owner || item.creator_first_name || 'N/A',
+      avatar: () => item.avatar || (item.company || item.company_name || item.client_name || 'N')[0],
+      owner: () => {
+        const firstName = item.owner || item.creator_first_name;
+        const lastName = item.creator_last_name;
+        if (firstName && lastName) return `${firstName} ${lastName}`;
+        return firstName || 'N/A';
+      },
     };
     return fieldMap[field] ? fieldMap[field]() : '';
   };
@@ -301,9 +309,22 @@ const EstimationsPage = () => {
   const EstimationCard = ({ item }) => (
     <div className="border border-gray-200 rounded-xl p-5 mb-4 bg-white shadow-sm hover:shadow-lg transition-all duration-300 cursor-move">
       <div className="flex items-start justify-between mb-3">
-        <div>
-          <h3 className="font-bold text-base text-gray-900">{getCardValue(item, 'company')}</h3>
-          <p className="text-xs text-gray-500 font-medium">{getCardValue(item, 'type')}</p>
+        <div className="flex items-center gap-3 flex-1">
+          {item.logo ? (
+            <img 
+              src={item.logo} 
+              alt="company" 
+              className="w-10 h-10 rounded-lg object-cover border border-gray-200"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+              {getCardValue(item, 'company')[0]}
+            </div>
+          )}
+          <div>
+            <h3 className="font-bold text-base text-gray-900">{getCardValue(item, 'company')}</h3>
+            <p className="text-xs text-gray-500 font-medium">{getCardValue(item, 'type')}</p>
+          </div>
         </div>
         <div className="relative">
           <button 
@@ -328,9 +349,17 @@ const EstimationsPage = () => {
         <p><span className="font-bold text-gray-900">Expiry Date :</span> {getCardValue(item, 'expiry')}</p>
       </div>
       <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-200">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
-          {getCardValue(item, 'avatar')}
-        </div>
+        {item.avatar ? (
+          <img 
+            src={item.avatar} 
+            alt="creator" 
+            className="w-9 h-9 rounded-full object-cover border border-gray-200"
+          />
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+            {(item.creator_first_name?.[0] || 'U')}
+          </div>
+        )}
         <p className="text-sm font-semibold text-gray-800">{getCardValue(item, 'owner')}</p>
       </div>
     </div>

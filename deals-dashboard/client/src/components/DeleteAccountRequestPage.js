@@ -124,7 +124,8 @@ const DeleteAccountRequestPage = () => {
 
   const fetchCurrentUser = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/users');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/users`);
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
       if (data && data.length > 0) {
@@ -142,7 +143,8 @@ const DeleteAccountRequestPage = () => {
 
   const fetchUserDeleteRequest = async (userId) => {
     try {
-      const response = await fetch('http://localhost:5000/api/delete-requests');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/delete-requests`);
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       return data.find(req => req.user_id === userId);
@@ -153,7 +155,8 @@ const DeleteAccountRequestPage = () => {
 
   const fetchDeleteRequests = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/delete-requests');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/delete-requests`);
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
       setRequests(data || []);
@@ -166,7 +169,8 @@ const DeleteAccountRequestPage = () => {
   const handleApprove = async (id) => {
     setApprovalLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/delete-requests/${id}`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/delete-requests/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Approved', reviewed_by: 1 })
@@ -187,7 +191,8 @@ const DeleteAccountRequestPage = () => {
   const handleReject = async (id) => {
     setApprovalLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/delete-requests/${id}`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/delete-requests/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'Rejected', reviewed_by: 1 })

@@ -101,10 +101,11 @@ const AddCompanyPage = () => {
   const fetchBackendData = async () => {
     setLoadingData(true);
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const [contactsRes, sourcesRes, industriesRes] = await Promise.all([
-        fetch('http://localhost:5000/api/contacts'),
-        fetch('http://localhost:5000/api/sources'),
-        fetch('http://localhost:5000/api/industries')
+        fetch(`${apiUrl}/contacts`),
+        fetch(`${apiUrl}/sources`),
+        fetch(`${apiUrl}/industries`)
       ]);
 
       if (contactsRes.ok) {
@@ -279,9 +280,10 @@ const AddCompanyPage = () => {
         logo: formData.logoPreview || null,
       };
 
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const url = isEditMode 
-        ? `http://localhost:5000/api/companies/${editingCompanyId}`
-        : 'http://localhost:5000/api/companies';
+        ? `${apiUrl}/companies/${editingCompanyId}`
+        : `${apiUrl}/companies`;
       
       const method = isEditMode ? 'PUT' : 'POST';
 
@@ -301,7 +303,7 @@ const AddCompanyPage = () => {
       const data = await response.json();
       const companyId = isEditMode ? editingCompanyId : data.id;
 
-      const companyResponse = await fetch(`http://localhost:5000/api/companies/${companyId}`);
+      const companyResponse = await fetch(`${apiUrl}/companies/${companyId}`);
       if (!companyResponse.ok) {
         throw new Error(`Failed to fetch ${isEditMode ? 'updated' : 'created'} company`);
       }

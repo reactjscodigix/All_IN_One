@@ -1,50 +1,59 @@
 const http = require('http');
 
-function request(method, path, data = null) {
+function makeRequest(path) {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'localhost',
       port: 5000,
       path: path,
-      method: method,
-      headers: {
-        'Content-Type': 'application/json',
-      }
+      method: 'GET',
+      timeout: 5000
     };
 
     const req = http.request(options, (res) => {
-      let body = '';
-      res.on('data', chunk => body += chunk);
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
       res.on('end', () => {
-        try {
-          const json = JSON.parse(body);
-          resolve({ status: res.statusCode, data: json });
-        } catch {
-          resolve({ status: res.statusCode, data: body });
-        }
+        resolve({
+          status: res.statusCode,
+          data: data.substring(0, 200)
+        });
       });
     });
 
-    req.on('error', reject);
-    if (data) req.write(JSON.stringify(data));
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
+
     req.end();
   });
 }
 
-async function test() {
-  console.log('Testing GET /api/estimations...');
-  const get = await request('GET', '/api/estimations');
-  console.log('Status:', get.status, 'Data:', get.data);
+(async () => {
+  console.log('Testing /api/invoices...');
+  try {
+    const invoicesResult = await makeRequest('/api/invoices');
+    console.log(`Status: ${invoicesResult.status}`);
+    console.log(`Response: ${invoicesResult.data}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+  }
 
-  console.log('\nTesting POST /api/estimations...');
-  const post = await request('POST', '/api/estimations', {
-    client_id: 1,
-    amount: 5000,
-    currency: 'USD'
-  });
-  console.log('Status:', post.status, 'Data:', post.data);
+  console.log('\nTesting /api/payments...');
+  try {
+    const paymentsResult = await makeRequest('/api/payments');
+    console.log(`Status: ${paymentsResult.status}`);
+    console.log(`Response: ${paymentsResult.data}`);
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+  }
 
   process.exit(0);
-}
-
-test();
+})();

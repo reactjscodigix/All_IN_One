@@ -27,7 +27,8 @@ const CrmCompaniesPage = () => {
   const fetchCompanies = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/companies');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/companies`);
       if (response.ok) {
         const data = await response.json();
         const companiesWithDefaults = data.map(company => ({
@@ -66,7 +67,8 @@ const CrmCompaniesPage = () => {
 
   const seedMockCompanies = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/seed-mock-companies', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/seed-mock-companies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -94,7 +96,8 @@ const CrmCompaniesPage = () => {
     if (deleteConfirm === companyId) {
       setIsDeleting(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/companies/${companyId}`, {
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/companies/${companyId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         });

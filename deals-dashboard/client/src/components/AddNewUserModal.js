@@ -30,7 +30,8 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/roles');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/roles`);
       if (!response.ok) throw new Error('Failed to fetch roles');
       const data = await response.json();
       setRoles(data);
@@ -120,10 +121,11 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
 
     setIsLoading(true);
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const selectedRole = roles.find(r => r.name === formData.role);
       const roleId = selectedRole?.id || 5;
 
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch(`${apiUrl}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -429,7 +429,8 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
   const fetchCompanyContacts = async () => {
     setLoadingContacts(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/companies/${companyProfile.id}/contacts`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/companies/${companyProfile.id}/contacts`);
       if (response.ok) {
         const data = await response.json();
         setCompanyContacts(Array.isArray(data) ? data : []);
@@ -444,7 +445,8 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
   const fetchCompanyDeals = async () => {
     setLoadingDeals(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/companies/${companyProfile.id}/deals`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/companies/${companyProfile.id}/deals`);
       if (response.ok) {
         const data = await response.json();
         setCompanyDeals(Array.isArray(data) ? data : []);

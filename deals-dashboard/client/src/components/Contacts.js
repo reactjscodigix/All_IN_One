@@ -181,7 +181,8 @@ const Contacts = () => {
 
   const fetchContacts = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/contacts');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts`);
       const data = await response.json();
       const transformedData = transformContactData(data);
       setContacts(transformedData);
@@ -198,7 +199,8 @@ const Contacts = () => {
 
   const handleAddContact = async (formData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/contacts', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +230,8 @@ const Contacts = () => {
 
   const handleDelete = async (contactId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/contacts/${contactId}`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts/${contactId}`, {
         method: 'DELETE',
       });
 
@@ -251,7 +254,8 @@ const Contacts = () => {
 
   const handleUpdateContact = async (formData) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/contacts/${selectedContact.id}`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts/${selectedContact.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

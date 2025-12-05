@@ -1,211 +1,455 @@
-import React, { useState } from 'react';
-import { MoreVertical, Download, Filter as FilterIcon, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Download, Filter, Settings2, ChevronDown, MoreVertical } from 'lucide-react';
+import AddNewPaymentModal from './AddNewPaymentModal';
+import PaymentActionDropdown from './PaymentActionDropdown';
+import { paymentsAPI, invoicesAPI, companiesAPI } from '../services/api';
 
 const PaymentsPage = () => {
-  const [selectedPayments, setSelectedPayments] = useState([]);
+  const navigate = useNavigate();
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  const payments = [
-    { id: '1', invoiceId: '#1254058', client: 'NovaWave LLC', clientIcon: '🔵', amount: 2500, dueDate: '15 Oct 2025', paymentMethod: 'Cash', transactionId: 'TXNID1234567890' },
-    { id: '2', invoiceId: '#1254057', client: 'BlueSky Industries', clientIcon: '🔴', amount: 1450, dueDate: '19 Oct 2025', paymentMethod: 'Credit', transactionId: 'TXNID9876543210' },
-    { id: '3', invoiceId: '#1254056', client: 'Silver Hawk', clientIcon: '🟢', amount: 2100, dueDate: '24 Oct 2025', paymentMethod: 'Cash', transactionId: 'TXNID2468135790' },
-    { id: '4', invoiceId: '#1254055', client: 'Summit Peak', clientIcon: '🔷', amount: 4000, dueDate: '10 Nov 2025', paymentMethod: 'Credit', transactionId: 'TXNID1357924680' },
-    { id: '5', invoiceId: '#1254054', client: 'RiverStone Ventur', clientIcon: '⬛', amount: 2120, dueDate: '18 Nov 2025', paymentMethod: 'Cash', transactionId: 'TXNID0123456789' },
-    { id: '6', invoiceId: '#1254053', client: 'CoastalStar Co.', clientIcon: '🔵', amount: 3500, dueDate: '20 Nov 2025', paymentMethod: 'Credit', transactionId: 'TXNIDABCDE12345' },
-    { id: '7', invoiceId: '#1254052', client: 'HarborView', clientIcon: '🟢', amount: 1230, dueDate: '07 Dec 2025', paymentMethod: 'Cash', transactionId: 'TXNID54321XYZ789' },
-    { id: '8', invoiceId: '#1254051', client: 'Golden Gate Ltd', clientIcon: '🔴', amount: 3125, dueDate: '14 Dec 2025', paymentMethod: 'Credit', transactionId: 'TXNIDQWERTY0987' },
-    { id: '9', invoiceId: '#1254050', client: 'Redwood Inc', clientIcon: '🟣', amount: 4180, dueDate: '22 Dec 2025', paymentMethod: 'Cash', transactionId: 'TXNID98765ASDF43' },
-    { id: '10', invoiceId: '#1254049', client: 'NovaWave LLC', clientIcon: '🔵', amount: 5000, dueDate: '28 Dec 2025', paymentMethod: 'Cash', transactionId: 'TXNID1A2B3C4D5E6' },
-  ];
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setError('');
+        const [paymentsData, invoicesData, companiesData] = await Promise.all([
+          paymentsAPI.getAll().catch(() => []),
+          invoicesAPI.getAll().catch(() => []),
+          companiesAPI.getAll().catch(() => [])
+        ]);
+        setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+        setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
+        setCompanies(Array.isArray(companiesData) ? companiesData : []);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load payments');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const togglePaymentSelection = (id) => {
-    setSelectedPayments(prev =>
-      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
-    );
+    loadData();
+  }, []);
+
+  const getStatusStyles = (status) => {
+    const statusMap = {
+      'Paid': { bg: 'bg-green-100', text: 'text-green-700' },
+      'Partially Paid': { bg: 'bg-yellow-100', text: 'text-yellow-700' },
+      'Unpaid': { bg: 'bg-red-100', text: 'text-red-700' },
+      'Overdue': { bg: 'bg-red-200', text: 'text-red-800' },
+      'Draft': { bg: 'bg-gray-100', text: 'text-gray-700' },
+    };
+    return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-700' };
   };
 
-  const toggleAllPayments = () => {
-    if (selectedPayments.length === payments.length) {
-      setSelectedPayments([]);
+  const enrichedInvoices = invoices.map(invoice => {
+    const company = companies.find(c => c.id === invoice.company_id);
+    return {
+      ...invoice,
+      client_name: company?.name || invoice.client_name || 'N/A',
+      client_avatar: company?.logo || company?.name?.charAt(0).toUpperCase() || 'N',
+      client_email: company?.email || 'N/A',
+      client_phone: company?.phone || 'N/A',
+    };
+  });
+
+  const filteredPayments = enrichedInvoices.filter(invoice => {
+    const matchesSearch = 
+      (invoice.invoice_number || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (invoice.client_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesSearch;
+  });
+
+  const sortedPayments = [...filteredPayments].sort((a, b) => {
+    if (sortBy === 'newest') {
+      return new Date(b.created_at) - new Date(a.created_at);
     } else {
-      setSelectedPayments(payments.map(p => p.id));
+      return new Date(a.created_at) - new Date(b.created_at);
+    }
+  });
+
+  const totalPages = Math.ceil(sortedPayments.length / itemsPerPage);
+  const paginatedPayments = sortedPayments.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const formatCurrency = (value, currency = 'USD') => {
+    if (!value) return '$0.00';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+    }).format(num);
+  };
+
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const handleAddPayment = async (formData) => {
+    try {
+      const paymentData = {
+        invoice_ids: formData.invoiceIds,
+        payment_date: formData.paymentDate,
+        payment_method: formData.paymentMethod,
+        amount: formData.amountReceived,
+        reference_no: formData.referenceNo,
+        status: formData.paymentStatus,
+        notes: formData.notes,
+      };
+
+      const response = await paymentsAPI.create(paymentData);
+
+      for (const invoiceId of formData.invoiceIds) {
+        const invoice = invoices.find(inv => inv.id === invoiceId);
+        if (invoice) {
+          const paidAmount = (invoice.paid_amount || 0) + formData.amountReceived;
+          const newStatus = paidAmount >= invoice.total ? 'Paid' : 
+                           paidAmount > 0 ? 'Partially Paid' : invoice.status;
+          
+          await invoicesAPI.update(invoiceId, {
+            paid_amount: paidAmount,
+            status: newStatus
+          });
+        }
+      }
+
+      setInvoices(invoices.map(inv => {
+        const selectedIds = formData.invoiceIds;
+        if (selectedIds.includes(inv.id)) {
+          const paidAmount = (inv.paid_amount || 0) + formData.amountReceived;
+          const newStatus = paidAmount >= inv.total ? 'Paid' : 
+                           paidAmount > 0 ? 'Partially Paid' : inv.status;
+          return { ...inv, paid_amount: paidAmount, status: newStatus };
+        }
+        return inv;
+      }));
+
+      setShowAddPaymentModal(false);
+    } catch (err) {
+      console.error('Error creating payment:', err);
+      throw err;
+    }
+  };
+
+  const handlePreviewInvoice = (invoice) => {
+    navigate(`/payment/${invoice.id}`);
+  };
+
+  const handleDeleteInvoice = (invoice) => {
+    setSelectedInvoice(invoice);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (selectedInvoice) {
+      try {
+        await invoicesAPI.delete(selectedInvoice.id);
+        setInvoices(invoices.filter(inv => inv.id !== selectedInvoice.id));
+        setShowDeleteConfirm(false);
+        setSelectedInvoice(null);
+      } catch (err) {
+        console.error('Error deleting invoice:', err);
+        alert('Failed to delete invoice');
+      }
     }
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        {/* Page Header */}
+        {/* Header Section */}
         <div className="mb-8 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-3">
               <h1 className="text-5xl font-bold text-gray-900">Payments</h1>
-              <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">125</span>
+              <span className="bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold">
+                {filteredPayments.length}
+              </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <button className="hover:text-gray-900 font-medium">Home</button>
+            <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+              <button className="hover:text-gray-900">Home</button>
               <span className="text-gray-400">›</span>
               <span className="text-gray-600">Payments</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="border border-gray-300 px-4 py-2 rounded-lg bg-white text-sm flex items-center gap-2 shadow hover:bg-gray-50 transition font-medium">
+            <button className="border border-gray-300 px-5 py-2.5 rounded-lg bg-white text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-gray-50 transition">
               <Download size={18} />
               Export
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-600">
-              <MoreVertical size={20} />
+            <button 
+              onClick={() => setShowAddPaymentModal(true)}
+              className="bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-red-700 transition">
+              + Record Payment
             </button>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search size={18} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search Keyword"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
+        {/* Filter & Sort Bar */}
+        <div className="mb-6 flex items-center justify-between gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="relative flex-1 max-w-xs">
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
           </div>
-        </div>
-
-        {/* Controls Bar */}
-        <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6 shadow-sm">
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-gray-700">Sort By</span>
-              <select 
-                value={sortBy} 
-                onChange={(e) => setSortBy(e.target.value)} 
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="border border-gray-300 px-4 py-2 rounded-lg bg-white text-sm font-medium appearance-none pr-8"
               >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="amount">Amount High to Low</option>
+                <option value="newest">Sort By: Newest</option>
+                <option value="oldest">Sort By: Oldest</option>
               </select>
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
             </div>
-
-            <div className="flex items-center gap-2 text-sm text-gray-600 border-l border-gray-300 pl-6 font-medium">
-              📅 29 Nov 25 - 29 Nov 25
-            </div>
-
-            <div className="flex items-center gap-2 ml-auto">
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition">
-                <FilterIcon size={16} /> Filter
-              </button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium transition">
-                Manage Columns
-              </button>
-            </div>
+            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium hover:bg-gray-50">
+              <Filter size={18} />
+              Filter
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium hover:bg-gray-50">
+              <Settings2 size={18} />
+              Manage Columns
+            </button>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left">
-                    <input
-                      type="checkbox"
-                      checked={selectedPayments.length === payments.length}
-                      onChange={toggleAllPayments}
-                      className="rounded border-gray-300 accent-red-500 cursor-pointer"
-                    />
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">Invoice ID</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">Client</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">Amount</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">Due Date</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">Payment Method</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">Transaction ID</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-5">
-                      <input
-                        type="checkbox"
-                        checked={selectedPayments.includes(payment.id)}
-                        onChange={() => togglePaymentSelection(payment.id)}
-                        className="rounded border-gray-300 accent-red-500 cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="text-sm font-bold text-red-600">{payment.invoiceId}</span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{payment.clientIcon}</span>
-                        <span className="text-sm font-semibold text-gray-900">{payment.client}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="text-base font-bold text-gray-900">${payment.amount}</span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="text-sm text-gray-600 font-medium">{payment.dueDate}</span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className={`inline-block text-xs font-bold px-3 py-1.5 rounded-full ${
-                        payment.paymentMethod === 'Cash'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-green-100 text-green-700'
-                      }`}>
-                        {payment.paymentMethod}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="text-sm text-gray-600 font-medium">{payment.transactionId}</span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <button className="p-2 hover:bg-gray-200 rounded-lg text-gray-500 hover:text-gray-700 transition-colors">
-                        <MoreVertical size={18} />
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-700 font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+              <p className="mt-4 text-gray-600 font-medium">Loading payments...</p>
+            </div>
+          </div>
+        ) : paginatedPayments.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <p className="text-gray-600 font-medium text-lg">No invoices to display</p>
+              <p className="text-gray-500 text-sm mt-2">Click "Record Payment" to process payments</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Table */}
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-6 py-3 text-left">
+                        <input type="checkbox" className="w-4 h-4" />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Invoice ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Client</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Due Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Payment Method</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Transaction ID</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedPayments.map((invoice) => {
+                      const statusStyles = getStatusStyles(invoice.status);
+                      return (
+                        <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                          <td className="px-6 py-4">
+                            <input type="checkbox" className="w-4 h-4" />
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm font-bold text-blue-600">#{invoice.invoice_number || invoice.id}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold text-gray-600">
+                                {invoice.client_name?.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-sm font-medium text-gray-900">{invoice.client_name || 'N/A'}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm font-semibold text-gray-900">{formatCurrency(invoice.total)}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{formatDate(invoice.due_date)}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-600">{invoice.payment_method || 'N/A'}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm font-mono text-gray-600">TXN{String(invoice.id).padStart(10, '0')}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusStyles.bg} ${statusStyles.text}`}>
+                              {invoice.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="relative group">
+                              <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                                <MoreVertical size={18} className="text-gray-600" />
+                              </button>
+                              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                <button
+                                  onClick={() => handlePreviewInvoice(invoice)}
+                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-2"
+                                >
+                                  <span>👁️</span> Preview
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteInvoice(invoice)}
+                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg flex items-center gap-2"
+                                >
+                                  <span>🗑️</span> Delete
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  ← Previous
+                </button>
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+                    return pageNumber > 0 && pageNumber <= totalPages ? (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                          currentPage === pageNumber
+                            ? 'bg-red-600 text-white'
+                            : 'border border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNumber}
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Pagination */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-          <div className="flex items-center gap-3 mb-4 sm:mb-0 text-sm text-gray-600 font-medium">
-            <span>Show</span>
-            <select 
-              value={itemsPerPage} 
-              onChange={(e) => setItemsPerPage(Number(e.target.value))} 
-              className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer font-medium"
-            >
-              <option value="10">10</option>
-              <option value="25">25</option>
-              <option value="50">50</option>
-            </select>
-            <span>entries</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50 text-sm font-medium transition">&lt;</button>
-            <button className="border border-red-500 px-3 py-1.5 rounded bg-red-500 text-white font-bold text-sm">1</button>
-            <button className="border border-gray-300 px-3 py-1.5 rounded hover:bg-gray-50 text-sm font-medium transition">&gt;</button>
-          </div>
-        </div>
+                    ) : null;
+                  })}
+                </div>
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  Next →
+                </button>
+                <span className="text-sm text-gray-600 ml-4">
+                  Page {currentPage} of {totalPages}
+                </span>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Footer */}
-        <div className="text-center text-gray-500 text-sm border-t border-gray-200 mt-8 pt-6">
+        <div className="text-center text-gray-500 text-sm border-t border-gray-200 pt-8 pb-6 font-medium mt-8">
           Copyright © 2025 <span className="text-red-600 font-bold">Preadmin</span>
         </div>
       </div>
+
+      {/* Add Payment Modal */}
+      <AddNewPaymentModal 
+        isOpen={showAddPaymentModal}
+        onClose={() => setShowAddPaymentModal(false)}
+        onSubmit={handleAddPayment}
+        invoices={invoices}
+        companies={companies}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-bold text-gray-900">Delete Confirmation</h2>
+            </div>
+            
+            <div className="p-6">
+              <p className="text-gray-700">Are you sure you want to delete invoice <span className="font-semibold">#{selectedInvoice.invoice_number}</span>?</p>
+              <p className="text-sm text-gray-500 mt-2">This action cannot be undone.</p>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button 
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

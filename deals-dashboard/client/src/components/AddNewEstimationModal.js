@@ -37,10 +37,11 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit }) => {
   const fetchClientsAndProjects = async () => {
     setLoadingData(true);
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const [clientsRes, projectsRes, usersRes] = await Promise.all([
-        fetch('http://localhost:5000/api/companies'),
-        fetch('http://localhost:5000/api/projects'),
-        fetch('http://localhost:5000/api/contacts')
+        fetch(`${apiUrl}/companies`),
+        fetch(`${apiUrl}/projects`),
+        fetch(`${apiUrl}/contacts`)
       ]);
 
       if (clientsRes.ok) {

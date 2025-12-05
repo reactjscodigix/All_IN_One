@@ -38,7 +38,8 @@ const ContractsPage = () => {
   const fetchCompanies = async () => {
     setIsLoadingCompanies(true);
     try {
-      const response = await fetch('http://localhost:5000/api/companies');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/companies`);
       if (response.ok) {
         const data = await response.json();
         setCompanies(Array.isArray(data) ? data : []);

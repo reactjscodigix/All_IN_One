@@ -38,7 +38,8 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
   const fetchUsers = async () => {
     setLoadingData(true);
     try {
-      const response = await fetch('http://localhost:5000/api/contacts');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts`);
       if (response.ok) {
         const data = await response.json();
         setUsers(Array.isArray(data) ? data : []);
@@ -96,8 +97,38 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
     e.preventDefault();
     setError('');
     
-    if (!formData.name) {
+    if (!formData.name || !formData.name.trim()) {
       setError('Please fill in the required field: Lead Name');
+      return;
+    }
+    
+    if (!formData.value || parseFloat(formData.value) <= 0) {
+      setError('Please fill in the required field: Value (must be greater than 0)');
+      return;
+    }
+    
+    if (!formData.currency) {
+      setError('Please fill in the required field: Currency');
+      return;
+    }
+    
+    if (!formData.phone || !formData.phone.trim()) {
+      setError('Please fill in the required field: Phone');
+      return;
+    }
+    
+    if (!formData.source) {
+      setError('Please fill in the required field: Source');
+      return;
+    }
+    
+    if (!formData.industry) {
+      setError('Please fill in the required field: Industry');
+      return;
+    }
+    
+    if (!formData.description || !formData.description.trim()) {
+      setError('Please fill in the required field: Description');
       return;
     }
 

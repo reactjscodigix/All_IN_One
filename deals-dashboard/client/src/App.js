@@ -31,6 +31,7 @@ import SocialFeedPage from './components/SocialFeedPage';
 import KanbanPage from './components/KanbanPage';
 import InvoicesPage from './components/InvoicesPage';
 import PaymentsPage from './components/PaymentsPage';
+import PaymentDetailsPage from './components/PaymentDetailsPage';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import Companies from './components/Companies';
 import Subscriptions from './components/Subscriptions';
@@ -98,6 +99,7 @@ const routeMap = {
   '/kanban': 'kanban',
   '/invoices': 'invoices',
   '/payments': 'payments',
+  '/payment/:invoiceId': 'payment-details',
   '/activities': 'activities',
   '/analytics': 'analytics',
   '/lead-report': 'lead-report',
@@ -224,6 +226,7 @@ function AppContent() {
         <Route path="/kanban" element={<KanbanPage />} />
         <Route path="/invoices" element={<InvoicesPage />} />
         <Route path="/payments" element={<PaymentsPage />} />
+        <Route path="/payment/:invoiceId" element={<PaymentDetailsPage />} />
         <Route path="/activities" element={<ActivitiesPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/lead-report" element={<LeadReport />} />

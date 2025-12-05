@@ -22,7 +22,8 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/contacts/${contactIdFromState}`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts/${contactIdFromState}`);
       if (response.ok) {
         const data = await response.json();
         setContact(data);
@@ -39,7 +40,8 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
   const fetchNotes = useCallback(async () => {
     try {
       if (!contactIdFromState) return;
-      const response = await fetch(`http://localhost:5000/api/contacts/${contactIdFromState}/notes`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts/${contactIdFromState}/notes`);
       if (response.ok) {
         const data = await response.json();
         setNotes(data);
@@ -52,7 +54,8 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
   const fetchActivities = useCallback(async () => {
     try {
       if (!contactIdFromState) return;
-      const response = await fetch(`http://localhost:5000/api/contacts/${contactIdFromState}/activities`);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts/${contactIdFromState}/activities`);
       if (response.ok) {
         const data = await response.json();
         setActivities(data);
@@ -69,7 +72,8 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/contacts/${contactIdFromState}/notes`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts/${contactIdFromState}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note_text: newNote, created_by: 'Current User' }),

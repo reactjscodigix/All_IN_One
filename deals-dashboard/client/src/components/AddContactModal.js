@@ -88,7 +88,8 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/companies');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/companies`);
       const data = await response.json();
       setCompanies(data);
     } catch (error) {

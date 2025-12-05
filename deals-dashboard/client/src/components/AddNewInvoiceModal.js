@@ -1,41 +1,30 @@
 import React, { useState } from 'react';
-import { ChevronDown, Plus, X } from 'lucide-react';
+import { Plus, X, Bold, Italic, Underline, LinkIcon, List, AlignLeft } from 'lucide-react';
 
-const AddNewInvoiceModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
+const AddNewInvoiceModal = ({ isOpen, onClose, onSubmit, companies = [], projects = [] }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [openPanels, setOpenPanels] = useState({
-    basic: true,
-    items: true,
-    totals: true,
-    notes: true,
-  });
 
   const [formData, setFormData] = useState({
     client: '',
     billTo: '',
     shipTo: '',
     project: '',
-    amount: '',
     currency: 'USD',
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     openTill: '',
     paymentMethod: '',
-    status: '',
-    description: '',
-    items: [{ item: '', quantity: '', price: '', discount: '0%', amount: '' }],
-    subtotal: '$0.00',
-    discount2: '$18',
-    extraDiscount0: '$18',
-    tax: '$18',
-    total: '$18',
+    status: 'Draft',
     notes: '',
     termsConditions: '',
+    lineItems: [
+      { id: 1, item_name: '', description: '', quantity: 1, rate: 0, discount_percent: 0, tax_percent: 0 }
+    ],
+    bankDetails: '',
+    companyDetails: '',
   });
 
-  const togglePanel = (name) => {
-    setOpenPanels((p) => ({ ...p, [name]: !p[name] }));
-  };
+  const [nextItemId, setNextItemId] = useState(2);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -45,42 +34,88 @@ const AddNewInvoiceModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
     }));
   };
 
-  const handleItemChange = (index, field, value) => {
-    const newItems = [...formData.items];
-    newItems[index] = { ...newItems[index], [field]: value };
+  const handleLineItemChange = (itemId, field, value) => {
     setFormData(prev => ({
       ...prev,
-      items: newItems
+      lineItems: prev.lineItems.map(item =>
+        item.id === itemId ? { ...item, [field]: field === 'quantity' || field === 'rate' || field.includes('percent') ? parseFloat(value) || 0 : value } : item
+      )
     }));
   };
 
-  const addNewItem = () => {
+  const addLineItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { item: '', quantity: '', price: '', discount: '0%', amount: '' }]
+      lineItems: [...prev.lineItems, { id: nextItemId, item_name: '', description: '', quantity: 1, rate: 0, discount_percent: 0, tax_percent: 0 }]
     }));
+    setNextItemId(nextItemId + 1);
   };
 
-  const removeItem = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index)
-    }));
+  const removeLineItem = (itemId) => {
+    if (formData.lineItems.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        lineItems: prev.lineItems.filter(item => item.id !== itemId)
+      }));
+    }
   };
+
+  const calculateLineItemTotal = (item) => {
+    const subtotal = item.quantity * item.rate;
+    const discountAmount = subtotal * (item.discount_percent / 100);
+    const taxableAmount = subtotal - discountAmount;
+    const taxAmount = taxableAmount * (item.tax_percent / 100);
+    return taxableAmount + taxAmount;
+  };
+
+  const calculateTotals = () => {
+    let subtotal = 0;
+    let totalDiscount = 0;
+    let totalTax = 0;
+    
+    formData.lineItems.forEach(item => {
+      const itemSubtotal = item.quantity * item.rate;
+      const itemDiscount = itemSubtotal * (item.discount_percent / 100);
+      const itemTaxableAmount = itemSubtotal - itemDiscount;
+      const itemTax = itemTaxableAmount * (item.tax_percent / 100);
+      
+      subtotal += itemSubtotal;
+      totalDiscount += itemDiscount;
+      totalTax += itemTax;
+    });
+
+    const total = subtotal - totalDiscount + totalTax;
+    return { subtotal, totalDiscount, totalTax, total };
+  };
+
+  const { subtotal, totalDiscount, totalTax, total } = calculateTotals();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
-    if (!formData.client || !formData.billTo || !formData.amount) {
-      setError('Please fill in all required fields');
+    if (!formData.client || !formData.billTo) {
+      setError('Please fill in required fields: Client and Bill To');
+      return;
+    }
+
+    if (formData.lineItems.filter(item => item.item_name && item.rate > 0).length === 0) {
+      setError('Please add at least one line item with a name and rate');
       return;
     }
 
     setIsLoading(true);
     try {
       if (onSubmit) {
-        await onSubmit(formData);
+        await onSubmit({
+          ...formData,
+          amount: total,
+          total: total,
+          subtotal,
+          discount: totalDiscount,
+          tax: totalTax,
+          items: formData.lineItems
+        });
       }
       handleCancel();
     } catch (err) {
@@ -97,22 +132,20 @@ const AddNewInvoiceModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
       billTo: '',
       shipTo: '',
       project: '',
-      amount: '',
       currency: 'USD',
-      date: '',
+      date: new Date().toISOString().split('T')[0],
       openTill: '',
       paymentMethod: '',
-      status: '',
-      description: '',
-      items: [{ item: '', quantity: '', price: '', discount: '0%', amount: '' }],
-      subtotal: '$0.00',
-      discount2: '$18',
-      extraDiscount0: '$18',
-      tax: '$18',
-      total: '$18',
+      status: 'Draft',
       notes: '',
       termsConditions: '',
+      lineItems: [
+        { id: 1, item_name: '', description: '', quantity: 1, rate: 0, discount_percent: 0, tax_percent: 0 }
+      ],
+      bankDetails: '',
+      companyDetails: '',
     });
+    setNextItemId(2);
     setError('');
     onClose();
   };
@@ -125,7 +158,8 @@ const AddNewInvoiceModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
         className="h-full w-full md:w-[80%] lg:w-[70%] xl:w-[65%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white z-10">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <h2 className="text-xl font-semibold text-gray-900">Add New Invoice</h2>
           <button
             onClick={handleCancel}
@@ -142,461 +176,370 @@ const AddNewInvoiceModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
           </div>
         )}
 
-        <form id="add-invoice-form" onSubmit={handleSubmit} className="p-6 space-y-0">
+        <form id="add-invoice-form" onSubmit={handleSubmit} className="p-6 space-y-6">
           
-          {/* Basic Invoice Info Panel */}
-          <div className="border-b border-[#EAECF0]">
-            <button
-              type="button"
-              onClick={() => togglePanel('basic')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
-                  📋
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">Invoice Details</span>
-              </div>
-              <ChevronDown 
-                size={18} 
-                className={`text-gray-500 transition ${openPanels.basic ? 'rotate-180' : ''}`}
-              />
+          {/* Client Section */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">Client</label>
+            <div className="relative">
+              <select
+                name="client"
+                value={formData.client}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+              >
+                <option value="">Select</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.company_name}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+            </div>
+            <button type="button" className="text-red-500 text-sm font-medium hover:text-red-700 mt-2 flex items-center gap-1">
+              <Plus size={16} /> Add New
             </button>
-
-            {openPanels.basic && (
-              <div className="px-4 py-5 space-y-5 border-t border-[#EAECF0] bg-white">
-                
-                {/* Client & Bill To */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Client <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="client"
-                      value={formData.client}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="">Select Client</option>
-                      {companies.map((company) => (
-                        <option key={company.id} value={company.id}>
-                          {company.company_name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex justify-end mt-1">
-                      <button type="button" className="text-red-500 text-sm font-medium hover:text-red-700">
-                        + Add New
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Bill To <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="billTo"
-                      value={formData.billTo}
-                      onChange={handleInputChange}
-                      placeholder="Enter billing address"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                </div>
-
-                {/* Ship To & Project */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Ship To <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="shipTo"
-                      value={formData.shipTo}
-                      onChange={handleInputChange}
-                      placeholder="Enter shipping address"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Project <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="project"
-                      value={formData.project}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="">Select Project</option>
-                      {companies.map((company) => (
-                        <option key={company.id} value={company.id}>
-                          {company.company_name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex justify-end mt-1">
-                      <button type="button" className="text-red-500 text-sm font-medium hover:text-red-700">
-                        + Add New
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Amount & Currency */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Amount <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="amount"
-                      value={formData.amount}
-                      onChange={handleInputChange}
-                      placeholder="0.00"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Currency <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      name="currency"
-                      value={formData.currency}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                      <option value="INR">INR</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Date & Open Till */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date
-                    </label>
-                    <input
-                      type="text"
-                      name="date"
-                      value={formData.date}
-                      onChange={handleInputChange}
-                      placeholder="dd/mm/yyyy"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Open Till <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="openTill"
-                      value={formData.openTill}
-                      onChange={handleInputChange}
-                      placeholder="dd/mm/yyyy"
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
-                  </div>
-                </div>
-
-                {/* Payment Method & Status */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Payment Method
-                    </label>
-                    <select
-                      name="paymentMethod"
-                      value={formData.paymentMethod}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="">Select</option>
-                      <option value="Credit Card">Credit Card</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Check">Check</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Status
-                    </label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    >
-                      <option value="">Select</option>
-                      <option value="Draft">Draft</option>
-                      <option value="Sent">Sent</option>
-                      <option value="Paid">Paid</option>
-                      <option value="Overdue">Overdue</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description <span className="text-red-500">*</span>
-                  </label>
-                  <div className="border border-[#E5E7EB] rounded-lg overflow-hidden">
-                    <div className="flex items-center gap-1 bg-gray-50 border-b border-[#E5E7EB] p-2">
-                      <select className="px-2 py-1 text-xs border border-[#E5E7EB] rounded bg-white">
-                        <option>Normal</option>
-                      </select>
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600">B</button>
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600 italic">I</button>
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600 underline">U</button>
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600">🔗</button>
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600">☰</button>
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600">⋮</button>
-                    </div>
-                    <textarea
-                      name="description"
-                      value={formData.description}
-                      onChange={handleInputChange}
-                      placeholder="Enter invoice description"
-                      rows="4"
-                      className="w-full px-3 py-2 text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Line Items Panel */}
-          <div className="border-b border-[#EAECF0]">
-            <button
-              type="button"
-              onClick={() => togglePanel('items')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
-                  📦
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">Line Items</span>
-              </div>
-              <ChevronDown 
-                size={18} 
-                className={`text-gray-500 transition ${openPanels.items ? 'rotate-180' : ''}`}
+          {/* Bill To & Ship To */}
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Bill To <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="billTo"
+                value={formData.billTo}
+                onChange={handleInputChange}
+                placeholder="Enter billing address"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Ship To <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="shipTo"
+                value={formData.shipTo}
+                onChange={handleInputChange}
+                placeholder="Enter shipping address"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              />
+            </div>
+          </div>
+
+          {/* Project Section */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">Project</label>
+            <div className="relative">
+              <select
+                name="project"
+                value={formData.project}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+              >
+                <option value="">Select Project</option>
+                {projects.length > 0 ? (
+                  projects.map((project) => (
+                    <option key={project.id} value={project.id}>
+                      {project.project_name || project.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>No projects available</option>
+                )}
+              </select>
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+            </div>
+            <button type="button" className="text-red-500 text-sm font-medium hover:text-red-700 mt-2 flex items-center gap-1">
+              <Plus size={16} /> Add New
             </button>
+          </div>
 
-            {openPanels.items && (
-              <div className="px-4 py-5 space-y-4 border-t border-[#EAECF0] bg-white">
-                
-                {/* Items Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-[#E5E7EB]">
-                        <th className="text-left text-xs font-semibold text-gray-700 py-3 px-2">Item</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 py-3 px-2">Quantity</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 py-3 px-2">Price</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 py-3 px-2">Discount</th>
-                        <th className="text-left text-xs font-semibold text-gray-700 py-3 px-2">Amount</th>
-                        <th className="text-center text-xs font-semibold text-gray-700 py-3 px-2">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {formData.items.map((item, index) => (
-                        <tr key={index} className="border-b border-[#E5E7EB]">
-                          <td className="py-3 px-2">
-                            <input
-                              type="text"
-                              value={item.item}
-                              onChange={(e) => handleItemChange(index, 'item', e.target.value)}
-                              placeholder="Item name"
-                              className="w-full px-2 py-1.5 border border-[#E5E7EB] rounded text-sm bg-white focus:outline-none focus:border-red-500"
-                            />
-                          </td>
-                          <td className="py-3 px-2">
-                            <input
-                              type="number"
-                              value={item.quantity}
-                              onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                              placeholder="0"
-                              className="w-full px-2 py-1.5 border border-[#E5E7EB] rounded text-sm bg-white focus:outline-none focus:border-red-500"
-                            />
-                          </td>
-                          <td className="py-3 px-2">
-                            <input
-                              type="number"
-                              value={item.price}
-                              onChange={(e) => handleItemChange(index, 'price', e.target.value)}
-                              placeholder="0.00"
-                              className="w-full px-2 py-1.5 border border-[#E5E7EB] rounded text-sm bg-white focus:outline-none focus:border-red-500"
-                            />
-                          </td>
-                          <td className="py-3 px-2">
-                            <select
-                              value={item.discount}
-                              onChange={(e) => handleItemChange(index, 'discount', e.target.value)}
-                              className="w-full px-2 py-1.5 border border-[#E5E7EB] rounded text-sm bg-white focus:outline-none focus:border-red-500"
-                            >
-                              <option value="0%">0%</option>
-                              <option value="5%">5%</option>
-                              <option value="10%">10%</option>
-                              <option value="15%">15%</option>
-                              <option value="20%">20%</option>
-                            </select>
-                          </td>
-                          <td className="py-3 px-2">
-                            <input
-                              type="text"
-                              value={item.amount}
-                              readOnly
-                              placeholder="0.00"
-                              className="w-full px-2 py-1.5 border border-[#E5E7EB] rounded text-sm bg-gray-50"
-                            />
-                          </td>
-                          <td className="py-3 px-2 text-center">
-                            {formData.items.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeItem(index)}
-                                className="text-red-500 hover:text-red-700 transition"
-                              >
-                                <X size={16} />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Add New Item Button */}
-                <button
-                  type="button"
-                  onClick={addNewItem}
-                  className="text-red-500 text-sm font-medium hover:text-red-700 flex items-center gap-1 transition"
+          {/* Amount & Currency */}
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Amount <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                name="amount"
+                value={formData.amount}
+                onChange={handleInputChange}
+                placeholder="0.00"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Currency <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  name="currency"
+                  value={formData.currency}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
                 >
-                  <Plus size={16} />
-                  Add New
-                </button>
+                  <option value="">Select</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="INR">INR</option>
+                </select>
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Totals Panel */}
-          <div className="border-b border-[#EAECF0]">
-            <button
-              type="button"
-              onClick={() => togglePanel('totals')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
-                  💰
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">Totals</span>
-              </div>
-              <ChevronDown 
-                size={18} 
-                className={`text-gray-500 transition ${openPanels.totals ? 'rotate-180' : ''}`}
+          {/* Date & Open Till */}
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Date</label>
+              <input
+                type="text"
+                name="date"
+                value={formData.date}
+                onChange={handleInputChange}
+                placeholder="dd/mm/yyyy"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
               />
-            </button>
-
-            {openPanels.totals && (
-              <div className="px-4 py-5 space-y-3 border-t border-[#EAECF0] bg-white">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700 font-medium">Subtotal</span>
-                  <span className="text-gray-900 font-semibold">{formData.subtotal}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700 font-medium">Discount 2%</span>
-                  <span className="text-gray-900 font-semibold">{formData.discount2}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700 font-medium">Extra Discount 0%</span>
-                  <span className="text-gray-900 font-semibold">{formData.extraDiscount0}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm border-t border-[#E5E7EB] pt-3">
-                  <span className="text-gray-700 font-medium">Tax</span>
-                  <span className="text-gray-900 font-semibold">{formData.tax}</span>
-                </div>
-                <div className="flex items-center justify-between text-base border-t border-[#E5E7EB] pt-3">
-                  <span className="text-gray-900 font-semibold">Total</span>
-                  <span className="text-gray-900 font-bold text-lg">{formData.total}</span>
-                </div>
-              </div>
-            )}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Open Till <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="openTill"
+                value={formData.openTill}
+                onChange={handleInputChange}
+                placeholder="dd/mm/yyyy"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              />
+            </div>
           </div>
 
-          {/* Notes Panel */}
-          <div className="border-b border-[#EAECF0]">
+          {/* Payment Method & Status */}
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Payment Method</label>
+              <div className="relative">
+                <select
+                  name="paymentMethod"
+                  value={formData.paymentMethod}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                >
+                  <option value="">Select</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Check">Check</option>
+                </select>
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Status</label>
+              <div className="relative">
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                >
+                  <option value="">Select</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Sent">Sent</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Overdue">Overdue</option>
+                </select>
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Line Items Section */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">
+              Line Items <span className="text-red-500">*</span>
+            </label>
+            <div className="border border-gray-300 rounded-lg overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-300">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Item/Service</th>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Qty</th>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Rate</th>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Discount %</th>
+                    <th className="px-3 py-2 text-left font-semibold text-gray-700">Tax %</th>
+                    <th className="px-3 py-2 text-right font-semibold text-gray-700">Total</th>
+                    <th className="px-3 py-2 text-center font-semibold text-gray-700">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.lineItems.map((item, idx) => {
+                    const itemTotal = calculateLineItemTotal(item);
+                    return (
+                      <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={item.item_name}
+                            onChange={(e) => handleLineItemChange(item.id, 'item_name', e.target.value)}
+                            placeholder="Item/Service name"
+                            className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => handleLineItemChange(item.id, 'quantity', e.target.value)}
+                            min="1"
+                            className="w-16 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            value={item.rate}
+                            onChange={(e) => handleLineItemChange(item.id, 'rate', e.target.value)}
+                            min="0"
+                            step="0.01"
+                            className="w-20 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            value={item.discount_percent}
+                            onChange={(e) => handleLineItemChange(item.id, 'discount_percent', e.target.value)}
+                            min="0"
+                            max="100"
+                            className="w-16 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            value={item.tax_percent}
+                            onChange={(e) => handleLineItemChange(item.id, 'tax_percent', e.target.value)}
+                            min="0"
+                            max="100"
+                            className="w-16 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-right font-semibold text-gray-900">
+                          {itemTotal.toFixed(2)}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => removeLineItem(item.id)}
+                            disabled={formData.lineItems.length === 1}
+                            className="text-red-500 hover:text-red-700 disabled:text-gray-300 text-lg disabled:cursor-not-allowed"
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
             <button
               type="button"
-              onClick={() => togglePanel('notes')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+              onClick={addLineItem}
+              className="mt-3 text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
-                  📝
-                </div>
-                <span className="font-semibold text-gray-900 text-sm">Notes & Terms</span>
-              </div>
-              <ChevronDown 
-                size={18} 
-                className={`text-gray-500 transition ${openPanels.notes ? 'rotate-180' : ''}`}
-              />
+              <Plus size={16} /> Add Line Item
             </button>
+          </div>
 
-            {openPanels.notes && (
-              <div className="px-4 py-5 space-y-5 border-t border-[#EAECF0] bg-white">
-                
-                {/* Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes
-                  </label>
-                  <textarea
-                    name="notes"
-                    value={formData.notes}
-                    onChange={handleInputChange}
-                    placeholder="Enter any additional notes"
-                    rows="3"
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
-                  />
-                </div>
-
-                {/* Terms & Conditions */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Terms & Conditions
-                  </label>
-                  <textarea
-                    name="termsConditions"
-                    value={formData.termsConditions}
-                    onChange={handleInputChange}
-                    placeholder="Enter terms and conditions"
-                    rows="3"
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
-                  />
-                </div>
+          {/* Summary Section */}
+          <div className="border-t border-gray-200 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Subtotal:</p>
+                <p className="text-lg font-semibold text-gray-900">{subtotal.toFixed(2)}</p>
               </div>
-            )}
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Discount:</p>
+                <p className="text-lg font-semibold text-red-600">-{totalDiscount.toFixed(2)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Tax:</p>
+                <p className="text-lg font-semibold text-gray-900">+{totalTax.toFixed(2)}</p>
+              </div>
+              <div className="text-right bg-red-50 p-3 rounded-lg">
+                <p className="text-sm text-gray-600">Total:</p>
+                <p className="text-2xl font-bold text-red-600">{total.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Company Details & Bank Details */}
+          <div className="grid grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Company Details</label>
+              <textarea
+                name="companyDetails"
+                value={formData.companyDetails}
+                onChange={handleInputChange}
+                placeholder="Your company name, address, etc."
+                rows="3"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-3">Bank/Payment Details</label>
+              <textarea
+                name="bankDetails"
+                value={formData.bankDetails}
+                onChange={handleInputChange}
+                placeholder="Bank name, account number, SWIFT code, etc."
+                rows="3"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">Notes</label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              placeholder="Enter any additional notes"
+              rows="3"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+            />
+          </div>
+
+          {/* Terms & Conditions */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-900 mb-3">Terms & Conditions</label>
+            <textarea
+              name="termsConditions"
+              value={formData.termsConditions}
+              onChange={handleInputChange}
+              placeholder="Enter terms and conditions"
+              rows="3"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+            />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 mt-8 pt-6 border-t border-[#EAECF0]">
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200">
             <button
               type="button"
               onClick={handleCancel}

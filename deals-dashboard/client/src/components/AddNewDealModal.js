@@ -300,6 +300,26 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                   </div>
                 </div>
 
+                {/* Company */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Company <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="company_id"
+                    value={formData.company_id}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  >
+                    <option value="">Select Company</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.company_name || company.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Contact */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -323,7 +343,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                 {/* Projects */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project <span className="text-red-500">*</span>
+                    Project
                   </label>
                   <div className="space-y-2 relative">
                     <div className="relative">

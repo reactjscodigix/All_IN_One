@@ -67,9 +67,10 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
   const fetchUsersAndProjects = async () => {
     setLoadingData(true);
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const [usersRes, projectsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/contacts'),
-        fetch('http://localhost:5000/api/projects')
+        fetch(`${apiUrl}/contacts`),
+        fetch(`${apiUrl}/projects`)
       ]);
       
       if (usersRes.ok) {

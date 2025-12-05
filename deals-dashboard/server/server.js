@@ -250,6 +250,278 @@ async function initializeDatabase() {
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS companies (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_name VARCHAR(255) NOT NULL,
+        email VARCHAR(150),
+        phone VARCHAR(20),
+        website VARCHAR(255),
+        industry VARCHAR(100),
+        revenue DECIMAL(15, 2),
+        employees INT,
+        description LONGTEXT,
+        logo LONGTEXT,
+        address VARCHAR(255),
+        city VARCHAR(100),
+        state VARCHAR(100),
+        country VARCHAR(100),
+        zipcode VARCHAR(20),
+        status ENUM('Active', 'Inactive', 'Prospect') DEFAULT 'Active',
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_company_name (company_name),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS contacts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100),
+        email VARCHAR(150),
+        phone VARCHAR(20),
+        company_id INT,
+        company_name VARCHAR(255),
+        position VARCHAR(100),
+        department VARCHAR(100),
+        source VARCHAR(100),
+        status ENUM('Active', 'Inactive') DEFAULT 'Active',
+        avatar LONGTEXT,
+        notes LONGTEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_first_name (first_name),
+        INDEX idx_email (email),
+        INDEX idx_company_id (company_id),
+        INDEX idx_status (status),
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS leads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        lead_name VARCHAR(255) NOT NULL,
+        email VARCHAR(150),
+        phone VARCHAR(20),
+        company VARCHAR(255),
+        lead_source VARCHAR(100),
+        lead_status ENUM('New', 'Qualified', 'Contacted', 'Unqualified') DEFAULT 'New',
+        rating INT DEFAULT 5,
+        notes LONGTEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_lead_name (lead_name),
+        INDEX idx_email (email),
+        INDEX idx_lead_status (lead_status),
+        INDEX idx_created_at (created_at)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS deals (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        deal_name VARCHAR(255) NOT NULL,
+        company_id INT NOT NULL,
+        contact_id INT,
+        assignee_id INT,
+        deal_value DECIMAL(15, 2),
+        currency VARCHAR(10) DEFAULT 'USD',
+        deal_stage VARCHAR(100),
+        pipeline VARCHAR(100),
+        status VARCHAR(100),
+        probability INT,
+        expected_close_date DATE,
+        due_date DATE,
+        follow_up_date DATE,
+        source VARCHAR(100),
+        priority VARCHAR(50) DEFAULT 'Medium',
+        period VARCHAR(100),
+        period_value INT,
+        tags VARCHAR(500),
+        description LONGTEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_company_id (company_id),
+        INDEX idx_deal_stage (deal_stage),
+        INDEX idx_status (status),
+        INDEX idx_expected_close_date (expected_close_date),
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        title VARCHAR(255),
+        description LONGTEXT,
+        deal_id INT,
+        company_id INT,
+        contact_id INT,
+        budget DECIMAL(15, 2),
+        currency VARCHAR(10) DEFAULT 'USD',
+        status ENUM('Planning', 'In Progress', 'On Hold', 'Completed', 'Cancelled', 'Active') DEFAULT 'Planning',
+        start_date DATE,
+        end_date DATE,
+        due_date DATE,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        INDEX idx_status (status),
+        INDEX idx_deal_id (deal_id),
+        INDEX idx_company_id (company_id),
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        invoice_number VARCHAR(50) UNIQUE NOT NULL,
+        client_id INT NOT NULL,
+        bill_to VARCHAR(255),
+        ship_to VARCHAR(255),
+        project_id INT,
+        deal_id INT,
+        amount DECIMAL(15, 2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'USD',
+        invoice_date DATE,
+        open_till DATE,
+        payment_method VARCHAR(100),
+        status ENUM('Draft', 'Sent', 'Paid', 'Unpaid', 'Overdue', 'Partially Paid') DEFAULT 'Draft',
+        description LONGTEXT,
+        subtotal DECIMAL(15, 2) DEFAULT 0,
+        discount_percentage DECIMAL(5, 2) DEFAULT 0,
+        discount_amount DECIMAL(15, 2) DEFAULT 0,
+        extra_discount_percentage DECIMAL(5, 2) DEFAULT 0,
+        extra_discount_amount DECIMAL(15, 2) DEFAULT 0,
+        tax_percentage DECIMAL(5, 2) DEFAULT 0,
+        tax_amount DECIMAL(15, 2) DEFAULT 0,
+        total DECIMAL(15, 2),
+        notes LONGTEXT,
+        terms_conditions LONGTEXT,
+        amount_paid DECIMAL(15, 2) DEFAULT 0,
+        payment_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_client_id (client_id),
+        INDEX idx_invoice_number (invoice_number),
+        INDEX idx_status (status),
+        INDEX idx_invoice_date (invoice_date),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE
+      )
+    `)
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS invoice_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        invoice_id INT NOT NULL,
+        item_name VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        quantity DECIMAL(10, 2) NOT NULL,
+        price DECIMAL(15, 2) NOT NULL,
+        discount_percentage DECIMAL(5, 2) DEFAULT 0,
+        discount_amount DECIMAL(15, 2) DEFAULT 0,
+        tax_percentage DECIMAL(5, 2) DEFAULT 0,
+        tax_amount DECIMAL(15, 2) DEFAULT 0,
+        amount DECIMAL(15, 2),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_invoice_id (invoice_id),
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+      )
+    `);
+    
+    await connection.query(`
+      ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS description LONGTEXT
+    `).catch(() => {});
+    
+    await connection.query(`
+      ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS discount_percentage DECIMAL(5, 2) DEFAULT 0
+    `).catch(() => {});
+    
+    await connection.query(`
+      ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(15, 2) DEFAULT 0
+    `).catch(() => {});
+    
+    await connection.query(`
+      ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS tax_percentage DECIMAL(5, 2) DEFAULT 0
+    `).catch(() => {});
+    
+    await connection.query(`
+      ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS tax_amount DECIMAL(15, 2) DEFAULT 0
+    `).catch(() => {});
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS estimations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        estimation_number VARCHAR(50) UNIQUE NOT NULL,
+        client_id INT NOT NULL,
+        contact_id INT,
+        project_id INT,
+        bill_to VARCHAR(255),
+        ship_to VARCHAR(255),
+        amount DECIMAL(15, 2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'USD',
+        estimate_date DATE,
+        expiry_date DATE,
+        status ENUM('Draft', 'Sent', 'Accepted', 'Declined') DEFAULT 'Draft',
+        description LONGTEXT,
+        tags JSON,
+        estimate_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_client_id (client_id),
+        INDEX idx_estimation_number (estimation_number),
+        INDEX idx_status (status),
+        INDEX idx_estimate_date (estimate_date),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+        FOREIGN KEY (estimate_by) REFERENCES users(id) ON DELETE SET NULL
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS pipeline (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        position INT,
+        status ENUM('Active', 'Inactive') DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        INDEX idx_position (position)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS campaigns (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        status ENUM('Draft', 'Active', 'Paused', 'Completed', 'Cancelled') DEFAULT 'Draft',
+        start_date DATE,
+        end_date DATE,
+        budget DECIMAL(15, 2),
+        currency VARCHAR(10) DEFAULT 'USD',
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        INDEX idx_status (status)
+      )
+    `);
     
     console.log('✓ All tables initialized successfully');
     
@@ -1384,6 +1656,24 @@ app.get('/api/invoices', async (req, res) => {
   }
 });
 
+app.get('/api/invoices/:id/items', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    const [items] = await connection.query(`
+      SELECT * FROM invoice_items WHERE invoice_id = ?
+    `, [id]);
+    
+    res.json(items);
+  } catch (error) {
+    console.error('Error fetching invoice items:', error.message);
+    res.status(500).json({ error: 'Failed to fetch invoice items' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
 app.get('/api/invoices/:id', async (req, res) => {
   let connection;
   try {
@@ -1434,14 +1724,14 @@ app.post('/api/invoices', async (req, res) => {
     const [result] = await connection.query(`
       INSERT INTO invoices (
         invoice_number, client_id, bill_to, ship_to, project_id, amount, currency,
-        invoice_date, open_till, payment_method, status, description,
+        invoice_date, open_till, payment_method, status,
         subtotal, discount_percentage, discount_amount,
         extra_discount_percentage, extra_discount_amount,
         tax_percentage, tax_amount, total, notes, terms_conditions
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       invoiceNumber, client, billTo, shipTo, project || null, amount, currency,
-      date || null, openTill || null, paymentMethod || null, status || 'Draft', description || '',
+      date || null, openTill || null, paymentMethod || null, status || 'Draft',
       subtotal || 0, 0, 0, 0, 0, 0, 0, total || amount, notes || '', termsConditions || ''
     ]);
 
@@ -1449,15 +1739,21 @@ app.post('/api/invoices', async (req, res) => {
 
     if (items && items.length > 0) {
       for (const item of items) {
-        if (item.item && item.price && item.quantity) {
+        if (item.item_name && item.rate && item.quantity) {
+          const subtotal = item.quantity * item.rate;
+          const discountAmount = subtotal * (item.discount_percent / 100);
+          const taxableAmount = subtotal - discountAmount;
+          const taxAmount = taxableAmount * (item.tax_percent / 100);
+          const itemTotal = taxableAmount + taxAmount;
+          
           await connection.query(`
             INSERT INTO invoice_items (
-              invoice_id, item_name, quantity, price, 
-              discount_percentage, discount_amount, amount
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+              invoice_id, item_name, description, quantity, price, 
+              discount_percentage, discount_amount, tax_percentage, tax_amount, amount
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
-            invoiceId, item.item, item.quantity, item.price,
-            0, 0, (item.quantity * item.price) || 0
+            invoiceId, item.item_name, item.description || '', item.quantity, item.rate,
+            item.discount_percent || 0, discountAmount, item.tax_percent || 0, taxAmount, itemTotal
           ]);
         }
       }
@@ -1480,16 +1776,27 @@ app.put('/api/invoices/:id', async (req, res) => {
   let connection;
   try {
     const { id } = req.params;
-    const { status, paymentMethod, notes } = req.body;
+    const { status, paymentMethod, notes, amount_paid, payment_date } = req.body;
 
     connection = await pool.getConnection();
+    
     await connection.query(`
       UPDATE invoices 
-      SET status = ?, payment_method = ?, notes = ?, updated_at = NOW()
+      SET status = ?, payment_method = ?, notes = ?, amount_paid = ?, payment_date = ?, updated_at = NOW()
       WHERE id = ?
-    `, [status || 'Draft', paymentMethod || null, notes || '', id]);
+    `, [status || 'Draft', paymentMethod || null, notes || '', amount_paid || 0, payment_date || null, id]);
 
-    res.json({ message: 'Invoice updated successfully' });
+    const [updatedInvoice] = await connection.query(`
+      SELECT i.*, c.company_name 
+      FROM invoices i
+      LEFT JOIN companies c ON i.client_id = c.id
+      WHERE i.id = ?
+    `, [id]);
+
+    res.json({ 
+      message: 'Invoice updated successfully',
+      invoice: updatedInvoice[0]
+    });
   } catch (error) {
     console.error('Error updating invoice:', error.message);
     res.status(500).json({ error: 'Failed to update invoice', details: error.message });
@@ -1503,11 +1810,155 @@ app.delete('/api/invoices/:id', async (req, res) => {
   try {
     const { id } = req.params;
     connection = await pool.getConnection();
+    
+    await connection.query('DELETE FROM invoice_items WHERE invoice_id = ?', [id]);
     await connection.query('DELETE FROM invoices WHERE id = ?', [id]);
+    
     res.json({ message: 'Invoice deleted successfully' });
   } catch (error) {
     console.error('Error deleting invoice:', error.message);
     res.status(500).json({ error: 'Failed to delete invoice', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/invoices/metrics/summary', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const [metrics] = await connection.query(`
+      SELECT 
+        COUNT(*) as total_invoices,
+        SUM(CASE WHEN status = 'Paid' THEN 1 ELSE 0 END) as paid_invoices,
+        SUM(CASE WHEN status = 'Unpaid' THEN 1 ELSE 0 END) as unpaid_invoices,
+        SUM(CASE WHEN status = 'Overdue' THEN 1 ELSE 0 END) as overdue_invoices,
+        SUM(total) as total_amount,
+        SUM(amount_paid) as total_paid,
+        SUM(CASE WHEN status != 'Paid' THEN (total - COALESCE(amount_paid, 0)) ELSE 0 END) as total_due
+      FROM invoices
+      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+    `);
+
+    res.json(metrics[0]);
+  } catch (error) {
+    console.error('Error fetching invoice metrics:', error.message);
+    res.status(500).json({ error: 'Failed to fetch metrics', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/invoices/status/breakdown', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const [breakdown] = await connection.query(`
+      SELECT 
+        status,
+        COUNT(*) as count,
+        SUM(total) as total_amount,
+        AVG(total) as average_amount
+      FROM invoices
+      GROUP BY status
+      ORDER BY count DESC
+    `);
+
+    res.json(breakdown);
+  } catch (error) {
+    console.error('Error fetching status breakdown:', error.message);
+    res.status(500).json({ error: 'Failed to fetch breakdown', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/companies/:companyId/invoices', async (req, res) => {
+  let connection;
+  try {
+    const { companyId } = req.params;
+    connection = await pool.getConnection();
+    
+    const [invoices] = await connection.query(`
+      SELECT i.*, c.company_name 
+      FROM invoices i
+      LEFT JOIN companies c ON i.client_id = c.id
+      WHERE i.client_id = ?
+      ORDER BY i.created_at DESC
+    `, [companyId]);
+
+    res.json(invoices);
+  } catch (error) {
+    console.error('Error fetching company invoices:', error.message);
+    res.status(500).json({ error: 'Failed to fetch invoices', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/deals/:dealId/invoices', async (req, res) => {
+  let connection;
+  try {
+    const { dealId } = req.params;
+    connection = await pool.getConnection();
+    
+    const [invoices] = await connection.query(`
+      SELECT i.*, c.company_name, d.deal_name
+      FROM invoices i
+      LEFT JOIN companies c ON i.client_id = c.id
+      LEFT JOIN deals d ON i.deal_id = d.id
+      WHERE i.deal_id = ?
+      ORDER BY i.created_at DESC
+    `, [dealId]);
+
+    res.json(invoices);
+  } catch (error) {
+    console.error('Error fetching deal invoices:', error.message);
+    res.status(500).json({ error: 'Failed to fetch invoices', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/invoices/:invoiceId/link-to-deal/:dealId', async (req, res) => {
+  let connection;
+  try {
+    const { invoiceId, dealId } = req.params;
+    connection = await pool.getConnection();
+    
+    await connection.query(`
+      UPDATE invoices 
+      SET deal_id = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [dealId, invoiceId]);
+
+    res.json({ message: 'Invoice linked to deal successfully' });
+  } catch (error) {
+    console.error('Error linking invoice to deal:', error.message);
+    res.status(500).json({ error: 'Failed to link invoice', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/invoices/:invoiceId/link-to-client/:clientId', async (req, res) => {
+  let connection;
+  try {
+    const { invoiceId, clientId } = req.params;
+    connection = await pool.getConnection();
+    
+    await connection.query(`
+      UPDATE invoices 
+      SET client_id = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [clientId, invoiceId]);
+
+    res.json({ message: 'Invoice linked to client successfully' });
+  } catch (error) {
+    console.error('Error linking invoice to client:', error.message);
+    res.status(500).json({ error: 'Failed to link invoice', details: error.message });
   } finally {
     if (connection) connection.release();
   }
@@ -3734,7 +4185,7 @@ app.get('/api/estimations', async (req, res) => {
     const { status, client_id, search } = req.query;
     
     let query = `
-      SELECT e.*, c.company_name, p.name as project_name, u.first_name as creator_first_name
+      SELECT e.*, c.company_name, c.logo, p.name as project_name, u.first_name as creator_first_name, u.last_name as creator_last_name, u.avatar
       FROM estimations e
       LEFT JOIN companies c ON e.client_id = c.id
       LEFT JOIN projects p ON e.project_id = p.id
@@ -3775,7 +4226,7 @@ app.get('/api/estimations/:id', async (req, res) => {
     const { id } = req.params;
     connection = await pool.getConnection();
     const [rows] = await connection.query(`
-      SELECT e.*, c.company_name, p.name as project_name, u.first_name as creator_first_name
+      SELECT e.*, c.company_name, c.logo, p.name as project_name, u.first_name as creator_first_name, u.last_name as creator_last_name, u.avatar
       FROM estimations e
       LEFT JOIN companies c ON e.client_id = c.id
       LEFT JOIN projects p ON e.project_id = p.id
