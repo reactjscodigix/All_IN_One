@@ -24,10 +24,12 @@ const CrmDealsPage = () => {
           companiesAPI.getAll(),
         ]);
         
-        if (dealsRes && Array.isArray(dealsRes)) {
+        console.log('✅ API Response - Deals:', dealsRes);
+        
+        if (dealsRes && Array.isArray(dealsRes) && dealsRes.length > 0) {
           const formattedDeals = dealsRes.map(deal => ({
             id: deal.id,
-            stage: deal.deal_stage || deal.pipeline || 'Qualify To Buy',
+            stage: deal.pipeline || deal.deal_stage || 'Unclassified',
             company: deal.company_name || deal.deal_name || 'Unknown Company',
             initials: ((deal.company_name || deal.deal_name || 'UC').substring(0, 2)).toUpperCase(),
             value: parseFloat(deal.deal_value) || 0,
@@ -41,12 +43,21 @@ const CrmDealsPage = () => {
               : 'Unassigned',
             ownerImage: 'avatar-1',
             progress: deal.probability || 10,
-            date: deal.due_date ? new Date(deal.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+            date: deal.follow_up_date 
+              ? new Date(deal.follow_up_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) 
+              : deal.due_date 
+              ? new Date(deal.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+              : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
             ...deal
           }));
+          
+          console.log('✅ Formatted Deals:', formattedDeals);
+          
           setDeals(formattedDeals);
           
           const uniqueStages = [...new Set(formattedDeals.map(d => d.stage).filter(s => s))];
+          console.log('✅ Unique Stages:', uniqueStages);
+          
           const updatedStats = uniqueStages.map(stage => {
             const stageDeals = formattedDeals.filter(d => d.stage === stage);
             return {
@@ -55,8 +66,11 @@ const CrmDealsPage = () => {
               value: stageDeals.reduce((sum, d) => sum + (d.value || 0), 0)
             };
           });
+          
+          console.log('✅ Updated Stage Stats:', updatedStats);
           setStageStats(updatedStats);
         } else {
+          console.warn('⚠️ No deals received or invalid format, using fallback data');
           setDeals(dealsData.deals);
         }
         
@@ -64,8 +78,9 @@ const CrmDealsPage = () => {
         setCompanies(companiesRes || []);
         setProjects(projectsData.projects || []);
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('❌ Error fetching data:', err);
         setDeals(dealsData.deals);
+        setStageStats(dealsData.stageStats);
         setProjects(projectsData.projects || []);
       }
     };
@@ -74,8 +89,12 @@ const CrmDealsPage = () => {
   }, []);
 
   const formatCurrency = (value) => {
-    const formatted = (value / 100000).toFixed(2);
-    return `$${formatted.replace('.', ',')}`;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(value);
   };
 
   const getProgressColor = (progress) => {
@@ -157,6 +176,12 @@ const CrmDealsPage = () => {
     ...stageStat,
     deals: deals.filter(d => d.stage === stageStat.stage)
   }));
+  
+  const hasAnyDeals = groupedDeals.some(group => group.deals.length > 0);
+  console.log('📊 Grouped Deals:', groupedDeals);
+  console.log('📊 Has Any Deals:', hasAnyDeals);
+  console.log('📊 Total Groups:', groupedDeals.length);
+  console.log('📊 Total Deals:', deals.length);
 
   return (
     <div className="w-full bg-gray-50 min-h-screen flex flex-col">
@@ -204,6 +229,14 @@ const CrmDealsPage = () => {
 
       <div className="flex-1 px-6 pb-0 relative overflow-hidden">
         <div className="relative group h-full">
+          {!hasAnyDeals ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-gray-500 text-lg mb-2">No deals found</p>
+                <p className="text-gray-400 text-sm">Try adjusting your filters or add a new deal</p>
+              </div>
+            </div>
+          ) : (
           <div
             ref={scrollRef}
             className="flex gap-6 h-full overflow-x-auto overflow-y-auto pr-2 pb-4"
@@ -288,6 +321,7 @@ const CrmDealsPage = () => {
               </div>
             ))}
           </div>
+          )}
 
           <button
             onClick={() => scroll('left')}

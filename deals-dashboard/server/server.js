@@ -4185,7 +4185,7 @@ app.get('/api/estimations', async (req, res) => {
     const { status, client_id, search } = req.query;
     
     let query = `
-      SELECT e.*, c.company_name, c.logo, p.name as project_name, u.first_name as creator_first_name, u.last_name as creator_last_name, u.avatar
+      SELECT e.*, c.company_name, c.logo, p.name as project_name, u.first_name as creator_first_name, u.avatar
       FROM estimations e
       LEFT JOIN companies c ON e.client_id = c.id
       LEFT JOIN projects p ON e.project_id = p.id

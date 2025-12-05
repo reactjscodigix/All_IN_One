@@ -3,14 +3,11 @@ import { Plus } from 'lucide-react';
 import DataTable from './DataTable';
 import AddNewDealModal from './AddNewDealModal';
 import { dealsAPI, contactsAPI, companiesAPI } from '../services/api';
-import dealsData from '../data/dealsData.json';
-import projectsData from '../data/crmProjectsData.json';
 
 const DealsListPage = () => {
   const [deals, setDeals] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,37 +16,37 @@ const DealsListPage = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        setError('');
         const [dealsRes, contactsRes, companiesRes] = await Promise.all([
           dealsAPI.getAll(),
           contactsAPI.getAll(),
           companiesAPI.getAll(),
         ]);
         
-        const transformedDeals = dealsRes && Array.isArray(dealsRes) 
-          ? dealsRes.map(deal => ({
-              id: deal.id,
-              name: deal.deal_name,
-              company: deal.company_name || 'Unknown',
-              contact: deal.contact_id ? `${deal.first_name || ''} ${deal.last_name || ''}`.trim() : 'N/A',
-              stage: deal.deal_stage || deal.pipeline || 'N/A',
-              value: parseFloat(deal.deal_value) || 0,
-              status: deal.status || 'Pending',
-              deal_name: deal.deal_name,
-              company_id: deal.company_id,
-              contact_id: deal.contact_id,
-              ...deal
-            }))
-          : dealsData.deals;
+        console.log('✅ DealsListPage - API Response:', { dealsRes, contactsRes, companiesRes });
+        
+        const transformedDeals = (dealsRes || []).map(deal => ({
+          id: deal.id,
+          name: deal.deal_name,
+          company: deal.company_name || 'Unknown',
+          contact: deal.contact_id ? `${deal.first_name || ''} ${deal.last_name || ''}`.trim() : 'N/A',
+          stage: deal.pipeline || deal.deal_stage || 'Unclassified',
+          value: parseFloat(deal.deal_value) || 0,
+          status: deal.status || 'Pending',
+          deal_name: deal.deal_name,
+          company_id: deal.company_id,
+          contact_id: deal.contact_id,
+          ...deal
+        }));
+        
+        console.log('✅ DealsListPage - Transformed Deals:', transformedDeals);
         
         setDeals(transformedDeals);
         setContacts(contactsRes || []);
         setCompanies(companiesRes || []);
-        setProjects(projectsData.projects || []);
       } catch (err) {
-        console.error('Error fetching data:', err);
-        setDeals(dealsData.deals);
-        setProjects(projectsData.projects || []);
-        setError('Failed to load data from server');
+        console.error('❌ DealsListPage - Error fetching data:', err);
+        setError(`Failed to load deals data from server: ${err.message}`);
       } finally {
         setIsLoading(false);
       }
@@ -176,7 +173,6 @@ const DealsListPage = () => {
         onSubmit={handleCreateDeal}
         contacts={contacts}
         companies={companies}
-        projects={projects}
       />
     </div>
   );
