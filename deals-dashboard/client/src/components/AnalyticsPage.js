@@ -143,26 +143,26 @@ const AnalyticsPage = () => {
   }));
 
   const lostLeadsData = leads
-    .filter(l => l.status === 'Lost')
+    .filter(l => l.status === 'Unqualified')
     .reduce((acc, lead) => {
-      const stage = lead.stage || 'Unknown';
-      const existing = acc.find(d => d.name === stage);
+      const source = lead.source || 'Unknown';
+      const existing = acc.find(d => d.name === source);
       if (existing) {
         existing.value += 1;
       } else {
-        acc.push({ name: stage, value: 1 });
+        acc.push({ name: source, value: 1 });
       }
       return acc;
     }, [])
     .slice(0, 3);
 
   const leadsByStageData = leads.reduce((acc, lead) => {
-    const stage = lead.stage || 'Unknown';
-    const existing = acc.find(d => d.stage === stage);
+    const status = lead.status || 'New';
+    const existing = acc.find(d => d.stage === status);
     if (existing) {
       existing.value += 1;
     } else {
-      acc.push({ stage, value: 1 });
+      acc.push({ stage: status, value: 1 });
     }
     return acc;
   }, []);
