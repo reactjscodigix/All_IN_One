@@ -5,7 +5,7 @@ import { campaignAPI } from '../services/api';
 import campaignData from '../data/crmCampaignData.json';
 
 const CrmCampaignPage = () => {
-  const [stats] = useState(campaignData.stats);
+  const [stats, setStats] = useState(campaignData.stats);
   const [campaigns, setCampaigns] = useState(campaignData.campaigns);
   const [activeTab, setActiveTab] = useState('Active Campaign');
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,10 +20,57 @@ const CrmCampaignPage = () => {
       const data = await campaignAPI.getAll();
       if (Array.isArray(data) && data.length > 0) {
         setCampaigns(data);
+        calculateStats(data);
       }
     } catch (error) {
       console.error('Failed to load campaigns:', error);
     }
+  };
+
+  const calculateStats = (campaignsData) => {
+    if (!campaignsData || campaignsData.length === 0) return;
+
+    const totalCampaigns = campaignsData.length;
+    const activeCampaigns = campaignsData.filter(c => c.status === 'Running' || c.status === 'Active').length;
+    const completedCampaigns = campaignsData.filter(c => c.status === 'Success' || c.status === 'Completed').length;
+    const pausedCampaigns = campaignsData.filter(c => c.status === 'Paused').length;
+
+    const newStats = [
+      {
+        label: 'Campaign',
+        value: totalCampaigns,
+        change: activeCampaigns > 0 ? `+${((activeCampaigns / totalCampaigns) * 100).toFixed(1)}%` : '0%',
+        icon: '📧',
+        bgColor: 'bg-yellow-100',
+        textColor: 'text-yellow-600'
+      },
+      {
+        label: 'Sent',
+        value: activeCampaigns,
+        change: totalCampaigns > 0 ? `+${((activeCampaigns / totalCampaigns) * 100).toFixed(1)}%` : '0%',
+        icon: '📮',
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-600'
+      },
+      {
+        label: 'Opened',
+        value: completedCampaigns,
+        change: totalCampaigns > 0 ? `+${((completedCampaigns / totalCampaigns) * 100).toFixed(1)}%` : '0%',
+        icon: '📂',
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-600'
+      },
+      {
+        label: 'Completed',
+        value: pausedCampaigns,
+        change: totalCampaigns > 0 ? `${((pausedCampaigns / totalCampaigns) * 100).toFixed(1)}%` : '0%',
+        icon: '✓',
+        bgColor: 'bg-green-100',
+        textColor: 'text-green-600'
+      }
+    ];
+
+    setStats(newStats);
   };
 
   const getStatusBadgeColor = (status) => {

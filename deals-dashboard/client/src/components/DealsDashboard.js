@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, RotateCcw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
-import dealsData from '../data/dealsData.json';
+import { dealsAPI } from '../services/api';
 import RecentDealsTable from './RecentDealsTable';
 import DealsByStageChart from './DealsByStageChart';
 import LostDealsChart from './LostDealsChart';
@@ -104,12 +104,28 @@ const DealsDashboard = () => {
     fetchDeals();
   }, []);
 
+  const transformDeal = (deal) => ({
+    id: deal.id,
+    name: deal.deal_name || '',
+    company: deal.company_name || '',
+    contact: deal.first_name && deal.last_name ? `${deal.first_name} ${deal.last_name}` : deal.first_name || '',
+    stage: deal.stage || '',
+    value: parseFloat(deal.deal_value) || 0,
+    status: deal.status || '',
+    probability: deal.probability || 0,
+    createdAt: deal.created_at ? new Date(deal.created_at).toISOString().split('T')[0] : '',
+    expectedCloseDate: deal.expected_close_date ? new Date(deal.expected_close_date).toISOString().split('T')[0] : '',
+  });
+
   const fetchDeals = async () => {
     try {
       setLoading(true);
-      setDeals(dealsData.deals);
+      const response = await dealsAPI.getAll();
+      const transformedDeals = Array.isArray(response) ? response.map(transformDeal) : [];
+      setDeals(transformedDeals);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch deals:', err);
+      setDeals([]);
     } finally {
       setLoading(false);
     }

@@ -241,8 +241,8 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           description: 'Send customizable quotes, proposals and contracts to close deals faster.',
           owner: { name: 'Vaughan Lewis', initials: 'VL', color: 'bg-amber-500', role: 'Owner' },
           badges: [
-            { id: 'fb1', label: 'Proposal', bg: 'bg-red-50', text: 'text-red-600', border: 'border border-red-100' },
-            { id: 'fb2', label: 'Draft', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border border-blue-100' }
+          { id: 'fb1', label: 'Proposal', bg: 'bg-red-50', text: 'text-red-600', border: 'border border-red-100' },
+          { id: 'fb2', label: 'Draft', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border border-blue-100' }
           ]
         },
         {
@@ -251,8 +251,8 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           description: 'Send customizable quotes, proposals and contracts to close deals faster.',
           owner: { name: 'Jessica Louise', initials: 'JL', color: 'bg-pink-500', role: 'Owner' },
           badges: [
-            { id: 'fb3', label: 'Quote', bg: 'bg-purple-50', text: 'text-purple-600', border: 'border border-purple-100' },
-            { id: 'fb4', label: 'Sent', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border border-emerald-100' }
+          { id: 'fb3', label: 'Quote', bg: 'bg-purple-50', text: 'text-purple-600', border: 'border border-purple-100' },
+          { id: 'fb4', label: 'Sent', bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border border-emerald-100' }
           ]
         },
         {
@@ -261,8 +261,8 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           description: 'Send customizable quotes, proposals and contracts to close deals faster.',
           owner: { name: 'Dawn Mercha', initials: 'DM', color: 'bg-blue-500', role: 'Owner' },
           badges: [
-            { id: 'fb5', label: 'Proposal', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border border-orange-100' },
-            { id: 'fb6', label: 'Draft', bg: 'bg-gray-100', text: 'text-gray-700', border: 'border border-gray-200' }
+          { id: 'fb5', label: 'Proposal', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border border-orange-100' },
+          { id: 'fb6', label: 'Draft', bg: 'bg-gray-100', text: 'text-gray-700', border: 'border border-gray-200' }
           ]
         }
       ]
@@ -339,13 +339,13 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           cc: ['design@trulysell.com'],
           subject: 'Kickoff call recap & action items',
           snippet:
-            'Thanks for taking the time for today\'s call. Please review the milestones and confirm the owners before tomorrow\'s sync.',
+          'Thanks for taking the time for today\'s call. Please review the milestones and confirm the owners before tomorrow\'s sync.',
           timestamp: '26 Sep 2025, 09:35 am',
           status: 'sent',
           badges: [{ id: 'eb1', label: 'Priority', bg: 'bg-red-50', text: 'text-red-600' }],
           attachments: [
-            { id: 'ea1', name: 'Kickoff-Notes.doc', size: '245 KB', type: 'doc' },
-            { id: 'ea2', name: 'Sprint-Plan.xls', size: '512 KB', type: 'xls' }
+          { id: 'ea1', name: 'Kickoff-Notes.doc', size: '245 KB', type: 'doc' },
+          { id: 'ea2', name: 'Sprint-Plan.xls', size: '512 KB', type: 'xls' }
           ]
         },
         {
@@ -355,7 +355,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           cc: ['research@trulysell.com'],
           subject: 'Updated design explorations for onboarding',
           snippet:
-            'Sharing revised explorations that address the comments on typography, padding, and badge alignment for the onboarding journey.',
+          'Sharing revised explorations that address the comments on typography, padding, and badge alignment for the onboarding journey.',
           timestamp: '25 Sep 2025, 05:10 pm',
           status: 'draft',
           badges: [{ id: 'eb2', label: 'Design', bg: 'bg-purple-50', text: 'text-purple-600' }],
@@ -368,13 +368,13 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
           cc: ['legal@partners.co'],
           subject: 'Contract redlines & compliance checklist',
           snippet:
-            'Please review the annotated contract and checklist ahead of tomorrow\'s review call so we can finalize sign-off before deployment.',
+          'Please review the annotated contract and checklist ahead of tomorrow\'s review call so we can finalize sign-off before deployment.',
           timestamp: '24 Sep 2025, 08:45 pm',
           status: 'scheduled',
           badges: [{ id: 'eb3', label: 'Contract', bg: 'bg-blue-50', text: 'text-blue-600' }],
           attachments: [
-            { id: 'ea4', name: 'Contract-v3.pdf', size: '845 KB', type: 'pdf' },
-            { id: 'ea5', name: 'Compliance-Checklist.txt', size: '64 KB', type: 'txt' }
+          { id: 'ea4', name: 'Contract-v3.pdf', size: '845 KB', type: 'pdf' },
+          { id: 'ea5', name: 'Compliance-Checklist.txt', size: '64 KB', type: 'txt' }
           ]
         }
       ]
@@ -467,7 +467,7 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
         <h1 className="text-[22px] font-semibold flex items-center gap-2">
           Projects
           <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-md">
-            125
+          125
           </span>
         </h1>
       </div>
@@ -491,41 +491,41 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
       <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-5 mb-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-purple-500 text-white rounded-full flex items-center justify-center text-lg font-semibold flex-shrink-0">
-              T
+          <div className="w-12 h-12 bg-purple-500 text-white rounded-full flex items-center justify-center text-lg font-semibold flex-shrink-0">
+            T
+          </div>
+          <div className="space-y-2">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">{projectData.name}</h2>
+              <p className="text-sm text-gray-600">
+                Project Id :{" "}
+                <span className="text-gray-800 font-semibold">{projectData.id}</span>
+              </p>
             </div>
-            <div className="space-y-2">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">{projectData.name}</h2>
-                <p className="text-sm text-gray-600">
-                  Project Id :{" "}
-                  <span className="text-gray-800 font-semibold">{projectData.id}</span>
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 text-xs rounded-md border border-red-200 bg-red-50 text-red-600 font-semibold">
-                  High
-                </span>
-                <span className="px-3 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-600 font-semibold">
-                  Active
-                </span>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 text-xs rounded-md border border-red-200 bg-red-50 text-red-600 font-semibold">
+                High
+              </span>
+              <span className="px-3 py-1 text-xs rounded-md border border-green-200 bg-green-50 text-green-600 font-semibold">
+                Active
+              </span>
             </div>
+          </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 text-xs rounded-md border border-red-200 bg-red-50 text-red-600 font-semibold">
-              Private
-            </span>
-            <button className="px-4 py-2 text-xs font-semibold rounded-md bg-green-600 text-white flex items-center gap-1 hover:bg-green-700 transition">
-              Completed
-              <svg className="w-3 h-3" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <button className="w-9 h-9 rounded-md bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition">
-              <AlertCircle className="w-4 h-4" />
-            </button>
+          <span className="px-3 py-1 text-xs rounded-md border border-red-200 bg-red-50 text-red-600 font-semibold">
+            Private
+          </span>
+          <button className="px-4 py-2 text-xs font-semibold rounded-md bg-green-600 text-white flex items-center gap-1 hover:bg-green-700 transition">
+            Completed
+            <svg className="w-3 h-3" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button className="w-9 h-9 rounded-md bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition">
+            <AlertCircle className="w-4 h-4" />
+          </button>
           </div>
         </div>
       </div>
@@ -536,93 +536,93 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
         <div className="w-80 space-y-5">
           {/* Project Information Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">Project Information</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Start Date</span>
-                <span className="text-sm font-medium text-gray-900">{projectData.startDate}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Due Date</span>
-                <span className="text-sm font-medium text-gray-900">{projectData.dueDate}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Deal Value</span>
-                <span className="text-sm font-bold text-gray-900">{projectData.dealValue}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Project Type</span>
-                <span className="text-sm font-medium text-gray-900">{projectData.projectType}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500 font-medium">Project Timing</span>
-                <span className="text-sm font-medium text-gray-900">{projectData.projectTiming}</span>
-              </div>
+          <h3 className="text-sm font-bold text-gray-900 mb-4">Project Information</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-gray-500 font-medium">Start Date</span>
+              <span className="text-sm font-medium text-gray-900">{projectData.startDate}</span>
             </div>
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-gray-500 font-medium">Due Date</span>
+              <span className="text-sm font-medium text-gray-900">{projectData.dueDate}</span>
+            </div>
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-gray-500 font-medium">Deal Value</span>
+              <span className="text-sm font-bold text-gray-900">{projectData.dealValue}</span>
+            </div>
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-gray-500 font-medium">Project Type</span>
+              <span className="text-sm font-medium text-gray-900">{projectData.projectType}</span>
+            </div>
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-gray-500 font-medium">Project Timing</span>
+              <span className="text-sm font-medium text-gray-900">{projectData.projectTiming}</span>
+            </div>
+          </div>
           </div>
 
           {/* Client Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Client</h3>
-              <button className="text-red-500 hover:text-red-600">
-                <Plus className="w-4 h-4" />
-              </button>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900">Client</h3>
+            <button className="text-red-500 hover:text-red-600">
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+              {projectData.client.avatar}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                {projectData.client.avatar}
-              </div>
-              <span className="text-sm text-gray-900">{projectData.client.name}</span>
-            </div>
+            <span className="text-sm text-gray-900">{projectData.client.name}</span>
+          </div>
           </div>
 
           {/* Responsible Persons Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Responsible Persons</h3>
-              <button className="text-red-500 hover:text-red-600">
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900">Responsible Persons</h3>
+            <button className="text-red-500 hover:text-red-600">
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
               {projectData.responsiblePersons.map((person, index) => (
-                <div key={index} className={`w-8 h-8 ${person.color} rounded-full flex items-center justify-center text-white text-xs font-bold`}>
-                  {person.initials[0]}
-                </div>
-              ))}
-              <span className="text-xs text-gray-500 ml-1 font-medium">+1</span>
-            </div>
+              <div key={index} className={`w-8 h-8 ${person.color} rounded-full flex items-center justify-center text-white text-xs font-bold`}>
+                {person.initials[0]}
+              </div>
+            ))}
+            <span className="text-xs text-gray-500 ml-1 font-medium">+1</span>
+          </div>
           </div>
 
           {/* Team Leader Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-gray-900">Team Leader</h3>
-              <button className="text-red-500 hover:text-red-600 text-xs font-medium">Change</button>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900">Team Leader</h3>
+            <button className="text-red-500 hover:text-red-600 text-xs font-medium">Change</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
+              {projectData.teamLeader.avatar}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                {projectData.teamLeader.avatar}
-              </div>
-              <span className="text-sm text-gray-900">{projectData.teamLeader.name}</span>
-            </div>
+            <span className="text-sm text-gray-900">{projectData.teamLeader.name}</span>
+          </div>
           </div>
 
           {/* Pipeline Card */}
           <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Pipeline</h3>
-            <div className="text-sm text-gray-600 mb-3 font-medium">{projectData.pipeline}</div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500">Last Modified</span>
-                <span className="text-xs font-medium text-gray-900">{projectData.lastModified}</span>
-              </div>
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-gray-500">Modified By</span>
-                <span className="text-xs font-medium text-gray-900">{projectData.modifiedBy}</span>
-              </div>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">Pipeline</h3>
+          <div className="text-sm text-gray-600 mb-3 font-medium">{projectData.pipeline}</div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-gray-500">Last Modified</span>
+              <span className="text-xs font-medium text-gray-900">{projectData.lastModified}</span>
             </div>
+            <div className="flex justify-between items-start">
+              <span className="text-xs text-gray-500">Modified By</span>
+              <span className="text-xs font-medium text-gray-900">{projectData.modifiedBy}</span>
+            </div>
+          </div>
           </div>
         </div>
 
@@ -630,190 +630,489 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
         <div className="flex-1 space-y-5">
           {/* Pipeline Status */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">Project Pipeline Status</h3>
-            <div className="flex items-center gap-3 overflow-x-auto pb-1">
-                {projectData.pipelineStatus.map((step, index) => (
-                  <div
-                    key={index}
-                    className="pipeline-step"
-                    style={{ backgroundColor: step.color }}
-                  >
-                    <span>{step.name}</span>
-                  </div>
-                ))}
-              </div>
+          <h3 className="text-sm font-bold text-gray-900 mb-4">Project Pipeline Status</h3>
+          <div className="flex items-center gap-3 overflow-x-auto pb-1">
+              {projectData.pipelineStatus.map((step, index) => (
+                <div
+                  key={index}
+                  className="pipeline-step"
+                  style={{ backgroundColor: step.color }}
+                >
+                  <span>{step.name}</span>
+                </div>
+              ))}
             </div>
+          </div>
 
           {/* Tabs Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="flex gap-8 px-6 border-b border-gray-200">
+          <div className="flex gap-8 px-6 border-b border-gray-200">
               {['Activities', 'Notes', 'Calls', 'Files', 'Email'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab.toLowerCase())}
-                  className={`py-3 text-sm font-medium transition-colors ${
-                    activeTab === tab.toLowerCase()
-                      ? 'text-red-500 border-b-2 border-red-500'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab.toLowerCase())}
+                className={`py-3 text-sm font-medium transition-colors ${
+                  activeTab === tab.toLowerCase()
+                    ? 'text-red-500 border-b-2 border-red-500'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
-            {/* Activities Content */}
-            <div className="p-5">
+          {/* Activities Content */}
+          <div className="p-5">
               {activeTab === 'activities' && (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-bold text-gray-900">Activities</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-bold text-gray-900">Activities</h3>
+                  <button className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md text-xs text-gray-700 hover:bg-gray-50 font-medium">
+                    Sort By
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </button>
+                </div>
+
+                {projectData.activities.map((dateGroup) => (
+                  <div key={dateGroup.id} className="space-y-2">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium" style={{ backgroundColor: '#e3ebff', color: '#3d5afe' }}>
+                      📅 {dateGroup.date}
+                    </div>
+                    
+                    {dateGroup.items.map((activity) => (
+                      <div key={activity.id} className="border border-gray-200 rounded-lg p-4 flex gap-3 hover:bg-gray-50 transition">
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                          style={{
+                            backgroundColor: activity.iconBg,
+                            color: activity.iconColor
+                          }}
+                        >
+                          {activity.icon}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-gray-900 text-sm font-medium">{activity.title}</p>
+                          {activity.description && (
+                            <p className="text-gray-600 text-xs mt-1">{activity.description}</p>
+                          )}
+                          <p className="text-gray-500 text-xs mt-1">{activity.timestamp}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium mt-4" style={{ backgroundColor: '#e3ebff', color: '#3d5afe' }}>
+                  📅 Upcoming Activity
+                </div>
+
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex gap-3 mb-4">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                      style={{
+                        backgroundColor: projectData.upcomingActivity.iconBg,
+                        color: projectData.upcomingActivity.iconColor
+                      }}
+                    >
+                      {projectData.upcomingActivity.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-gray-900 text-sm font-semibold">{projectData.upcomingActivity.title}</h4>
+                      <p className="text-gray-600 text-xs mt-1">{projectData.upcomingActivity.description}</p>
+                      <p className="text-gray-500 text-xs mt-1">{projectData.upcomingActivity.timestamp}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-gray-200">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Reminder <span className="text-red-500">*</span></label>
+                      <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
+                        <option>{projectData.upcomingActivity.reminder}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Task Priority <span className="text-red-500">*</span></label>
+                      <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
+                        <option>{projectData.upcomingActivity.priority}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Assigned To <span className="text-red-500">*</span></label>
+                      <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
+                        <option>{projectData.upcomingActivity.assignedTo}</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+              {activeTab === 'notes' && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-900">Notes</h3>
+                    <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
+                      {projectData.notes.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md text-xs text-gray-700 hover:bg-gray-50 font-medium">
                       Sort By
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                       </svg>
                     </button>
-                  </div>
-
-                  {projectData.activities.map((dateGroup) => (
-                    <div key={dateGroup.id} className="space-y-2">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium" style={{ backgroundColor: '#e3ebff', color: '#3d5afe' }}>
-                        📅 {dateGroup.date}
-                      </div>
-                      
-                      {dateGroup.items.map((activity) => (
-                        <div key={activity.id} className="border border-gray-200 rounded-lg p-4 flex gap-3 hover:bg-gray-50 transition">
-                          <div
-                            className="w-10 h-10 rounded-lg flex items-center justify-center text-base flex-shrink-0"
-                            style={{
-                              backgroundColor: activity.iconBg,
-                              color: activity.iconColor
-                            }}
-                          >
-                            {activity.icon}
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-gray-900 text-sm font-medium">{activity.title}</p>
-                            {activity.description && (
-                              <p className="text-gray-600 text-xs mt-1">{activity.description}</p>
-                            )}
-                            <p className="text-gray-500 text-xs mt-1">{activity.timestamp}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium mt-4" style={{ backgroundColor: '#e3ebff', color: '#3d5afe' }}>
-                    📅 Upcoming Activity
-                  </div>
-
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex gap-3 mb-4">
-                      <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-base flex-shrink-0"
-                        style={{
-                          backgroundColor: projectData.upcomingActivity.iconBg,
-                          color: projectData.upcomingActivity.iconColor
-                        }}
-                      >
-                        {projectData.upcomingActivity.icon}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="text-gray-900 text-sm font-semibold">{projectData.upcomingActivity.title}</h4>
-                        <p className="text-gray-600 text-xs mt-1">{projectData.upcomingActivity.description}</p>
-                        <p className="text-gray-500 text-xs mt-1">{projectData.upcomingActivity.timestamp}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-gray-200">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Reminder <span className="text-red-500">*</span></label>
-                        <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
-                          <option>{projectData.upcomingActivity.reminder}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Task Priority <span className="text-red-500">*</span></label>
-                        <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
-                          <option>{projectData.upcomingActivity.priority}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Assigned To <span className="text-red-500">*</span></label>
-                        <select className="w-full border border-gray-300 rounded-md h-9 px-2.5 text-xs text-gray-700">
-                          <option>{projectData.upcomingActivity.assignedTo}</option>
-                        </select>
-                      </div>
-                    </div>
+                    <button
+                      className="flex items-center gap-1.5 rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openAddNoteModal();
+                      }}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add New
+                    </button>
                   </div>
                 </div>
-              )}
 
-              {activeTab === 'notes' && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-gray-900">Notes</h3>
-                      <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
-                        {projectData.notes.length}
-                      </span>
+                {projectData.notes.map((note) => (
+                  <div key={note.id} className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white space-y-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-11 h-11 rounded-full text-white text-sm font-semibold flex items-center justify-center ${note.author.color}`}>
+                          {note.author.initials}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{note.author.name}</p>
+                          <p className="text-xs text-gray-500">{note.createdAt}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${note.badge.bg} ${note.badge.text}`}>
+                          {note.badge.label}
+                        </span>
+                        <button className="w-9 h-9 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button className="flex items-center gap-2 border border-gray-300 px-3 py-1.5 rounded-md text-xs text-gray-700 hover:bg-gray-50 font-medium">
-                        Sort By
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-gray-900">{note.title}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed">{note.description}</p>
+                    </div>
+
+                    {note.attachments && note.attachments.length > 0 && (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {note.attachments.map((file) => {
+                          const style = getFileBadgeStyle(file.type);
+                          return (
+                            <div key={file.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-[11px] font-semibold ${style.bg} ${style.text}`}>
+                                  {style.label}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900">{file.name}</p>
+                                  <p className="text-xs text-gray-500">{file.size}</p>
+                                </div>
+                              </div>
+                              <button className="w-8 h-8 rounded-md border border-gray-200 text-gray-500 hover:text-gray-700 bg-white flex items-center justify-center">
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {note.comments && note.comments.length > 0 && (
+                      <div className="space-y-3">
+                        {note.comments.map((comment) => (
+                          <div key={comment.id} className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3">
+                            <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
+                            {comment.meta && <p className="text-xs text-gray-500 mt-2">{comment.meta}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
+                      <button className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50">
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        Reply
                       </button>
-                      <button
-                        className="flex items-center gap-1.5 rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openAddNoteModal();
-                        }}
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add New
-                      </button>
+                      <button className="text-xs font-semibold text-red-500 hover:text-red-600">Add Comment</button>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
 
-                  {projectData.notes.map((note) => (
-                    <div key={note.id} className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white space-y-4">
+              {activeTab === 'calls' && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-sm font-bold text-gray-900">Calls</h3>
+                  <button
+                    className="flex items-center gap-1.5 rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openCreateCallModal();
+                    }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add New
+                  </button>
+                </div>
+
+                {callEntries.map((call) => {
+                  const statusStyle = getCallStatusStyle(call.status);
+                  return (
+                    <div key={call.id} className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white space-y-3">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className={`w-11 h-11 rounded-full text-white text-sm font-semibold flex items-center justify-center ${note.author.color}`}>
-                            {note.author.initials}
+                          <div className={`w-11 h-11 rounded-full text-white text-sm font-semibold flex items-center justify-center ${call.contact.color}`}>
+                            {call.contact.initials}
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">{note.author.name}</p>
-                            <p className="text-xs text-gray-500">{note.createdAt}</p>
+                            <p className="text-sm font-semibold text-gray-900">{call.contact.name}</p>
+                            <p className="text-xs text-gray-500">{call.meta}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${note.badge.bg} ${note.badge.text}`}>
-                            {note.badge.label}
-                          </span>
-                          <button className="w-9 h-9 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </button>
+                          <div className="relative" onClick={(event) => event.stopPropagation()}>
+                            <button
+                              onClick={(event) => toggleStatusDropdown(event, call.id)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-md border ${statusStyle.border} ${statusStyle.bg} ${statusStyle.text}`}
+                            >
+                              {statusStyle.label}
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                            {openStatusDropdown === call.id && (
+                              <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg py-1 z-20" onClick={(event) => event.stopPropagation()}>
+                                {callStatusOptions.map((option) => (
+                                  <button
+                                    key={option.value}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleStatusSelect(call.id, option.value);
+                                    }}
+                                    className={`w-full text-left px-4 py-2 text-xs font-medium transition ${
+                                      option.value === call.status ? 'text-red-500 bg-red-50' : 'text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    {option.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="relative" onClick={(event) => event.stopPropagation()}>
+                            <button
+                              className="w-9 h-9 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white"
+                              onClick={(event) => toggleActionDropdown(event, call.id)}
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                            {openActionDropdown === call.id && (
+                              <div className="absolute right-0 mt-2 w-32 rounded-lg border border-gray-200 bg-white shadow-lg py-1 z-20" onClick={(event) => event.stopPropagation()}>
+                                {callActionOptions.map((action) => {
+                                  const Icon = action.icon;
+                                  return (
+                                    <button
+                                      key={action.value}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        handleActionSelect(call.id, action.value);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                                    >
+                                      <Icon className="w-3.5 h-3.5" />
+                                      {action.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold text-gray-900">{note.title}</p>
-                        <p className="text-sm text-gray-600 leading-relaxed">{note.description}</p>
-                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed">{call.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
-                      {note.attachments && note.attachments.length > 0 && (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {note.attachments.map((file) => {
-                            const style = getFileBadgeStyle(file.type);
-                            return (
-                              <div key={file.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
-                                <div className="flex items-center gap-3">
+              {activeTab === 'files' && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-900">Files</h3>
+                    <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
+                      {projectData.files.items.length}
+                    </span>
+                  </div>
+                  <button
+                    className="rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openCreateDocumentModal();
+                    }}
+                  >
+                    Create Document
+                  </button>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">{projectData.files.summary.title}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{projectData.files.summary.description}</p>
+                    </div>
+                    <button
+                      className="inline-flex items-center justify-center rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600 md:self-start"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openCreateDocumentModal();
+                      }}
+                    >
+                      {projectData.files.summary.actionLabel}
+                    </button>
+                  </div>
+                </div>
+
+                {projectData.files.items.map((file) => (
+                  <div key={file.id} className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-900">{file.title}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{file.description}</p>
+                        </div>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <div className={`w-11 h-11 rounded-full text-white text-sm font-semibold flex items-center justify-center ${file.owner.color}`}>
+                            {file.owner.initials}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-gray-900">{file.owner.name}</p>
+                            <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
+                              {file.owner.role}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        {file.badges.map((badge) => (
+                          <span
+                            key={badge.id}
+                            className={`px-3 py-1 text-[11px] font-semibold rounded-md ${badge.bg} ${badge.text} ${badge.border}`}
+                          >
+                            {badge.label}
+                          </span>
+                        ))}
+                        <button className="w-9 h-9 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+              {activeTab === 'email' && (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-gray-900">Email</h3>
+                    <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
+                      {projectData.emails.threads.length}
+                    </span>
+                  </div>
+                  <button className="flex items-center gap-1.5 rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600">
+                    <Plus className="w-4 h-4" />
+                    Create Email
+                  </button>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 bg-white shadow-sm p-5">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900">{projectData.emails.summary.title}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{projectData.emails.summary.description}</p>
+                      <p className="text-xs text-gray-500 mt-2">{projectData.emails.summary.helper}</p>
+                    </div>
+                    <button className="inline-flex items-center justify-center rounded-md bg-green-600 text-white px-5 py-2 text-xs font-semibold hover:bg-green-700">
+                      {projectData.emails.summary.actionLabel}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {projectData.emails.threads.map((thread) => {
+                    const statusStyle = getEmailStatusStyle(thread.status);
+                    return (
+                      <div key={thread.id} className="rounded-lg border border-gray-200 bg-white shadow-sm p-5 space-y-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-11 h-11 rounded-full text-white text-sm font-semibold flex items-center justify-center ${thread.sender.color}`}>
+                              {thread.sender.initials}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">{thread.sender.name}</p>
+                              <p className="text-xs text-gray-500">{thread.sender.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 justify-end">
+                            {thread.badges &&
+                              thread.badges.map((badge) => (
+                                <span key={badge.id} className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${badge.bg} ${badge.text}`}>
+                                  {badge.label}
+                                </span>
+                              ))}
+                            <span className={`px-3 py-1 text-[11px] font-semibold rounded-md border ${statusStyle.border} ${statusStyle.bg} ${statusStyle.text}`}>
+                              {statusStyle.label}
+                            </span>
+                            <span className="text-xs text-gray-500">{thread.timestamp}</span>
+                            <button className="w-9 h-9 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-base font-semibold text-gray-900">{thread.subject}</h4>
+                          <p className="text-sm text-gray-600 mt-1 leading-relaxed">{thread.snippet}</p>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-3">
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">To</p>
+                            <p className="text-sm font-medium text-gray-900">{thread.to.join(', ')}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cc</p>
+                            <p className="text-sm font-medium text-gray-900">{thread.cc && thread.cc.length ? thread.cc.join(', ') : '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sent On</p>
+                            <p className="text-sm font-medium text-gray-900">{thread.timestamp}</p>
+                          </div>
+                        </div>
+
+                        {thread.attachments && thread.attachments.length > 0 && (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {thread.attachments.map((file) => {
+                              const style = getFileBadgeStyle(file.type);
+                              return (
+                                <div key={file.id} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
                                   <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-[11px] font-semibold ${style.bg} ${style.text}`}>
                                     {style.label}
                                   </div>
@@ -822,329 +1121,30 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                                     <p className="text-xs text-gray-500">{file.size}</p>
                                   </div>
                                 </div>
-                                <button className="w-8 h-8 rounded-md border border-gray-200 text-gray-500 hover:text-gray-700 bg-white flex items-center justify-center">
-                                  <Plus className="w-4 h-4" />
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {note.comments && note.comments.length > 0 && (
-                        <div className="space-y-3">
-                          {note.comments.map((comment) => (
-                            <div key={comment.id} className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3">
-                              <p className="text-sm text-gray-700 leading-relaxed">{comment.text}</p>
-                              {comment.meta && <p className="text-xs text-gray-500 mt-2">{comment.meta}</p>}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
-                        <button className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50">
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          Reply
-                        </button>
-                        <button className="text-xs font-semibold text-red-500 hover:text-red-600">Add Comment</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {activeTab === 'calls' && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h3 className="text-sm font-bold text-gray-900">Calls</h3>
-                    <button
-                      className="flex items-center gap-1.5 rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openCreateCallModal();
-                      }}
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add New
-                    </button>
-                  </div>
-
-                  {callEntries.map((call) => {
-                    const statusStyle = getCallStatusStyle(call.status);
-                    return (
-                      <div key={call.id} className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white space-y-3">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-11 h-11 rounded-full text-white text-sm font-semibold flex items-center justify-center ${call.contact.color}`}>
-                              {call.contact.initials}
-                            </div>
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900">{call.contact.name}</p>
-                              <p className="text-xs text-gray-500">{call.meta}</p>
-                            </div>
+                              );
+                            })}
                           </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
                           <div className="flex items-center gap-2">
-                            <div className="relative" onClick={(event) => event.stopPropagation()}>
-                              <button
-                                onClick={(event) => toggleStatusDropdown(event, call.id)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-md border ${statusStyle.border} ${statusStyle.bg} ${statusStyle.text}`}
-                              >
-                                {statusStyle.label}
-                                <ChevronDown className="w-3 h-3" />
-                              </button>
-                              {openStatusDropdown === call.id && (
-                                <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg py-1 z-20" onClick={(event) => event.stopPropagation()}>
-                                  {callStatusOptions.map((option) => (
-                                    <button
-                                      key={option.value}
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        handleStatusSelect(call.id, option.value);
-                                      }}
-                                      className={`w-full text-left px-4 py-2 text-xs font-medium transition ${
-                                        option.value === call.status ? 'text-red-500 bg-red-50' : 'text-gray-700 hover:bg-gray-50'
-                                      }`}
-                                    >
-                                      {option.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <div className="relative" onClick={(event) => event.stopPropagation()}>
-                              <button
-                                className="w-9 h-9 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white"
-                                onClick={(event) => toggleActionDropdown(event, call.id)}
-                              >
-                                <MoreHorizontal className="w-4 h-4" />
-                              </button>
-                              {openActionDropdown === call.id && (
-                                <div className="absolute right-0 mt-2 w-32 rounded-lg border border-gray-200 bg-white shadow-lg py-1 z-20" onClick={(event) => event.stopPropagation()}>
-                                  {callActionOptions.map((action) => {
-                                    const Icon = action.icon;
-                                    return (
-                                      <button
-                                        key={action.value}
-                                        onClick={(event) => {
-                                          event.stopPropagation();
-                                          handleActionSelect(call.id, action.value);
-                                        }}
-                                        className="w-full flex items-center gap-2 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                                      >
-                                        <Icon className="w-3.5 h-3.5" />
-                                        {action.label}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
+                            <button className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50">
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              Reply
+                            </button>
+                            <button className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50">
+                              Forward
+                            </button>
                           </div>
+                          <button className="text-xs font-semibold text-red-500 hover:text-red-600">View Thread</button>
                         </div>
-
-                        <p className="text-sm text-gray-600 leading-relaxed">{call.description}</p>
                       </div>
                     );
                   })}
                 </div>
-              )}
-
-              {activeTab === 'files' && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-gray-900">Files</h3>
-                      <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
-                        {projectData.files.items.length}
-                      </span>
-                    </div>
-                    <button
-                      className="rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openCreateDocumentModal();
-                      }}
-                    >
-                      Create Document
-                    </button>
-                  </div>
-
-                  <div className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900">{projectData.files.summary.title}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{projectData.files.summary.description}</p>
-                      </div>
-                      <button
-                        className="inline-flex items-center justify-center rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600 md:self-start"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          openCreateDocumentModal();
-                        }}
-                      >
-                        {projectData.files.summary.actionLabel}
-                      </button>
-                    </div>
-                  </div>
-
-                  {projectData.files.items.map((file) => (
-                    <div key={file.id} className="rounded-lg border border-gray-200 shadow-sm p-5 bg-white">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div className="space-y-3">
-                          <div>
-                            <h4 className="text-sm font-semibold text-gray-900">{file.title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{file.description}</p>
-                          </div>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <div className={`w-11 h-11 rounded-full text-white text-sm font-semibold flex items-center justify-center ${file.owner.color}`}>
-                              {file.owner.initials}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold text-gray-900">{file.owner.name}</p>
-                              <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
-                                {file.owner.role}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap justify-end">
-                          {file.badges.map((badge) => (
-                            <span
-                              key={badge.id}
-                              className={`px-3 py-1 text-[11px] font-semibold rounded-md ${badge.bg} ${badge.text} ${badge.border}`}
-                            >
-                              {badge.label}
-                            </span>
-                          ))}
-                          <button className="w-9 h-9 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {activeTab === 'email' && (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-gray-900">Email</h3>
-                      <span className="px-2 py-0.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-md">
-                        {projectData.emails.threads.length}
-                      </span>
-                    </div>
-                    <button className="flex items-center gap-1.5 rounded-md bg-red-500 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600">
-                      <Plus className="w-4 h-4" />
-                      Create Email
-                    </button>
-                  </div>
-
-                  <div className="rounded-lg border border-gray-200 bg-white shadow-sm p-5">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900">{projectData.emails.summary.title}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{projectData.emails.summary.description}</p>
-                        <p className="text-xs text-gray-500 mt-2">{projectData.emails.summary.helper}</p>
-                      </div>
-                      <button className="inline-flex items-center justify-center rounded-md bg-green-600 text-white px-5 py-2 text-xs font-semibold hover:bg-green-700">
-                        {projectData.emails.summary.actionLabel}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    {projectData.emails.threads.map((thread) => {
-                      const statusStyle = getEmailStatusStyle(thread.status);
-                      return (
-                        <div key={thread.id} className="rounded-lg border border-gray-200 bg-white shadow-sm p-5 space-y-4">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-11 h-11 rounded-full text-white text-sm font-semibold flex items-center justify-center ${thread.sender.color}`}>
-                                {thread.sender.initials}
-                              </div>
-                              <div>
-                                <p className="text-sm font-semibold text-gray-900">{thread.sender.name}</p>
-                                <p className="text-xs text-gray-500">{thread.sender.email}</p>
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 justify-end">
-                              {thread.badges &&
-                                thread.badges.map((badge) => (
-                                  <span key={badge.id} className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${badge.bg} ${badge.text}`}>
-                                    {badge.label}
-                                  </span>
-                                ))}
-                              <span className={`px-3 py-1 text-[11px] font-semibold rounded-md border ${statusStyle.border} ${statusStyle.bg} ${statusStyle.text}`}>
-                                {statusStyle.label}
-                              </span>
-                              <span className="text-xs text-gray-500">{thread.timestamp}</span>
-                              <button className="w-9 h-9 rounded-md border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 bg-white">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-
-                          <div>
-                            <h4 className="text-base font-semibold text-gray-900">{thread.subject}</h4>
-                            <p className="text-sm text-gray-600 mt-1 leading-relaxed">{thread.snippet}</p>
-                          </div>
-
-                          <div className="grid gap-3 md:grid-cols-3">
-                            <div>
-                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">To</p>
-                              <p className="text-sm font-medium text-gray-900">{thread.to.join(', ')}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Cc</p>
-                              <p className="text-sm font-medium text-gray-900">{thread.cc && thread.cc.length ? thread.cc.join(', ') : '—'}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sent On</p>
-                              <p className="text-sm font-medium text-gray-900">{thread.timestamp}</p>
-                            </div>
-                          </div>
-
-                          {thread.attachments && thread.attachments.length > 0 && (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              {thread.attachments.map((file) => {
-                                const style = getFileBadgeStyle(file.type);
-                                return (
-                                  <div key={file.id} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
-                                    <div className={`w-11 h-11 rounded-lg flex items-center justify-center text-[11px] font-semibold ${style.bg} ${style.text}`}>
-                                      {style.label}
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-semibold text-gray-900">{file.name}</p>
-                                      <p className="text-xs text-gray-500">{file.size}</p>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
-                            <div className="flex items-center gap-2">
-                              <button className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50">
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                Reply
-                              </button>
-                              <button className="flex items-center gap-2 border border-gray-200 rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50">
-                                Forward
-                              </button>
-                            </div>
-                            <button className="text-xs font-semibold text-red-500 hover:text-red-600">View Thread</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
           </div>
         </div>
       </div>
@@ -1153,187 +1153,124 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 sm:px-6">
           <div className="absolute inset-0 bg-black/40" onClick={closeCreateDocumentModal}></div>
           <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Create New File</h3>
-              <button
-                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700"
-                onClick={closeCreateDocumentModal}
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Create New File</h3>
+            <button
+              className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700"
+              onClick={closeCreateDocumentModal}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="px-6 py-5 overflow-y-auto">
+            <div className="flex flex-wrap gap-3 mb-6">
+              {projectData.documentForm.tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-all ${
+                    documentTab === tab.id
+                      ? 'bg-red-500 text-white border-red-500 shadow-md'
+                      : 'bg-gray-50 text-gray-600 border-gray-200'
+                  }`}
+                  onClick={() => setDocumentTab(tab.id)}
+                >
+                  <span>{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
             </div>
-            <div className="px-6 py-5 overflow-y-auto">
-              <div className="flex flex-wrap gap-3 mb-6">
-                {projectData.documentForm.tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-full border transition-all ${
-                      documentTab === tab.id
-                        ? 'bg-red-500 text-white border-red-500 shadow-md'
-                        : 'bg-gray-50 text-gray-600 border-gray-200'
-                    }`}
-                    onClick={() => setDocumentTab(tab.id)}
-                  >
-                    <span>{tab.icon}</span>
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
 
               {documentTab === 'basic' && (
-                <div className="space-y-5">
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Deal <span className="text-red-500">*</span>
+                  </label>
+                  <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                    <option value="">Select</option>
+                    {projectData.documentForm.deals.map((deal) => (
+                      <option key={deal} value={deal}>
+                        {deal}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Deal <span className="text-red-500">*</span>
+                      Document Type <span className="text-red-500">*</span>
                     </label>
                     <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
                       <option value="">Select</option>
-                      {projectData.documentForm.deals.map((deal) => (
-                        <option key={deal} value={deal}>
-                          {deal}
+                      {projectData.documentForm.documentTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
                         </option>
                       ))}
                     </select>
                   </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">
-                        Document Type <span className="text-red-500">*</span>
-                      </label>
-                      <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                        <option value="">Select</option>
-                        {projectData.documentForm.documentTypes.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">
-                        Owner <span className="text-red-500">*</span>
-                      </label>
-                      <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                        <option value="">Select</option>
-                        {projectData.documentForm.owners.map((owner) => (
-                          <option key={owner} value={owner}>
-                            {owner}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Title <span className="text-red-500">*</span>
+                      Owner <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                      placeholder="Enter Title"
-                    />
-                  </div>
-                  <div className="border border-gray-200 rounded-2xl bg-gray-50 p-5 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-gray-900">Signature</h4>
-                      <span className="text-xs text-red-500 font-semibold">Required</span>
-                    </div>
-                    <div className="space-y-3">
-                      {projectData.documentForm.signatureOptions.map((option) => (
-                        <label
-                          key={option.id}
-                          className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition ${
-                            selectedSignature === option.value
-                              ? 'bg-white border-red-200 shadow-sm'
-                              : 'border-gray-200'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            className="sr-only"
-                            name="signature"
-                            value={option.value}
-                            checked={selectedSignature === option.value}
-                            onChange={() => setSelectedSignature(option.value)}
-                          />
-                          <span
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center mt-1 ${
-                              selectedSignature === option.value ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                          >
-                            {selectedSignature === option.value && <span className="w-2 h-2 bg-red-500 rounded-full"></span>}
-                          </span>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">{option.title}</p>
-                            <p className="text-xs text-gray-600">{option.description}</p>
-                          </div>
-                        </label>
+                    <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                      <option value="">Select</option>
+                      {projectData.documentForm.owners.map((owner) => (
+                        <option key={owner} value={owner}>
+                          {owner}
+                        </option>
                       ))}
-                    </div>
-                    {selectedSignature === 'eSign' && (
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 mb-1">
-                            {projectData.documentForm.recipientFields[0].label} <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                            placeholder={projectData.documentForm.recipientFields[0].placeholder}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-700 mb-1">
-                            {projectData.documentForm.recipientFields[1].label} <span className="text-red-500">*</span>
-                          </label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              className="flex-1 border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                              placeholder={projectData.documentForm.recipientFields[1].placeholder}
-                            />
-                            <button className="w-11 h-11 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 bg-white flex items-center justify-center">
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Content <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      rows="3"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                      placeholder={projectData.documentForm.contentPlaceholder}
-                    ></textarea>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 pt-4">
-                    <button
-                      className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                      onClick={closeCreateDocumentModal}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600"
-                      onClick={() => setDocumentTab('recipient')}
-                    >
-                      Next
-                    </button>
+                    </select>
                   </div>
                 </div>
-              )}
-
-              {documentTab === 'recipient' && (
-                <div className="space-y-5">
-                  <div className="border border-gray-200 rounded-2xl bg-gray-50 p-5 space-y-4">
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-900">Send the document to following signers</h4>
-                      <p className="text-xs text-gray-600">In order to send the document to the signers</p>
-                    </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    placeholder="Enter Title"
+                  />
+                </div>
+                <div className="border border-gray-200 rounded-2xl bg-gray-50 p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-gray-900">Signature</h4>
+                    <span className="text-xs text-red-500 font-semibold">Required</span>
+                  </div>
+                  <div className="space-y-3">
+                    {projectData.documentForm.signatureOptions.map((option) => (
+                      <label
+                        key={option.id}
+                        className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition ${
+                          selectedSignature === option.value
+                            ? 'bg-white border-red-200 shadow-sm'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          name="signature"
+                          value={option.value}
+                          checked={selectedSignature === option.value}
+                          onChange={() => setSelectedSignature(option.value)}
+                        />
+                        <span
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center mt-1 ${
+                            selectedSignature === option.value ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        >
+                          {selectedSignature === option.value && <span className="w-2 h-2 bg-red-500 rounded-full"></span>}
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{option.title}</p>
+                          <p className="text-xs text-gray-600">{option.description}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedSignature === 'eSign' && (
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -1361,57 +1298,120 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
                         </div>
                       </div>
                     </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Content <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    rows="3"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    placeholder={projectData.documentForm.contentPlaceholder}
+                  ></textarea>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 pt-4">
+                  <button
+                    className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                    onClick={closeCreateDocumentModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600"
+                    onClick={() => setDocumentTab('recipient')}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+
+              {documentTab === 'recipient' && (
+              <div className="space-y-5">
+                <div className="border border-gray-200 rounded-2xl bg-gray-50 p-5 space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900">Send the document to following signers</h4>
+                    <p className="text-xs text-gray-600">In order to send the document to the signers</p>
                   </div>
-                  <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-1">
-                        Message Subject <span className="text-red-500">*</span>
+                        {projectData.documentForm.recipientFields[0].label} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                        placeholder={projectData.documentForm.messageTemplate.subjectPlaceholder}
-                        defaultValue={projectData.documentForm.messageTemplate.subjectValue}
+                        placeholder={projectData.documentForm.recipientFields[0].placeholder}
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-700 mb-1">
-                        Message Text <span className="text-red-500">*</span>
+                        {projectData.documentForm.recipientFields[1].label} <span className="text-red-500">*</span>
                       </label>
-                      <textarea
-                        rows="3"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                        placeholder={projectData.documentForm.messageTemplate.bodyPlaceholder}
-                        defaultValue={projectData.documentForm.messageTemplate.bodyValue}
-                      ></textarea>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          className="flex-1 border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder={projectData.documentForm.recipientFields[1].placeholder}
+                        />
+                        <button className="w-11 h-11 rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 bg-white flex items-center justify-center">
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <button className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100">
-                      Send Now
-                    </button>
-                    <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                      <p className="flex items-start gap-2">
-                        <span className="text-base">✔</span>
-                        Document sent successfully to the selected recipients
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 pt-4">
-                    <button
-                      className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                      onClick={closeCreateDocumentModal}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600"
-                      onClick={closeCreateDocumentModal}
-                    >
-                      Save & Next
-                    </button>
                   </div>
                 </div>
-              )}
-            </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Message Subject <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      placeholder={projectData.documentForm.messageTemplate.subjectPlaceholder}
+                      defaultValue={projectData.documentForm.messageTemplate.subjectValue}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      Message Text <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      rows="3"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                      placeholder={projectData.documentForm.messageTemplate.bodyPlaceholder}
+                      defaultValue={projectData.documentForm.messageTemplate.bodyValue}
+                    ></textarea>
+                  </div>
+                  <button className="inline-flex items-center justify-center px-5 py-2 text-sm font-semibold text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100">
+                    Send Now
+                  </button>
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    <p className="flex items-start gap-2">
+                      <span className="text-base">✔</span>
+                      Document sent successfully to the selected recipients
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 pt-4">
+                  <button
+                    className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                    onClick={closeCreateDocumentModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600"
+                    onClick={closeCreateDocumentModal}
+                  >
+                    Save & Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           </div>
         </div>
       )}
@@ -1420,92 +1420,92 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 sm:px-6">
           <div className="absolute inset-0 bg-black/40" onClick={closeAddNoteModal}></div>
           <div className="relative w-full max-w-2xl bg-white rounded-[28px] shadow-[0_32px_90px_rgba(15,23,42,0.18)] overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Add New Notes</h3>
-              <button
-                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700"
-                onClick={closeAddNoteModal}
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900">Add New Notes</h3>
+            <button
+              className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700"
+              onClick={closeAddNoteModal}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="px-7 py-6 overflow-y-auto space-y-6">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
+                {projectData.noteForm.titleLabel} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                placeholder={projectData.noteForm.titlePlaceholder}
+                className="w-full border border-gray-200 rounded-2xl h-12 px-4 text-sm text-gray-800 bg-white shadow-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
+              />
             </div>
-            <div className="px-7 py-6 overflow-y-auto space-y-6">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  {projectData.noteForm.titleLabel} <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder={projectData.noteForm.titlePlaceholder}
-                  className="w-full border border-gray-200 rounded-2xl h-12 px-4 text-sm text-gray-800 bg-white shadow-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  {projectData.noteForm.noteLabel} <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  rows="4"
-                  placeholder={projectData.noteForm.notePlaceholder}
-                  className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-800 bg-white shadow-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
-                ></textarea>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-2">
-                  {projectData.noteForm.attachmentLabel} <span className="text-red-500">*</span>
-                </label>
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center flex flex-col items-center gap-3 shadow-[0_24px_65px_rgba(15,23,42,0.08)]">
-                  <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
-                    <FolderOpen className="w-6 h-6 text-red-500" />
-                  </div>
-                  <p className="text-sm text-gray-700">
-                    {projectData.noteForm.dropInfo.text}{' '}
-                    <label htmlFor="note-attachment-upload" className="text-red-500 font-semibold cursor-pointer">
-                      {projectData.noteForm.dropInfo.action}
-                    </label>
-                  </p>
-                  <input id="note-attachment-upload" type="file" className="sr-only" />
-                  <p className="text-xs text-gray-500">{projectData.noteForm.helperText}</p>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
+                {projectData.noteForm.noteLabel} <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows="4"
+                placeholder={projectData.noteForm.notePlaceholder}
+                className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm text-gray-800 bg-white shadow-sm focus:ring-2 focus:ring-red-100 focus:border-red-500"
+              ></textarea>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-2">
+                {projectData.noteForm.attachmentLabel} <span className="text-red-500">*</span>
+              </label>
+              <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center flex flex-col items-center gap-3 shadow-[0_24px_65px_rgba(15,23,42,0.08)]">
+                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+                  <FolderOpen className="w-6 h-6 text-red-500" />
                 </div>
+                <p className="text-sm text-gray-700">
+                  {projectData.noteForm.dropInfo.text}{' '}
+                  <label htmlFor="note-attachment-upload" className="text-red-500 font-semibold cursor-pointer">
+                    {projectData.noteForm.dropInfo.action}
+                  </label>
+                </p>
+                <input id="note-attachment-upload" type="file" className="sr-only" />
+                <p className="text-xs text-gray-500">{projectData.noteForm.helperText}</p>
               </div>
+            </div>
               {projectData.noteForm.attachments && projectData.noteForm.attachments.length > 0 && (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {projectData.noteForm.attachments.map((attachment) => {
-                    const badge = getFileBadgeStyle(attachment.type);
-                    return (
-                      <div key={attachment.id} className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-[0_22px_70px_rgba(15,23,42,0.1)]">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-[11px] font-semibold ${badge.bg} ${badge.text}`}>
-                            {badge.label}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">{attachment.name}</p>
-                            <p className="text-xs text-gray-500">{attachment.size}</p>
-                          </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {projectData.noteForm.attachments.map((attachment) => {
+                  const badge = getFileBadgeStyle(attachment.type);
+                  return (
+                    <div key={attachment.id} className="flex items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-[0_22px_70px_rgba(15,23,42,0.1)]">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-[11px] font-semibold ${badge.bg} ${badge.text}`}>
+                          {badge.label}
                         </div>
-                        <button className="w-9 h-9 rounded-full border border-gray-200 text-gray-500 hover:text-red-500 flex items-center justify-center">
-                          <X className="w-4 h-4" />
-                        </button>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{attachment.name}</p>
+                          <p className="text-xs text-gray-500">{attachment.size}</p>
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-7 py-5">
-              <button
-                className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                onClick={closeAddNoteModal}
-              >
-                {projectData.noteForm.buttons.cancel}
-              </button>
-              <button
-                className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600"
-                onClick={closeAddNoteModal}
-              >
-                {projectData.noteForm.buttons.confirm}
-              </button>
-            </div>
+                      <button className="w-9 h-9 rounded-full border border-gray-200 text-gray-500 hover:text-red-500 flex items-center justify-center">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-7 py-5">
+            <button
+              className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              onClick={closeAddNoteModal}
+            >
+              {projectData.noteForm.buttons.cancel}
+            </button>
+            <button
+              className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600"
+              onClick={closeAddNoteModal}
+            >
+              {projectData.noteForm.buttons.confirm}
+            </button>
+          </div>
           </div>
         </div>
       )}
@@ -1514,67 +1514,67 @@ const ProjectDetailsPage = ({ projectId, onBack }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 sm:px-6">
           <div className="absolute inset-0 bg-black/40" onClick={closeCreateCallModal}></div>
           <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Create Call Log</h3>
-              <button
-                className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700"
-                onClick={closeCreateCallModal}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="px-6 py-5 space-y-5">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Status <span className="text-red-500">*</span>
-                </label>
-                <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                  {projectData.callForm.statusOptions.map((status) => (
-                    <option key={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Follow Up Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  defaultValue={projectData.callForm.followUpDate}
-                  className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Note <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  rows="4"
-                  placeholder={projectData.callForm.notePlaceholder}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                ></textarea>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-gray-700 font-medium">
-                <input
-                  type="checkbox"
-                  checked={isFollowUpTask}
-                  onChange={(event) => setIsFollowUpTask(event.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
-                />
-                {projectData.callForm.followUpLabel}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Create Call Log</h3>
+            <button
+              className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700"
+              onClick={closeCreateCallModal}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="px-6 py-5 space-y-5">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Status <span className="text-red-500">*</span>
               </label>
+              <select className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                {projectData.callForm.statusOptions.map((status) => (
+                  <option key={status}>{status}</option>
+                ))}
+              </select>
             </div>
-            <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
-              <button
-                className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                onClick={closeCreateCallModal}
-              >
-                Cancel
-              </button>
-              <button className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600" onClick={closeCreateCallModal}>
-                Create New
-              </button>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Follow Up Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                defaultValue={projectData.callForm.followUpDate}
+                className="w-full border border-gray-300 rounded-lg h-11 px-3 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              />
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Note <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows="4"
+                placeholder={projectData.callForm.notePlaceholder}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              ></textarea>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+              <input
+                type="checkbox"
+                checked={isFollowUpTask}
+                onChange={(event) => setIsFollowUpTask(event.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+              />
+              {projectData.callForm.followUpLabel}
+            </label>
+          </div>
+          <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4">
+            <button
+              className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+              onClick={closeCreateCallModal}
+            >
+              Cancel
+            </button>
+            <button className="px-5 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600" onClick={closeCreateCallModal}>
+              Create New
+            </button>
+          </div>
           </div>
         </div>
       )}

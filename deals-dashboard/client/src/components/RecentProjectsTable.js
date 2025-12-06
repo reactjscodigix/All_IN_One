@@ -51,39 +51,46 @@ const RecentProjectsTable = ({ projects, onDateRangeChange, onAddProject, onView
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-border-light">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Name</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Company Name</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Priority</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Due Date</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 w-1/3">Name</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 w-1/4">Company</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 w-1/4">Priority</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 w-1/6">Due Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-light">
             {projects.slice(0, 5).map((project) => (
               <tr key={project.id} className="hover:bg-gray-50 transition-colors">
-                <td className="p-3 text-xs font-medium text-gray-900">
+                <td className="px-4 py-3 text-sm font-medium text-gray-900 truncate">
                   <button
                     type="button"
                     onClick={() => onViewProjectDetails && onViewProjectDetails(project.id)}
-                    className="text-blue-600 hover:text-blue-700 hover:underline"
+                    className="text-blue-600 hover:text-blue-700 hover:underline truncate"
+                    title={project.name}
                   >
-                    {project.name}
+                    {project.name || '-'}
                   </button>
                 </td>
-                <td className="p-3 text-xs font-medium text-gray-900">
-                  <button
-                    type="button"
-                    onClick={() => onViewCompanyDetails && onViewCompanyDetails(project.company)}
-                    className="text-red-600 hover:text-red-700 font-semibold"
-                  >
-                    {project.company}
-                  </button>
+                <td className="px-4 py-3 text-sm font-medium">
+                  {project.company ? (
+                    <button
+                      type="button"
+                      onClick={() => onViewCompanyDetails && onViewCompanyDetails(project.company)}
+                      className="inline-flex items-center gap-2 px-2 py-1 rounded bg-orange-50 text-orange-700 hover:bg-orange-100 transition-colors truncate"
+                      title={project.company}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></span>
+                      <span className="truncate">{project.company}</span>
+                    </button>
+                  ) : (
+                    <span className="text-gray-400 italic">-</span>
+                  )}
                 </td>
-                <td className="p-3 text-xs">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
-                    ● {project.priority}
+                <td className="px-4 py-3 text-sm">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityColor(project.priority)}`}>
+                    {project.priority}
                   </span>
                 </td>
-                <td className="p-3 text-xs text-gray-600">{formatDate(project.dueDate)}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{formatDate(project.dueDate)}</td>
               </tr>
             ))}
           </tbody>

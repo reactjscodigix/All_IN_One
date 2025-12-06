@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, RotateCcw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
-import projectsData from '../data/projectsData.json';
-import companiesData from '../data/companiesData.json';
+import { projectAPI, leadsAPI, dealsAPI, companiesAPI } from '../services/api';
 import RecentProjectsTable from './RecentProjectsTable';
 import ProjectByStageChart from './ProjectByStageChart';
 import ProjectsByStageChart from './ProjectsByStageChart';
 import LeadsByStageChart from './LeadsByStageChart';
 import WonDealsChart from './WonDealsChart';
+import ProjectKPISummary from './ProjectKPISummary';
 
 const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const calendarPresets = ['Today', 'Yesterday', 'Last 7 Days', 'Last 15 Days', 'Last 30 Days', 'This Month', 'Last Month', 'Custom Range'];
@@ -92,6 +92,9 @@ const formatReadableRange = (range) => {
 
 const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
   const [projects, setProjects] = useState([]);
+  const [leads, setLeads] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(() => normalizeRange(getPresetRange('Last 30 Days')));
   const [pendingRange, setPendingRange] = useState(() => normalizeRange(getPresetRange('Last 30 Days')));
@@ -102,15 +105,72 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    fetchAllData();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchProjects = async () => {
+  const transformProject = (project) => ({
+    id: project.id,
+    name: project.name || project.title || '',
+    company: project.company_name || '',
+    priority: 'Medium',
+    dueDate: project.due_date ? new Date(project.due_date).toISOString().split('T')[0] : '',
+    stage: project.status || '',
+    status: project.status || '',
+    budget: project.budget || 0,
+    description: project.description || '',
+    createdAt: project.created_at ? new Date(project.created_at).toISOString().split('T')[0] : '',
+  });
+
+  const transformLead = (lead) => ({
+    id: lead.id,
+    name: lead.name || '',
+    email: lead.email || '',
+    phone: lead.phone || '',
+    company: lead.company || '',
+    source: lead.source || '',
+    status: lead.status || '',
+    rating: lead.rating || 0,
+    createdAt: lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : '',
+  });
+
+  const transformDeal = (deal) => ({
+    id: deal.id,
+    name: deal.deal_name || '',
+    company: deal.company_name || '',
+    contact: deal.first_name && deal.last_name ? `${deal.first_name} ${deal.last_name}` : deal.first_name || '',
+    stage: deal.stage || '',
+    value: parseFloat(deal.deal_value) || 0,
+    status: deal.status || '',
+    probability: deal.probability || 0,
+    createdAt: deal.created_at ? new Date(deal.created_at).toISOString().split('T')[0] : '',
+    expectedCloseDate: deal.expected_close_date ? new Date(deal.expected_close_date).toISOString().split('T')[0] : '',
+  });
+
+  const fetchAllData = async () => {
     try {
       setLoading(true);
-      setProjects(projectsData.projects);
+      const [projectsRes, leadsRes, dealsRes, companiesRes] = await Promise.all([
+        projectAPI.getAll().catch(() => []),
+        leadsAPI.getAll().catch(() => []),
+        dealsAPI.getAll().catch(() => []),
+        companiesAPI.getAll().catch(() => []),
+      ]);
+
+      const transformedProjects = Array.isArray(projectsRes) ? projectsRes.map(transformProject) : [];
+      const transformedLeads = Array.isArray(leadsRes) ? leadsRes.map(transformLead) : [];
+      const transformedDeals = Array.isArray(dealsRes) ? dealsRes.map(transformDeal) : [];
+      const transformedCompanies = Array.isArray(companiesRes) ? companiesRes : [];
+
+      setProjects(transformedProjects);
+      setLeads(transformedLeads);
+      setDeals(transformedDeals);
+      setCompanies(transformedCompanies);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch data:', err);
+      setProjects([]);
+      setLeads([]);
+      setDeals([]);
+      setCompanies([]);
     } finally {
       setLoading(false);
     }
@@ -136,7 +196,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
     if (!companyName || !onViewCompanyDetails) {
       return;
     }
-    const companyRecord = companiesData.companies.find((company) => company.name === companyName);
+    const companyRecord = companies.find((company) => company.name === companyName);
     onViewCompanyDetails(companyRecord || { name: companyName });
   };
 
@@ -223,7 +283,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
   };
 
   const handleRefresh = () => {
-    fetchProjects();
+    fetchAllData();
   };
 
   const handleExport = () => {
@@ -365,7 +425,9 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
+      <ProjectKPISummary projects={projects} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="chart-container transition-smooth">
           <RecentProjectsTable
             projects={projects}
@@ -379,22 +441,21 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
           <ProjectByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
         </div>
       </div>
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6" >
-<div className="grid grid-cols-1 gap-2 mb-6">
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <div className="chart-container transition-smooth">
           <ProjectsByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
         </div>
-      </div>
-       <div className="grid grid-cols-1 lg:grid-cols-1 gap-2 mb-6">
         <div className="chart-container transition-smooth">
-          <LeadsByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
-        </div>
-        <div className="chart-container transition-smooth">
-          <WonDealsChart deals={projects} onDateRangeChange={handleDateRangeChange} />
+          <LeadsByStageChart leads={leads} onDateRangeChange={handleDateRangeChange} />
         </div>
       </div>
 
-</div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <div className="chart-container transition-smooth">
+          <WonDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
+        </div>
+      </div>
       
 
      

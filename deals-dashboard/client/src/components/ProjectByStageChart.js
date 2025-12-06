@@ -5,8 +5,14 @@ import DateRangeDropdown from './DateRangeDropdown';
 const ProjectByStageChart = ({ projects, onDateRangeChange }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Last 30 Days');
 
-  const chartData = [44, 55, 41, 17];
-  const labels = ['Campaigns', 'Google', 'Referrals', 'Paid Social'];
+  const statusMap = {};
+  (projects || []).forEach((project) => {
+    const status = project.status || 'Unknown';
+    statusMap[status] = (statusMap[status] || 0) + 1;
+  });
+
+  const labels = Object.keys(statusMap);
+  const chartData = Object.values(statusMap);
 
   const options = {
     chart: {

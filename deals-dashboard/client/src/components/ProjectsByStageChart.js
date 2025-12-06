@@ -6,14 +6,28 @@ const ProjectsByStageChart = ({ projects, onDateRangeChange }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('Sales Pipeline');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 3 Months');
 
-  const stageData = [
-    { name: 'Inpipeline', value: 1454, color: '#6366f1', widthPercent: 100 },
-    { name: 'Follow Up', value: 1454, color: '#06b6d4', widthPercent: 85 },
-    { name: 'Schedule Service', value: 1454, color: '#f59e0b', widthPercent: 70 },
-    { name: 'Conversation', value: 1454, color: '#14b8a6', widthPercent: 55 },
-    { name: 'Win', value: 1454, color: '#34d399', widthPercent: 40 },
-    { name: 'Lost', value: 1454, color: '#ef4444', widthPercent: 25 },
-  ];
+  const statusMap = {};
+  (projects || []).forEach((project) => {
+    const status = project.status || 'Unknown';
+    statusMap[status] = (statusMap[status] || 0) + 1;
+  });
+
+  const colorMap = {
+    'Planning': '#6366f1',
+    'In Progress': '#06b6d4',
+    'On Hold': '#f59e0b',
+    'Completed': '#14b8a6',
+    'Cancelled': '#ef4444',
+    'Active': '#34d399',
+  };
+
+  const maxCount = Math.max(...Object.values(statusMap), 1);
+  const stageData = Object.entries(statusMap).map(([name, count]) => ({
+    name,
+    value: count,
+    color: colorMap[name] || '#9ca3af',
+    widthPercent: (count / maxCount) * 100,
+  }));
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = [], companies = [] }) => {
+const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = [], companies = [], dealToEdit = null }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [openPanels, setOpenPanels] = useState({
@@ -35,6 +35,52 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
   const [tagInput, setTagInput] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && dealToEdit) {
+      setFormData({
+        deal_name: dealToEdit.deal_name || dealToEdit.company || '',
+        pipeline: dealToEdit.pipeline || dealToEdit.stage || '',
+        status: dealToEdit.status || 'Pending',
+        deal_value: dealToEdit.deal_value || dealToEdit.value || '',
+        currency: dealToEdit.currency || 'USD',
+        period: dealToEdit.period || '',
+        period_value: dealToEdit.period_value || '',
+        contact_id: dealToEdit.contact_id || '',
+        project_ids: Array.isArray(dealToEdit.project_ids) ? dealToEdit.project_ids : [],
+        due_date: dealToEdit.due_date || '',
+        expected_close_date: dealToEdit.expected_close_date || '',
+        assignee_id: dealToEdit.assignee_id || '',
+        follow_up_date: dealToEdit.follow_up_date || '',
+        source: dealToEdit.source || '',
+        tags: Array.isArray(dealToEdit.tags) ? dealToEdit.tags : (typeof dealToEdit.tags === 'string' ? [dealToEdit.tags].filter(t => t) : []),
+        priority: dealToEdit.priority || 'Medium',
+        description: dealToEdit.description || '',
+        company_id: dealToEdit.company_id || '',
+      });
+    } else if (isOpen) {
+      setFormData({
+        deal_name: '',
+        pipeline: '',
+        status: 'Pending',
+        deal_value: '',
+        currency: 'USD',
+        period: '',
+        period_value: '',
+        contact_id: '',
+        project_ids: [],
+        due_date: '',
+        expected_close_date: '',
+        assignee_id: '',
+        follow_up_date: '',
+        source: '',
+        tags: [],
+        priority: 'Medium',
+        description: '',
+        company_id: '',
+      });
+    }
+  }, [isOpen, dealToEdit]);
 
   const togglePanel = (name) => {
     setOpenPanels((p) => ({ ...p, [name]: !p[name] }));
@@ -140,10 +186,21 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
     onClose();
   };
 
+  const getProjectName = (project) => {
+    return project?.title || project?.project_name || project?.name || `Project ${project?.id}`;
+  };
+
   const filteredProjects = projects.filter(p => {
-    const projectName = (p.title || p.project_name || '').toLowerCase();
+    const projectName = getProjectName(p).toLowerCase();
     return projectName.includes(projectSearch.toLowerCase());
   });
+
+  React.useEffect(() => {
+    console.log('🔍 Projects in AddNewDealModal:', projects);
+    if (projects.length > 0) {
+      console.log('📋 First project structure:', projects[0]);
+    }
+  }, [projects]);
 
   if (!isOpen) return null;
 
@@ -154,7 +211,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">Add New Deal</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{dealToEdit ? 'Edit Deal' : 'Add New Deal'}</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
@@ -396,7 +453,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                                   onChange={() => {}}
                                   className="w-4 h-4"
                                 />
-                                <span className="flex-1">{project.title || project.project_name}</span>
+                                <span className="flex-1">{getProjectName(project)}</span>
                               </button>
                             ))
                           ) : (
@@ -405,13 +462,13 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                         </div>
                       )}
                     </div>
-                    {formData.project_ids.length > 0 && (
+                    {Array.isArray(formData.project_ids) && formData.project_ids.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {formData.project_ids.map(pid => {
                           const project = projects.find(p => p.id === pid);
                           return (
                             <span key={pid} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {project?.title || project?.project_name || pid}
+                              {getProjectName(project)}
                               <button
                                 type="button"
                                 onClick={() => toggleProject(pid)}
@@ -601,7 +658,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                         Add
                       </button>
                     </div>
-                    {formData.tags.length > 0 && (
+                    {Array.isArray(formData.tags) && formData.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {formData.tags.map((tag) => (
                           <span key={tag} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">

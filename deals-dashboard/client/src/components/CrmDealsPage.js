@@ -1,64 +1,82 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Filter, Download, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, Download, MoreVertical, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import dealsData from '../data/crmDealsData.json';
 import AddNewDealModal from './AddNewDealModal';
-import { dealsAPI, contactsAPI, companiesAPI } from '../services/api';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
+import { dealsAPI, contactsAPI, companiesAPI, projectAPI } from '../services/api';
 import projectsData from '../data/crmProjectsData.json';
 
 const CrmDealsPage = () => {
-  const [deals, setDeals] = useState(dealsData.deals);
-  const [stageStats, setStageStats] = useState(dealsData.stageStats);
+  const [deals, setDeals] = useState([]);
+  const [stageStats, setStageStats] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [openMenu, setOpenMenu] = useState(null);
+  const [selectedDealToEdit, setSelectedDealToEdit] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, deal: null, isDeleting: false });
   const scrollRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const [dealsRes, contactsRes, companiesRes] = await Promise.all([
+        const [dealsRes, contactsRes, companiesRes, projectsRes] = await Promise.all([
           dealsAPI.getAll(),
           contactsAPI.getAll(),
           companiesAPI.getAll(),
+          projectAPI.getAll(),
         ]);
         
         console.log('✅ API Response - Deals:', dealsRes);
+        console.log('✅ API Response - Projects:', projectsRes);
         
         if (dealsRes && Array.isArray(dealsRes) && dealsRes.length > 0) {
-          const formattedDeals = dealsRes.map(deal => ({
-            id: deal.id,
-            stage: deal.pipeline || deal.deal_stage || 'Unclassified',
-            company: deal.company_name || deal.deal_name || 'Unknown Company',
-            initials: ((deal.company_name || deal.deal_name || 'UC').substring(0, 2)).toUpperCase(),
-            value: parseFloat(deal.deal_value) || 0,
-            email: deal.email || 'contact@example.com',
-            phone: deal.phone || '+1 (555) 000-0000',
-            location: deal.location || 'Unknown',
-            owner: deal.assignee_first_name && deal.assignee_last_name 
-              ? `${deal.assignee_first_name} ${deal.assignee_last_name}` 
-              : deal.first_name && deal.last_name 
-              ? `${deal.first_name} ${deal.last_name}`
-              : 'Unassigned',
-            ownerImage: 'avatar-1',
-            progress: deal.probability || 10,
-            date: deal.follow_up_date 
-              ? new Date(deal.follow_up_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) 
-              : deal.due_date 
-              ? new Date(deal.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-              : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-            ...deal
-          }));
+          const formattedDeals = dealsRes.map(deal => {
+            const stage = deal.pipeline || deal.deal_stage || 'Unclassified';
+            return {
+              ...deal,
+              id: deal.id,
+              stage: stage,
+              company: deal.company_name || deal.deal_name || 'Unknown Company',
+              initials: ((deal.company_name || deal.deal_name || 'UC').substring(0, 2)).toUpperCase(),
+              value: parseFloat(deal.deal_value) || 0,
+              email: deal.email || 'contact@example.com',
+              phone: deal.phone || '+1 (555) 000-0000',
+              location: deal.location || 'Unknown',
+              owner: deal.assignee_first_name && deal.assignee_last_name 
+                ? `${deal.assignee_first_name} ${deal.assignee_last_name}` 
+                : deal.first_name && deal.last_name 
+                ? `${deal.first_name} ${deal.last_name}`
+                : 'Unassigned',
+              ownerImage: 'avatar-1',
+              progress: deal.probability || 10,
+              date: deal.follow_up_date 
+                ? new Date(deal.follow_up_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) 
+                : deal.due_date 
+                ? new Date(deal.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            };
+          });
           
           console.log('✅ Formatted Deals:', formattedDeals);
           
-          setDeals(formattedDeals);
+          const allowedStages = [
+            'New',
+            'Discovery',
+            'Proposal Sent',
+            'Negotiation',
+            'Qualified To Buy',
+            'Inpipeline',
+            'Follow Up',
+            'Conversation'
+          ];
           
-          const uniqueStages = [...new Set(formattedDeals.map(d => d.stage).filter(s => s))];
-          console.log('✅ Unique Stages:', uniqueStages);
-          
-          const updatedStats = uniqueStages.map(stage => {
+          const updatedStats = allowedStages.map(stage => {
             const stageDeals = formattedDeals.filter(d => d.stage === stage);
             return {
               stage,
@@ -68,20 +86,47 @@ const CrmDealsPage = () => {
           });
           
           console.log('✅ Updated Stage Stats:', updatedStats);
+          
+          setDeals(formattedDeals);
           setStageStats(updatedStats);
         } else {
           console.warn('⚠️ No deals received or invalid format, using fallback data');
+          const allowedStages = [
+            'New',
+            'Discovery',
+            'Proposal Sent',
+            'Negotiation',
+            'Qualified To Buy',
+            'Inpipeline',
+            'Follow Up',
+            'Conversation'
+          ];
+          const filteredStats = dealsData.stageStats.filter(stat => allowedStages.includes(stat.stage));
           setDeals(dealsData.deals);
+          setStageStats(filteredStats);
         }
         
         setContacts(contactsRes || []);
         setCompanies(companiesRes || []);
-        setProjects(projectsData.projects || []);
+        setProjects(projectsRes && Array.isArray(projectsRes) ? projectsRes : projectsData.projects || []);
       } catch (err) {
         console.error('❌ Error fetching data:', err);
+        const allowedStages = [
+          'New',
+          'Discovery',
+          'Proposal Sent',
+          'Negotiation',
+          'Qualified To Buy',
+          'Inpipeline',
+          'Follow Up',
+          'Conversation'
+        ];
+        const filteredStats = dealsData.stageStats.filter(stat => allowedStages.includes(stat.stage));
         setDeals(dealsData.deals);
-        setStageStats(dealsData.stageStats);
+        setStageStats(filteredStats);
         setProjects(projectsData.projects || []);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -119,8 +164,8 @@ const CrmDealsPage = () => {
         const selectedCompany = companies.find(c => c.id === parseInt(formData.company_id));
         const selectedContact = contacts.find(c => c.id === parseInt(formData.contact_id));
         
-        const companyName = selectedCompany?.name || formData.deal_name || 'New Deal';
-        const initials = companyName.substring(0, 2).toUpperCase();
+        const companyName = selectedCompany?.company_name || selectedCompany?.name || formData.deal_name || 'New Deal';
+        const initials = (companyName.substring(0, 2)).toUpperCase();
         
         const dealValue = parseFloat(formData.deal_value) || 0;
         const dealStage = formData.pipeline || 'Qualify To Buy';
@@ -134,7 +179,9 @@ const CrmDealsPage = () => {
           email: selectedContact?.email || 'contact@example.com',
           phone: selectedContact?.phone || '+1 (555) 000-0000',
           location: selectedContact?.location || 'Unknown',
-          owner: selectedContact?.name || 'Unassigned',
+          owner: selectedContact?.first_name && selectedContact?.last_name
+            ? `${selectedContact.first_name} ${selectedContact.last_name}`
+            : selectedContact?.name || 'Unassigned',
           ownerImage: 'avatar-1',
           progress: 10,
           date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
@@ -149,11 +196,16 @@ const CrmDealsPage = () => {
         
         setDeals(prev => [newDeal, ...prev]);
         
-        setStageStats(prev => prev.map(stat => 
-          stat.stage === dealStage 
-            ? { ...stat, leads: stat.leads + 1, value: stat.value + dealValue }
-            : stat
-        ));
+        const existingStage = stageStats.find(stat => stat.stage === dealStage);
+        if (existingStage) {
+          setStageStats(prev => prev.map(stat => 
+            stat.stage === dealStage 
+              ? { ...stat, leads: stat.leads + 1, value: stat.value + dealValue }
+              : stat
+          ));
+        } else {
+          setStageStats(prev => [...prev, { stage: dealStage, leads: 1, value: dealValue }]);
+        }
         
         setIsModalOpen(false);
       }
@@ -172,12 +224,90 @@ const CrmDealsPage = () => {
     }
   };
 
+  const handleEditDeal = (deal) => {
+    setSelectedDealToEdit(deal);
+    setIsEditModalOpen(true);
+    setOpenMenu(null);
+  };
+
+  const handleDeleteDeal = (deal) => {
+    setDeleteConfirm({ isOpen: true, deal, isDeleting: false });
+    setOpenMenu(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
+      await dealsAPI.delete(deleteConfirm.deal.id);
+      setDeals(prev => prev.filter(d => d.id !== deleteConfirm.deal.id));
+      
+      const updatedStats = stageStats.map(stat => ({
+        ...stat,
+        leads: stat.leads - (stat.stage === deleteConfirm.deal.stage ? 1 : 0),
+        value: stat.value - (stat.stage === deleteConfirm.deal.stage ? deleteConfirm.deal.value : 0)
+      }));
+      setStageStats(updatedStats);
+      
+      setDeleteConfirm({ isOpen: false, deal: null, isDeleting: false });
+    } catch (err) {
+      console.error('Failed to delete deal:', err);
+      setDeleteConfirm(prev => ({ ...prev, isDeleting: false }));
+    }
+  };
+
+  const handleUpdateDeal = async (formData) => {
+    try {
+      await dealsAPI.update(selectedDealToEdit.id, formData);
+      
+      const updatedDeal = {
+        ...selectedDealToEdit,
+        ...formData,
+        stage: formData.pipeline || selectedDealToEdit.stage,
+        value: parseFloat(formData.deal_value) || selectedDealToEdit.value,
+        company: formData.company_name || selectedDealToEdit.company,
+      };
+      
+      setDeals(prev => prev.map(d => d.id === selectedDealToEdit.id ? updatedDeal : d));
+      
+      const oldStage = selectedDealToEdit.stage;
+      const newStage = formData.pipeline || oldStage;
+      const oldValue = selectedDealToEdit.value;
+      const newValue = parseFloat(formData.deal_value) || selectedDealToEdit.value;
+      
+      if (oldStage !== newStage) {
+        setStageStats(prev => prev.map(stat => {
+          let newStat = { ...stat };
+          if (stat.stage === oldStage) {
+            newStat.leads = Math.max(0, newStat.leads - 1);
+            newStat.value = newStat.value - oldValue;
+          }
+          if (stat.stage === newStage) {
+            newStat.leads = newStat.leads + 1;
+            newStat.value = newStat.value + newValue;
+          }
+          return newStat;
+        }));
+      } else {
+        setStageStats(prev => prev.map(stat =>
+          stat.stage === oldStage
+            ? { ...stat, value: stat.value - oldValue + newValue }
+            : stat
+        ));
+      }
+      
+      setIsEditModalOpen(false);
+      setSelectedDealToEdit(null);
+    } catch (err) {
+      throw new Error(err.message || 'Failed to update deal');
+    }
+  };
+
   const groupedDeals = stageStats.map(stageStat => ({
     ...stageStat,
     deals: deals.filter(d => d.stage === stageStat.stage)
   }));
   
-  const hasAnyDeals = groupedDeals.some(group => group.deals.length > 0);
+  const hasAnyDeals = deals.length > 0;
   console.log('📊 Grouped Deals:', groupedDeals);
   console.log('📊 Has Any Deals:', hasAnyDeals);
   console.log('📊 Total Groups:', groupedDeals.length);
@@ -229,7 +359,13 @@ const CrmDealsPage = () => {
 
       <div className="flex-1 px-6 pb-0 relative overflow-hidden">
         <div className="relative group h-full">
-          {!hasAnyDeals ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-gray-500 text-lg mb-2">Loading deals...</p>
+              </div>
+            </div>
+          ) : !hasAnyDeals ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-gray-500 text-lg mb-2">No deals found</p>
@@ -262,7 +398,8 @@ const CrmDealsPage = () => {
                   {group.deals.map((deal) => (
                     <div
                       key={deal.id}
-                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-3.5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer flex-shrink-0"
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-3.5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer flex-shrink-0 relative"
+                      onClick={() => openMenu === deal.id && setOpenMenu(null)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div
@@ -271,9 +408,30 @@ const CrmDealsPage = () => {
                         >
                           {deal.initials || deal.company?.substring(0, 2).toUpperCase() || 'N/A'}
                         </div>
-                        <button className="text-gray-400 hover:bg-gray-100 p-1 rounded-md transition">
-                          <MoreVertical size={14} strokeWidth={1.5} />
-                        </button>
+                        <div className="relative">
+                          <button 
+                            onClick={() => setOpenMenu(openMenu === deal.id ? null : deal.id)}
+                            className="text-gray-400 hover:bg-gray-100 p-1 rounded-md transition"
+                          >
+                            <MoreVertical size={14} strokeWidth={1.5} />
+                          </button>
+                          {openMenu === deal.id && (
+                            <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-32">
+                              <button
+                                onClick={() => handleEditDeal(deal)}
+                                className="w-full text-left px-4 py-2 text-[13px] text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDeal(deal)}
+                                className="w-full text-left px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 last:rounded-b-lg flex items-center gap-2"
+                              >
+                                <Trash2 size={12} /> Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <h3 className="text-[13px] font-semibold text-gray-900 mb-2 line-clamp-2">{deal.company}</h3>
@@ -350,6 +508,27 @@ const CrmDealsPage = () => {
         contacts={contacts}
         companies={companies}
         projects={projects}
+      />
+
+      <AddNewDealModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedDealToEdit(null);
+        }}
+        onSubmit={handleUpdateDeal}
+        contacts={contacts}
+        companies={companies}
+        projects={projects}
+        dealToEdit={selectedDealToEdit}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={deleteConfirm.isOpen}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, deal: null, isDeleting: false })}
+        userName={deleteConfirm.deal?.company || 'this deal'}
+        isDeleting={deleteConfirm.isDeleting}
       />
     </div>
   );

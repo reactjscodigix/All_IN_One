@@ -6,11 +6,21 @@ import DateRangeDropdown from './DateRangeDropdown';
 const LostDealsChart = ({ deals, onDateRangeChange }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('Marketing Pipeline');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 15 Days');
-  const chartData = [
-    { name: 'Conversation', value: 420 },
-    { name: 'Follow Up', value: 240 },
-    { name: 'Inpipeline', value: 400 }
-  ];
+  
+  const stageMap = {};
+  deals.forEach((deal) => {
+    if (deal.status === 'Lost') {
+      if (!stageMap[deal.stage]) {
+        stageMap[deal.stage] = 0;
+      }
+      stageMap[deal.stage] += 1;
+    }
+  });
+
+  const chartData = Object.entries(stageMap).map(([name, value]) => ({
+    name,
+    value
+  })).sort((a, b) => b.value - a.value);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">

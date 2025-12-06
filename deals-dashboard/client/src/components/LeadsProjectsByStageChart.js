@@ -2,11 +2,20 @@ import React, { useState } from 'react';
 import Chart from 'react-apexcharts';
 import DateRangeDropdown from './DateRangeDropdown';
 
-const LeadsProjectsByStageChart = ({ leads, onDateRangeChange }) => {
+const LeadsProjectsByStageChart = ({ projects, onDateRangeChange }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('Last 30 Days');
 
-  const chartData = [1200, 800, 600, 400];
-  const labels = ['Inpipeline', 'Follow Up', 'Schedule Service', 'Conversation'];
+  const stageMap = {};
+  (projects || []).forEach((project) => {
+    const stage = project.status || 'Unknown';
+    stageMap[stage] = (stageMap[stage] || 0) + 1;
+  });
+
+  const labels = Object.keys(stageMap);
+  const chartData = Object.values(stageMap);
+
+  const colorPalette = ['#3b82f6', '#10b981', '#fbbf24', '#ef4444', '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4', '#14b8a6', '#a855f7'];
+  const colors = labels.map((_, idx) => colorPalette[idx % colorPalette.length]);
 
   const options = {
     chart: {
@@ -16,7 +25,7 @@ const LeadsProjectsByStageChart = ({ leads, onDateRangeChange }) => {
       fontFamily: 'inherit',
     },
     labels: labels,
-    colors: ['#3b82f6', '#10b981', '#fbbf24', '#ef4444'],
+    colors: colors,
     plotOptions: {
       pie: {
         donut: {

@@ -4,7 +4,7 @@ import CustomDropdown from './CustomDropdown';
 import DateRangeDropdown from './DateRangeDropdown';
 import { MoreVertical, Eye, Trash2, Edit2, ChevronDown } from 'lucide-react';
 
-const LeadsByStageChart = ({ projects, onDateRangeChange }) => {
+const LeadsByStageChart = ({ leads, onDateRangeChange }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('Marketing Pipeline');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 3 Months');
   const [openActionMenu, setOpenActionMenu] = useState(null);
@@ -18,16 +18,23 @@ const LeadsByStageChart = ({ projects, onDateRangeChange }) => {
     setOpenPanels((p) => ({ ...p, [name]: !p[name] }));
   };
 
-  const stages = ['Conversation', 'Follow Up', 'Inpipeline'];
-  const values = [320, 180, 290];
-  
-  const stageData = [
-    { stage: 'Conversation', count: 320, status: 'active', percentage: 38 },
-    { stage: 'Follow Up', count: 180, status: 'pending', percentage: 22 },
-    { stage: 'Inpipeline', count: 290, status: 'active', percentage: 35 },
-  ];
-  
+  const statusMap = {};
+  (leads || []).forEach((lead) => {
+    const status = lead.status || 'Unknown';
+    statusMap[status] = (statusMap[status] || 0) + 1;
+  });
+
+  const stages = Object.keys(statusMap);
+  const values = Object.values(statusMap);
   const totalLeads = values.reduce((a, b) => a + b, 0);
+  const maxCount = Math.max(...values, 1);
+
+  const stageData = stages.map((stage, idx) => ({
+    stage,
+    count: values[idx],
+    status: values[idx] > 0 ? 'active' : 'pending',
+    percentage: totalLeads > 0 ? Math.round((values[idx] / totalLeads) * 100) : 0,
+  }));
 
   const chartSeries = [
     {

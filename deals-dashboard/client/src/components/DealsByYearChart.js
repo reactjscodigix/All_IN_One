@@ -6,20 +6,26 @@ import DateRangeDropdown from './DateRangeDropdown';
 const DealsByYearChart = ({ deals, onDateRangeChange }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('Marketing Pipeline');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 15 Days');
-  const chartData = [
-    { month: 'Jan', deals: 1000 },
-    { month: 'Feb', deals: 2000 },
-    { month: 'Mar', deals: 3000 },
-    { month: 'Apr', deals: 2500 },
-    { month: 'May', deals: 1800 },
-    { month: 'Jun', deals: 2200 },
-    { month: 'Jul', deals: 3000 },
-    { month: 'Aug', deals: 2800 },
-    { month: 'Sep', deals: 3500 },
-    { month: 'Oct', deals: 4000 },
-    { month: 'Nov', deals: 3800 },
-    { month: 'Dec', deals: 5500 }
-  ];
+  
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthMap = {};
+  
+  monthNames.forEach((month, index) => {
+    monthMap[index] = 0;
+  });
+
+  deals.forEach((deal) => {
+    if (deal.createdAt) {
+      const date = new Date(deal.createdAt);
+      const month = date.getMonth();
+      monthMap[month] = (monthMap[month] || 0) + 1;
+    }
+  });
+
+  const chartData = monthNames.map((month, index) => ({
+    month,
+    deals: monthMap[index] || 0
+  }));
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, RotateCcw, Download, ChevronLeft, ChevronRight } from 'lucide-react';
-import leadsData from '../data/leadsData.json';
+import { leadsAPI, dealsAPI, projectAPI } from '../services/api';
 import RecentLeadsTable from './RecentLeadsTable';
 import LeadsProjectsByStageChart from './LeadsProjectsByStageChart';
 import LeadsProjectsAreaChart from './LeadsProjectsAreaChart';
@@ -91,6 +91,8 @@ const formatReadableRange = (range) => {
 
 const LeadsDashboard = () => {
   const [leads, setLeads] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(() => normalizeRange(getPresetRange('Last 30 Days')));
   const [pendingRange, setPendingRange] = useState(() => normalizeRange(getPresetRange('Last 30 Days')));
@@ -101,15 +103,55 @@ const LeadsDashboard = () => {
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
 
   useEffect(() => {
-    fetchLeads();
-  }, []);
+    fetchData();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchLeads = async () => {
+  const transformLead = (lead) => ({
+    id: lead.id,
+    name: lead.name || '',
+    email: lead.email || '',
+    phone: lead.phone || '',
+    company: lead.company || '',
+    source: lead.source || '',
+    status: lead.status || '',
+    rating: lead.rating || 0,
+    createdAt: lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : '',
+  });
+
+  const transformDeal = (deal) => ({
+    id: deal.id,
+    name: deal.deal_name || '',
+    company: deal.company_name || '',
+    contact: deal.first_name && deal.last_name ? `${deal.first_name} ${deal.last_name}` : deal.first_name || '',
+    stage: deal.stage || '',
+    value: parseFloat(deal.deal_value) || 0,
+    status: deal.status || '',
+    probability: deal.probability || 0,
+    createdAt: deal.created_at ? new Date(deal.created_at).toISOString().split('T')[0] : '',
+    expectedCloseDate: deal.expected_close_date ? new Date(deal.expected_close_date).toISOString().split('T')[0] : '',
+  });
+
+  const fetchData = async () => {
     try {
       setLoading(true);
-      setLeads(leadsData.leads);
+      const [leadsRes, dealsRes, projectsRes] = await Promise.all([
+        leadsAPI.getAll().catch(() => []),
+        dealsAPI.getAll().catch(() => []),
+        projectAPI.getAll().catch(() => []),
+      ]);
+      
+      const transformedLeads = Array.isArray(leadsRes) ? leadsRes.map(transformLead) : [];
+      const transformedDeals = Array.isArray(dealsRes) ? dealsRes.map(transformDeal) : [];
+      const transformedProjects = Array.isArray(projectsRes) ? projectsRes : [];
+      
+      setLeads(transformedLeads);
+      setDeals(transformedDeals);
+      setProjects(transformedProjects);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch data:', err);
+      setLeads([]);
+      setDeals([]);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -214,7 +256,7 @@ const LeadsDashboard = () => {
   };
 
   const handleRefresh = () => {
-    fetchLeads();
+    fetchData();
   };
 
   const handleExport = () => {
@@ -349,22 +391,22 @@ const LeadsDashboard = () => {
           <RecentLeadsTable leads={leads} onDateRangeChange={handleDateRangeChange} />
         </div>
         <div className="chart-container transition-smooth">
-          <LeadsProjectsByStageChart leads={leads} onDateRangeChange={handleDateRangeChange} />
+          <LeadsProjectsByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-2 mb-6">
         <div className="chart-container transition-smooth">
-          <LeadsProjectsAreaChart leads={leads} onDateRangeChange={handleDateRangeChange} />
+          <LeadsProjectsAreaChart projects={projects} onDateRangeChange={handleDateRangeChange} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
         <div className="chart-container transition-smooth">
-          <LostDealsChart deals={leads} onDateRangeChange={handleDateRangeChange} />
+          <LostDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
         </div>
         <div className="chart-container transition-smooth">
-          <WonDealsChart deals={leads} onDateRangeChange={handleDateRangeChange} />
+          <WonDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
         </div>
       </div>
 

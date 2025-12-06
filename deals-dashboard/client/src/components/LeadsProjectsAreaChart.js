@@ -3,24 +3,39 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import CustomDropdown from './CustomDropdown';
 import DateRangeDropdown from './DateRangeDropdown';
 
-const LeadsProjectsAreaChart = ({ leads, onDateRangeChange }) => {
+const LeadsProjectsAreaChart = ({ projects, onDateRangeChange }) => {
   const [selectedPipeline, setSelectedPipeline] = useState('Sales Pipeline');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 30 Days');
 
-  const chartData = [
-    { month: 'Jan', value: 3200 },
-    { month: 'Feb', value: 2800 },
-    { month: 'Mar', value: 3800 },
-    { month: 'Apr', value: 3200 },
-    { month: 'May', value: 4100 },
-    { month: 'Jun', value: 3500 },
-    { month: 'Jul', value: 4200 },
-    { month: 'Aug', value: 3800 },
-    { month: 'Sep', value: 4100 },
-    { month: 'Oct', value: 4500 },
-    { month: 'Nov', value: 4000 },
-    { month: 'Dec', value: 3900 },
-  ];
+  const generateMonthlyData = () => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const monthCounts = {};
+
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(currentYear, currentDate.getMonth() - i, 1);
+      const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+      monthCounts[key] = 0;
+    }
+
+    (projects || []).forEach((project) => {
+      if (project.created_at || project.createdAt) {
+        const date = new Date(project.created_at || project.createdAt);
+        const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        if (monthCounts.hasOwnProperty(key)) {
+          monthCounts[key]++;
+        }
+      }
+    });
+
+    return Object.entries(monthCounts).map(([key, count]) => ({
+      month: monthNames[new Date(`${key}-01`).getMonth()],
+      value: count,
+    }));
+  };
+
+  const chartData = generateMonthlyData();
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">
