@@ -1,11 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone, Mic, MicOff, Video, VideoOff, Monitor, Volume2, RotateCcw, Settings } from 'lucide-react';
+import { generateMeetingLink } from '../utils/meetingUtils';
 
 export default function VideoCallPage() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
+  const [googleMeetLink, setGoogleMeetLink] = useState('');
   const callTime = '40:12';
   const callerName = 'Joe Lewis';
+
+  useEffect(() => {
+    setGoogleMeetLink(generateMeetingLink());
+  }, []);
+
+  const recordCall = async () => {
+    try {
+      await fetch('http://localhost:5000/api/call-history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          caller_name: callerName,
+          call_type: 'Video Call',
+          call_direction: 'Outgoing',
+          duration: 0,
+          meeting_link: googleMeetLink,
+          notes: 'Video call via Google Meet'
+        })
+      });
+    } catch (error) {
+      console.error('Error recording call:', error);
+    }
+  };
+
+  const handleCallClick = () => {
+    if (googleMeetLink) {
+      recordCall();
+      window.open(googleMeetLink, '_blank');
+    }
+  };
 
   return (
     <div className="w-full h-[calc(100vh-80px)] bg-gray-900 flex items-center justify-center relative overflow-hidden">
@@ -74,7 +108,9 @@ export default function VideoCallPage() {
               <Volume2 className="w-6 h-6" />
             </button>
 
-            <button className="w-12 h-12 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all ml-4">
+            <button 
+              onClick={handleCallClick}
+              className="w-12 h-12 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all ml-4">
               <Phone className="w-6 h-6" />
             </button>
 

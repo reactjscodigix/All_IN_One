@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 
 const CalendarPage = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 10));
-  const [events] = useState([
+  const [callEvents, setCallEvents] = useState([]);
+  const [staticEvents] = useState([
     {
       id: 1,
       title: 'Meeting with Team Dev',
@@ -27,6 +28,31 @@ const CalendarPage = () => {
     },
   ]);
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    fetchCallHistory();
+  }, []);
+
+  const fetchCallHistory = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/call-history?limit=100');
+      if (response.ok) {
+        const data = await response.json();
+        const events = data.map((call) => ({
+          id: `call-${call.id}`,
+          title: `${call.call_type} - ${call.caller_name}`,
+          date: new Date(call.created_at),
+          category: call.call_type,
+          color: call.call_type === 'Video Call' ? 'bg-indigo-100 border-l-4 border-indigo-500' : 'bg-cyan-100 border-l-4 border-cyan-500'
+        }));
+        setCallEvents(events);
+      }
+    } catch (error) {
+      console.error('Error fetching call history:', error);
+    }
+  };
+
+  const events = [...staticEvents, ...callEvents];
 
   const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();

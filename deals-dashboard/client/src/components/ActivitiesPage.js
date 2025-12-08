@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { MoreVertical, Download, Filter as FilterIcon, Search, Phone, Mail, CheckSquare, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MoreVertical, Download, Filter as FilterIcon, Search, Phone, Mail, CheckSquare, Calendar, Video } from 'lucide-react';
 
 const ActivitiesPage = () => {
   const [selectedActivities, setSelectedActivities] = useState([]);
-  // eslint-disable-next-line no-unused-vars
   const [sortBy, setSortBy] = useState('newest');
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-
-  const activities = [
+  const [loading, setLoading] = useState(true);
+  const [callHistory, setCallHistory] = useState([]);
+  const [staticActivities] = useState([
     {
       id: '1',
       title: 'We scheduled a meeting for next week',
@@ -110,7 +110,36 @@ const ActivitiesPage = () => {
       ownerBg: 'bg-cyan-500',
       createdAt: '10 Dec 2025, 06:30 am',
     },
-  ];
+  ]);
+
+  useEffect(() => {
+    fetchCallHistory();
+  }, []);
+
+  const fetchCallHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:5000/api/call-history?limit=100');
+      if (response.ok) {
+        const data = await response.json();
+        const callActivities = data.map((call) => ({
+          id: `call-${call.id}`,
+          title: `${call.call_type} - ${call.caller_name} (${call.call_direction})`,
+          type: call.call_type === 'Video Call' ? 'Video Call' : 'Calls',
+          dueDate: new Date(call.created_at).toLocaleString(),
+          owner: call.caller_name,
+          ownerInitial: call.caller_name.substring(0, 1),
+          ownerBg: 'bg-cyan-500',
+          createdAt: call.created_at
+        }));
+        setCallHistory(callActivities);
+      }
+    } catch (error) {
+      console.error('Error fetching call history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getActivityTypeColor = (type) => {
     switch (type) {
@@ -118,6 +147,8 @@ const ActivitiesPage = () => {
         return { bg: 'bg-blue-100', text: 'text-blue-700', icon: Calendar };
       case 'Calls':
         return { bg: 'bg-green-100', text: 'text-green-700', icon: Phone };
+      case 'Video Call':
+        return { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: Video };
       case 'Email':
         return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Mail };
       case 'Task':
@@ -126,6 +157,8 @@ const ActivitiesPage = () => {
         return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null };
     }
   };
+
+  const activities = [...staticActivities, ...callHistory];
 
   const filteredActivities = activities.filter(activity =>
     activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -169,7 +202,7 @@ const ActivitiesPage = () => {
             <div className="flex items-center gap-3 mb-3">
               <h1 className="text-5xl font-bold text-gray-900">Activities</h1>
               <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">
-                {activities.length}
+                {loading ? '...' : activities.length}
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -213,10 +246,11 @@ const ActivitiesPage = () => {
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-gray-700">All Activities</span>
             <div className="flex gap-2 border-l border-gray-300 pl-4">
-              <Phone size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" />
-              <Mail size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" />
-              <CheckSquare size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" />
-              <Calendar size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" />
+              <Phone size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Audio Calls" />
+              <Video size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Video Calls" />
+              <Mail size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Emails" />
+              <CheckSquare size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Tasks" />
+              <Calendar size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Meetings" />
             </div>
           </div>
 

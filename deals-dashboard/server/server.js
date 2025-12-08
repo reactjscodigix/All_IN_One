@@ -522,6 +522,30 @@ async function initializeDatabase() {
         INDEX idx_status (status)
       )
     `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS call_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        caller_name VARCHAR(255) NOT NULL,
+        caller_email VARCHAR(150),
+        caller_avatar LONGTEXT,
+        phone_number VARCHAR(20),
+        call_type ENUM('Audio Call', 'Video Call') DEFAULT 'Audio Call',
+        call_direction ENUM('Incoming', 'Outgoing', 'Missed Call') DEFAULT 'Outgoing',
+        duration INT DEFAULT 0,
+        started_at TIMESTAMP NULL,
+        ended_at TIMESTAMP NULL,
+        meeting_link VARCHAR(255),
+        notes LONGTEXT,
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_caller (caller_name),
+        INDEX idx_call_type (call_type),
+        INDEX idx_direction (call_direction),
+        INDEX idx_created_at (created_at)
+      )
+    `);
     
     console.log('✓ All tables initialized successfully');
     
@@ -4700,6 +4724,226 @@ app.delete('/api/contracts/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting contract:', error.message);
     res.status(500).json({ error: 'Failed to delete contract', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/call-history', async (req, res) => {
+  let connection;
+  try {
+    const { limit = 50, offset = 0, call_type, search } = req.query;
+    connection = await pool.getConnection();
+    
+    let query = 'SELECT * FROM call_history WHERE 1=1';
+    let params = [];
+    
+    if (call_type) {
+      query += ' AND call_type = ?';
+      params.push(call_type);
+    }
+    if (search) {
+      query += ' AND (caller_name LIKE ? OR caller_email LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), parseInt(offset));
+    
+    const [rows] = await connection.query(query, params);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching call history:', error.message);
+    res.status(500).json({ error: 'Failed to fetch call history' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/call-history', async (req, res) => {
+  let connection;
+  try {
+    const {
+      caller_name,
+      caller_email,
+      caller_avatar,
+      phone_number,
+      call_type,
+      call_direction,
+      duration,
+      meeting_link,
+      notes,
+      created_by
+    } = req.body;
+    
+    if (!caller_name || !call_type) {
+      return res.status(400).json({ error: 'Missing required fields: caller_name, call_type' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(`
+      INSERT INTO call_history (
+        caller_name, caller_email, caller_avatar, phone_number, call_type, 
+        call_direction, duration, started_at, meeting_link, notes, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)
+    `, [
+      caller_name,
+      caller_email || null,
+      caller_avatar || null,
+      phone_number || null,
+      call_type,
+      call_direction || 'Outgoing',
+      duration || 0,
+      meeting_link || null,
+      notes || '',
+      created_by || null
+    ]);
+    
+    connection.release();
+    
+    res.json({ 
+      message: 'Call recorded successfully',
+      callId: result.insertId
+    });
+  } catch (error) {
+    console.error('Error recording call:', error.message);
+    res.status(500).json({ error: 'Failed to record call', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/call-history/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [call] = await connection.query('SELECT * FROM call_history WHERE id = ?', [id]);
+    
+    if (call.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Call record not found' });
+    }
+    
+    connection.release();
+    res.json(call[0]);
+  } catch (error) {
+    console.error('Error fetching call:', error.message);
+    res.status(500).json({ error: 'Failed to fetch call' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/call-history/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const {
+      caller_name,
+      caller_email,
+      caller_avatar,
+      phone_number,
+      call_type,
+      call_direction,
+      duration,
+      meeting_link,
+      notes,
+      ended_at
+    } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [call] = await connection.query('SELECT * FROM call_history WHERE id = ?', [id]);
+    if (call.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Call record not found' });
+    }
+    
+    const updateFields = [];
+    const updateValues = [];
+    
+    if (caller_name !== undefined) {
+      updateFields.push('caller_name = ?');
+      updateValues.push(caller_name);
+    }
+    if (caller_email !== undefined) {
+      updateFields.push('caller_email = ?');
+      updateValues.push(caller_email);
+    }
+    if (phone_number !== undefined) {
+      updateFields.push('phone_number = ?');
+      updateValues.push(phone_number);
+    }
+    if (call_type !== undefined) {
+      updateFields.push('call_type = ?');
+      updateValues.push(call_type);
+    }
+    if (call_direction !== undefined) {
+      updateFields.push('call_direction = ?');
+      updateValues.push(call_direction);
+    }
+    if (duration !== undefined) {
+      updateFields.push('duration = ?');
+      updateValues.push(duration);
+    }
+    if (meeting_link !== undefined) {
+      updateFields.push('meeting_link = ?');
+      updateValues.push(meeting_link);
+    }
+    if (notes !== undefined) {
+      updateFields.push('notes = ?');
+      updateValues.push(notes);
+    }
+    if (ended_at !== undefined) {
+      updateFields.push('ended_at = ?');
+      updateValues.push(ended_at);
+    }
+    
+    if (updateFields.length === 0) {
+      connection.release();
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    updateFields.push('updated_at = NOW()');
+    updateValues.push(id);
+    
+    await connection.query(
+      `UPDATE call_history SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateValues
+    );
+    
+    connection.release();
+    res.json({ message: 'Call updated successfully' });
+  } catch (error) {
+    console.error('Error updating call:', error.message);
+    res.status(500).json({ error: 'Failed to update call', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/call-history/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [call] = await connection.query('SELECT * FROM call_history WHERE id = ?', [id]);
+    if (call.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Call record not found' });
+    }
+    
+    await connection.query('DELETE FROM call_history WHERE id = ?', [id]);
+    connection.release();
+    
+    res.json({ message: 'Call deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting call:', error.message);
+    res.status(500).json({ error: 'Failed to delete call', details: error.message });
   } finally {
     if (connection) connection.release();
   }

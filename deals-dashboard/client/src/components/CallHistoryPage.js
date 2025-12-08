@@ -1,90 +1,70 @@
-import React, { useState } from 'react';
-import { Eye, Trash2, Phone, Mail } from 'lucide-react';
-
-const CALL_DATA = [
-  {
-    id: 1,
-    name: 'Anthony Lewis',
-    email: 'anthony@example.com',
-    avatar: 'https://ui-avatars.com/api/?name=Anthony+Lewis&background=FF6B6B&color=fff',
-    phone: '(123) 4567 890',
-    type: 'Incoming',
-    duration: '00.25',
-    date: '14 Jan 2024, 04:27 AM',
-    totalCalls: 20,
-    avgCallTime: '00:30',
-    avgWaitTime: '00:05',
-  },
-  {
-    id: 2,
-    name: 'Brian Villalobos',
-    email: 'brian@example.com',
-    avatar: 'https://ui-avatars.com/api/?name=Brian+Villalobos&background=4F46E5&color=fff',
-    phone: '(179) 7382 829',
-    type: 'Outgoing',
-    duration: '00.10',
-    date: '21 Jan 2024, 03:19 AM',
-    totalCalls: 15,
-    avgCallTime: '00:20',
-    avgWaitTime: '00:03',
-  },
-  {
-    id: 3,
-    name: 'Harvey Smith',
-    email: 'harvey@example.com',
-    avatar: 'https://ui-avatars.com/api/?name=Harvey+Smith&background=8B5CF6&color=fff',
-    phone: '(184) 2719 738',
-    type: 'Incoming',
-    duration: '00.40',
-    date: '20 Feb 2024, 12:15 PM',
-    totalCalls: 25,
-    avgCallTime: '00:45',
-    avgWaitTime: '00:08',
-  },
-  {
-    id: 4,
-    name: 'Peral',
-    email: 'peral@example.com',
-    avatar: 'https://ui-avatars.com/api/?name=Peral&background=EC4899&color=fff',
-    phone: '(193) 7839 748',
-    type: 'Missed Call',
-    duration: '00.00',
-    date: '15 Mar 2024, 12:11 AM',
-    totalCalls: 8,
-    avgCallTime: '00:15',
-    avgWaitTime: '00:02',
-  },
-  {
-    id: 5,
-    name: 'Douglas Martini',
-    email: 'martniwr@example.com',
-    avatar: 'https://ui-avatars.com/api/?name=Douglas+Martini&background=10B981&color=fff',
-    phone: '(183) 9302 890',
-    type: 'Outgoing',
-    duration: '00.35',
-    date: '12 Apr 2024, 05:48 PM',
-    totalCalls: 18,
-    avgCallTime: '00:35',
-    avgWaitTime: '00:05',
-  },
-  {
-    id: 6,
-    name: 'Linda Ray',
-    email: 'ray456@example.com',
-    avatar: 'https://ui-avatars.com/api/?name=Linda+Ray&background=06B6D4&color=fff',
-    phone: '(120) 3728 039',
-    type: 'Incoming',
-    duration: '01.40',
-    date: '20 Apr 2024, 06:11 PM',
-    totalCalls: 30,
-    avgCallTime: '01:00',
-    avgWaitTime: '00:10',
-  },
-];
+import React, { useState, useEffect } from 'react';
+import { Eye, Trash2, Phone, Mail, Video } from 'lucide-react';
 
 export default function CallHistoryPage() {
-  const [selectedCaller, setSelectedCaller] = useState(CALL_DATA[0]);
+  const [callData, setCallData] = useState([]);
+  const [selectedCaller, setSelectedCaller] = useState(null);
   const [sortBy] = useState('newest');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchCallHistory();
+  }, []);
+
+  const fetchCallHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:5000/api/call-history?limit=50');
+      if (!response.ok) {
+        throw new Error('Failed to fetch call history');
+      }
+      const data = await response.json();
+      
+      const mappedData = data.map((call) => ({
+        id: call.id,
+        name: call.caller_name,
+        email: call.caller_email || 'N/A',
+        avatar: call.caller_avatar || `https://ui-avatars.com/api/?name=${call.caller_name}&background=3B82F6&color=fff`,
+        phone: call.phone_number || 'N/A',
+        type: call.call_direction,
+        callType: call.call_type,
+        duration: call.duration > 0 ? `${String(Math.floor(call.duration / 60)).padStart(2, '0')}:${String(call.duration % 60).padStart(2, '0')}` : '00:00',
+        date: new Date(call.created_at).toLocaleString(),
+        totalCalls: 1,
+        avgCallTime: call.duration > 0 ? `${String(Math.floor(call.duration / 60)).padStart(2, '0')}:${String(call.duration % 60).padStart(2, '0')}` : '00:00',
+        avgWaitTime: '00:00',
+        createdAt: call.created_at,
+        meetingLink: call.meeting_link
+      }));
+      
+      setCallData(mappedData);
+      if (mappedData.length > 0) {
+        setSelectedCaller(mappedData[0]);
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching call history:', err);
+      setError('Failed to load call history');
+      setCallData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCall = async (callId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/call-history/${callId}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete call');
+      }
+      await fetchCallHistory();
+    } catch (err) {
+      console.error('Error deleting call:', err);
+    }
+  };
 
   const getTypeColor = (type) => {
     switch (type) {
@@ -109,6 +89,12 @@ export default function CallHistoryPage() {
         return '✕';
       default:
         return '○';
+    }
+  };
+
+  const handleJoinMeeting = (meetingLink) => {
+    if (meetingLink) {
+      window.open(meetingLink, '_blank');
     }
   };
 
@@ -144,55 +130,75 @@ export default function CallHistoryPage() {
 
         {/* Table */}
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <input type="checkbox" className="w-4 h-4 rounded" />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Phone</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Call Type</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Duration</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date & Time</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {CALL_DATA.map((call) => (
-                <tr key={call.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedCaller(call)}>
-                  <td className="px-6 py-4">
+          {loading ? (
+            <div className="p-6 text-center text-gray-600">Loading call history...</div>
+          ) : error ? (
+            <div className="p-6 text-center text-red-600">{error}</div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left">
                     <input type="checkbox" className="w-4 h-4 rounded" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img src={call.avatar} className="w-10 h-10 rounded-full object-cover" alt={call.name} />
-                      <div>
-                        <p className="font-semibold text-gray-900 text-sm">{call.name}</p>
-                        <p className="text-xs text-gray-500">{call.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{call.phone}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${getTypeColor(call.type)}`}>
-                      {getTypeIcon(call.type)} {call.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{call.duration}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{call.date}</td>
-                  <td className="px-6 py-4 flex items-center gap-2">
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-blue-600">
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-red-600">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Phone</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Call Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Direction</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Duration</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date & Time</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {callData.length > 0 ? (
+                  callData.map((call) => (
+                    <tr key={call.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedCaller(call)}>
+                      <td className="px-6 py-4">
+                        <input type="checkbox" className="w-4 h-4 rounded" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <img src={call.avatar} className="w-10 h-10 rounded-full object-cover" alt={call.name} />
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm">{call.name}</p>
+                            <p className="text-xs text-gray-500">{call.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{call.phone}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${call.callType === 'Video Call' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                          {call.callType === 'Video Call' ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />} {call.callType}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 w-fit ${getTypeColor(call.type)}`}>
+                          {getTypeIcon(call.type)} {call.type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{call.duration}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{call.date}</td>
+                      <td className="px-6 py-4 flex items-center gap-2">
+                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-blue-600">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteCall(call.id); }} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-red-600">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
+                      No call history found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -210,8 +216,12 @@ export default function CallHistoryPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase">Total Calls</label>
-                <p className="text-2xl font-bold text-gray-900">{selectedCaller.totalCalls}</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase">Call Type</label>
+                <p className="text-lg font-bold text-gray-900">{selectedCaller.callType}</p>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase">Direction</label>
+                <p className="text-lg font-bold text-gray-900">{selectedCaller.type}</p>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Phone className="w-4 h-4" />
@@ -221,8 +231,8 @@ export default function CallHistoryPage() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase">Average Call Timing</label>
-                <p className="text-xl font-bold text-gray-900">{selectedCaller.avgCallTime}</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase">Duration</label>
+                <p className="text-xl font-bold text-gray-900">{selectedCaller.duration}</p>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Mail className="w-4 h-4" />
@@ -232,20 +242,35 @@ export default function CallHistoryPage() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase">Average Waiting Time</label>
-                <p className="text-xl font-bold text-gray-900">{selectedCaller.avgWaitTime}</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase">Call Date</label>
+                <p className="text-sm font-bold text-gray-900">{selectedCaller.date}</p>
               </div>
+              {selectedCaller.meetingLink && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Meeting Link</label>
+                  <p className="text-xs font-mono text-blue-600 break-all">{selectedCaller.meetingLink}</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors">
-              Video Call
-            </button>
-            <button className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors">
-              Audio Call
-            </button>
+          <div className="flex flex-col gap-3">
+            {selectedCaller.meetingLink && (
+              <button 
+                onClick={() => handleJoinMeeting(selectedCaller.meetingLink)}
+                className="w-full px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-semibold transition-colors">
+                Join Meeting
+              </button>
+            )}
+            <div className="flex gap-3">
+              <button className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors">
+                Video Call
+              </button>
+              <button className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors">
+                Audio Call
+              </button>
+            </div>
           </div>
         </div>
       )}

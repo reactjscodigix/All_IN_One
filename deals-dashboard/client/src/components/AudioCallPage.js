@@ -1,13 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone, Mic, MicOff, Volume2 } from 'lucide-react';
+import { generateMeetingLink } from '../utils/meetingUtils';
 
 export default function AudioCallPage() {
   const [isMuted, setIsMuted] = useState(false);
+  const [googleMeetLink, setGoogleMeetLink] = useState('');
+
+  useEffect(() => {
+    setGoogleMeetLink(generateMeetingLink());
+  }, []);
+
   const caller = {
     name: 'Anthony Lewis',
     avatar: 'https://ui-avatars.com/api/?name=Anthony+Lewis&background=06B6D4&color=fff&size=200',
     status: 'Online',
     duration: '00:24',
+  };
+
+  const recordCall = async () => {
+    try {
+      await fetch('http://localhost:5000/api/call-history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          caller_name: caller.name,
+          caller_avatar: caller.avatar,
+          call_type: 'Audio Call',
+          call_direction: 'Outgoing',
+          duration: 0,
+          meeting_link: googleMeetLink,
+          notes: 'Audio call via Google Meet'
+        })
+      });
+    } catch (error) {
+      console.error('Error recording call:', error);
+    }
+  };
+
+  const handleCallClick = () => {
+    if (googleMeetLink) {
+      recordCall();
+      window.open(googleMeetLink, '_blank');
+    }
   };
 
   return (
@@ -64,7 +100,9 @@ export default function AudioCallPage() {
           {isMuted ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
         </button>
 
-        <button className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg">
+        <button 
+          onClick={handleCallClick}
+          className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg">
           <Phone className="w-7 h-7" />
         </button>
 
