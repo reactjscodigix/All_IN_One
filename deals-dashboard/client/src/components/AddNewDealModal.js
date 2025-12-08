@@ -125,6 +125,8 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
     e.preventDefault();
     setError('');
     
+    console.log('📤 Form submission - formData:', formData);
+    
     if (!formData.deal_name || !formData.deal_value) {
       setError('Please fill in required fields: Deal Name and Deal Value');
       return;
@@ -144,6 +146,14 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
       setError('Please select a Pipeline');
       return;
     }
+
+    console.log('✅ Form validation passed, submitting with data:', {
+      deal_name: formData.deal_name,
+      company_id: formData.company_id,
+      contact_id: formData.contact_id,
+      pipeline: formData.pipeline,
+      deal_value: formData.deal_value
+    });
 
     setIsLoading(true);
     try {

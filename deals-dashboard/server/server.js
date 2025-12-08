@@ -776,6 +776,8 @@ app.get('/api/deals/:id', async (req, res) => {
 app.post('/api/deals', async (req, res) => {
   let connection;
   try {
+    console.log('📥 POST /api/deals - Received data:', req.body);
+    
     const {
       deal_name,
       pipeline,
@@ -797,31 +799,43 @@ app.post('/api/deals', async (req, res) => {
       company_id
     } = req.body;
 
+    console.log('🔍 Validation - deal_name:', deal_name, 'deal_value:', deal_value, 'company_id:', company_id, 'contact_id:', contact_id);
+
     if (!deal_name || !deal_value) {
+      console.warn('⚠️ Missing deal_name or deal_value');
       return res.status(400).json({ error: 'Missing required fields: deal_name, deal_value' });
+    }
+
+    if (!company_id) {
+      console.warn('⚠️ Missing company_id');
+      return res.status(400).json({ error: 'Missing required field: company_id' });
+    }
+
+    if (!contact_id) {
+      console.warn('⚠️ Missing contact_id');
+      return res.status(400).json({ error: 'Missing required field: contact_id' });
     }
 
     connection = await pool.getConnection();
     
     const tagsString = Array.isArray(tags) ? tags.join(',') : tags || '';
-    const projectString = Array.isArray(project_ids) ? project_ids.join(',') : project_ids || '';
 
     const [result] = await connection.query(`
       INSERT INTO deals (
-        deal_name, pipeline, status, deal_value, currency, period, period_value,
-        contact_id, project_id, due_date, expected_close_date, assignee_id,
-        follow_up_date, source, tags, priority, description, company_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        deal_name, company_id, contact_id, pipeline, status, deal_value, currency, 
+        period, period_value, due_date, expected_close_date, assignee_id,
+        follow_up_date, source, tags, priority, description
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       deal_name,
+      company_id,
+      contact_id,
       pipeline || null,
       status || 'Pending',
       deal_value,
       currency || 'USD',
       period || null,
       period_value || null,
-      contact_id || null,
-      projectString || null,
       due_date || null,
       expected_close_date || null,
       assignee_id || null,
@@ -829,16 +843,20 @@ app.post('/api/deals', async (req, res) => {
       source || null,
       tagsString,
       priority || 'Medium',
-      description || '',
-      company_id || null
+      description || ''
     ]);
 
+    console.log('✅ Deal created successfully - ID:', result.insertId, 'for company_id:', company_id);
     res.json({ 
       message: 'Deal created successfully', 
       id: result.insertId 
     });
   } catch (error) {
-    console.error('Error creating deal:', error.message);
+    console.error('❌ Error creating deal:');
+    console.error('  Message:', error.message);
+    console.error('  Code:', error.code);
+    console.error('  Request body:', req.body);
+    console.error('  Full error:', error);
     res.status(500).json({ error: 'Failed to create deal', details: error.message });
   } finally {
     if (connection) connection.release();
@@ -873,18 +891,25 @@ app.put('/api/deals/:id', async (req, res) => {
     connection = await pool.getConnection();
     
     const tagsString = Array.isArray(tags) ? tags.join(',') : tags || '';
-    const projectString = Array.isArray(project_ids) ? project_ids.join(',') : project_ids || '';
+    
+    console.log('📝 Updating deal ID:', id);
+    console.log('📝 deal_name:', deal_name);
+    console.log('📝 company_id:', company_id);
+    
+    if (!deal_name || !company_id) {
+      return res.status(400).json({ error: 'deal_name and company_id are required' });
+    }
 
     await connection.query(`
       UPDATE deals 
       SET deal_name = ?, pipeline = ?, status = ?, deal_value = ?, currency = ?,
-          period = ?, period_value = ?, contact_id = ?, project_id = ?,
+          period = ?, period_value = ?, contact_id = ?, 
           due_date = ?, expected_close_date = ?, assignee_id = ?,
           follow_up_date = ?, source = ?, tags = ?, priority = ?,
           description = ?, company_id = ?, updated_at = NOW()
       WHERE id = ?
     `, [
-      deal_name || null,
+      deal_name,
       pipeline || null,
       status || 'Pending',
       deal_value || null,
@@ -892,7 +917,6 @@ app.put('/api/deals/:id', async (req, res) => {
       period || null,
       period_value || null,
       contact_id || null,
-      projectString || null,
       due_date || null,
       expected_close_date || null,
       assignee_id || null,
@@ -901,13 +925,16 @@ app.put('/api/deals/:id', async (req, res) => {
       tagsString,
       priority || 'Medium',
       description || '',
-      company_id || null,
+      company_id,
       id
     ]);
 
     res.json({ message: 'Deal updated successfully' });
   } catch (error) {
-    console.error('Error updating deal:', error.message);
+    console.error('❌ Error updating deal:', error.message);
+    console.error('❌ Full error:', error);
+    console.error('❌ Request body:', req.body);
+    console.error('❌ Deal ID:', req.params.id);
     res.status(500).json({ error: 'Failed to update deal', details: error.message });
   } finally {
     if (connection) connection.release();

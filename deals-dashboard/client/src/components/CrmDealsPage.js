@@ -32,13 +32,38 @@ const CrmDealsPage = () => {
           projectAPI.getAll(),
         ]);
         
-        console.log('✅ API Response - Deals:', dealsRes);
+        console.log('✅ API Response - Deals (raw):', dealsRes);
+        console.log('✅ API Response - Deals type:', typeof dealsRes);
+        console.log('✅ API Response - Deals is Array:', Array.isArray(dealsRes));
+        console.log('✅ API Response - Deals keys:', dealsRes ? Object.keys(dealsRes).slice(0, 10) : 'N/A');
         console.log('✅ API Response - Projects:', projectsRes);
         
-        if (dealsRes && Array.isArray(dealsRes) && dealsRes.length > 0) {
-          const formattedDeals = dealsRes.map(deal => {
+        let actualDeals = dealsRes;
+        if (dealsRes && !Array.isArray(dealsRes) && typeof dealsRes === 'object') {
+          console.log('⚠️ API response is not an array, attempting to unwrap...');
+          if (dealsRes.data && Array.isArray(dealsRes.data)) {
+            actualDeals = dealsRes.data;
+            console.log('✅ Unwrapped deals from dealsRes.data');
+          } else if (dealsRes.deals && Array.isArray(dealsRes.deals)) {
+            actualDeals = dealsRes.deals;
+            console.log('✅ Unwrapped deals from dealsRes.deals');
+          } else if (dealsRes.rows && Array.isArray(dealsRes.rows)) {
+            actualDeals = dealsRes.rows;
+            console.log('✅ Unwrapped deals from dealsRes.rows');
+          } else {
+            console.warn('⚠️ Cannot find array property in API response, will use fallback');
+            actualDeals = [];
+          }
+        }
+        
+        console.log('📊 actualDeals after unwrapping:', actualDeals);
+        console.log('📊 actualDeals is array:', Array.isArray(actualDeals));
+        console.log('📊 actualDeals.length:', actualDeals?.length);
+        
+        if (actualDeals && Array.isArray(actualDeals) && actualDeals.length > 0) {
+          const formattedDeals = actualDeals.map(deal => {
             const stage = deal.pipeline || deal.deal_stage || 'Unclassified';
-            return {
+            const formatted = {
               ...deal,
               id: deal.id,
               stage: stage,
@@ -61,22 +86,26 @@ const CrmDealsPage = () => {
                 ? new Date(deal.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                 : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
             };
+            
+            if (!formatted.company_id && deal.company_id) {
+              formatted.company_id = deal.company_id;
+            }
+            if (!formatted.deal_name && deal.deal_name) {
+              formatted.deal_name = deal.deal_name;
+            }
+            
+            console.log(`📋 Formatted deal ${deal.id} - company_id: ${formatted.company_id}, deal_name: ${formatted.deal_name}`);
+            
+            return formatted;
           });
           
           console.log('✅ Formatted Deals:', formattedDeals);
+          console.log('📊 Unique stages in deals:', [...new Set(formattedDeals.map(d => d.stage))]);
           
-          const allowedStages = [
-            'New',
-            'Discovery',
-            'Proposal Sent',
-            'Negotiation',
-            'Qualified To Buy',
-            'Inpipeline',
-            'Follow Up',
-            'Conversation'
-          ];
+          const uniqueStages = [...new Set(formattedDeals.map(d => d.stage))].filter(s => s && s !== 'Unclassified');
+          console.log('📋 Unique stages from deals:', uniqueStages);
           
-          const updatedStats = allowedStages.map(stage => {
+          const updatedStats = uniqueStages.map(stage => {
             const stageDeals = formattedDeals.filter(d => d.stage === stage);
             return {
               stage,
@@ -87,23 +116,28 @@ const CrmDealsPage = () => {
           
           console.log('✅ Updated Stage Stats:', updatedStats);
           
+          console.log('🔄 Setting deals state to:', formattedDeals.length, 'deals');
           setDeals(formattedDeals);
           setStageStats(updatedStats);
         } else {
           console.warn('⚠️ No deals received or invalid format, using fallback data');
-          const allowedStages = [
-            'New',
-            'Discovery',
-            'Proposal Sent',
-            'Negotiation',
-            'Qualified To Buy',
-            'Inpipeline',
-            'Follow Up',
-            'Conversation'
-          ];
-          const filteredStats = dealsData.stageStats.filter(stat => allowedStages.includes(stat.stage));
-          setDeals(dealsData.deals);
-          setStageStats(filteredStats);
+          console.warn('actualDeals is:', actualDeals);
+          console.warn('actualDeals.length:', actualDeals?.length);
+          
+          const fallbackDeals = dealsData.deals || [];
+          const fallbackStages = [...new Set(fallbackDeals.map(d => d.stage))].filter(s => s && s !== 'Unclassified');
+          const fallbackStats = fallbackStages.map(stage => {
+            const stageDealsList = fallbackDeals.filter(d => d.stage === stage);
+            return {
+              stage,
+              leads: stageDealsList.length,
+              value: stageDealsList.reduce((sum, d) => sum + (d.value || 0), 0)
+            };
+          });
+          
+          console.log('📋 Fallback stages:', fallbackStages);
+          setDeals(fallbackDeals);
+          setStageStats(fallbackStats);
         }
         
         setContacts(contactsRes || []);
@@ -111,19 +145,20 @@ const CrmDealsPage = () => {
         setProjects(projectsRes && Array.isArray(projectsRes) ? projectsRes : projectsData.projects || []);
       } catch (err) {
         console.error('❌ Error fetching data:', err);
-        const allowedStages = [
-          'New',
-          'Discovery',
-          'Proposal Sent',
-          'Negotiation',
-          'Qualified To Buy',
-          'Inpipeline',
-          'Follow Up',
-          'Conversation'
-        ];
-        const filteredStats = dealsData.stageStats.filter(stat => allowedStages.includes(stat.stage));
-        setDeals(dealsData.deals);
-        setStageStats(filteredStats);
+        
+        const fallbackDeals = dealsData.deals || [];
+        const fallbackStages = [...new Set(fallbackDeals.map(d => d.stage))].filter(s => s && s !== 'Unclassified');
+        const fallbackStats = fallbackStages.map(stage => {
+          const stageDealsList = fallbackDeals.filter(d => d.stage === stage);
+          return {
+            stage,
+            leads: stageDealsList.length,
+            value: stageDealsList.reduce((sum, d) => sum + (d.value || 0), 0)
+          };
+        });
+        
+        setDeals(fallbackDeals);
+        setStageStats(fallbackStats);
         setProjects(projectsData.projects || []);
       } finally {
         setIsLoading(false);
@@ -158,7 +193,15 @@ const CrmDealsPage = () => {
 
   const handleCreateDeal = async (formData) => {
     try {
-      const response = await dealsAPI.create(formData);
+      const cleanedData = {
+        ...formData,
+        company_id: formData.company_id ? parseInt(formData.company_id, 10) : null,
+        contact_id: formData.contact_id ? parseInt(formData.contact_id, 10) : null,
+        assignee_id: formData.assignee_id ? parseInt(formData.assignee_id, 10) : null,
+        deal_value: formData.deal_value ? parseFloat(formData.deal_value) : null,
+      };
+      console.log('📤 Creating deal with cleaned data:', cleanedData);
+      const response = await dealsAPI.create(cleanedData);
       
       if (response.id) {
         const selectedCompany = companies.find(c => c.id === parseInt(formData.company_id));
@@ -225,6 +268,11 @@ const CrmDealsPage = () => {
   };
 
   const handleEditDeal = (deal) => {
+    console.log('✏️ Editing deal:', deal.id);
+    console.log('✏️ Deal object keys:', Object.keys(deal));
+    console.log('✏️ Deal company_id:', deal.company_id);
+    console.log('✏️ Deal deal_name:', deal.deal_name);
+    console.log('✏️ Full deal object:', deal);
     setSelectedDealToEdit(deal);
     setIsEditModalOpen(true);
     setOpenMenu(null);
@@ -257,7 +305,10 @@ const CrmDealsPage = () => {
 
   const handleUpdateDeal = async (formData) => {
     try {
+      console.log('📝 Updating deal:', selectedDealToEdit.id);
+      console.log('📝 Form data being sent:', formData);
       await dealsAPI.update(selectedDealToEdit.id, formData);
+      console.log('✅ Deal updated successfully');
       
       const updatedDeal = {
         ...selectedDealToEdit,

@@ -24,8 +24,26 @@ const DealsListPage = () => {
         ]);
         
         console.log('✅ DealsListPage - API Response:', { dealsRes, contactsRes, companiesRes });
+        console.log('✅ DealsListPage - dealsRes type:', typeof dealsRes);
+        console.log('✅ DealsListPage - dealsRes is Array:', Array.isArray(dealsRes));
         
-        const transformedDeals = (dealsRes || []).map(deal => ({
+        let actualDeals = dealsRes || [];
+        if (dealsRes && !Array.isArray(dealsRes) && typeof dealsRes === 'object') {
+          if (dealsRes.data && Array.isArray(dealsRes.data)) {
+            actualDeals = dealsRes.data;
+            console.log('✅ DealsListPage - Unwrapped deals from dealsRes.data');
+          } else if (dealsRes.deals && Array.isArray(dealsRes.deals)) {
+            actualDeals = dealsRes.deals;
+            console.log('✅ DealsListPage - Unwrapped deals from dealsRes.deals');
+          } else if (dealsRes.rows && Array.isArray(dealsRes.rows)) {
+            actualDeals = dealsRes.rows;
+            console.log('✅ DealsListPage - Unwrapped deals from dealsRes.rows');
+          }
+        }
+        
+        console.log('✅ DealsListPage - actualDeals:', actualDeals);
+        
+        const transformedDeals = (actualDeals || []).map(deal => ({
           id: deal.id,
           name: deal.deal_name,
           company: deal.company_name || 'Unknown',
