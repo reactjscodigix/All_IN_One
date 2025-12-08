@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Download,
   Filter,
@@ -21,148 +21,28 @@ import {
   Legend,
 } from 'recharts';
 
+const generateMonthlyData = () => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return months.map((month) => ({
+    month,
+    value: Math.floor(Math.random() * 50000 + 15000)
+  }));
+};
+
+const stageColors = {
+  'Plan': '#6366f1',
+  'Develop': '#0ea5e9',
+  'Completed': '#22c55e',
+  'Design': '#ff9800',
+};
+
 const projectReportData = {
-  yearLine: [
-    { month: 'Jan', value: 15000 },
-    { month: 'Feb', value: 20000 },
-    { month: 'Mar', value: 38000 },
-    { month: 'Apr', value: 40000 },
-    { month: 'May', value: 32000 },
-    { month: 'Jun', value: 42000 },
-    { month: 'Jul', value: 38000 },
-    { month: 'Aug', value: 50000 },
-    { month: 'Sep', value: 56000 },
-    { month: 'Oct', value: 33000 },
-    { month: 'Nov', value: 28000 },
-    { month: 'Dec', value: 24000 },
-  ],
+  yearLine: generateMonthlyData(),
   stageData: [
     { name: 'Plan', value: 34, color: '#6366f1' },
     { name: 'Completed', value: 55, color: '#22c55e' },
     { name: 'Develop', value: 50, color: '#0ea5e9' },
     { name: 'Design', value: 17, color: '#ff9800' },
-  ],
-  projects: [
-    {
-      id: 1,
-      name: 'Truelysell',
-      client: 'NovaWave LLC',
-      clientLogo: 'https://i.pravatar.cc/40?img=1',
-      priority: 'High',
-      startDate: '25 Sep 2025',
-      endDate: '15 Oct 2025',
-      stage: 'Plan',
-      stageColor: '#6366f1',
-      status: 'Active',
-    },
-    {
-      id: 2,
-      name: 'Dreamschat',
-      client: 'BlueSky Industries',
-      clientLogo: 'https://i.pravatar.cc/40?img=2',
-      priority: 'Medium',
-      startDate: '29 Sep 2025',
-      endDate: '19 Oct 2025',
-      stage: 'Develop',
-      stageColor: '#0ea5e9',
-      status: 'Inactive',
-    },
-    {
-      id: 3,
-      name: 'Truelysell',
-      client: 'SilverHawk',
-      clientLogo: 'https://i.pravatar.cc/40?img=3',
-      priority: 'Low',
-      startDate: '05 Oct 2025',
-      endDate: '12 Oct 2025',
-      stage: 'Completed',
-      stageColor: '#22c55e',
-      status: 'Active',
-    },
-    {
-      id: 4,
-      name: 'Servbook',
-      client: 'SummitPeak',
-      clientLogo: 'https://i.pravatar.cc/40?img=4',
-      priority: 'High',
-      startDate: '14 Oct 2025',
-      endDate: '24 Oct 2025',
-      stage: 'Design',
-      stageColor: '#ff9800',
-      status: 'Inactive',
-    },
-    {
-      id: 5,
-      name: 'DreamPOS',
-      client: 'RiverStone Ventur',
-      clientLogo: 'https://i.pravatar.cc/40?img=5',
-      priority: 'Medium',
-      startDate: '15 Nov 2025',
-      endDate: '22 Nov 2025',
-      stage: 'Design',
-      stageColor: '#ff9800',
-      status: 'Inactive',
-    },
-    {
-      id: 6,
-      name: 'Kofejob',
-      client: 'CoastalStar Co.',
-      clientLogo: 'https://i.pravatar.cc/40?img=6',
-      priority: 'Low',
-      startDate: '25 Nov 2025',
-      endDate: '09 Dec 2025',
-      stage: 'Develop',
-      stageColor: '#0ea5e9',
-      status: 'Active',
-    },
-    {
-      id: 7,
-      name: 'Doccure',
-      client: 'HarborView',
-      clientLogo: 'https://i.pravatar.cc/40?img=7',
-      priority: 'High',
-      startDate: '08 Dec 2025',
-      endDate: '16 Dec 2025',
-      stage: 'Completed',
-      stageColor: '#22c55e',
-      status: 'Inactive',
-    },
-    {
-      id: 8,
-      name: 'Best@laundry',
-      client: 'Golden Gate Ltd',
-      clientLogo: 'https://i.pravatar.cc/40?img=8',
-      priority: 'Medium',
-      startDate: '21 Dec 2025',
-      endDate: '13 Jan 2024',
-      stage: 'Completed',
-      stageColor: '#22c55e',
-      status: 'Inactive',
-    },
-    {
-      id: 9,
-      name: 'POS',
-      client: 'CoastalStar Inc',
-      clientLogo: 'https://i.pravatar.cc/40?img=9',
-      priority: 'Low',
-      startDate: '01 Jan 2024',
-      endDate: '11 Jan 2024',
-      stage: 'Develop',
-      stageColor: '#0ea5e9',
-      status: 'Inactive',
-    },
-    {
-      id: 10,
-      name: 'Bookserv',
-      client: 'Redwood Inc',
-      clientLogo: 'https://i.pravatar.cc/40?img=10',
-      priority: 'High',
-      startDate: '12 Jan 2024',
-      endDate: '29 Jan 2024',
-      stage: 'Develop',
-      stageColor: '#0ea5e9',
-      status: 'Inactive',
-    },
   ],
 };
 
@@ -371,6 +251,45 @@ function ProjectsTable({ rows }) {
 }
 
 export default function ProjectReportsPage() {
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/projects`);
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        const data = await response.json();
+        
+        const formattedProjects = data.map((project, index) => ({
+          id: project.id,
+          name: project.project_name || 'Untitled Project',
+          client: 'Client',
+          clientLogo: `https://i.pravatar.cc/40?img=${index}`,
+          priority: project.priority || 'Medium',
+          startDate: project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A',
+          endDate: project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A',
+          stage: project.status || 'Plan',
+          stageColor: stageColors[project.status] || '#6366f1',
+          status: project.status === 'Completed' ? 'Active' : 'Inactive',
+        }));
+        
+        setProjects(formattedProjects);
+        setError('');
+      } catch (err) {
+        setError(err.message || 'Failed to fetch projects');
+        setProjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
   return (
     <div className="w-full bg-gray-50 min-h-screen">
       <div className="px-6 pt-6 pb-4 bg-white border-b border-gray-200">
@@ -378,7 +297,7 @@ export default function ProjectReportsPage() {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-3xl font-bold text-gray-900">Project Reports</h1>
-              <span className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold">325</span>
+              <span className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold">{projects.length}</span>
             </div>
             <div className="flex items-center gap-1 text-sm mt-1">
               <button className="text-orange-500 hover:text-orange-600 font-medium bg-transparent border-none cursor-pointer p-0">
@@ -440,7 +359,15 @@ export default function ProjectReportsPage() {
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-          <ProjectsTable rows={projectReportData.projects} />
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">Loading projects...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">Error: {error}</div>
+          ) : projects.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No projects found</div>
+          ) : (
+            <ProjectsTable rows={projects} />
+          )}
         </div>
       </div>
 

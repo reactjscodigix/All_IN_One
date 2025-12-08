@@ -50,6 +50,7 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100),
         username VARCHAR(100) UNIQUE NOT NULL,
         email VARCHAR(150) UNIQUE NOT NULL,
         email_opt_out BOOLEAN DEFAULT FALSE,
@@ -228,30 +229,6 @@ async function initializeDatabase() {
     `);
 
     await connection.query(`
-      CREATE TABLE IF NOT EXISTS contracts (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        subject VARCHAR(255) NOT NULL,
-        start_date DATE NOT NULL,
-        end_date DATE NOT NULL,
-        client_id INT NOT NULL,
-        contract_type VARCHAR(100) NOT NULL,
-        contract_value DECIMAL(15, 2) NOT NULL,
-        description LONGTEXT,
-        status ENUM('Draft', 'Active', 'Completed', 'Terminated') DEFAULT 'Draft',
-        created_by INT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_client_id (client_id),
-        INDEX idx_start_date (start_date),
-        INDEX idx_end_date (end_date),
-        INDEX idx_status (status),
-        INDEX idx_created_at (created_at),
-        FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE,
-        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
-      )
-    `);
-
-    await connection.query(`
       CREATE TABLE IF NOT EXISTS companies (
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_name VARCHAR(255) NOT NULL,
@@ -275,6 +252,30 @@ async function initializeDatabase() {
         INDEX idx_company_name (company_name),
         INDEX idx_status (status),
         INDEX idx_created_at (created_at)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS contracts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        subject VARCHAR(255) NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        client_id INT NOT NULL,
+        contract_type VARCHAR(100) NOT NULL,
+        contract_value DECIMAL(15, 2) NOT NULL,
+        description LONGTEXT,
+        status ENUM('Draft', 'Active', 'Completed', 'Terminated') DEFAULT 'Draft',
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_client_id (client_id),
+        INDEX idx_start_date (start_date),
+        INDEX idx_end_date (end_date),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at),
+        FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
 
@@ -551,7 +552,7 @@ async function initializeDatabase() {
     
     const [existingRoles] = await connection.query('SELECT COUNT(*) as count FROM roles');
     if (existingRoles[0].count === 0) {
-      const defaultRoles = ['Admin', 'Manager', 'Sales', 'Support', 'Viewer'];
+      const defaultRoles = ['Admin', 'Company Owner', 'Deal Owner', 'Project Manager', 'Client', 'Lead', 'Employee'];
       for (const role of defaultRoles) {
         await connection.query('INSERT INTO roles (name) VALUES (?)', [role]);
       }
@@ -565,6 +566,26 @@ async function initializeDatabase() {
         await connection.query('INSERT INTO modules (name) VALUES (?)', [module]);
       }
       console.log('✓ Default modules created');
+    }
+
+    const [existingUsers] = await connection.query('SELECT COUNT(*) as count FROM users');
+    if (existingUsers[0].count === 0) {
+      const demoUsers = [
+        { first_name: 'Admin', last_name: 'User', email: 'admin@example.com', password: 'admin123', role_id: 1 },
+        { first_name: 'John', last_name: 'Doe', email: 'john@example.com', password: 'pass123', role_id: 2 },
+        { first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com', password: 'pass123', role_id: 3 },
+        { first_name: 'Mike', last_name: 'Johnson', email: 'mike@example.com', password: 'pass123', role_id: 4 },
+        { first_name: 'Client', last_name: 'User', email: 'client@example.com', password: 'pass123', role_id: 5 },
+        { first_name: 'Lead', last_name: 'User', email: 'lead@example.com', password: 'pass123', role_id: 6 }
+      ];
+      for (const user of demoUsers) {
+        const username = user.email.split('@')[0];
+        await connection.query(
+          'INSERT INTO users (first_name, last_name, username, email, password, role_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [user.first_name, user.last_name, username, user.email, user.password, user.role_id, 'Active']
+        );
+      }
+      console.log('✓ Demo users created');
     }
     
     connection.release();
@@ -585,6 +606,122 @@ async function testConnection() {
     console.error('✗ Database connection failed:', err.code || err.message);
   }
 }
+
+// Auth Routes
+app.post('/api/auth/login', async (req, res) => {
+  let connection;
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    connection = await pool.getConnection();
+
+    const [users] = await connection.query(
+      'SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.email = ?',
+      [email]
+    );
+
+    if (users.length === 0) {
+      connection.release();
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const user = users[0];
+    const passwordMatch = password === user.password;
+
+    if (!passwordMatch) {
+      connection.release();
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    connection.release();
+
+    res.json({
+      id: user.id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      avatar: user.avatar,
+      role_name: user.role_name || 'Lead',
+    });
+  } catch (error) {
+    console.error('Login error:', error.message);
+    res.status(500).json({ error: 'Login failed', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/auth/signup', async (req, res) => {
+  let connection;
+  try {
+    const { first_name, last_name, email, password, role_name, phone, company } = req.body;
+
+    if (!first_name || !last_name || !email || !password) {
+      return res.status(400).json({ error: 'All required fields must be provided' });
+    }
+
+    connection = await pool.getConnection();
+
+    const [existingUsers] = await connection.query(
+      'SELECT id FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (existingUsers.length > 0) {
+      connection.release();
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    const roleMapping = {
+      'Admin': 1,
+      'Company Owner': 2,
+      'Deal Owner': 3,
+      'Project Manager': 4,
+      'Client': 5,
+      'Lead': 6,
+      'Employee': 7,
+    };
+
+    const roleId = roleMapping[role_name] || 6;
+    const username = email.split('@')[0];
+
+    await connection.query(
+      `INSERT INTO users (first_name, last_name, username, email, password, role_id, phone1, location, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')`,
+      [first_name, last_name, username, email, password, roleId, phone || null, company || null]
+    );
+
+    const [newUsers] = await connection.query(
+      'SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.email = ?',
+      [email]
+    );
+
+    connection.release();
+
+    if (newUsers.length === 0) {
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+
+    const newUser = newUsers[0];
+    res.status(201).json({
+      id: newUser.id,
+      first_name: newUser.first_name,
+      last_name: newUser.last_name,
+      email: newUser.email,
+      avatar: newUser.avatar,
+      role_name: newUser.role_name || role_name,
+    });
+  } catch (error) {
+    console.error('Signup error:', error.message);
+    res.status(500).json({ error: 'Signup failed', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
 
 app.get('/api/deals', async (req, res) => {
   let connection;
@@ -1171,13 +1308,9 @@ app.get('/api/companies', async (req, res) => {
     const connection = await pool.getConnection();
     const [rows] = await connection.query(`
       SELECT 
-        c.id, c.company_name, c.industry, c.email, c.email_opt_out, c.phone, c.phone2, c.fax, 
-        c.website, c.address, c.city, c.state, c.country, c.employee_count, c.annual_revenue,
-        c.status, c.account_url, c.logo, c.password, c.created_at, c.updated_at,
-        c.reviews, c.owner, c.tags, c.source, c.currency, c.language, c.description,
-        cs.plan_name, cs.plan_type, cs.price, cs.registered_date, cs.expiring_on
+        c.id, c.company_name, c.industry, c.email, c.phone, c.website, c.address, c.city, c.state, c.country,
+        c.employees, c.revenue, c.status, c.logo, c.created_at, c.updated_at, c.description, c.created_by
       FROM companies c
-      LEFT JOIN company_subscriptions cs ON c.id = cs.company_id AND cs.status = 'Active'
       ORDER BY c.created_at DESC
     `);
     connection.release();
@@ -1194,13 +1327,9 @@ app.get('/api/companies/:id', async (req, res) => {
     const connection = await pool.getConnection();
     const [rows] = await connection.query(`
       SELECT 
-        c.id, c.company_name, c.industry, c.email, c.email_opt_out, c.phone, c.phone2, c.fax, 
-        c.website, c.address, c.city, c.state, c.country, c.employee_count, c.annual_revenue,
-        c.status, c.account_url, c.logo, c.password, c.created_at, c.updated_at,
-        c.reviews, c.owner, c.tags, c.source, c.currency, c.language, c.description,
-        cs.plan_name, cs.plan_type, cs.price, cs.registered_date, cs.expiring_on
+        c.id, c.company_name, c.industry, c.email, c.phone, c.website, c.address, c.city, c.state, c.country,
+        c.employees, c.revenue, c.status, c.logo, c.created_at, c.updated_at, c.description, c.created_by
       FROM companies c
-      LEFT JOIN company_subscriptions cs ON c.id = cs.company_id AND cs.status = 'Active'
       WHERE c.id = ?
     `, [id]);
     connection.release();
@@ -1208,7 +1337,6 @@ app.get('/api/companies/:id', async (req, res) => {
       return res.status(404).json({ error: 'Company not found' });
     }
     const company = rows[0];
-    console.log(`[DEBUG] Company ${id} - currency:${company.currency}, language:${company.language}`);
     res.json(company);
   } catch (error) {
     console.error(error);
@@ -1223,9 +1351,8 @@ app.post('/api/companies', async (req, res) => {
     }
 
     const { 
-      company_name, email, email_opt_out, phone, phone2, fax, website, address, 
-      account_url, status, industry, city, state, country, reviews, owner, 
-      tags, source, currency, language, description, planName, planType, logo 
+      company_name, email, phone, website, address, city, state, country, 
+      status, industry, description, logo, revenue, employees
     } = req.body;
     
     if (!company_name || !email || !phone) {
@@ -1236,27 +1363,15 @@ app.post('/api/companies', async (req, res) => {
     
     const [result] = await connection.query(
       `INSERT INTO companies 
-       (company_name, email, email_opt_out, phone, phone2, fax, website, address, account_url, 
-        status, industry, city, state, country, reviews, owner, tags, source, 
-        currency, language, description, logo) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
-      [company_name, email, email_opt_out || false, phone, phone2 || null, fax || null, website || null, address || null, 
-       account_url || null, status || 'Active', industry || null, city || null, state || null, 
-       country || null, reviews || null, owner || null, tags || null, source || null, 
-       currency || 'USD', language || 'English', description || null, logo || null]
+       (company_name, email, phone, website, address, city, state, country, 
+        status, industry, description, logo, revenue, employees) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+      [company_name, email, phone, website || null, address || null, city || null, state || null, 
+       country || null, status || 'Active', industry || null, description || null, logo || null, 
+       revenue || null, employees || null]
     );
     
     const companyId = result.insertId;
-    
-    if (planName && planType) {
-      const expiring = new Date();
-      expiring.setMonth(expiring.getMonth() + 1);
-      
-      await connection.query(
-        'INSERT INTO company_subscriptions (company_id, plan_name, plan_type, currency, language, registered_date, expiring_on) VALUES (?, ?, ?, ?, ?, NOW(), ?)',
-        [companyId, planName, planType, currency || 'USD', language || 'English', expiring]
-      );
-    }
     
     connection.release();
     res.json({ message: 'Company created successfully', id: companyId });

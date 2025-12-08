@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Filter, ChevronLeft, ChevronRight, Search, ChevronDown } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -31,108 +31,6 @@ const dealReportData = {
     { name: 'Google', value: 55, color: '#6a15ff' },
     { name: 'Referrals', value: 41, color: '#fbbf24' },
     { name: 'Paid Social', value: 17, color: '#ff6b35' },
-  ],
-  deals: [
-    {
-      id: 1,
-      name: 'Annual Software Subscription',
-      stage: 'Appointment',
-      value: '$04,51,000',
-      tags: ['Rated'],
-      expectedClose: '25 Sep 2025',
-      probability: '90%',
-      status: 'Won',
-    },
-    {
-      id: 2,
-      name: 'CRM Onboarding Package',
-      stage: 'Appointment',
-      value: '$03,12,500',
-      tags: ['Collab'],
-      expectedClose: '29 Sep 2025',
-      probability: '15%',
-      status: 'Lost',
-    },
-    {
-      id: 3,
-      name: 'Enterprise Plan Upgrade',
-      stage: 'Contact Made',
-      value: '$04,14,800',
-      tags: ['Rejected'],
-      expectedClose: '04 Oct 2025',
-      probability: '95%',
-      status: 'Won',
-    },
-    {
-      id: 4,
-      name: 'BrightWorks Campaign',
-      stage: 'Presentation',
-      value: '$11,14,400',
-      tags: ['Rated'],
-      expectedClose: '15 Oct 2025',
-      probability: '99%',
-      status: 'Won',
-    },
-    {
-      id: 5,
-      name: 'Sales Pipeline Optimization',
-      stage: 'Proposal Made',
-      value: '$16,11,400',
-      tags: ['Rated'],
-      expectedClose: '27 Oct 2025',
-      probability: '10%',
-      status: 'open',
-    },
-    {
-      id: 6,
-      name: 'CRM Migration Project',
-      stage: 'Proposal Made',
-      value: '$78,11,800',
-      tags: ['Rated'],
-      expectedClose: '07 Nov 2025',
-      probability: '70%',
-      status: 'Won',
-    },
-    {
-      id: 7,
-      name: 'Multi-Store License Renewal',
-      stage: 'Proposal Made',
-      value: '$09,05,947',
-      tags: ['Promotion'],
-      expectedClose: '12 Nov 2025',
-      probability: '10%',
-      status: 'open',
-    },
-    {
-      id: 8,
-      name: 'Custom Feature Development',
-      stage: 'Qualify To Buy',
-      value: '$04,51,000',
-      tags: ['Rejected'],
-      expectedClose: '23 Nov 2025',
-      probability: '90%',
-      status: 'Won',
-    },
-    {
-      id: 9,
-      name: 'SkyHigh Annual Booking',
-      stage: 'Qualify To Buy',
-      value: '$72,14,078',
-      tags: ['Collab'],
-      expectedClose: '11 Dec 2025',
-      probability: '40%',
-      status: 'Won',
-    },
-    {
-      id: 10,
-      name: 'BlueOcean Funding Round',
-      stage: 'Qualify To Buy',
-      value: '$09,05,947',
-      tags: ['Collab'],
-      expectedClose: '17 Dec 2025',
-      probability: '47%',
-      status: 'Lost',
-    },
   ],
 };
 
@@ -188,9 +86,12 @@ function TagBadge({ tag }) {
 
 function StatusBadge({ status }) {
   const statusColors = {
-    Won: 'bg-green-500 text-white',
-    Lost: 'bg-red-500 text-white',
-    open: 'bg-blue-500 text-white',
+    'Closed Won': 'bg-green-500 text-white',
+    'Closed Lost': 'bg-red-500 text-white',
+    'Proposal': 'bg-blue-500 text-white',
+    'Negotiation': 'bg-orange-500 text-white',
+    'In Progress': 'bg-yellow-500 text-white',
+    'open': 'bg-blue-500 text-white',
   };
   return (
     <span className={`px-2 py-1 rounded text-xs font-semibold ${statusColors[status] || 'bg-gray-500 text-white'}`}>
@@ -206,7 +107,7 @@ function DealsTable({ rows }) {
 
   const filtered = useMemo(() => {
     let tmp = rows.filter((r) => {
-      const all = `${r.name} ${r.stage} ${r.value} ${r.status}`.toLowerCase();
+      const all = `${r.name} ${r.stage} ${r.value} ${r.status} ${r.company} ${r.contact}`.toLowerCase();
       return all.includes(q.toLowerCase());
     });
     return tmp;
@@ -259,11 +160,12 @@ function DealsTable({ rows }) {
                 <input type="checkbox" className="w-4 h-4" />
               </th>
               <th className="py-3 px-4 text-left font-medium text-gray-700">Deal Name</th>
+              <th className="py-3 px-4 text-left font-medium text-gray-700">Company</th>
+              <th className="py-3 px-4 text-left font-medium text-gray-700">Contact</th>
               <th className="py-3 px-4 text-left font-medium text-gray-700">Stage</th>
               <th className="py-3 px-4 text-left font-medium text-gray-700">Deal Value</th>
-              <th className="py-3 px-4 text-left font-medium text-gray-700">Tags</th>
-              <th className="py-3 px-4 text-left font-medium text-gray-700">Expected Close Date</th>
               <th className="py-3 px-4 text-left font-medium text-gray-700">Probability</th>
+              <th className="py-3 px-4 text-left font-medium text-gray-700">Expected Close Date</th>
               <th className="py-3 px-4 text-left font-medium text-gray-700">Status</th>
             </tr>
           </thead>
@@ -274,17 +176,12 @@ function DealsTable({ rows }) {
                   <input type="checkbox" className="w-4 h-4" />
                 </td>
                 <td className="py-3 px-4 text-gray-900 font-medium">{r.name}</td>
+                <td className="py-3 px-4 text-gray-700">{r.company}</td>
+                <td className="py-3 px-4 text-gray-700">{r.contact}</td>
                 <td className="py-3 px-4 text-gray-700">{r.stage}</td>
-                <td className="py-3 px-4 text-gray-900 font-medium">{r.value}</td>
-                <td className="py-3 px-4">
-                  <div className="flex gap-2">
-                    {r.tags.map((tag) => (
-                      <TagBadge key={tag} tag={tag} />
-                    ))}
-                  </div>
-                </td>
+                <td className="py-3 px-4 text-gray-900 font-medium">{r.currency} {r.value.toFixed(2)}</td>
+                <td className="py-3 px-4 text-gray-900 font-medium">{r.probability}%</td>
                 <td className="py-3 px-4 text-gray-700">{r.expectedClose}</td>
-                <td className="py-3 px-4 text-gray-900 font-medium">{r.probability}</td>
                 <td className="py-3 px-4">
                   <StatusBadge status={r.status} />
                 </td>
@@ -329,6 +226,47 @@ function DealsTable({ rows }) {
 }
 
 const DealReport = () => {
+  const [deals, setDeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchDeals = async () => {
+      try {
+        setLoading(true);
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/deals`);
+        if (!response.ok) throw new Error('Failed to fetch deals');
+        const data = await response.json();
+        
+        const formattedDeals = data.map((deal) => ({
+          id: deal.id,
+          name: deal.deal_name || 'Untitled Deal',
+          stage: deal.deal_stage || deal.stage || 'Prospecting',
+          value: parseFloat(deal.deal_value) || 0,
+          currency: deal.currency || 'USD',
+          contact: deal.first_name && deal.last_name ? `${deal.first_name} ${deal.last_name}` : 'N/A',
+          company: deal.company_name || 'N/A',
+          assignee: deal.assignee_first_name && deal.assignee_last_name ? `${deal.assignee_first_name} ${deal.assignee_last_name}` : 'N/A',
+          tags: deal.tags ? (typeof deal.tags === 'string' ? [deal.tags] : deal.tags) : [],
+          expectedClose: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : 'N/A',
+          probability: deal.probability || 50,
+          status: deal.deal_stage || deal.status || 'open',
+        }));
+        
+        setDeals(formattedDeals);
+        setError('');
+      } catch (err) {
+        setError(err.message || 'Failed to fetch deals');
+        setDeals([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDeals();
+  }, []);
+
   return (
     <div className="w-full bg-gray-50 min-h-screen">
       <div className="p-6">
@@ -336,7 +274,7 @@ const DealReport = () => {
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-gray-900">Deal Report</h1>
-            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">125</span>
+            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">{deals.length}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <a href="/" className="text-orange-500 hover:text-orange-600 font-medium">
@@ -374,7 +312,15 @@ const DealReport = () => {
 
         {/* Table Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <DealsTable rows={dealReportData.deals} />
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">Loading deals...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">Error: {error}</div>
+          ) : deals.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No deals found</div>
+          ) : (
+            <DealsTable rows={deals} />
+          )}
         </div>
       </div>
 

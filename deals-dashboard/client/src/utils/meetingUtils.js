@@ -34,11 +34,8 @@ export const generateMeetingCode = () => {
 
 export const generateMeetingLink = () => {
   const links = [
-    'https://meet.google.com/wir-xtfx-dcw',
-    'https://meet.google.com/mrh-gsrk-nne',
-    'https://meet.google.com/tvk-pcot-qft',
-    'https://meet.google.com/xok-ddgq-mmk',
-    'https://meet.google.com/kdr-uunz-gou'
+    'https://meet.google.com/njd-jpda-kqh',
+    'https://meet.google.com/ine-zzaf-qch'
   ];
   return links[Math.floor(Math.random() * links.length)];
 };

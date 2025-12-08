@@ -1,23 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, Mic, MicOff, Volume2 } from 'lucide-react';
-import { generateMeetingLink } from '../utils/meetingUtils';
+import { Phone, Mic, MicOff, Volume2, X, PhoneOff } from 'lucide-react';
 
 export default function AudioCallPage() {
   const [isMuted, setIsMuted] = useState(false);
-  const [googleMeetLink, setGoogleMeetLink] = useState('');
-
-  useEffect(() => {
-    setGoogleMeetLink(generateMeetingLink());
-  }, []);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [callStarted, setCallStarted] = useState(false);
+  const [callDuration, setCallDuration] = useState(0);
+  const [isRinging, setIsRinging] = useState(false);
+  const [callerPhone, setCallerPhone] = useState('');
 
   const caller = {
     name: 'Anthony Lewis',
     avatar: 'https://ui-avatars.com/api/?name=Anthony+Lewis&background=06B6D4&color=fff&size=200',
     status: 'Online',
-    duration: '00:24',
   };
 
-  const recordCall = async () => {
+  useEffect(() => {
+    let timer;
+    if (callStarted) {
+      timer = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [callStarted]);
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const recordCall = async (phone) => {
     try {
       await fetch('http://localhost:5000/api/call-history', {
         method: 'POST',
@@ -27,11 +42,11 @@ export default function AudioCallPage() {
         body: JSON.stringify({
           caller_name: caller.name,
           caller_avatar: caller.avatar,
+          phone_number: phone,
           call_type: 'Audio Call',
           call_direction: 'Outgoing',
           duration: 0,
-          meeting_link: googleMeetLink,
-          notes: 'Audio call via Google Meet'
+          notes: 'Audio call'
         })
       });
     } catch (error) {
@@ -39,39 +54,66 @@ export default function AudioCallPage() {
     }
   };
 
-  const handleCallClick = () => {
-    if (googleMeetLink) {
-      recordCall();
-      window.open(googleMeetLink, '_blank');
+  const handleStartCall = async () => {
+    if (!phoneNumber.trim()) {
+      alert('Please enter a phone number');
+      return;
     }
+    setCallerPhone(phoneNumber);
+    setShowPhoneModal(false);
+    setIsRinging(true);
+    
+    setTimeout(() => {
+      setIsRinging(false);
+      setCallStarted(true);
+      recordCall(phoneNumber);
+    }, 2000);
+  };
+
+  const handleEndCall = () => {
+    setCallStarted(false);
+    setIsRinging(false);
+    setCallDuration(0);
+    setPhoneNumber('');
+    setCallerPhone('');
+    setShowPhoneModal(false);
+  };
+
+  const openPhoneModal = () => {
+    setShowPhoneModal(true);
   };
 
   return (
-    <div className="w-full h-[calc(100vh-80px)] bg-white flex flex-col">
+    <div className="w-full h-[calc(100vh-80px)] bg-gradient-to-b from-blue-50 to-white flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white shadow-sm">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shadow-sm">
+        <div className="flex items-center gap-3">
           <img
             src={caller.avatar}
-            className="w-12 h-12 rounded-full object-cover"
+            className="w-10 h-10 rounded-full object-cover"
             alt={caller.name}
           />
           <div>
             <h2 className="text-sm font-semibold text-gray-900">{caller.name}</h2>
-            <p className="text-xs text-gray-500">{caller.status}</p>
+            <p className="text-xs text-gray-500">{callStarted ? 'Ongoing' : caller.status}</p>
           </div>
         </div>
-        <button className="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
-          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.5 1.5H3a2 2 0 00-2 2v4m6-4v4m0 0H1m9 0h12a2 2 0 012 2v4m0-4v4m0 0v8a2 2 0 01-2 2h-4m0-4h4m0 0V1.5" />
-          </svg>
-        </button>
+        {!callStarted && !isRinging && (
+          <button 
+            onClick={openPhoneModal}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold text-sm flex items-center gap-2 transition-colors shadow-md">
+            <Phone className="w-4 h-4" />
+            Call
+          </button>
+        )}
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-white via-gray-50 to-white">
-        {/* Caller Avatar */}
-        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center mb-6 shadow-lg">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-blue-50 to-white">
+        {/* Caller Avatar with animation */}
+        <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center mb-6 shadow-lg transition-all ${
+          isRinging ? 'animate-pulse ring-4 ring-cyan-300' : callStarted ? 'ring-2 ring-green-400' : ''
+        }`}>
           <img
             src={caller.avatar}
             className="w-full h-full rounded-full object-cover"
@@ -80,49 +122,123 @@ export default function AudioCallPage() {
         </div>
 
         {/* Caller Info */}
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">{caller.name}</h3>
-        <p className="text-lg text-blue-600 font-semibold mb-6">{caller.duration}</p>
+        <h3 className="text-3xl font-bold text-gray-900 mb-2">{caller.name}</h3>
+        
+        {/* Phone Number Display */}
+        {callerPhone && (
+          <p className="text-lg text-blue-600 font-semibold mb-2">{callerPhone}</p>
+        )}
 
-        {/* Additional Info */}
-        <div className="text-center mb-12">
-          <p className="text-gray-600">Voice Call in progress</p>
-        </div>
+        {/* Call Status */}
+        {isRinging ? (
+          <div className="text-center mb-12">
+            <p className="text-lg text-gray-600 font-medium animate-pulse">Calling...</p>
+          </div>
+        ) : callStarted ? (
+          <div className="text-center mb-12">
+            <p className="text-2xl text-green-600 font-bold mb-2">{formatDuration(callDuration)}</p>
+            <p className="text-gray-600">Voice Call in progress</p>
+          </div>
+        ) : (
+          <div className="text-center mb-12">
+            <p className="text-gray-600">Ready to call</p>
+          </div>
+        )}
       </div>
 
       {/* Bottom Controls */}
-      <div className="border-t p-6 flex items-center justify-center gap-6 bg-white">
-        <button
-          onClick={() => setIsMuted(!isMuted)}
-          className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-            isMuted ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          {isMuted ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
-        </button>
+      {(callStarted || isRinging) && (
+        <div className="border-t p-6 flex items-center justify-center gap-6 bg-white shadow-lg">
+          {callStarted && (
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-md ${
+                isMuted ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {isMuted ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+            </button>
+          )}
 
-        <button 
-          onClick={handleCallClick}
-          className="w-16 h-16 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg">
-          <Phone className="w-7 h-7" />
-        </button>
+          <button 
+            onClick={handleEndCall}
+            className="w-16 h-16 rounded-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white transition-all shadow-lg">
+            <PhoneOff className="w-7 h-7" />
+          </button>
 
-        <button className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">
-          <Volume2 className="w-7 h-7" />
-        </button>
-      </div>
-
-      {/* Secondary Caller */}
-      <div className="p-4 bg-gray-50 border-t border-gray-200 flex items-center gap-4">
-        <img
-          src="https://ui-avatars.com/api/?name=User&background=8B5CF6&color=fff&size=100"
-          className="w-12 h-12 rounded-full object-cover"
-          alt="Secondary"
-        />
-        <div>
-          <p className="text-sm font-semibold text-gray-900">Second Caller Added</p>
-          <p className="text-xs text-gray-600">Call on hold</p>
+          {callStarted && (
+            <button className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all shadow-md">
+              <Volume2 className="w-7 h-7" />
+            </button>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Phone Number Modal */}
+      {showPhoneModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Start Audio Call</h3>
+                <p className="text-xs text-gray-500 mt-1">Enter phone number to call</p>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowPhoneModal(false);
+                  setPhoneNumber('');
+                }}
+                className="p-1 hover:bg-gray-100 rounded text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Mobile Number *</label>
+                <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-cyan-500 focus-within:border-transparent">
+                  <Phone className="w-5 h-5 text-gray-400" />
+                  <input 
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="+1 (555) 000-0000"
+                    className="flex-1 outline-none bg-transparent text-gray-900"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+                Enter the mobile number of the contact you want to call. The call will be recorded in your call history.
+              </p>
+
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => {
+                    setShowPhoneModal(false);
+                    setPhoneNumber('');
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-semibold"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleStartCall}
+                  disabled={!phoneNumber.trim()}
+                  className="flex-1 px-4 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center gap-2"
+                >
+                  <Phone className="w-4 h-4" />
+                  Call Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

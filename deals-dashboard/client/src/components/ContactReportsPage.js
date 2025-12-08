@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Download,
   Filter,
@@ -24,158 +24,21 @@ import {
   Legend,
 } from 'recharts';
 
+const generateMonthlyData = () => {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return months.map((month) => ({
+    month,
+    value: Math.floor(Math.random() * 2500 + 1000)
+  }));
+};
+
 const contactsReportData = {
-  yearData: [
-    { month: 'Jan', value: 1200 },
-    { month: 'Feb', value: 1500 },
-    { month: 'Mar', value: 2000 },
-    { month: 'Apr', value: 1800 },
-    { month: 'May', value: 2200 },
-    { month: 'Jun', value: 1900 },
-    { month: 'Jul', value: 2400 },
-    { month: 'Aug', value: 2100 },
-    { month: 'Sep', value: 2500 },
-    { month: 'Oct', value: 2000 },
-    { month: 'Nov', value: 2300 },
-    { month: 'Dec', value: 2100 },
-  ],
+  yearData: generateMonthlyData(),
   sourceData: [
     { name: 'Campaigns', value: 44, color: '#1f93ff' },
     { name: 'Google', value: 55, color: '#6a15ff' },
     { name: 'Referrals', value: 41, color: '#ff3b30' },
     { name: 'Paid Social', value: 17, color: '#ff9800' },
-  ],
-  contacts: [
-    {
-      id: 1,
-      name: 'Darlee Robertson',
-      role: 'Facility Manager',
-      avatar: 'https://i.pravatar.cc/100?img=32',
-      phone: '1234567890',
-      tag: 'Collab',
-      flag: '🇺🇸',
-      location: 'USA',
-      rating: 4.2,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 2,
-      name: 'Sharon Roy',
-      role: 'Installer',
-      avatar: 'https://i.pravatar.cc/100?img=1',
-      phone: '+1 989757485',
-      tag: 'Promotion',
-      flag: '🇦🇪',
-      location: 'UAE',
-      rating: 5.0,
-      status: 'Inactive',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 3,
-      name: 'Vaughan Lewis',
-      role: 'Senior Manager',
-      avatar: 'https://i.pravatar.cc/100?img=33',
-      phone: '+1 546555455',
-      tag: 'Collab',
-      flag: '🇩🇪',
-      location: 'Germany',
-      rating: 3.5,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 4,
-      name: 'Jessica Louise',
-      role: 'Test Engineer',
-      avatar: 'https://i.pravatar.cc/100?img=2',
-      phone: '+1 454478787',
-      tag: 'VIP',
-      flag: '🇫🇷',
-      location: 'France',
-      rating: 4.5,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 5,
-      name: 'Carol Thomas',
-      role: 'UI/UX Designer',
-      avatar: 'https://i.pravatar.cc/100?img=3',
-      phone: '+1 124547845',
-      tag: 'Collab',
-      flag: '🇮🇳',
-      location: 'India',
-      rating: 4.7,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 6,
-      name: 'Dawn Mercha',
-      role: 'Technician',
-      avatar: 'https://i.pravatar.cc/100?img=4',
-      phone: '+1 478845447',
-      tag: 'VIP',
-      flag: '🇧🇷',
-      location: 'Brazil',
-      rating: 5.0,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 7,
-      name: 'Rachel Hampton',
-      role: 'Software Developer',
-      avatar: 'https://i.pravatar.cc/100?img=5',
-      phone: '+1 215544845',
-      tag: 'Promotion',
-      flag: '🇲🇽',
-      location: 'Mexico',
-      rating: 3.1,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 8,
-      name: 'Jonelle Curtiss',
-      role: 'Supervisor',
-      avatar: 'https://i.pravatar.cc/100?img=6',
-      phone: '+1 121145471',
-      tag: 'VIP',
-      flag: '🇨🇳',
-      location: 'China',
-      rating: 5.0,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 9,
-      name: 'Jonathan Smith',
-      role: 'Team Lead Dev',
-      avatar: 'https://i.pravatar.cc/100?img=7',
-      phone: '+1 321454789',
-      tag: 'Collab',
-      flag: '🇷🇺',
-      location: 'Russia',
-      rating: 2.7,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
-    {
-      id: 10,
-      name: 'Brook Carter',
-      role: 'Team Lead Dev',
-      avatar: 'https://i.pravatar.cc/100?img=8',
-      phone: '+1 278907145',
-      tag: 'Promotion',
-      flag: '🇫🇷',
-      location: 'France',
-      rating: 3.0,
-      status: 'Active',
-      actionIcons: ['📧', '📞', '💬', '📤'],
-    },
   ],
 };
 
@@ -652,13 +515,62 @@ function ContactsTable({ rows }) {
 }
 
 const ContactReportsPage = () => {
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [monthlyData, setMonthlyData] = useState([]);
+
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        setLoading(true);
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/contacts`);
+        if (!response.ok) throw new Error('Failed to fetch contacts');
+        const data = await response.json();
+        
+        const formattedContacts = data.map((contact, index) => ({
+          id: contact.id,
+          name: `${contact.first_name} ${contact.last_name}`,
+          email: contact.email,
+          phone: contact.phone,
+          company: contact.company_name,
+          position: contact.position,
+          department: contact.department,
+          source: contact.source,
+          status: contact.status,
+          notes: contact.notes,
+          avatar: `https://i.pravatar.cc/100?img=${index}`,
+          rating: 4.0,
+        }));
+        
+        setContacts(formattedContacts);
+        
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        setMonthlyData(months.map((month, idx) => ({
+          month,
+          value: Math.floor(formattedContacts.length / 12 * (idx + 1))
+        })));
+        
+        setError('');
+      } catch (err) {
+        setError(err.message || 'Failed to fetch contacts');
+        setContacts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContacts();
+  }, []);
+
   return (
     <div className="w-full bg-gray-50 min-h-screen">
       <div className="p-6">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-gray-900">Contact Reports</h1>
-            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">125</span>
+            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">{contacts.length}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <a href="/" className="text-orange-500 hover:text-orange-600 font-medium">
@@ -669,17 +581,18 @@ const ContactReportsPage = () => {
           </div>
         </div>
 
+        {!loading && !error && contacts.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Contacts By Year</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Contacts By Month</h2>
               <select className="border border-gray-200 rounded px-3 py-1 text-sm bg-white">
                 <option>2025</option>
                 <option>2024</option>
                 <option>2023</option>
               </select>
             </div>
-            <ContactsByYearChart data={contactsReportData.yearData} />
+            <ContactsByYearChart data={monthlyData} />
           </div>
 
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -694,9 +607,16 @@ const ContactReportsPage = () => {
             <ContactsBySourceDonut data={contactsReportData.sourceData} />
           </div>
         </div>
+        )}
 
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <ContactsTable rows={contactsReportData.contacts} />
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">Loading contacts...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">Error: {error}</div>
+          ) : (
+            <ContactsTable rows={contacts} />
+          )}
         </div>
       </div>
     </div>

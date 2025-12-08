@@ -1,7 +1,7 @@
 {
-  "name": "crm-dashboard",
+  "name": "AllINONE",
   "version": "1.0.0",
-  "description": "Professional CRM Dashboard - Preadmin Template Recreation",
+  "description": "Professional AllINONE CRM Dashboard - Complete Integration",
   "private": true,
   "scripts": {
     "setup": "cd server && npm install && cd ../client && npm install && cd ../server && npm run setup",
@@ -12,7 +12,9 @@
     "client": "cd client && npm start",
     "build": "cd client && npm run build",
     "build:dev": "cd client && npm run build:dev",
-    "test": "cd server && npm test"
+    "test": "cd server && npm test",
+    "insert-data": "cd server && node insert-complete-monthly-data.js",
+    "insert-month-data": "cd server && node insert-complete-monthly-data.js"
   },
   "keywords": [
     "crm",

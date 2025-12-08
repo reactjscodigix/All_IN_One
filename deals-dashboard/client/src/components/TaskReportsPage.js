@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Download,
   Filter,
@@ -20,124 +20,121 @@ import {
   Legend,
 } from 'recharts';
 
-const taskReportData = {
-  yearLine: [
-    { month: 'Jan', value: 35000 },
-    { month: 'Feb', value: 20000 },
-    { month: 'Mar', value: 50000 },
-    { month: 'Apr', value: 30000 },
-    { month: 'May', value: 45000 },
-    { month: 'Jun', value: 40000 },
-    { month: 'Jul', value: 38000 },
-    { month: 'Aug', value: 50000 },
-    { month: 'Sep', value: 60000 },
-    { month: 'Oct', value: 33000 },
-    { month: 'Nov', value: 28000 },
-    { month: 'Dec', value: 24000 },
-  ],
-  typeData: [
-    { name: 'Campaigns', value: 44, color: '#0ea5e9' },
-    { name: 'Google', value: 55, color: '#6366f1' },
-    { name: 'Referrals', value: 41, color: '#ef4444' },
-    { name: 'Paid Social', value: 17, color: '#f59e0b' },
-  ],
-  tasks: [
-    {
-      id: 1,
-      color: 'blue',
-      title: 'Add a form to Update Task',
-      tags: ['Calls', 'Pending'],
-      category: 'Promotion',
-      date: '25 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=1',
-    },
-    {
-      id: 2,
-      color: 'blue',
-      title: 'Make all strokes thinner',
-      tags: ['Email', 'Pending'],
-      category: 'Rejected',
-      date: '25 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=2',
-    },
-    {
-      id: 3,
-      color: 'yellow',
-      title: 'Update original content',
-      tags: ['Calls', 'Inprogress'],
-      category: 'Promotion',
-      date: '25 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=3',
-    },
-    {
-      id: 4,
-      color: 'yellow',
-      title: 'Use only component colours',
-      tags: ['Task', 'Inprogress'],
-      category: 'Collab',
-      date: '25 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=4',
-    },
-  ],
-  yesterday: [
-    {
-      id: 5,
-      color: 'yellow',
-      title: 'Add images to the cards section',
-      tags: ['Calls', 'Inprogress'],
-      category: 'Promotion',
-      date: '24 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=5',
-    },
-    {
-      id: 6,
-      color: 'red',
-      title: 'Add images to the cards section',
-      tags: ['Calls', 'Rejected'],
-      category: 'Promotion',
-      date: '25 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=6',
-    },
-  ],
-  apr23: [
-    {
-      id: 7,
-      color: 'yellow',
-      title: 'Design description banner & landing page',
-      tags: ['Task', 'Inprogress'],
-      category: 'Collab',
-      date: '23 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=7',
-    },
-    {
-      id: 8,
-      color: 'green',
-      title: 'Make all strokes thinner',
-      tags: ['Email', 'Completed'],
-      category: 'Promotion',
-      date: '23 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=8',
-    },
-  ],
-  apr22: [
-    {
-      id: 9,
-      color: 'green',
-      title: 'Make all strokes thinner',
-      tags: ['Meeting', 'Completed'],
-      category: 'Rejected',
-      date: '22 Apr 2025',
-      avatar: 'https://i.pravatar.cc/32?img=9',
-    },
-  ],
-};
-
 const TaskReportsPage = () => {
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('2025');
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [typeData, setTypeData] = useState([]);
+
+  const generateMonthlyDataFromTasks = (tasksList, selectedYear) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthCounts = Array(12).fill(0);
+
+    tasksList.forEach((task) => {
+      if (task.created_at) {
+        try {
+          const date = new Date(task.created_at);
+          if (!isNaN(date.getTime()) && date.getFullYear().toString() === selectedYear) {
+            monthCounts[date.getMonth()]++;
+          }
+        } catch (e) {
+          console.error('Error parsing date:', task.created_at);
+        }
+      }
+    });
+
+    return months.map((month, index) => ({
+      month,
+      value: monthCounts[index]
+    }));
+  };
+
+  const generateTypeDataFromTasks = (tasksList) => {
+    const typeCounts = {};
+    const colors = {
+      'Open': '#0ea5e9',
+      'In Progress': '#6366f1',
+      'Completed': '#10b981',
+      'On Hold': '#f59e0b'
+    };
+
+    tasksList.forEach((task) => {
+      const status = task.status || 'Open';
+      typeCounts[status] = (typeCounts[status] || 0) + 1;
+    });
+
+    return Object.entries(typeCounts).map(([name, value]) => ({
+      name,
+      value,
+      color: colors[name] || '#6B7280'
+    }));
+  };
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        setLoading(true);
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/tasks`);
+        if (!response.ok) throw new Error('Failed to fetch tasks');
+        const data = await response.json();
+
+        const formattedTasks = data.map((task, index) => ({
+          id: task.id,
+          color: ['blue', 'yellow', 'green', 'red'][index % 4],
+          title: task.title || 'Untitled Task',
+          tags: [task.status || 'Pending'],
+          category: task.priority || 'Medium',
+          date: task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A',
+          avatar: `https://i.pravatar.cc/32?img=${index}`,
+          created_at: task.created_at,
+          status: task.status,
+          priority: task.priority
+        }));
+
+        setTasks(formattedTasks);
+        
+        const monthly = generateMonthlyDataFromTasks(formattedTasks, year);
+        const typeBreakdown = generateTypeDataFromTasks(formattedTasks);
+        
+        setMonthlyData(monthly);
+        setTypeData(typeBreakdown);
+        setError('');
+      } catch (err) {
+        setError(err.message || 'Failed to fetch tasks');
+        setTasks([]);
+        setMonthlyData([]);
+        setTypeData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, []);
+
+  useEffect(() => {
+    if (tasks.length > 0) {
+      const monthly = generateMonthlyDataFromTasks(tasks, year);
+      setMonthlyData(monthly);
+    }
+  }, [year, tasks]);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task =>
+      task.title.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [tasks, query]);
 
   const getTagColor = (tag) => {
     const colors = {
+      'Open': 'bg-yellow-100 text-yellow-700',
+      'In Progress': 'bg-blue-100 text-blue-700',
+      'Completed': 'bg-green-100 text-green-700',
+      'On Hold': 'bg-red-100 text-red-700',
       'Calls': 'bg-green-100 text-green-700',
       'Email': 'bg-blue-100 text-blue-700',
       'Pending': 'bg-yellow-100 text-yellow-700',
@@ -145,16 +142,16 @@ const TaskReportsPage = () => {
       'Task': 'bg-purple-100 text-purple-700',
       'Meeting': 'bg-pink-100 text-pink-700',
       'Rejected': 'bg-red-100 text-red-700',
-      'Completed': 'bg-green-100 text-green-700'
     };
     return colors[tag] || 'bg-gray-100 text-gray-700';
   };
 
   const getCategoryColor = (category) => {
     const colors = {
-      'Promotion': 'bg-red-100 text-red-600',
-      'Rejected': 'bg-red-100 text-red-600',
-      'Collab': 'bg-green-100 text-green-600'
+      'Low': 'bg-green-100 text-green-600',
+      'Medium': 'bg-yellow-100 text-yellow-600',
+      'High': 'bg-orange-100 text-orange-600',
+      'Critical': 'bg-red-100 text-red-600'
     };
     return colors[category] || 'bg-gray-100 text-gray-600';
   };
@@ -188,7 +185,7 @@ const TaskReportsPage = () => {
           {task.category}
         </span>
         <span className="text-sm text-gray-500 whitespace-nowrap">{task.date}</span>
-        <img src={task.avatar} alt="avatar" className="w-8 h-8 rounded-full" />
+        <img src={task.avatar} alt="avatar" className="w-8 h-8 rounded-full" onError={(e) => e.target.src = 'https://i.pravatar.cc/32?img=0'} />
         <button className="p-1 hover:bg-gray-100 rounded transition-colors">
           <MoreVertical size={16} className="text-gray-400" />
         </button>
@@ -196,30 +193,33 @@ const TaskReportsPage = () => {
     </div>
   );
 
-  const TaskGroup = ({ title, count, tasks: groupTasks }) => (
+  const TaskGroup = ({ title, count, groupTasks }) => (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-4">
         <h3 className="text-gray-700 font-semibold text-sm">{title}</h3>
-        {count && <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full font-semibold">{count}</span>}
+        {count > 0 && <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full font-semibold">{count}</span>}
       </div>
       <div className="space-y-2">
-        {groupTasks.map(task => (
-          <TaskItem key={task.id} task={task} />
-        ))}
+        {groupTasks.length > 0 ? (
+          groupTasks.map(task => (
+            <TaskItem key={task.id} task={task} />
+          ))
+        ) : (
+          <div className="text-center py-4 text-gray-500">No tasks found</div>
+        )}
       </div>
     </div>
   );
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-bold text-gray-900">Task Reports</h1>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                120
+                {tasks.length}
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">Home › Task Reports</p>
@@ -231,12 +231,9 @@ const TaskReportsPage = () => {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Tasks By Year Chart */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-gray-900">Tasks By Year</h3>
@@ -246,24 +243,34 @@ const TaskReportsPage = () => {
                   <option value="2023">2023</option>
                 </select>
               </div>
-              <TasksByYearChart data={taskReportData.yearLine} />
+              {monthlyData.length > 0 ? (
+                <TasksByYearChart data={monthlyData} />
+              ) : (
+                <div className="w-full h-[260px] flex items-center justify-center text-gray-500">
+                  {loading ? 'Loading...' : 'No data available'}
+                </div>
+              )}
             </div>
 
-            {/* Tasks By Type Chart */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-gray-900">Tasks By Type</h3>
+                <h3 className="text-base font-semibold text-gray-900">Tasks By Status</h3>
                 <select className="text-sm border border-gray-300 rounded px-2 py-1 text-gray-600">
                   <option value="2025">2025</option>
                   <option value="2024">2024</option>
                   <option value="2023">2023</option>
                 </select>
               </div>
-              <TasksByTypeChart data={taskReportData.typeData} />
+              {typeData.length > 0 ? (
+                <TasksByTypeChart data={typeData} />
+              ) : (
+                <div className="w-full h-[260px] flex items-center justify-center text-gray-500">
+                  {loading ? 'Loading...' : 'No data available'}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Filter Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3 flex-wrap">
@@ -271,7 +278,7 @@ const TaskReportsPage = () => {
                   <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search"
+                    placeholder="Search tasks..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 text-sm bg-white"
@@ -279,7 +286,7 @@ const TaskReportsPage = () => {
                 </div>
                 <select className="border border-gray-300 px-3 py-2 rounded-lg text-sm text-gray-600 bg-white hover:border-gray-400">
                   <option>All Tasks</option>
-                  <option>Recent</option>
+                  <option>Open</option>
                   <option>In Progress</option>
                   <option>Completed</option>
                 </select>
@@ -288,7 +295,7 @@ const TaskReportsPage = () => {
                 </button>
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>📅</span>
-                  <span>1 Dec 25 - 1 Dec 25</span>
+                  <span>{new Date().toLocaleDateString()}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -302,19 +309,22 @@ const TaskReportsPage = () => {
             </div>
           </div>
 
-          {/* Tasks Groups */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <TaskGroup title="Recent" count={24} tasks={taskReportData.tasks} />
-            <TaskGroup title="Yesterday" tasks={taskReportData.yesterday} />
-            <TaskGroup title="23 Apr 2025" tasks={taskReportData.apr23} />
-            <TaskGroup title="22 Apr 2025" tasks={taskReportData.apr22} />
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading tasks...</div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">Error: {error}</div>
+            ) : filteredTasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No tasks found</div>
+            ) : (
+              <TaskGroup title="All Tasks" count={filteredTasks.length} groupTasks={filteredTasks} />
+            )}
           </div>
         </div>
       </div>
 
-      {/* Footer */}
       <div className="text-center text-xs text-gray-500 py-6 border-t border-gray-200 bg-white mt-6">
-        <span>Copyright © 2025 <span className="text-red-600 font-medium">Preadmin</span></span>
+        <span>Copyright © 2025 <span className="text-red-600 font-medium">AllINONE</span></span>
         <div className="flex gap-4 justify-center mt-2">
           <span className="cursor-pointer hover:text-gray-700">About</span>
           <span className="cursor-pointer hover:text-gray-700">Terms</span>
@@ -332,7 +342,7 @@ function TasksByYearChart({ data }) {
         <LineChart data={data} margin={{ top: 10, right: 30, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
           <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6B7280' }} />
-          <YAxis tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} tick={{ fontSize: 12, fill: '#6B7280' }} />
+          <YAxis tickFormatter={(v) => v} tick={{ fontSize: 12, fill: '#6B7280' }} />
           <Tooltip formatter={(v) => new Intl.NumberFormat().format(v)} />
           <Line type="monotone" dataKey="value" stroke="#1e40af" strokeWidth={3} dot={false} />
         </LineChart>

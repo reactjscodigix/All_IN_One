@@ -13,9 +13,9 @@ export default function VideoCallPage() {
     setGoogleMeetLink(generateMeetingLink());
   }, []);
 
-  const recordCall = async () => {
+  const recordCall = async (meetingLink) => {
     try {
-      await fetch('http://localhost:5000/api/call-history', {
+      const response = await fetch('http://localhost:5000/api/call-history', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -25,18 +25,19 @@ export default function VideoCallPage() {
           call_type: 'Video Call',
           call_direction: 'Outgoing',
           duration: 0,
-          meeting_link: googleMeetLink,
+          meeting_link: meetingLink,
           notes: 'Video call via Google Meet'
         })
       });
+      return response;
     } catch (error) {
       console.error('Error recording call:', error);
     }
   };
 
-  const handleCallClick = () => {
+  const handleCallClick = async () => {
     if (googleMeetLink) {
-      recordCall();
+      await recordCall(googleMeetLink);
       window.open(googleMeetLink, '_blank');
     }
   };

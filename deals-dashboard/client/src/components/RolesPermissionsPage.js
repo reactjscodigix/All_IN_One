@@ -32,6 +32,11 @@ const dummyRolesData = [
     id: 6,
     name: 'Lead',
     created: '29 Oct 2025, 03:10 pm'
+  },
+  {
+    id: 7,
+    name: 'Employee',
+    created: '08 Dec 2025, 04:03 pm'
   }
 ];
 

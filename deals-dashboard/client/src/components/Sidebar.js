@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { ChevronDown, X, Home, Users, Building2, Settings, BarChart3, FileText, Briefcase, MessageCircle, Shield, Trash2, Users2, FileJson, MapPin, MessageSquare, HelpCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { isSidebarItemVisible } from '../utils/roleBasedAccess';
 
 const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
+  const { user } = useAuth();
   const [expandedMenus, setExpandedMenus] = useState({
     dashboard: true,
     applications: false,
@@ -232,77 +235,93 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
           />
 
           {/* Applications */}
-          <MenuSection
-            title="Applications"
-            items={applicationsItems}
-            expanded={expandedMenus.applications}
-            onToggle={() => toggleMenu('applications')}
-          />
+          {isSidebarItemVisible(user?.role, 'applications') && (
+            <MenuSection
+              title="Applications"
+              items={applicationsItems}
+              expanded={expandedMenus.applications}
+              onToggle={() => toggleMenu('applications')}
+            />
+          )}
 
           {/* Super Admin */}
-          <MenuSection
-            title="Super Admin"
-            items={
-              <>
-                <SubmenuItem icon={Home} label="Dashboard" page="super-admin" />
-                <SubmenuItem icon={Building2} label="Companies" page="super-admin-companies" />
-                <SubmenuItem icon={FileText} label="Subscriptions" page="super-admin-subscriptions" />
-                <SubmenuItem icon={Briefcase} label="Packages" page="super-admin-packages" />
-                <SubmenuItem icon={Building2} label="Domain" page="super-admin-domain" />
-                <SubmenuItem icon={FileText} label="Purchase Transaction" page="super-admin-purchase-transaction" />
-              </>
-            }
-            expanded={expandedMenus.superAdmin}
-            onToggle={() => toggleMenu('superAdmin')}
-          />
+          {isSidebarItemVisible(user?.role, 'superAdmin') && (
+            <MenuSection
+              title="Super Admin"
+              items={
+                <>
+                  <SubmenuItem icon={Home} label="Dashboard" page="super-admin" />
+                  <SubmenuItem icon={Building2} label="Companies" page="super-admin-companies" />
+                  <SubmenuItem icon={FileText} label="Subscriptions" page="super-admin-subscriptions" />
+                  <SubmenuItem icon={Briefcase} label="Packages" page="super-admin-packages" />
+                  <SubmenuItem icon={Building2} label="Domain" page="super-admin-domain" />
+                  <SubmenuItem icon={FileText} label="Purchase Transaction" page="super-admin-purchase-transaction" />
+                </>
+              }
+              expanded={expandedMenus.superAdmin}
+              onToggle={() => toggleMenu('superAdmin')}
+            />
+          )}
 
           {/* CRM Section */}
-          <MenuSection
-            title="CRM"
-            items={crmMenuItems}
-            expanded={expandedMenus.crm}
-            onToggle={() => toggleMenu('crm')}
-          />
+          {isSidebarItemVisible(user?.role, 'crm') && (
+            <MenuSection
+              title="CRM"
+              items={crmMenuItems}
+              expanded={expandedMenus.crm}
+              onToggle={() => toggleMenu('crm')}
+            />
+          )}
 
           {/* Reports Section */}
-          <MenuSection
-            title="Reports"
-            items={reportsItems}
-            expanded={expandedMenus.reports}
-            onToggle={() => toggleMenu('reports')}
-          />
+          {isSidebarItemVisible(user?.role, 'reports') && (
+            <MenuSection
+              title="Reports"
+              items={reportsItems}
+              expanded={expandedMenus.reports}
+              onToggle={() => toggleMenu('reports')}
+            />
+          )}
 
           {/* User Management Section */}
-          <MenuSection
-            title="User Management"
-            items={userManagementItems}
-            expanded={expandedMenus.userManagement}
-            onToggle={() => toggleMenu('userManagement')}
-          />
+          {isSidebarItemVisible(user?.role, 'userManagement') && (
+            <MenuSection
+              title="User Management"
+              items={userManagementItems}
+              expanded={expandedMenus.userManagement}
+              onToggle={() => toggleMenu('userManagement')}
+            />
+          )}
 
           {/* Membership Section */}
-          <MenuSection
-            title="Membership"
-            items={membershipItems}
-            expanded={expandedMenus.membership}
-            onToggle={() => toggleMenu('membership')}
-          />
+          {isSidebarItemVisible(user?.role, 'membership') && (
+            <MenuSection
+              title="Membership"
+              items={membershipItems}
+              expanded={expandedMenus.membership}
+              onToggle={() => toggleMenu('membership')}
+            />
+          )}
 
           {/* Content Section */}
-          <MenuSection
-            title="Content"
-            items={contentItems}
-            expanded={expandedMenus.content}
-            onToggle={() => toggleMenu('content')}
-          />
+          {isSidebarItemVisible(user?.role, 'content') && (
+            <MenuSection
+              title="Content"
+              items={contentItems}
+              expanded={expandedMenus.content}
+              onToggle={() => toggleMenu('content')}
+            />
+          )}
 
           {/* Settings Section */}
-          <MenuSection
-            title="Settings"
-            items={settingsItems}
-            expanded={expandedMenus.settings}
-            onToggle={() => toggleMenu('settings')}
-          />
+          {isSidebarItemVisible(user?.role, 'settings') && (
+            <MenuSection
+              title="Settings"
+              items={settingsItems}
+              expanded={expandedMenus.settings}
+              onToggle={() => toggleMenu('settings')}
+            />
+          )}
         </div>
       </div>
 

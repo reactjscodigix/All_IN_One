@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, Search, Bell, Settings, Moon, Grid, Maximize2, HelpCircle, PieChart, MessageSquare, LogOut, User, Bell as BellIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const Header = ({ toggleSidebar }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -7,6 +9,8 @@ const Header = ({ toggleSidebar }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [showQuickAccess, setShowQuickAccess] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const notifications = [
     {
@@ -224,25 +228,29 @@ const Header = ({ toggleSidebar }) => {
                 title="Profile"
               >
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-300 to-pink-500 flex items-center justify-center text-white text-sm font-semibold border-2 border-green-400 hover-lift">
-                  KB
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
               </button>
 
               {showProfile && (
-                <div className="dropdown-menu absolute right-0 mt-2 w-56 bg-white z-50">
-                  <div className="p-4 border-b border-border-light bg-gradient-to-r from-gray-50 to-white">
+                <div className="dropdown-menu absolute right-0 mt-2 w-56 bg-white z-50 rounded-lg shadow-lg">
+                  <div className="p-4 border-b border-border-light bg-gradient-to-r from-gray-50 to-white rounded-t-lg">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-300 to-pink-500 flex items-center justify-center text-white text-sm font-semibold hover-lift">
-                        KB
+                        {user?.name?.charAt(0).toUpperCase() || 'U'}
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">Katherine Brooks</p>
-                        <p className="text-xs text-gray-600">Installer</p>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-gray-900">{user?.name || 'User'}</p>
+                        <p className="text-xs text-gray-600">{user?.role || 'Member'}</p>
+                        <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                       </div>
                     </div>
                   </div>
                   <div className="p-2 space-y-1">
-                    <button className="menu-item w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 rounded transition-smooth flex items-center gap-2 hover:text-blue-600 hover:pl-5">
+                    <button 
+                      onClick={() => navigate('/profile')}
+                      className="menu-item w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 rounded transition-smooth flex items-center gap-2 hover:text-blue-600 hover:pl-5"
+                    >
                       <User size={16} />
                       Profile Settings
                     </button>
@@ -260,7 +268,13 @@ const Header = ({ toggleSidebar }) => {
                     </button>
                   </div>
                   <div className="border-t border-border-light p-2">
-                    <button className="menu-item w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition-smooth font-semibold flex items-center gap-2 hover:pl-5">
+                    <button 
+                      onClick={() => {
+                        logout();
+                        navigate('/login');
+                      }}
+                      className="menu-item w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded transition-smooth font-semibold flex items-center gap-2 hover:pl-5"
+                    >
                       <LogOut size={16} />
                       Sign Out
                     </button>

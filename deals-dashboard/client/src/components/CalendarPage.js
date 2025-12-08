@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 const CalendarPage = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date(2025, 10));
   const [callEvents, setCallEvents] = useState([]);
+  const [customEvents, setCustomEvents] = useState([]);
   const [staticEvents] = useState([
     {
       id: 1,
@@ -28,6 +29,20 @@ const CalendarPage = () => {
     },
   ]);
   const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    date: '',
+    category: 'Team Events'
+  });
+
+  const categoryColorMap = {
+    'Team Events': 'bg-green-100 border-l-4 border-green-500',
+    'Work': 'bg-yellow-100 border-l-4 border-yellow-500',
+    'External': 'bg-pink-100 border-l-4 border-pink-500',
+    'Projects': 'bg-yellow-50 border-l-4 border-yellow-300',
+    'Applications': 'bg-pink-100 border-l-4 border-pink-500',
+    'Desgin': 'bg-blue-100 border-l-4 border-blue-500',
+  };
 
   useEffect(() => {
     fetchCallHistory();
@@ -52,7 +67,34 @@ const CalendarPage = () => {
     }
   };
 
-  const events = [...staticEvents, ...callEvents];
+  const events = [...staticEvents, ...callEvents, ...customEvents];
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAddEvent = () => {
+    if (!formData.title || !formData.date) {
+      alert('Please fill in event name and date');
+      return;
+    }
+
+    const newEvent = {
+      id: `custom-${Date.now()}`,
+      title: formData.title,
+      date: new Date(formData.date),
+      category: formData.category,
+      color: categoryColorMap[formData.category] || 'bg-gray-100 border-l-4 border-gray-500'
+    };
+
+    setCustomEvents(prev => [...prev, newEvent]);
+    setFormData({ title: '', date: '', category: 'Team Events' });
+    setShowModal(false);
+  };
 
   const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -246,37 +288,65 @@ const CalendarPage = () => {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900">Add New Event</h3>
               <button 
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setFormData({ title: '', date: '', category: 'Team Events' });
+                }}
                 className="p-1 hover:bg-gray-100 rounded"
               >
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-4">
-              <input 
-                type="text"
-                placeholder="Event Name *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <input 
-                type="date"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                <option>Event Category *</option>
-                <option>Team Events</option>
-                <option>Work</option>
-                <option>External</option>
-              </select>
-              <div className="flex gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Event Name *</label>
+                <input 
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  placeholder="Enter event name"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                <input 
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <select 
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="Team Events">Team Events</option>
+                  <option value="Work">Work</option>
+                  <option value="External">External</option>
+                  <option value="Projects">Projects</option>
+                  <option value="Applications">Applications</option>
+                  <option value="Desgin">Design</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
                 <button 
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setFormData({ title: '', date: '', category: 'Team Events' });
+                  }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-smooth font-medium"
                 >
                   Cancel
                 </button>
                 <button 
-                  onClick={() => setShowModal(false)}
+                  onClick={handleAddEvent}
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium"
                 >
                   Add Event

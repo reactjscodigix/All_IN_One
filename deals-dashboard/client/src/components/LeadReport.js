@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Download, Filter, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -34,118 +34,6 @@ const leadReportData = {
     { name: 'Google', value: 55, color: '#6a15ff' },
     { name: 'Referrals', value: 41, color: '#ff3b30' },
     { name: 'Paid Social', value: 17, color: '#ff9800' },
-  ],
-  leads: [
-    {
-      id: 1,
-      name: 'Elizabeth Morgan',
-      avatar: 'https://i.pravatar.cc/100?img=32',
-      company: 'NovaWave LLC',
-      companySub: 'New York, USA',
-      phone: '+1 8754554503',
-      status: 'Closed',
-      created: '25 Sep 2025, 01:22 pm',
-      owner: { name: 'Robert Johnson', avatar: 'https://i.pravatar.cc/100?img=5' },
-    },
-    {
-      id: 2,
-      name: 'Katherine Brooks',
-      avatar: 'https://i.pravatar.cc/100?img=12',
-      company: 'BlueSky Industries',
-      companySub: 'Toronto, Canada',
-      phone: '+1 9897517485',
-      status: 'Not Closed',
-      created: '03 Feb 2025, 09:45 AM',
-      owner: { name: 'Isabella Cooper', avatar: 'https://i.pravatar.cc/100?img=6' },
-    },
-    {
-      id: 3,
-      name: 'Samantha Reed',
-      avatar: 'https://i.pravatar.cc/100?img=47',
-      company: 'Silver Hawk',
-      companySub: 'London, UK',
-      phone: '+1 5465525455',
-      status: 'Closed',
-      created: '14 Mar 2025, 06:10 PM',
-      owner: { name: 'John Smith', avatar: 'https://i.pravatar.cc/100?img=7' },
-    },
-    {
-      id: 4,
-      name: 'William Anderson',
-      avatar: 'https://i.pravatar.cc/100?img=22',
-      company: 'Summit Peak',
-      companySub: 'Sydney, Australia',
-      phone: '+1 4544758787',
-      status: 'Contacted',
-      created: '29 Apr 2025, 11:00 AM',
-      owner: { name: 'Sophia Parker', avatar: 'https://i.pravatar.cc/100?img=8' },
-    },
-    {
-      id: 5,
-      name: 'Jonathan Mitchell',
-      avatar: 'https://i.pravatar.cc/100?img=3',
-      company: 'RiverStone Ltd',
-      companySub: 'Berlin, Germany',
-      phone: '+1 1245427845',
-      status: 'Closed',
-      created: '07 May 2025, 04:35 PM',
-      owner: { name: 'Ethan Reynolds', avatar: 'https://i.pravatar.cc/100?img=9' },
-    },
-    {
-      id: 6,
-      name: 'Jennifer Adams',
-      avatar: 'https://i.pravatar.cc/100?img=11',
-      company: 'Bright Bridge Grp',
-      companySub: 'Tokyo, Japan',
-      phone: '+1 4788475447',
-      status: 'Closed',
-      created: '18 Jun 2025, 08:20 AM',
-      owner: { name: 'Liam Carter', avatar: 'https://i.pravatar.cc/100?img=10' },
-    },
-    {
-      id: 7,
-      name: 'Alexander Carter',
-      avatar: 'https://i.pravatar.cc/100?img=13',
-      company: 'CoastalStar Co.',
-      companySub: 'Paris, France',
-      phone: '+1 2155434845',
-      status: 'Closed',
-      created: '18 Apr 2025, 08:00 AM',
-      owner: { name: 'Noah Mitchell', avatar: 'https://i.pravatar.cc/100?img=14' },
-    },
-    {
-      id: 8,
-      name: 'Benjamin Harrison',
-      avatar: 'https://i.pravatar.cc/100?img=15',
-      company: 'HarborView',
-      companySub: 'Dubai, UAE',
-      phone: '+1 1211465471',
-      status: 'Closed',
-      created: '05 Feb 2025, 10:45 AM',
-      owner: { name: 'Mason Hayes', avatar: 'https://i.pravatar.cc/100?img=16' },
-    },
-    {
-      id: 9,
-      name: 'Nicholas Wright',
-      avatar: 'https://i.pravatar.cc/100?img=17',
-      company: 'Golden Gate Ltd',
-      companySub: 'Mumbai, India',
-      phone: '+1 3214554789',
-      status: 'Closed',
-      created: '15 Jan 2025, 02:02 PM',
-      owner: { name: 'Ron Thompson', avatar: 'https://i.pravatar.cc/100?img=18' },
-    },
-    {
-      id: 10,
-      name: 'Alexandra Bennett',
-      avatar: 'https://i.pravatar.cc/100?img=19',
-      company: 'Redwood Inc',
-      companySub: 'Tokyo, Japan',
-      phone: '+1 2789017145',
-      status: 'Lost',
-      created: '12 Mar 2025, 08:00 PM',
-      owner: { name: 'James Bennett', avatar: 'https://i.pravatar.cc/100?img=20' },
-    },
   ],
 };
 
@@ -362,6 +250,44 @@ function LeadsTable({ rows }) {
 }
 
 const LeadReport = () => {
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        setLoading(true);
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${apiUrl}/leads`);
+        if (!response.ok) throw new Error('Failed to fetch leads');
+        const data = await response.json();
+        
+        const formattedLeads = data.map((lead, index) => ({
+          id: lead.id,
+          name: lead.name || 'Unknown Lead',
+          avatar: `https://i.pravatar.cc/100?img=${index}`,
+          company: lead.company_name || 'N/A',
+          companySub: lead.city || 'Unknown',
+          phone: lead.phone || 'N/A',
+          status: lead.status || 'Contacted',
+          created: lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'N/A',
+          owner: { name: 'N/A', avatar: `https://i.pravatar.cc/100?img=${index + 20}` },
+        }));
+        
+        setLeads(formattedLeads);
+        setError('');
+      } catch (err) {
+        setError(err.message || 'Failed to fetch leads');
+        setLeads([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeads();
+  }, []);
+
   return (
     <div className="w-full bg-gray-50 min-h-screen">
       <div className="p-6">
@@ -369,7 +295,7 @@ const LeadReport = () => {
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-gray-900">Lead Report</h1>
-            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">10+</span>
+            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">{leads.length}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <a href="/" className="text-orange-500 hover:text-orange-600 font-medium">
@@ -400,12 +326,9 @@ const LeadReport = () => {
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Leads By Source</h2>
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-gray-400" />
-                <select className="border border-gray-200 rounded px-3 py-1 text-sm bg-white">
-                  <option>2025</option>
-                </select>
-              </div>
+              <select className="border border-gray-200 rounded px-3 py-1 text-sm bg-white">
+                <option>2025</option>
+              </select>
             </div>
             <LeadsBySourceDonut data={leadReportData.sourcePie} />
           </div>
@@ -413,7 +336,15 @@ const LeadReport = () => {
 
         {/* Table Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <LeadsTable rows={leadReportData.leads} />
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">Loading leads...</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">Error: {error}</div>
+          ) : leads.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No leads found</div>
+          ) : (
+            <LeadsTable rows={leads} />
+          )}
         </div>
       </div>
 
