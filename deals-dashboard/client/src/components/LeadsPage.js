@@ -77,6 +77,13 @@ const LeadsPage = () => {
     }
   };
 
+  const handleCompanyAdded = async (newCompany) => {
+    const companiesRes = await companiesAPI.getAll();
+    if (companiesRes && Array.isArray(companiesRes)) {
+      setCompanies(companiesRes);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const colors = {
       'New': 'bg-blue-100 text-blue-800',
@@ -219,6 +226,7 @@ const LeadsPage = () => {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateLead}
         companies={companies}
+        onCompanyAdded={handleCompanyAdded}
       />
     </div>
   );

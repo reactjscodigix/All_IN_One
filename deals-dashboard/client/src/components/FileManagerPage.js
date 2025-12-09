@@ -1,31 +1,214 @@
-import React, { useState } from 'react';
-import { Plus, FileText, MoreVertical, Folder, Star, ChevronDown, Music } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, FileText, MoreVertical, Folder, Star, ChevronDown, Music, Upload, X, AlertCircle } from 'lucide-react';
+import { fileManagerAPI } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
 const FileManagerPage = () => {
-  const [files] = useState([
-    { id: 1, name: 'Secret', size: '7.6 MB', type: 'Doc', date: 'Mar 15, 2025 05:00:14 PM', icon: 'file-01.svg' },
-    { id: 2, name: 'Sophie Headrick', size: '7.4 MB', type: 'PDF', date: 'Jan 8, 2025 08:20:13 PM', icon: 'file-02.svg' },
-    { id: 3, name: 'Gallery', size: '6.1 MB', type: 'Image', date: 'Aug 6, 2025 04:10:12 PM', icon: 'file-03.svg' },
-    { id: 4, name: 'Doris Crowley', size: '5.2 MB', type: 'Folder', date: 'Jan 6, 2025 03:40:14 PM', icon: 'file-04.svg' },
-    { id: 5, name: 'Cheat_codez', size: '8 MB', type: 'Xml', date: 'Oct 12, 2025 05:00:14 PM', icon: 'file-05.svg' }
-  ]);
+  const { user, isAuthenticated } = useAuth();
+  const [files, setFiles] = useState([]);
+  const [folders, setFolders] = useState([]);
+  const [storageStats, setStorageStats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [favorites, setFavorites] = useState(new Set());
+  const modalFileInputRef = useRef(null);
+  const sidebarFileInputRef = useRef(null);
 
-  const [storages] = useState([
-    { name: 'Dropbox', files: 200, size: '28GB', icon: 'dropbox.svg' },
-    { name: 'Google Drive', files: 144, size: '54GB', icon: 'drive.svg' },
-    { name: 'Cloud Storage', files: 144, size: '54GB', icon: 'cloud.svg' },
-    { name: 'Internal Storage', files: 144, size: '54GB', icon: 'storage.svg' }
-  ]);
+  const userId = user?.id;
 
-  const [recentFolders] = useState([
-    { id: 1, name: 'Assets', size: '2.4 GB', files: '35 files' },
-    { id: 2, name: 'Document', size: '4 GB', files: '15 files' },
-    { id: 3, name: 'Handyimages', size: '1.4 GB', files: '115 files' }
-  ]);
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const [filesData, foldersData, statsData] = await Promise.all([
+        fileManagerAPI.getFiles(userId),
+        fileManagerAPI.getFolders(userId),
+        fileManagerAPI.getStorageStats(userId)
+      ]);
+      
+      setFiles(filesData);
+      setFolders(foldersData);
+      setStorageStats(statsData);
+      
+      const favoriteIds = new Set();
+      filesData.forEach(file => {
+        if (file.is_favorite) {
+          favoriteIds.add(file.id);
+        }
+      });
+      setFavorites(favoriteIds);
+      
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load files and folders');
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [userId, fetchData]);
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    
+    try {
+      await fileManagerAPI.createFolder({
+        name: newFolderName,
+        storageType: 'Internal',
+        userId
+      });
+      setNewFolderName('');
+      setShowCreateFolderModal(false);
+      fetchData();
+    } catch (err) {
+      console.error('Error creating folder:', err);
+      setError('Failed to create folder');
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    if (selectedFiles.length === 0) return;
+    
+    try {
+      setUploading(true);
+      setError(null);
+      
+      for (const file of selectedFiles) {
+        await fileManagerAPI.uploadFile({
+          name: file.name,
+          fileType: file.type.split('/')[0] || 'Doc',
+          sizeBytes: file.size,
+          storageType: 'Internal',
+          userId,
+          mimeType: file.type
+        });
+      }
+      
+      setShowUploadModal(false);
+      
+      if (modalFileInputRef.current) {
+        modalFileInputRef.current.value = '';
+      }
+      if (sidebarFileInputRef.current) {
+        sidebarFileInputRef.current.value = '';
+      }
+      
+      await fetchData();
+    } catch (err) {
+      console.error('Error uploading files:', err);
+      setError('Failed to upload files');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const toggleFavorite = async (fileId, isFavorite) => {
+    try {
+      await fileManagerAPI.updateFileFavorite(fileId, !isFavorite);
+      
+      const newFavorites = new Set(favorites);
+      if (newFavorites.has(fileId)) {
+        newFavorites.delete(fileId);
+      } else {
+        newFavorites.add(fileId);
+      }
+      setFavorites(newFavorites);
+      
+      setFiles(files.map(f => 
+        f.id === fileId ? { ...f, is_favorite: !isFavorite } : f
+      ));
+    } catch (err) {
+      console.error('Error updating favorite:', err);
+      setError('Failed to update favorite');
+    }
+  };
+
+  const handleDeleteFile = async (fileId) => {
+    try {
+      await fileManagerAPI.deleteFile(fileId);
+      fetchData();
+    } catch (err) {
+      console.error('Error deleting file:', err);
+      setError('Failed to delete file');
+    }
+  };
+
+  const handleDeleteFolder = async (folderId) => {
+    try {
+      await fileManagerAPI.deleteFolder(folderId);
+      fetchData();
+    } catch (err) {
+      console.error('Error deleting folder:', err);
+      setError('Failed to delete folder');
+    }
+  };
+
+  const formatBytes = (bytes) => {
+    if (!bytes) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const recentFolders = folders.slice(0, 3);
+  const recentFiles = files.slice(0, 6);
+  
+  const storages = [
+    { name: 'Dropbox', files: storageStats.find(s => s.storage_type === 'Dropbox')?.file_count || 0, size: formatBytes(storageStats.find(s => s.storage_type === 'Dropbox')?.total_size || 0) },
+    { name: 'Google Drive', files: storageStats.find(s => s.storage_type === 'Google Drive')?.file_count || 0, size: formatBytes(storageStats.find(s => s.storage_type === 'Google Drive')?.total_size || 0) },
+    { name: 'Cloud Storage', files: storageStats.find(s => s.storage_type === 'Cloud Storage')?.file_count || 0, size: formatBytes(storageStats.find(s => s.storage_type === 'Cloud Storage')?.total_size || 0) },
+    { name: 'Internal Storage', files: storageStats.find(s => s.storage_type === 'Internal')?.file_count || 0, size: formatBytes(storageStats.find(s => s.storage_type === 'Internal')?.total_size || 0) }
+  ];
+
+  if (!isAuthenticated) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+            <AlertCircle size={24} className="text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Authentication Required</h2>
+          <p className="text-gray-600 text-center mb-6">Please log in to access the File Manager</p>
+          <a href="/login" className="block w-full text-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+            Go to Login
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading files...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+        
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">File Manager</h1>
@@ -37,10 +220,16 @@ const FileManagerPage = () => {
               <span>File Manager</span>
             </div>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium text-sm">
-            <Plus size={18} />
-            Create Folder
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowUploadModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-smooth font-medium text-sm">
+              <Upload size={18} />
+              Upload
+            </button>
+            <button onClick={() => setShowCreateFolderModal(true)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium text-sm">
+              <Plus size={18} />
+              Create Folder
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-6">
@@ -77,16 +266,21 @@ const FileManagerPage = () => {
 
             <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4">
               <div className="flex items-center gap-3 mb-3">
-                <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-01.jpg" alt="James Hong" className="w-10 h-10 rounded-full" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm">
+                  {user?.first_name?.[0]}{user?.last_name?.[0]}
+                </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-900">James Hong</p>
-                  <p className="text-xs text-gray-600">jameshong@example.com</p>
+                  <p className="text-sm font-bold text-gray-900">{user?.first_name} {user?.last_name}</p>
+                  <p className="text-xs text-gray-600">{user?.email}</p>
                 </div>
               </div>
-              <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <p className="text-sm font-medium text-gray-700">Drop files here</p>
-                <p className="text-xs text-gray-600 mt-1">Select files to upload</p>
-              </div>
+              <label htmlFor="drop-file-input" className="cursor-pointer">
+                <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-100 transition-colors">
+                  <p className="text-sm font-medium text-gray-700">Drop files here</p>
+                  <p className="text-xs text-gray-600 mt-1">Select files to upload</p>
+                </div>
+              </label>
+              <input ref={sidebarFileInputRef} id="drop-file-input" type="file" multiple onChange={handleFileUpload} className="hidden" disabled={uploading} />
             </div>
 
             <div className="mt-4 space-y-2">
@@ -161,15 +355,19 @@ const FileManagerPage = () => {
                 <button className="text-sm text-red-600 hover:text-red-700 font-medium">View All</button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="text-center">
+                {recentFiles.length > 0 ? recentFiles.map((file) => (
+                  <div key={file.id} className="text-center">
                     <div className="bg-gray-100 rounded-lg p-4 mb-2 hover:bg-gray-200 cursor-pointer transition-colors">
                       <FileText size={24} className="mx-auto text-gray-600" />
                     </div>
-                    <p className="text-xs text-gray-700 font-medium">Final.doc</p>
-                    <p className="text-xs text-red-600">2.4 GB</p>
+                    <p className="text-xs text-gray-700 font-medium truncate">{file.name}</p>
+                    <p className="text-xs text-red-600">{formatBytes(file.size_bytes)}</p>
                   </div>
-                ))}
+                )) : (
+                  <div className="col-span-6 text-center py-8 text-gray-500">
+                    No files yet. Upload some files to get started.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -186,25 +384,29 @@ const FileManagerPage = () => {
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {recentFolders.map((folder) => (
+                {recentFolders.length > 0 ? recentFolders.map((folder) => (
                   <div key={folder.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                     <div className="flex items-start justify-between mb-2">
                       <Folder size={24} className="text-blue-600" />
-                      <button className="text-gray-400 hover:text-gray-600">
+                      <button onClick={() => handleDeleteFolder(folder.id)} className="text-gray-400 hover:text-gray-600">
                         <MoreVertical size={16} />
                       </button>
                     </div>
                     <h3 className="text-sm font-bold text-gray-900 mb-1">{folder.name}</h3>
                     <div className="flex justify-between text-xs text-gray-600">
-                      <span>{folder.size}</span>
-                      <span>{folder.files}</span>
+                      <span>{formatBytes(folder.size_bytes)}</span>
+                      <span>{folder.file_count} files</span>
                     </div>
                     <div className="flex items-center gap-1 mt-2">
                       <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-07.jpg" alt="user" className="w-6 h-6 rounded-full" />
                       <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg" alt="user" className="w-6 h-6 rounded-full" />
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="col-span-3 text-center py-8 text-gray-500">
+                    No folders yet. Create a new folder to organize your files.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -237,15 +439,15 @@ const FileManagerPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {files.map((file) => (
+                    {files.length > 0 ? files.map((file) => (
                       <tr key={file.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 flex items-center gap-2">
                           <FileText size={16} className="text-gray-600" />
                           <span className="text-sm font-medium text-gray-900">{file.name}</span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{file.size}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{file.type}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{file.date}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{formatBytes(file.size_bytes)}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{file.file_type}</td>
+                        <td className="px-6 py-4 text-sm text-gray-700">{new Date(file.created_at).toLocaleDateString()}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1">
                             <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-03.jpg" alt="user" className="w-6 h-6 rounded-full" />
@@ -254,22 +456,100 @@ const FileManagerPage = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <button className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
-                              <Star size={16} />
+                            <button onClick={() => toggleFavorite(file.id, file.is_favorite)} className={`p-1.5 rounded transition-colors ${favorites.has(file.id) ? 'text-yellow-500' : 'text-gray-600 hover:text-gray-900'} hover:bg-gray-100`}>
+                              <Star size={16} fill={favorites.has(file.id) ? 'currentColor' : 'none'} />
                             </button>
-                            <button className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
+                            <button onClick={() => handleDeleteFile(file.id)} className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
                               <MoreVertical size={16} />
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )) : (
+                      <tr>
+                        <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                          No files yet. Upload files to see them here.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
         </div>
+
+        {showCreateFolderModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Create New Folder</h2>
+                <button onClick={() => setShowCreateFolderModal(false)} className="text-gray-500 hover:text-gray-700">
+                  <X size={20} />
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="Folder name"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-red-600"
+              />
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setShowCreateFolderModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                  Cancel
+                </button>
+                <button onClick={handleCreateFolder} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                  Create
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Upload Files</h2>
+                <button onClick={() => setShowUploadModal(false)} disabled={uploading} className="text-gray-500 hover:text-gray-700 disabled:opacity-50">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4 hover:border-gray-400 transition-colors">
+                <input
+                  ref={modalFileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-input"
+                  disabled={uploading}
+                />
+                <label htmlFor="file-input" className={`cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto mb-2"></div>
+                      <p className="text-gray-600 font-medium mb-1">Uploading...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={32} className="mx-auto mb-2 text-gray-400" />
+                      <p className="text-gray-600 font-medium mb-1">Click to select files</p>
+                      <p className="text-xs text-gray-500">or drag and drop</p>
+                    </>
+                  )}
+                </label>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setShowUploadModal(false)} disabled={uploading} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

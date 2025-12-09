@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, Mic, MicOff, Volume2, X, PhoneOff } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 export default function AudioCallPage() {
+  const { user } = useAuth();
   const [isMuted, setIsMuted] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -11,8 +13,8 @@ export default function AudioCallPage() {
   const [callerPhone, setCallerPhone] = useState('');
 
   const caller = {
-    name: 'Anthony Lewis',
-    avatar: 'https://ui-avatars.com/api/?name=Anthony+Lewis&background=06B6D4&color=fff&size=200',
+    name: user?.name || 'User',
+    avatar: user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=06B6D4&color=fff&size=200`,
     status: 'Online',
   };
 
@@ -40,8 +42,8 @@ export default function AudioCallPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          caller_name: caller.name,
-          caller_avatar: caller.avatar,
+          caller_name: user?.name || 'User',
+          caller_avatar: user?.avatar,
           phone_number: phone,
           call_type: 'Audio Call',
           call_direction: 'Outgoing',

@@ -1,71 +1,63 @@
-import React, { useState } from 'react';
-import { Plus, ChevronDown, MoreVertical, X, Calendar, Star, GripVertical } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, ChevronDown, MoreVertical, X, Calendar, Star, GripVertical, AlertCircle } from 'lucide-react';
+import { taskAPI } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
 
 const TodoPage = () => {
-  const [todos] = useState([
-    {
-      id: 1,
-      title: 'Finalize project proposal',
-      priority: 'High',
-      date: '15 Jan 2025',
-      tags: ['Projects'],
-      status: 'Onhold',
-      assignees: 3
-    },
-    {
-      id: 2,
-      title: 'Submit to supervisor by EOD',
-      priority: 'High',
-      date: '25 May 2024',
-      tags: ['Internal'],
-      status: 'Inprogress',
-      assignees: 3
-    },
-    {
-      id: 3,
-      title: 'Prepare presentation slides',
-      priority: 'High',
-      date: '15 Jan 2025',
-      tags: ['Reminder'],
-      status: 'Pending',
-      assignees: 3
-    },
-    {
-      id: 4,
-      title: 'Check and respond to emails',
-      priority: 'Medium',
-      date: 'Tomorrow',
-      tags: ['Reminder'],
-      status: 'Completed',
-      assignees: 3
-    },
-    {
-      id: 5,
-      title: 'Coordinate with department head on progress',
-      priority: 'Medium',
-      date: '25 May 2024',
-      tags: ['Internal'],
-      status: 'Inprogress',
-      assignees: 3
-    },
-    {
-      id: 6,
-      title: 'Plan tasks for the next day',
-      priority: 'Low',
-      date: 'Today',
-      tags: ['Social'],
-      status: 'Pending',
-      assignees: 3
-    },
-  ]);
+  const { user, isAuthenticated } = useAuth();
+  const [todos, setTodos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [expandedPriority, setExpandedPriority] = useState({
     High: true,
     Medium: true,
     Low: true
   });
-
   const [showModal, setShowModal] = useState(false);
+
+  const fetchTasks = useCallback(async () => {
+    try {
+      setLoading(true);
+      const allTasks = await taskAPI.getAllGeneral();
+      
+      const userTasks = allTasks.filter(task => {
+        const assignedTo = task.assigned_to || [];
+        return assignedTo.includes(user.id);
+      });
+
+      const processedTasks = userTasks.map(task => ({
+        id: task.id,
+        title: task.title,
+        priority: task.priority,
+        date: task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        }) : 'No due date',
+        tags: task.tags || [],
+        status: task.status,
+        assignees: (task.assigned_to || []).length,
+        description: task.description
+      }));
+
+      setTodos(processedTasks);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('Failed to load tasks');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchTasks();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user, fetchTasks]);
 
   const todosByPriority = {
     High: todos.filter(t => t.priority === 'High'),
@@ -75,8 +67,13 @@ const TodoPage = () => {
 
   const stats = {
     total: todos.length,
-    pending: todos.filter(t => t.status === 'Pending').length,
+    pending: todos.filter(t => t.status === 'Open').length,
+    inProgress: todos.filter(t => t.status === 'In Progress').length,
     completed: todos.filter(t => t.status === 'Completed').length,
+    onHold: todos.filter(t => t.status === 'On Hold').length,
+    high: todos.filter(t => t.priority === 'High').length,
+    medium: todos.filter(t => t.priority === 'Medium').length,
+    low: todos.filter(t => t.priority === 'Low').length,
   };
 
   const getPriorityColor = (priority) => {
@@ -91,9 +88,9 @@ const TodoPage = () => {
   const getStatusBadge = (status) => {
     const styles = {
       'Completed': 'bg-green-100 text-green-700',
-      'Pending': 'bg-blue-100 text-blue-700',
-      'Inprogress': 'bg-yellow-100 text-yellow-700',
-      'Onhold': 'bg-red-100 text-red-700',
+      'Open': 'bg-blue-100 text-blue-700',
+      'In Progress': 'bg-yellow-100 text-yellow-700',
+      'On Hold': 'bg-red-100 text-red-700',
     };
     return styles[status] || 'bg-gray-100 text-gray-700';
   };
@@ -110,13 +107,49 @@ const TodoPage = () => {
     return styles[tag] || 'bg-gray-100 text-gray-700';
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
+            <AlertCircle size={24} className="text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Authentication Required</h2>
+          <p className="text-gray-600 text-center mb-6">Please log in to access tasks and todos</p>
+          <a href="/login" className="block w-full text-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+            Go to Login
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading tasks...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Todo</h1>
             <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+              <span className="font-medium">{user?.first_name} {user?.last_name}</span>
+              <span>›</span>
               <button className="text-gray-600 hover:text-gray-900">Home</button>
               <span>›</span>
               <button className="text-gray-600 hover:text-gray-900">Applications</button>
@@ -133,14 +166,48 @@ const TodoPage = () => {
           </button>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="text-sm text-gray-600">Total Tasks</div>
+            <div className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="text-sm text-gray-600">Open/Pending</div>
+            <div className="text-3xl font-bold text-blue-600 mt-1">{stats.pending}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="text-sm text-gray-600">In Progress</div>
+            <div className="text-3xl font-bold text-yellow-600 mt-1">{stats.inProgress}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="text-sm text-gray-600">Completed</div>
+            <div className="text-3xl font-bold text-green-600 mt-1">{stats.completed}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="text-sm font-semibold text-red-600 mb-2">High Priority</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.high}</div>
+            <div className="text-xs text-gray-600 mt-1">{stats.high > 0 ? '⚠️ Needs attention' : '✓ None'}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="text-sm font-semibold text-yellow-600 mb-2">Medium Priority</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.medium}</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="text-sm font-semibold text-green-600 mb-2">Low Priority</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.low}</div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-lg shadow-sm border border-border-light p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Total Todo</h2>
+              <h2 className="text-lg font-bold text-gray-900">My Tasks</h2>
               <div className="flex items-center gap-6 mt-2 text-sm">
-                <span className="text-gray-600">Total Task : <span className="font-semibold text-gray-900">{stats.total}</span></span>
-                <span className="text-gray-600">Pending : <span className="font-semibold text-gray-900">{stats.pending}</span></span>
-                <span className="text-gray-600">Completed : <span className="font-semibold text-green-600">{stats.completed}</span></span>
+                <span className="text-gray-600">On Hold : <span className="font-semibold text-gray-900">{stats.onHold}</span></span>
+                <span className="text-gray-600">Assigned : <span className="font-semibold text-gray-900">{stats.total}</span></span>
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -160,6 +227,12 @@ const TodoPage = () => {
             </button>
           </div>
 
+          {todos.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg mb-2">No tasks assigned</p>
+              <p className="text-gray-400 text-sm">You don't have any tasks assigned yet. Create a new task to get started.</p>
+            </div>
+          ) : (
           <div className="space-y-6">
             {Object.entries(todosByPriority).map(([priority, items]) => (
               <div key={priority}>
@@ -241,6 +314,7 @@ const TodoPage = () => {
               </div>
             ))}
           </div>
+          )}
 
           <div className="mt-8 text-center">
             <button className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium">

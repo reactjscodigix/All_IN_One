@@ -257,6 +257,17 @@ export const paymentsAPI = {
   markAsRefunded: (id, data) => apiService.post(`/invoices/${id}/refund`, data),
 };
 
+export const fileManagerAPI = {
+  getFiles: (userId) => apiService.get(`/files${userId ? '?userId=' + userId : ''}`),
+  getFolders: (userId) => apiService.get(`/folders${userId ? '?userId=' + userId : ''}`),
+  getStorageStats: (userId) => apiService.get(`/files/storage-stats${userId ? '?userId=' + userId : ''}`),
+  createFolder: (data) => apiService.post('/folders', data),
+  uploadFile: (data) => apiService.post('/files', data),
+  updateFileFavorite: (fileId, isFavorite) => apiService.put(`/files/${fileId}/favorite`, { isFavorite }),
+  deleteFile: (fileId) => apiService.delete(`/files/${fileId}`),
+  deleteFolder: (folderId) => apiService.delete(`/folders/${folderId}`),
+};
+
 export const createContract = (data) => contractsAPI.create(data);
 
 export default apiService;

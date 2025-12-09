@@ -1,95 +1,163 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, Send, Phone, Video, MoreVertical, X } from 'lucide-react';
-
-const CHATS = [
-  {
-    id: 1,
-    name: 'Sarah Johnson',
-    avatar: 'https://ui-avatars.com/api/?name=Sarah+Johnson&background=FF6B6B&color=fff',
-    lastMessage: 'That sounds great! Let me check with the team.',
-    timestamp: '2:30 PM',
-    unread: 2,
-    status: 'online',
-    statusDot: 'bg-green-500',
-  },
-  {
-    id: 2,
-    name: 'Michael Chen',
-    avatar: 'https://ui-avatars.com/api/?name=Michael+Chen&background=4F46E5&color=fff',
-    lastMessage: 'Can we schedule a meeting tomorrow?',
-    timestamp: '1:15 PM',
-    unread: 0,
-    status: 'online',
-    statusDot: 'bg-green-500',
-  },
-  {
-    id: 3,
-    name: 'Emily Rodriguez',
-    avatar: 'https://ui-avatars.com/api/?name=Emily+Rodriguez&background=8B5CF6&color=fff',
-    lastMessage: 'Perfect! I\'ll send you the documents.',
-    timestamp: 'Yesterday',
-    unread: 0,
-    status: 'offline',
-    statusDot: 'bg-gray-400',
-  },
-  {
-    id: 4,
-    name: 'James Wilson',
-    avatar: 'https://ui-avatars.com/api/?name=James+Wilson&background=06B6D4&color=fff',
-    lastMessage: 'Thanks for the update!',
-    timestamp: 'Yesterday',
-    unread: 0,
-    status: 'away',
-    statusDot: 'bg-yellow-500',
-  },
-];
-
-const CONVERSATIONS = {
-  1: [
-    { id: 1, sender: 'other', text: 'Hi! How are you doing?', timestamp: '2:10 PM' },
-    { id: 2, sender: 'user', text: 'Hey Sarah! I\'m good, thanks for asking. How about you?', timestamp: '2:12 PM', status: 'read' },
-    { id: 3, sender: 'other', text: 'Doing well! Did you see the proposal I sent?', timestamp: '2:15 PM' },
-    { id: 4, sender: 'user', text: 'Yes, I reviewed it. Some great points there.', timestamp: '2:20 PM', status: 'read' },
-    { id: 5, sender: 'user', text: 'Can we discuss the timeline?', timestamp: '2:22 PM', status: 'read' },
-    { id: 6, sender: 'other', text: 'That sounds great! Let me check with the team.', timestamp: '2:30 PM' },
-  ],
-  2: [
-    { id: 1, sender: 'other', text: 'Hey, do you have a moment?', timestamp: '12:45 PM' },
-    { id: 2, sender: 'user', text: 'Sure! What\'s up?', timestamp: '12:50 PM', status: 'read' },
-    { id: 3, sender: 'other', text: 'Can we schedule a meeting tomorrow?', timestamp: '1:15 PM' },
-  ],
-};
+import { Search, Send, Phone, Video, MoreVertical, X, UserPlus, MessageCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 export default function ChatPage() {
+  const { user } = useAuth();
+  console.log('User from auth:', user);
+  const [conversations, setConversations] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messageInput, setMessageInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [currentMessages, setCurrentMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [pollInterval, setPollInterval] = useState(null);
+  const [showAllUsers, setShowAllUsers] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const filteredChats = CHATS.filter(chat =>
-    chat.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    if (user?.id) {
+      fetchConversations();
+      const interval = setInterval(fetchConversations, 3000);
+      setPollInterval(interval);
+      return () => clearInterval(interval);
+    }
+  }, [user?.id]);
 
-  const currentChat = selectedChat ? CHATS.find(c => c.id === selectedChat) : null;
-  
-  const currentMessages = useMemo(() => 
-    selectedChat && CONVERSATIONS[selectedChat] ? CONVERSATIONS[selectedChat] : [], 
-    [selectedChat]
-  );
+  useEffect(() => {
+    if (user?.id && showAllUsers) {
+      if (userSearchTerm) {
+        const timer = setTimeout(() => {
+          fetchAvailableUsers(userSearchTerm);
+        }, 300);
+        return () => clearTimeout(timer);
+      } else {
+        fetchAvailableUsers('');
+      }
+    }
+  }, [userSearchTerm, user?.id, showAllUsers]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  useEffect(() => {
+    if (selectedChat?.id && user?.id) {
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedChat?.id, user?.id]);
 
   useEffect(() => {
     scrollToBottom();
   }, [currentMessages]);
 
-  const handleSendMessage = () => {
-    if (messageInput.trim()) {
+  const fetchConversations = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/conversations/${user?.id}`);
+      if (!response.ok) throw new Error('Failed to fetch conversations');
+      const data = await response.json();
+      setConversations(data);
+      if (data.length > 0 && !selectedChat) {
+        setSelectedChat(data[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  };
+
+  const fetchMessages = async () => {
+    if (!selectedChat?.id || !user?.id) return;
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/messages/${user?.id}?conversationWith=${selectedChat?.id}`
+      );
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      const data = await response.json();
+      setCurrentMessages(data);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const fetchAvailableUsers = async (searchQuery = '') => {
+    const userId = user?.id;
+    console.log('fetchAvailableUsers - userId:', userId, 'searchQuery:', searchQuery);
+    
+    if (!userId) {
+      console.warn('User ID not available');
+      setAvailableUsers([]);
+      return;
+    }
+    
+    try {
+      const url = searchQuery 
+        ? `http://localhost:5000/api/available-users/${userId}?search=${encodeURIComponent(searchQuery)}`
+        : `http://localhost:5000/api/available-users/${userId}`;
+      console.log('Fetching from:', url);
+      const response = await fetch(url);
+      console.log('Response status:', response.status, response.statusText);
+      if (!response.ok) throw new Error(`Failed to fetch users: ${response.statusText}`);
+      const data = await response.json();
+      console.log('Fetched users:', data);
+      setAvailableUsers(data);
+    } catch (error) {
+      console.error('Error fetching available users:', error);
+      setAvailableUsers([]);
+    }
+  };
+
+  const filteredChats = conversations.filter(chat =>
+    chat.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredUsers = availableUsers.filter(u =>
+    u.name.toLowerCase().includes(userSearchTerm.toLowerCase())
+  );
+
+  const handleStartConversation = (user) => {
+    setSelectedChat({
+      id: user.id,
+      name: user.name,
+      avatar: user.avatar,
+      status: user.status || 'Active',
+      statusDot: 'bg-green-500'
+    });
+    setShowAllUsers(false);
+    setUserSearchTerm('');
+  };
+
+  const currentChat = selectedChat;
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageInput.trim() || !selectedChat?.id || !user?.id) return;
+
+    try {
+      const response = await fetch('http://localhost:5000/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender_id: user?.id,
+          receiver_id: selectedChat?.id,
+          message_text: messageInput,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send message');
+      
       setMessageInput('');
       setIsTyping(false);
+      
+      await fetchMessages();
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message');
     }
   };
 
@@ -98,17 +166,29 @@ export default function ChatPage() {
       {/* LEFT SIDE LIST */}
       <div className="w-1/3 border-r border-gray-200 bg-white">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-gray-900 mb-4">Chat</h1>
+        <div className="p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl font-bold text-gray-900">Chat</h1>
+            <button
+              onClick={() => {
+                setShowAllUsers(!showAllUsers);
+                setUserSearchTerm('');
+              }}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-red-500"
+              title="Start new conversation"
+            >
+              <UserPlus className="w-5 h-5" />
+            </button>
+          </div>
 
           {/* Search Box */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search conversations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={showAllUsers ? "Search users..." : "Search conversations..."}
+              value={showAllUsers ? userSearchTerm : searchTerm}
+              onChange={(e) => showAllUsers ? setUserSearchTerm(e.target.value) : setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:bg-white text-sm text-gray-700 placeholder-gray-400 transition-all"
             />
           </div>
@@ -116,41 +196,79 @@ export default function ChatPage() {
 
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredChats.map((chat) => (
-            <div
-              key={chat.id}
-              onClick={() => setSelectedChat(chat.id)}
-              className="border-b p-4 hover:bg-gray-50 cursor-pointer transition-all"
-            >
-              <div className="flex items-center gap-3">
-                {/* Avatar with status */}
-                <div className="relative flex-shrink-0">
-                  <img
-                    src={chat.avatar}
-                    alt={chat.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 ${chat.statusDot} rounded-full border-2 border-white`} />
-                </div>
-
-                {/* Chat Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-sm font-semibold text-gray-800">{chat.name}</h3>
-                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{chat.timestamp}</span>
+          {showAllUsers ? (
+            filteredUsers.length > 0 ? (
+              filteredUsers.map((u) => (
+                <div
+                  key={u.id}
+                  onClick={() => handleStartConversation(u)}
+                  className="border-b p-4 hover:bg-gray-50 cursor-pointer transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={u.avatar}
+                        alt={u.name}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-gray-800">{u.name}</h3>
+                      <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                    </div>
+                    <MessageCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                   </div>
-                  <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
                 </div>
-
-                {/* Unread Badge */}
-                {chat.unread > 0 && (
-                  <div className="flex-shrink-0 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                    {chat.unread}
-                  </div>
-                )}
+              ))
+            ) : (
+              <div className="p-4 text-center text-gray-500">
+                No users found
               </div>
+            )
+          ) : filteredChats.length > 0 ? (
+            filteredChats.map((chat) => (
+              <div
+                key={chat.id}
+                onClick={() => setSelectedChat(chat)}
+                className={`border-b p-4 hover:bg-gray-50 cursor-pointer transition-all ${
+                  selectedChat?.id === chat.id ? 'bg-red-50' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* Avatar with status */}
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={chat.avatar}
+                      alt={chat.name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
+                  </div>
+
+                  {/* Chat Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="text-sm font-semibold text-gray-800">{chat.name}</h3>
+                      <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{chat.timestamp}</span>
+                    </div>
+                    <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-4 text-center text-gray-500">
+              <p className="mb-3">No conversations yet</p>
+              <button
+                onClick={() => setShowAllUsers(true)}
+                className="text-red-600 hover:text-red-700 text-sm font-semibold flex items-center justify-center gap-2 mx-auto"
+              >
+                <UserPlus className="w-4 h-4" />
+                Start a conversation
+              </button>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
@@ -194,32 +312,38 @@ export default function ChatPage() {
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
-              {currentMessages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.sender === 'other' ? (
-                    <div className="flex items-start gap-3">
-                      <img src={currentChat.avatar} className="w-10 h-10 rounded-full" alt="user" />
-                      <div className="p-4 bg-gray-100 rounded-2xl max-w-[70%]">
-                        <p className="text-gray-700">{msg.text}</p>
-                        <span className="text-xs text-gray-400 block mt-1">{msg.timestamp}</span>
+              {currentMessages.length > 0 ? (
+                currentMessages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {msg.sender === 'other' ? (
+                      <div className="flex items-start gap-3">
+                        <img src={currentChat.avatar} className="w-10 h-10 rounded-full" alt="user" />
+                        <div className="p-4 bg-gray-100 rounded-2xl max-w-[70%]">
+                          <p className="text-gray-700">{msg.text}</p>
+                          <span className="text-xs text-gray-400 block mt-1">{msg.timestamp}</span>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex justify-end">
-                      <div className="p-4 bg-red-500 text-white rounded-2xl max-w-[70%]">
-                        <p>{msg.text}</p>
-                        <div className="text-xs text-red-100 text-right mt-1">{msg.timestamp}</div>
+                    ) : (
+                      <div className="flex justify-end">
+                        <div className="p-4 bg-red-500 text-white rounded-2xl max-w-[70%]">
+                          <p>{msg.text}</p>
+                          <div className="text-xs text-red-100 text-right mt-1">{msg.timestamp}</div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500">No messages yet. Start the conversation!</p>
                 </div>
-              ))}
+              )}
 
               {/* Typing Indicator */}
               {isTyping && (
                 <div className="flex justify-start">
                   <div className="flex items-start gap-3">
-                    <img src={currentChat.avatar} className="w-10 h-10 rounded-full" alt="user" />
+                    <img src={currentChat?.avatar} className="w-10 h-10 rounded-full" alt="user" />
                     <div className="p-4 bg-gray-100 rounded-2xl">
                       <div className="flex gap-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -239,7 +363,10 @@ export default function ChatPage() {
                 type="text"
                 placeholder="Type Your Message"
                 value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
+                onChange={(e) => {
+                  setMessageInput(e.target.value);
+                  setIsTyping(e.target.value.length > 0);
+                }}
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 className="flex-1 border rounded-xl p-3 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-red-200 outline-none"
               />

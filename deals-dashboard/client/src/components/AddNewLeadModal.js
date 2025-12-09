@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
+import AddNewCompanyForm from './AddNewCompanyForm';
 
-const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
+const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyAdded }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [loadingData, setLoadingData] = useState(true);
@@ -28,12 +29,18 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
   const [tagInput, setTagInput] = useState('');
   const [ownerDropdownOpen, setOwnerDropdownOpen] = useState(false);
   const [selectPeopleDropdownOpen, setSelectPeopleDropdownOpen] = useState(false);
+  const [isCompanyFormOpen, setIsCompanyFormOpen] = useState(false);
+  const [localCompanies, setLocalCompanies] = useState(companies);
 
   useEffect(() => {
     if (isOpen) {
       fetchUsers();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    setLocalCompanies(companies);
+  }, [companies]);
 
   const fetchUsers = async () => {
     setLoadingData(true);
@@ -91,6 +98,82 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
       ...prev,
       tags: prev.tags.filter(t => t !== tag)
     }));
+  };
+
+  const handleCreateCompany = async (companyData) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const apiPayload = {
+        company_name: companyData.companyName,
+        email: companyData.emailAddress,
+        phone: companyData.phoneNumber,
+        phone2: companyData.phone2,
+        fax: companyData.fax,
+        website: companyData.website,
+        industry_type: companyData.industryType,
+        employee_count: companyData.employeeCount,
+        annual_revenue: companyData.annualRevenue,
+        founded_year: companyData.foundedYear,
+        address: companyData.address,
+        city: companyData.city,
+        state: companyData.state,
+        zip_code: companyData.zipCode,
+        country: companyData.country,
+        facebook: companyData.facebook,
+        skype: companyData.skype,
+        linkedin: companyData.linkedin,
+        twitter: companyData.twitter,
+        whatsapp: companyData.whatsapp,
+        instagram: companyData.instagram,
+        visibility: companyData.visibility,
+        reviews: companyData.reviews,
+        owner_id: companyData.owner ? parseInt(companyData.owner) : null,
+        tags: companyData.tags,
+        source: companyData.source,
+        currency: companyData.currency,
+        language: companyData.language,
+        description: companyData.description,
+        email_opt_out: companyData.emailOptOut
+      };
+
+      const response = await fetch(`${apiUrl}/companies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create company');
+      }
+
+      const createdCompany = await response.json();
+      
+      const newCompany = {
+        id: createdCompany.id,
+        company_name: companyData.companyName,
+        name: companyData.companyName,
+        ...createdCompany
+      };
+
+      setLocalCompanies(prev => [newCompany, ...prev]);
+      setFormData(prev => ({
+        ...prev,
+        company: createdCompany.id?.toString() || ''
+      }));
+
+      setIsCompanyFormOpen(false);
+      
+      if (onCompanyAdded) {
+        onCompanyAdded(newCompany);
+      }
+    } catch (err) {
+      console.error('Error creating company:', err);
+      throw err;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -242,9 +325,19 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Company Name
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Company Name
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsCompanyFormOpen(true)}
+                className="flex items-center gap-1 text-red-600 hover:text-red-700 font-medium text-sm transition"
+              >
+                <Plus size={16} />
+                Add New
+              </button>
+            </div>
             <select
               name="company"
               value={formData.company}
@@ -252,7 +345,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
             >
               <option value="">Select</option>
-              {companies.map(c => (
+              {localCompanies.map(c => (
                 <option key={c.id} value={c.id}>
                   {c.company_name || c.name}
                 </option>
@@ -293,18 +386,33 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone<span className="text-red-500">*</span>
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              placeholder="Enter phone number"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="Enter email address"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="Enter phone number"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -592,6 +700,12 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
           </button>
         </div>
       </div>
+
+      <AddNewCompanyForm
+        isOpen={isCompanyFormOpen}
+        onClose={() => setIsCompanyFormOpen(false)}
+        onSubmit={handleCreateCompany}
+      />
     </div>
   );
 };

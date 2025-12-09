@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 const path = require('path');
+const crypto = require('crypto');
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const envFile = NODE_ENV === 'production' ? '.env.production' : '.env.development';
@@ -40,6 +41,10 @@ const pool = mysql.createPool({
 
 console.log(`Server running in ${NODE_ENV} mode`);
 console.log(`Database: ${process.env.DB_HOST}/${process.env.DB_NAME}`);
+
+function hashPassword(password) {
+  return crypto.pbkdf2Sync(password, 'salt', 1000, 64, 'sha512').toString('hex');
+}
 
 async function initializeDatabase() {
   let connection;
@@ -525,6 +530,25 @@ async function initializeDatabase() {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sender_id INT NOT NULL,
+        receiver_id INT NOT NULL,
+        message_text LONGTEXT NOT NULL,
+        is_read BOOLEAN DEFAULT FALSE,
+        read_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_sender_id (sender_id),
+        INDEX idx_receiver_id (receiver_id),
+        INDEX idx_created_at (created_at),
+        INDEX idx_is_read (is_read),
+        FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS call_history (
         id INT AUTO_INCREMENT PRIMARY KEY,
         caller_name VARCHAR(255) NOT NULL,
@@ -545,6 +569,93 @@ async function initializeDatabase() {
         INDEX idx_call_type (call_type),
         INDEX idx_direction (call_direction),
         INDEX idx_created_at (created_at)
+      )
+    `);
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS user_notes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        priority ENUM('High', 'Medium', 'Low') DEFAULT 'Medium',
+        category VARCHAR(100),
+        tag VARCHAR(100),
+        is_important BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_id (user_id),
+        INDEX idx_priority (priority),
+        INDEX idx_tag (tag),
+        INDEX idx_created_at (created_at)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS file_folders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        parent_id INT,
+        storage_type ENUM('Internal', 'Dropbox', 'Google Drive', 'Cloud Storage') DEFAULT 'Internal',
+        path VARCHAR(500),
+        size_bytes BIGINT DEFAULT 0,
+        file_count INT DEFAULT 0,
+        is_shared BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES file_folders(id) ON DELETE CASCADE,
+        INDEX idx_user_id (user_id),
+        INDEX idx_parent_id (parent_id),
+        INDEX idx_storage_type (storage_type),
+        INDEX idx_created_at (created_at)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS files (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        folder_id INT,
+        name VARCHAR(255) NOT NULL,
+        file_type VARCHAR(50),
+        size_bytes BIGINT NOT NULL,
+        storage_type ENUM('Internal', 'Dropbox', 'Google Drive', 'Cloud Storage') DEFAULT 'Internal',
+        file_path VARCHAR(500),
+        mime_type VARCHAR(100),
+        is_favorite BOOLEAN DEFAULT FALSE,
+        is_shared BOOLEAN DEFAULT FALSE,
+        access_count INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (folder_id) REFERENCES file_folders(id) ON DELETE CASCADE,
+        INDEX idx_user_id (user_id),
+        INDEX idx_folder_id (folder_id),
+        INDEX idx_file_type (file_type),
+        INDEX idx_storage_type (storage_type),
+        INDEX idx_is_favorite (is_favorite),
+        INDEX idx_created_at (created_at)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS file_shares (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        file_id INT,
+        folder_id INT,
+        shared_by_id INT NOT NULL,
+        shared_with_id INT NOT NULL,
+        permission ENUM('View', 'Edit', 'Download') DEFAULT 'View',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+        FOREIGN KEY (folder_id) REFERENCES file_folders(id) ON DELETE CASCADE,
+        FOREIGN KEY (shared_by_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (shared_with_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_shared_by_id (shared_by_id),
+        INDEX idx_shared_with_id (shared_with_id)
       )
     `);
     
@@ -630,23 +741,41 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const user = users[0];
-    const passwordMatch = password === user.password;
+    const hashedInputPassword = hashPassword(password);
+    let passwordMatch = hashedInputPassword === user.password;
+    let needsMigration = false;
+
+    if (!passwordMatch && password === user.password) {
+      passwordMatch = true;
+      needsMigration = true;
+    }
 
     if (!passwordMatch) {
       connection.release();
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    if (needsMigration) {
+      await connection.query(
+        'UPDATE users SET password = ? WHERE id = ?',
+        [hashedInputPassword, user.id]
+      );
+      console.log(`Migrated password for user: ${user.email}`);
+    }
+
     connection.release();
 
-    res.json({
-      id: user.id,
+    const loginResponse = {
+      id: parseInt(user.id) || user.id,
       first_name: user.first_name,
       last_name: user.last_name,
       email: user.email,
       avatar: user.avatar,
       role_name: user.role_name || 'Lead',
-    });
+    };
+    
+    console.log('Login successful - returning user with ID type:', typeof loginResponse.id, 'value:', loginResponse.id);
+    res.json(loginResponse);
   } catch (error) {
     console.error('Login error:', error.message);
     res.status(500).json({ error: 'Login failed', details: error.message });
@@ -688,33 +817,59 @@ app.post('/api/auth/signup', async (req, res) => {
 
     const roleId = roleMapping[role_name] || 6;
     const username = email.split('@')[0];
+    const hashedPassword = hashPassword(password);
 
-    await connection.query(
+    const [insertResult] = await connection.query(
       `INSERT INTO users (first_name, last_name, username, email, password, role_id, phone1, location, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')`,
-      [first_name, last_name, username, email, password, roleId, phone || null, company || null]
+      [first_name, last_name, username, email, hashedPassword, roleId, phone || null, company || null]
     );
 
+    if (!insertResult.insertId) {
+      connection.release();
+      return res.status(500).json({ error: 'Failed to create user - no insert ID returned' });
+    }
+
     const [newUsers] = await connection.query(
-      'SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.email = ?',
-      [email]
+      'SELECT u.id, u.first_name, u.last_name, u.email, u.avatar, u.username, u.role_id, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?',
+      [insertResult.insertId]
     );
 
     connection.release();
 
     if (newUsers.length === 0) {
-      return res.status(500).json({ error: 'Failed to create user' });
+      return res.status(500).json({ error: 'Failed to retrieve created user' });
     }
 
     const newUser = newUsers[0];
-    res.status(201).json({
+    console.log('Raw newUser from DB:', {
       id: newUser.id,
+      username: newUser.username,
+      first_name: newUser.first_name,
+      email: newUser.email,
+      idType: typeof newUser.id
+    });
+    
+    const userId = parseInt(newUser.id);
+    const finalUserId = isNaN(userId) ? insertResult.insertId : userId;
+    
+    if (isNaN(userId)) {
+      console.warn('WARNING: newUser.id is not numeric! Using insertResult.insertId:', insertResult.insertId);
+    }
+    
+    console.log('Using user ID:', finalUserId, 'Type:', typeof finalUserId);
+    
+    const responseData = {
+      id: finalUserId,
       first_name: newUser.first_name,
       last_name: newUser.last_name,
       email: newUser.email,
       avatar: newUser.avatar,
       role_name: newUser.role_name || role_name,
-    });
+    };
+    
+    console.log('✅ SIGNUP SUCCESSFUL - Returning user with ID:', responseData.id, '(type:', typeof responseData.id + ')');
+    res.status(201).json(responseData);
   } catch (error) {
     console.error('Signup error:', error.message);
     res.status(500).json({ error: 'Signup failed', details: error.message });
@@ -1355,8 +1510,10 @@ app.get('/api/companies/:id', async (req, res) => {
     const [rows] = await connection.query(`
       SELECT 
         c.id, c.company_name, c.industry, c.email, c.phone, c.website, c.address, c.city, c.state, c.country,
-        c.employees, c.revenue, c.status, c.logo, c.created_at, c.updated_at, c.description, c.created_by
+        c.employees, c.revenue, c.status, c.logo, c.created_at, c.updated_at, c.description, c.created_by, 
+        c.owner_id, u.first_name as owner_first_name, u.last_name as owner_last_name
       FROM companies c
+      LEFT JOIN users u ON c.owner_id = u.id
       WHERE c.id = ?
     `, [id]);
     connection.release();
@@ -1379,7 +1536,7 @@ app.post('/api/companies', async (req, res) => {
 
     const { 
       company_name, email, phone, website, address, city, state, country, 
-      status, industry, description, logo, revenue, employees
+      status, industry, description, logo, revenue, employees, owner
     } = req.body;
     
     if (!company_name || !email || !phone) {
@@ -1391,11 +1548,11 @@ app.post('/api/companies', async (req, res) => {
     const [result] = await connection.query(
       `INSERT INTO companies 
        (company_name, email, phone, website, address, city, state, country, 
-        status, industry, description, logo, revenue, employees) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        status, industry, description, logo, revenue, employees, owner_id) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
       [company_name, email, phone, website || null, address || null, city || null, state || null, 
        country || null, status || 'Active', industry || null, description || null, logo || null, 
-       revenue || null, employees || null]
+       revenue || null, employees || null, owner || null]
     );
     
     const companyId = result.insertId;
@@ -1411,12 +1568,14 @@ app.post('/api/companies', async (req, res) => {
 app.put('/api/companies/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { company_name, email, phone, website, address, account_url, status, logo } = req.body;
+    const { company_name, email, phone, website, address, account_url, status, logo, owner, owner_id } = req.body;
     const connection = await pool.getConnection();
     
+    const ownerValue = owner_id || owner || null;
+    
     await connection.query(
-      'UPDATE companies SET company_name = ?, email = ?, phone = ?, website = ?, address = ?, account_url = ?, status = ?, logo = ?, updated_at = NOW() WHERE id = ?',
-      [company_name, email, phone, website, address, account_url, status, logo || null, id]
+      'UPDATE companies SET company_name = ?, email = ?, phone = ?, website = ?, address = ?, account_url = ?, status = ?, logo = ?, owner_id = ?, updated_at = NOW() WHERE id = ?',
+      [company_name, email, phone, website, address, account_url, status, logo || null, ownerValue, id]
     );
     
     connection.release();
@@ -1546,13 +1705,28 @@ app.get('/api/plans', async (req, res) => {
 app.get('/api/leads', async (req, res) => {
   try {
     const connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT * FROM leads ORDER BY created_at DESC');
+    const [rows] = await connection.query(`
+      SELECT 
+        l.*,
+        c.company_name,
+        c.address,
+        c.city,
+        c.state,
+        c.zip_code,
+        c.country,
+        c.email as company_email,
+        c.phone as company_phone
+      FROM leads l
+      LEFT JOIN companies c ON l.company = c.id
+      ORDER BY l.created_at DESC
+    `);
     connection.release();
     const formatted = rows.map(r => ({
       ...r,
       name: r.lead_name,
       source: r.lead_source,
-      status: r.lead_status
+      status: r.lead_status,
+      company_id: r.company
     }));
     res.json(formatted);
   } catch (error) {
@@ -1598,7 +1772,21 @@ app.get('/api/leads/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT * FROM leads WHERE id = ?', [id]);
+    const [rows] = await connection.query(`
+      SELECT 
+        l.*,
+        c.company_name,
+        c.address,
+        c.city,
+        c.state,
+        c.zip_code,
+        c.country,
+        c.email as company_email,
+        c.phone as company_phone
+      FROM leads l
+      LEFT JOIN companies c ON l.company = c.id
+      WHERE l.id = ?
+    `, [id]);
     connection.release();
     
     if (rows.length === 0) {
@@ -1610,7 +1798,8 @@ app.get('/api/leads/:id', async (req, res) => {
       ...lead,
       name: lead.lead_name,
       source: lead.lead_source,
-      status: lead.lead_status
+      status: lead.lead_status,
+      company_id: lead.company
     });
   } catch (error) {
     console.error(error);
@@ -4871,6 +5060,196 @@ app.delete('/api/contracts/:id', async (req, res) => {
   }
 });
 
+app.get('/api/messages/:userId', async (req, res) => {
+  let connection;
+  try {
+    const { userId } = req.params;
+    const { conversationWith } = req.query;
+    
+    connection = await pool.getConnection();
+    
+    let query = `
+      SELECT m.*, 
+        sender.first_name as sender_first_name, sender.last_name as sender_last_name, sender.avatar as sender_avatar,
+        receiver.first_name as receiver_first_name, receiver.last_name as receiver_last_name, receiver.avatar as receiver_avatar
+      FROM messages m
+      JOIN users sender ON m.sender_id = sender.id
+      JOIN users receiver ON m.receiver_id = receiver.id
+      WHERE (m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?)
+      ORDER BY m.created_at ASC
+      LIMIT 100
+    `;
+    
+    const [messages] = await connection.query(query, [userId, conversationWith, conversationWith, userId]);
+    
+    const formattedMessages = messages.map(msg => ({
+      id: msg.id,
+      sender_id: msg.sender_id,
+      receiver_id: msg.receiver_id,
+      text: msg.message_text,
+      sender: msg.sender_id == userId ? 'user' : 'other',
+      timestamp: new Date(msg.created_at).toLocaleTimeString(),
+      is_read: msg.is_read,
+      sender_name: `${msg.sender_first_name} ${msg.sender_last_name}`,
+      receiver_name: `${msg.receiver_first_name} ${msg.receiver_last_name}`,
+      sender_avatar: msg.sender_avatar
+    }));
+    
+    connection.release();
+    res.json(formattedMessages);
+  } catch (error) {
+    console.error('Error fetching messages:', error.message);
+    res.status(500).json({ error: 'Failed to fetch messages', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/messages', async (req, res) => {
+  let connection;
+  try {
+    const { sender_id, receiver_id, message_text } = req.body;
+    
+    if (!sender_id || !receiver_id || !message_text) {
+      return res.status(400).json({ error: 'sender_id, receiver_id, and message_text are required' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(
+      'INSERT INTO messages (sender_id, receiver_id, message_text) VALUES (?, ?, ?)',
+      [sender_id, receiver_id, message_text]
+    );
+    
+    const messageId = result.insertId;
+    
+    const [newMessage] = await connection.query(
+      `SELECT m.*, 
+        sender.first_name as sender_first_name, sender.last_name as sender_last_name,
+        receiver.first_name as receiver_first_name, receiver.last_name as receiver_last_name
+      FROM messages m
+      JOIN users sender ON m.sender_id = sender.id
+      JOIN users receiver ON m.receiver_id = receiver.id
+      WHERE m.id = ?`,
+      [messageId]
+    );
+    
+    connection.release();
+    
+    res.json({
+      id: messageId,
+      sender_id: sender_id,
+      receiver_id: receiver_id,
+      text: message_text,
+      timestamp: new Date().toLocaleTimeString(),
+      sender: 'user',
+      message: 'Message sent successfully'
+    });
+  } catch (error) {
+    console.error('Error sending message:', error.message);
+    res.status(500).json({ error: 'Failed to send message', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/conversations/:userId', async (req, res) => {
+  let connection;
+  try {
+    const { userId } = req.params;
+    
+    connection = await pool.getConnection();
+    
+    const [conversations] = await connection.query(`
+      SELECT DISTINCT 
+        CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as other_user_id,
+        MAX(created_at) as last_message_time
+      FROM messages
+      WHERE sender_id = ? OR receiver_id = ?
+      GROUP BY other_user_id
+      ORDER BY last_message_time DESC
+    `, [userId, userId, userId]);
+    
+    const conversationData = [];
+    
+    for (const conv of conversations) {
+      const [userInfo] = await connection.query(
+        'SELECT id, first_name, last_name, avatar, email FROM users WHERE id = ?',
+        [conv.other_user_id]
+      );
+      
+      if (userInfo.length > 0) {
+        const [lastMsg] = await connection.query(
+          `SELECT message_text, created_at FROM messages 
+           WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)
+           ORDER BY created_at DESC LIMIT 1`,
+          [userId, conv.other_user_id, conv.other_user_id, userId]
+        );
+        
+        conversationData.push({
+          id: conv.other_user_id,
+          name: `${userInfo[0].first_name} ${userInfo[0].last_name}`,
+          avatar: userInfo[0].avatar || `https://ui-avatars.com/api/?name=${userInfo[0].first_name}+${userInfo[0].last_name}`,
+          email: userInfo[0].email,
+          lastMessage: lastMsg.length > 0 ? lastMsg[0].message_text : 'No messages yet',
+          timestamp: lastMsg.length > 0 ? new Date(lastMsg[0].created_at).toLocaleString() : 'N/A',
+          status: 'online'
+        });
+      }
+    }
+    
+    connection.release();
+    res.json(conversationData);
+  } catch (error) {
+    console.error('Error fetching conversations:', error.message);
+    res.status(500).json({ error: 'Failed to fetch conversations', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/available-users/:userId', async (req, res) => {
+  let connection;
+  try {
+    const { userId } = req.params;
+    const { search } = req.query;
+    
+    connection = await pool.getConnection();
+    
+    let query = `
+      SELECT id, first_name, last_name, avatar, email, status
+      FROM users 
+      WHERE id != ?
+    `;
+    let params = [parseInt(userId)];
+    
+    if (search) {
+      query += ` AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+    
+    query += ` ORDER BY first_name ASC`;
+    
+    const [users] = await connection.query(query, params);
+    
+    const formattedUsers = users.map(user => ({
+      id: user.id,
+      name: `${user.first_name} ${user.last_name}`,
+      avatar: user.avatar || `https://ui-avatars.com/api/?name=${user.first_name}+${user.last_name}`,
+      email: user.email,
+      status: user.status || 'Active'
+    }));
+    
+    connection.release();
+    res.json(formattedUsers);
+  } catch (error) {
+    console.error('Error fetching users:', error.message);
+    res.status(500).json({ error: 'Failed to fetch users', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
 app.get('/api/call-history', async (req, res) => {
   let connection;
   try {
@@ -5090,6 +5469,417 @@ app.delete('/api/call-history/:id', async (req, res) => {
     if (connection) connection.release();
   }
 });
+
+app.get('/api/notes', async (req, res) => {
+  let connection;
+  try {
+    const { userId } = req.query;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [notes] = await connection.query(
+      `SELECT id, user_id, title, description, priority, category, tag, is_important, created_at, updated_at 
+       FROM user_notes 
+       WHERE user_id = ? 
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+    
+    connection.release();
+    res.json(notes);
+  } catch (error) {
+    console.error('Error fetching notes:', error.message);
+    res.status(500).json({ error: 'Failed to fetch notes', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/notes', async (req, res) => {
+  let connection;
+  try {
+    let { user_id, title, description, priority, category, tag, is_important } = req.body;
+    
+    console.log('POST /api/notes received:', { user_id, title, description, priority, category, tag, is_important });
+    console.log('Full request body:', req.body);
+    console.log('user_id type:', typeof user_id, 'value:', user_id);
+    
+    if (!user_id || !title) {
+      console.log('Validation failed - missing user_id or title', { user_id, title, userIdType: typeof user_id });
+      return res.status(400).json({ 
+        error: 'user_id and title are required', 
+        received: { user_id, title, userIdType: typeof user_id } 
+      });
+    }
+    
+    user_id = parseInt(user_id);
+    if (isNaN(user_id)) {
+      return res.status(400).json({ 
+        error: 'user_id must be a valid number' 
+      });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [userExists] = await connection.query(
+      'SELECT id FROM users WHERE id = ?',
+      [user_id]
+    );
+    
+    if (userExists.length === 0) {
+      connection.release();
+      return res.status(400).json({ error: `User with ID ${user_id} does not exist` });
+    }
+    
+    const [result] = await connection.query(
+      `INSERT INTO user_notes (user_id, title, description, priority, category, tag, is_important) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [user_id, title, description || null, priority || 'Medium', category || null, tag || null, is_important ? 1 : 0]
+    );
+    
+    const [createdNote] = await connection.query(
+      `SELECT id, user_id, title, description, priority, category, tag, is_important, created_at, updated_at 
+       FROM user_notes WHERE id = ?`,
+      [result.insertId]
+    );
+    
+    connection.release();
+    
+    res.json({ 
+      message: 'Note created successfully',
+      note: createdNote[0]
+    });
+  } catch (error) {
+    console.error('Error creating note:', error.message);
+    res.status(500).json({ error: 'Failed to create note', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/notes/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [note] = await connection.query(
+      `SELECT id, user_id, title, description, priority, category, tag, is_important, created_at, updated_at 
+       FROM user_notes WHERE id = ?`,
+      [id]
+    );
+    
+    if (note.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Note not found' });
+    }
+    
+    connection.release();
+    res.json(note[0]);
+  } catch (error) {
+    console.error('Error fetching note:', error.message);
+    res.status(500).json({ error: 'Failed to fetch note', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/notes/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { title, description, priority, category, tag, is_important } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [note] = await connection.query('SELECT * FROM user_notes WHERE id = ?', [id]);
+    if (note.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Note not found' });
+    }
+    
+    const updateFields = [];
+    const updateValues = [];
+    
+    if (title !== undefined) {
+      updateFields.push('title = ?');
+      updateValues.push(title);
+    }
+    if (description !== undefined) {
+      updateFields.push('description = ?');
+      updateValues.push(description);
+    }
+    if (priority !== undefined) {
+      updateFields.push('priority = ?');
+      updateValues.push(priority);
+    }
+    if (category !== undefined) {
+      updateFields.push('category = ?');
+      updateValues.push(category);
+    }
+    if (tag !== undefined) {
+      updateFields.push('tag = ?');
+      updateValues.push(tag);
+    }
+    if (is_important !== undefined) {
+      updateFields.push('is_important = ?');
+      updateValues.push(is_important ? 1 : 0);
+    }
+    
+    if (updateFields.length === 0) {
+      connection.release();
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    updateFields.push('updated_at = NOW()');
+    updateValues.push(id);
+    
+    await connection.query(
+      `UPDATE user_notes SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateValues
+    );
+    
+    const [updatedNote] = await connection.query(
+      `SELECT id, user_id, title, description, priority, category, tag, is_important, created_at, updated_at 
+       FROM user_notes WHERE id = ?`,
+      [id]
+    );
+    
+    connection.release();
+    res.json({ 
+      message: 'Note updated successfully',
+      note: updatedNote[0]
+    });
+  } catch (error) {
+    console.error('Error updating note:', error.message);
+    res.status(500).json({ error: 'Failed to update note', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/notes/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [note] = await connection.query('SELECT * FROM user_notes WHERE id = ?', [id]);
+    if (note.length === 0) {
+      connection.release();
+      return res.status(404).json({ error: 'Note not found' });
+    }
+    
+    await connection.query('DELETE FROM user_notes WHERE id = ?', [id]);
+    connection.release();
+    
+    res.json({ message: 'Note deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting note:', error.message);
+    res.status(500).json({ error: 'Failed to delete note', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/files', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const userId = req.query.userId || 1;
+    
+    const [files] = await connection.query(
+      `SELECT id, name, file_type, size_bytes, storage_type, is_favorite, created_at, updated_at 
+       FROM files WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`,
+      [userId]
+    );
+    
+    connection.release();
+    res.json(files);
+  } catch (error) {
+    console.error('Error fetching files:', error.message);
+    res.status(500).json({ error: 'Failed to fetch files' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/folders', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const userId = req.query.userId || 1;
+    
+    const [folders] = await connection.query(
+      `SELECT id, name, storage_type, size_bytes, file_count, created_at, updated_at 
+       FROM file_folders WHERE user_id = ? AND parent_id IS NULL ORDER BY created_at DESC`,
+      [userId]
+    );
+    
+    connection.release();
+    res.json(folders);
+  } catch (error) {
+    console.error('Error fetching folders:', error.message);
+    res.status(500).json({ error: 'Failed to fetch folders' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/files/storage-stats', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const userId = req.query.userId || 1;
+    
+    const [stats] = await connection.query(
+      `SELECT storage_type, COUNT(*) as file_count, SUM(size_bytes) as total_size 
+       FROM files WHERE user_id = ? GROUP BY storage_type`,
+      [userId]
+    );
+    
+    connection.release();
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching storage stats:', error.message);
+    res.status(500).json({ error: 'Failed to fetch storage stats' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/folders', async (req, res) => {
+  let connection;
+  try {
+    const { name, storageType, parentId, userId } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Folder name is required' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(
+      `INSERT INTO file_folders (user_id, name, storage_type, parent_id) 
+       VALUES (?, ?, ?, ?)`,
+      [userId || 1, name, storageType || 'Internal', parentId || null]
+    );
+    
+    const [folder] = await connection.query(
+      `SELECT id, name, storage_type, created_at FROM file_folders WHERE id = ?`,
+      [result.insertId]
+    );
+    
+    connection.release();
+    res.json({ message: 'Folder created successfully', folder: folder[0] });
+  } catch (error) {
+    console.error('Error creating folder:', error.message);
+    res.status(500).json({ error: 'Failed to create folder' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/files', async (req, res) => {
+  let connection;
+  try {
+    const { name, fileType, sizeBytes, storageType, folderId, userId, mimeType } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'File name is required' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [result] = await connection.query(
+      `INSERT INTO files (user_id, folder_id, name, file_type, size_bytes, storage_type, mime_type) 
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [userId || 1, folderId || null, name, fileType || 'Doc', sizeBytes || 0, storageType || 'Internal', mimeType || 'application/octet-stream']
+    );
+    
+    const [file] = await connection.query(
+      `SELECT id, name, file_type, size_bytes, storage_type, created_at FROM files WHERE id = ?`,
+      [result.insertId]
+    );
+    
+    connection.release();
+    res.json({ message: 'File uploaded successfully', file: file[0] });
+  } catch (error) {
+    console.error('Error uploading file:', error.message);
+    res.status(500).json({ error: 'Failed to upload file' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/files/:id/favorite', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { isFavorite } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    await connection.query(
+      `UPDATE files SET is_favorite = ? WHERE id = ?`,
+      [isFavorite ? 1 : 0, id]
+    );
+    
+    connection.release();
+    res.json({ message: 'File updated successfully' });
+  } catch (error) {
+    console.error('Error updating file:', error.message);
+    res.status(500).json({ error: 'Failed to update file' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/files/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    await connection.query('DELETE FROM files WHERE id = ?', [id]);
+    
+    connection.release();
+    res.json({ message: 'File deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting file:', error.message);
+    res.status(500).json({ error: 'Failed to delete file' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/folders/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    await connection.query('DELETE FROM file_folders WHERE id = ?', [id]);
+    
+    connection.release();
+    res.json({ message: 'Folder deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting folder:', error.message);
+    res.status(500).json({ error: 'Failed to delete folder' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+const setupCRMRoutes = require('./crm-api-routes');
+setupCRMRoutes(app, pool);
+
+const setupCRMCorrectionsRoutes = require('./crm-corrections-api-routes');
+setupCRMCorrectionsRoutes(app, pool);
 
 const server = app.listen(PORT, async () => {
   console.log(`✓ Server running on port ${PORT}`);

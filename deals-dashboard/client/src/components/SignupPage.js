@@ -13,6 +13,7 @@ const SignupPage = () => {
     role: 'Lead',
     phone: '',
     company: '',
+    companyId: null,
   });
 
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,10 @@ const SignupPage = () => {
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [companies, setCompanies] = useState([]);
+  const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState('');
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
 
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
@@ -120,15 +125,25 @@ const SignupPage = () => {
 
       const userData = await response.json();
 
-      login({
-        id: userData.id,
+      console.log('Signup response received:', userData);
+      console.log('Received ID - type:', typeof userData.id, 'value:', userData.id);
+
+      const numericId = typeof userData.id === 'string' ? parseInt(userData.id) : userData.id;
+      
+      if (isNaN(numericId)) {
+        throw new Error(`Invalid user ID received from server: ${userData.id}`);
+      }
+
+      const loginData = {
+        id: numericId,
         email: userData.email,
         name: userData.first_name,
         role: userData.role_name || formData.role,
         avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.email}`,
-      });
+      };
 
-      navigate('/');
+      console.log('Logging in user with data (after conversion):', loginData);
+      login(loginData);
     } catch (err) {
       setError(err.message || 'Failed to create account. Please try again.');
       console.error('Signup error:', err);
@@ -358,10 +373,29 @@ const SignupPage = () => {
             </p>
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs text-blue-800">
-              <strong>Note:</strong> Select your role carefully. You can request role changes from the administrator after account creation.
-            </p>
+          <div className="mt-6 space-y-4">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-green-900">
+                  💬 Real-Time Chat Features
+                </p>
+                <ul className="text-xs text-green-800 space-y-1 ml-4 list-disc">
+                  <li>Instant messaging with team members</li>
+                  <li>Conversation history and management</li>
+                  <li>Message read status tracking</li>
+                  <li>One-on-one and group conversations</li>
+                </ul>
+                <p className="text-xs text-green-800 mt-2">
+                  After signup, navigate to the <strong>Chat</strong> section in the sidebar to start messaging!
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Note:</strong> Select your role carefully. You can request role changes from the administrator after account creation.
+              </p>
+            </div>
           </div>
         </form>
       </div>

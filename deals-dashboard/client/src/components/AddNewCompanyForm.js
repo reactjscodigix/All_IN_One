@@ -1,10 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, ChevronDown } from 'lucide-react';
 
 const AddNewCompanyForm = ({ isOpen, onClose, onSubmit }) => {
   const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [openPanels, setOpenPanels] = useState({
     basic: true,
     address: false,
@@ -49,6 +51,29 @@ const AddNewCompanyForm = ({ isOpen, onClose, onSubmit }) => {
 
   const employeeCounts = ['1-50', '51-100', '101-500', '501-1000', '1000+'];
   const revenueRanges = ['< $1M', '$1M - $10M', '$10M - $50M', '$50M - $100M', '$100M+'];
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen]);
+
+  const fetchUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/users`);
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setUsers([]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const togglePanel = (name) => {
     setOpenPanels((p) => ({ ...p, [name]: !p[name] }));
@@ -417,14 +442,20 @@ const AddNewCompanyForm = ({ isOpen, onClose, onSubmit }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Owner
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="owner"
                       value={formData.owner}
                       onChange={handleInputChange}
-                      placeholder="Enter owner name"
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                    />
+                      disabled={loadingUsers}
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
+                    >
+                      <option value="">{loadingUsers ? 'Loading...' : 'Select Owner'}</option>
+                      {users.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.first_name} {user.last_name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

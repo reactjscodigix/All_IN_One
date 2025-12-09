@@ -18,6 +18,7 @@ const AddCompanyPage = () => {
   });
   
   const [contacts, setContacts] = useState([]);
+  const [users, setUsers] = useState([]);
   const [sources, setSources] = useState([]);
   const [industries, setIndustries] = useState([]);
   const [selectedContacts, setSelectedContacts] = useState([]);
@@ -102,8 +103,9 @@ const AddCompanyPage = () => {
     setLoadingData(true);
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const [contactsRes, sourcesRes, industriesRes] = await Promise.all([
+      const [contactsRes, usersRes, sourcesRes, industriesRes] = await Promise.all([
         fetch(`${apiUrl}/contacts`),
+        fetch(`${apiUrl}/users`),
         fetch(`${apiUrl}/sources`),
         fetch(`${apiUrl}/industries`)
       ]);
@@ -111,6 +113,11 @@ const AddCompanyPage = () => {
       if (contactsRes.ok) {
         const data = await contactsRes.json();
         setContacts(Array.isArray(data) ? data : []);
+      }
+
+      if (usersRes.ok) {
+        const data = await usersRes.json();
+        setUsers(Array.isArray(data) ? data : []);
       }
       
       if (sourcesRes.ok) {
@@ -547,10 +554,10 @@ const AddCompanyPage = () => {
                       disabled={loadingData}
                       className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
                     >
-                      <option value="">{loadingData ? 'Loading...' : 'Select'}</option>
-                      {contacts.map(contact => (
-                        <option key={contact.id} value={contact.id}>
-                          {contact.first_name} {contact.last_name}
+                      <option value="">{loadingData ? 'Loading...' : 'Select Owner'}</option>
+                      {users.map(user => (
+                        <option key={user.id} value={user.id}>
+                          {user.first_name} {user.last_name}
                         </option>
                       ))}
                     </select>

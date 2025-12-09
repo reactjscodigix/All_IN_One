@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Upload } from 'lucide-react';
+import { Upload, Plus } from 'lucide-react';
+import AddNewDealModal from './AddNewDealModal';
 
 const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEditMode = false }) => {
   const [companies, setCompanies] = useState([]);
   const [deals, setDeals] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [contacts, setContacts] = useState([]);
   const [avatar, setAvatar] = useState(null);
   const fileInputRef = React.useRef(null);
   const [openPanels, setOpenPanels] = useState({
@@ -13,6 +16,8 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
     access: false,
   });
   const [emailOptOut, setEmailOptOut] = useState(false);
+  const [isDealFormOpen, setIsDealFormOpen] = useState(false);
+  const [localDeals, setLocalDeals] = useState([]);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -49,7 +54,13 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
   useEffect(() => {
     fetchCompanies();
     fetchDeals();
+    fetchProjects();
+    fetchContacts();
   }, []);
+
+  useEffect(() => {
+    setLocalDeals(deals);
+  }, [deals]);
 
   const fetchCompanies = async () => {
     try {
@@ -71,6 +82,30 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
     } catch (error) {
       console.error('Error fetching deals:', error);
       setDeals([]);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/projects`);
+      const data = await response.json();
+      setProjects(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      setProjects([]);
+    }
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts`);
+      const data = await response.json();
+      setContacts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+      setContacts([]);
     }
   };
 
@@ -128,6 +163,45 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
         setAvatar(event.target.result);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCreateDeal = async (dealData) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${apiUrl}/deals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dealData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create deal');
+      }
+
+      const createdDeal = await response.json();
+      
+      const newDeal = {
+        id: createdDeal.id,
+        deal_name: dealData.deal_name,
+        ...createdDeal
+      };
+
+      setLocalDeals(prev => [newDeal, ...prev]);
+      setForm(prev => ({
+        ...prev,
+        deals: createdDeal.id?.toString() || ''
+      }));
+
+      setIsDealFormOpen(false);
+      fetchDeals();
+    } catch (err) {
+      console.error('Error creating deal:', err);
+      throw err;
     }
   };
 
@@ -414,25 +488,32 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Deals
-                    </label>
-                    <div className="flex gap-2">
-                      <select
-                        name="deals"
-                        value={form.deals}
-                        onChange={handleChange}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:border-gray-400"
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Deals
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setIsDealFormOpen(true)}
+                        className="flex items-center gap-1 text-red-600 hover:text-red-700 font-medium text-xs transition"
                       >
-                        <option value="">Select</option>
-                        {deals.map((deal) => (
-                          <option key={deal.id} value={deal.id}>
-                            {deal.deal_name || deal.name}
-                          </option>
-                        ))}
-                      </select>
-                      <button type="button" className="text-red-500 font-bold text-lg hover:opacity-80">+</button>
+                        <Plus size={14} />
+                        Add New
+                      </button>
                     </div>
+                    <select
+                      name="deals"
+                      value={form.deals}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm bg-white focus:outline-none focus:border-gray-400"
+                    >
+                      <option value="">Select</option>
+                      {localDeals.map((deal) => (
+                        <option key={deal.id} value={deal.id}>
+                          {deal.deal_name || deal.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -818,6 +899,16 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
             </button>
           </div>
         </form>
+
+        {/* Deal Form Sidebar */}
+        <AddNewDealModal
+          isOpen={isDealFormOpen}
+          onClose={() => setIsDealFormOpen(false)}
+          onSubmit={handleCreateDeal}
+          contacts={contacts}
+          projects={projects}
+          companies={companies}
+        />
       </div>
     </div>
   );

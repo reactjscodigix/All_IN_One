@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, Mic, MicOff, Video, VideoOff, Monitor, Volume2, RotateCcw, Settings } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import { generateMeetingLink } from '../utils/meetingUtils';
 
 export default function VideoCallPage() {
+  const { user } = useAuth();
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [googleMeetLink, setGoogleMeetLink] = useState('');
-  const callTime = '40:12';
-  const callerName = 'Joe Lewis';
+  const [callTime] = useState('40:12');
+  const callerName = user?.name || 'User';
 
   useEffect(() => {
     setGoogleMeetLink(generateMeetingLink());
@@ -21,7 +23,8 @@ export default function VideoCallPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          caller_name: callerName,
+          caller_name: user?.name || 'User',
+          caller_avatar: user?.avatar,
           call_type: 'Video Call',
           call_direction: 'Outgoing',
           duration: 0,
@@ -75,7 +78,7 @@ export default function VideoCallPage() {
           {/* Local Video - PiP */}
           <div className="absolute bottom-24 right-8 w-48 h-40 bg-gray-800 border-4 border-white rounded-2xl overflow-hidden shadow-lg">
             <img
-              src="https://ui-avatars.com/api/?name=You&background=3B82F6&color=fff&size=200"
+              src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=3B82F6&color=fff&size=200`}
               className="w-full h-full object-cover"
               alt="Local video"
             />

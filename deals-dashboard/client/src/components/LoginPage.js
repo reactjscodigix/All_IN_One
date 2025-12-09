@@ -68,20 +68,43 @@ const LoginPage = () => {
     { email: 'lead@example.com', password: 'lead123', role: 'Lead' },
   ];
 
-  const handleDemoLogin = (demoUser) => {
-    setEmail(demoUser.email);
-    setPassword(demoUser.password);
-    
-    setTimeout(() => {
-      login({
-        id: Math.random().toString(36).substr(2, 9),
-        email: demoUser.email,
-        name: demoUser.email.split('@')[0],
-        role: demoUser.role,
-        avatar: `https://i.pravatar.cc/150?u=${demoUser.email}`,
+  const handleDemoLogin = async (demoUser) => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${apiUrl}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: demoUser.email, password: demoUser.password }),
       });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Login failed');
+      }
+
+      const userData = await response.json();
+      
+      login({
+        id: userData.id,
+        email: userData.email,
+        name: userData.first_name,
+        role: userData.role_name || 'Lead',
+        avatar: userData.avatar,
+      });
+
       navigate('/');
-    }, 300);
+    } catch (err) {
+      setError(err.message || 'Demo login failed. Please try the regular login form.');
+      console.error('Demo login error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

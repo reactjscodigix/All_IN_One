@@ -1,99 +1,210 @@
-import React, { useState } from 'react';
-import { Star, Trash2, MoreVertical, Download, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, Trash2, MoreVertical, Download, Calendar, Plus, X, Edit2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const NotesPage = () => {
-  const [notes] = useState([
-    {
-      id: 1,
-      title: 'Plan a trip to another country',
-      date: '20 Jan 2024',
+  const { user } = useAuth();
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [selectedTag, setSelectedTag] = useState(null);
+  const [selectedPriority, setSelectedPriority] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    priority: 'Medium',
+    category: 'Personal',
+    tag: 'Pending'
+  });
+
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+  useEffect(() => {
+    const fetchNotesAsync = async () => {
+      if (user?.id) {
+        try {
+          setLoading(true);
+          const response = await fetch(`${apiUrl}/notes?userId=${user?.id}`);
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch notes');
+          }
+          
+          const data = await response.json();
+          setNotes(data);
+          setError('');
+        } catch (err) {
+          console.error('Error fetching notes:', err);
+          setError('Failed to load notes');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchNotesAsync();
+  }, [user?.id, apiUrl]);
+
+  const handleAddNote = () => {
+    setEditingNote(null);
+    setFormData({
+      title: '',
+      description: '',
       priority: 'Medium',
-      description: 'Space, the final frontier. These are the voyages of the Starship Enterprise.',
       category: 'Personal',
-      isImportant: true,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-01.jpg'
-    },
-    {
-      id: 2,
-      title: 'Improve touch typing',
-      date: '22 Jan 2024',
-      priority: 'Low',
-      description: 'Well, the way they make shows is, they make one show.',
-      category: 'Work',
-      isImportant: true,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg'
-    },
-    {
-      id: 3,
-      title: 'Learn calligraphy',
-      date: '24 Jan 2024',
-      priority: 'Low',
-      description: 'Calligraphy, the art of beautiful handwriting. It derive from Greek.',
-      category: 'Social',
-      isImportant: true,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-03.jpg'
-    },
-    {
-      id: 4,
-      title: 'Backup Files EOD',
-      date: '20 Jan 2024',
-      priority: 'High',
-      description: 'Project files should be took backup before end of the day.',
-      category: 'Personal',
-      isImportant: false,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-05.jpg'
-    },
-    {
-      id: 5,
-      title: 'Download Server Logs',
-      date: '25 Jan 2024',
-      priority: 'Medium',
-      description: 'Server log is a text document that contains a record of all activity.',
-      category: 'Work',
-      isImportant: false,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-06.jpg'
-    },
-    {
-      id: 6,
-      title: 'Team meet at Starbucks',
-      date: '26 Jan 2024',
-      priority: 'High',
-      description: 'Meeting all teamets at Starbucks for identifying them all.',
-      category: 'Social',
-      isImportant: false,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-07.jpg'
-    },
-    {
-      id: 7,
-      title: 'Create a compost pile',
-      date: '27 Jan 2024',
-      priority: 'Low',
-      description: 'Compost pile refers to fruit and vegetable scraps, used tea etc..',
-      category: 'Social',
-      isImportant: false,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-08.jpg'
-    },
-    {
-      id: 8,
-      title: 'Take a hike at a local park',
-      date: '28 Jan 2024',
-      priority: 'Medium',
-      description: 'Hiking involves a long energetic walk in a natural environment.',
-      category: 'Personal',
-      isImportant: false,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-09.jpg'
-    },
-    {
-      id: 9,
-      title: 'Research a topic interested',
-      date: '28 Jan 2024',
-      priority: 'High',
-      description: 'Research a topic interested by listen actively and attentively.',
-      category: 'Work',
-      isImportant: false,
-      avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-10.jpg'
+      tag: 'Pending'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleEditNote = (note) => {
+    setEditingNote(note);
+    setFormData({
+      title: note.title,
+      description: note.description,
+      priority: note.priority,
+      category: note.category,
+      tag: note.tag || 'Pending'
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSaveNote = async () => {
+    if (!formData.title.trim()) {
+      alert('Please enter a note title');
+      return;
     }
-  ]);
+
+    console.log('Current user in handleSaveNote:', user);
+    
+    if (!user?.id) {
+      console.error('User not authenticated:', user);
+      alert('User not authenticated. Please log in again.');
+      return;
+    }
+
+    try {
+      if (editingNote) {
+        const response = await fetch(`${apiUrl}/notes/${editingNote.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: formData.title,
+            description: formData.description,
+            priority: formData.priority,
+            category: formData.category,
+            tag: formData.tag,
+            is_important: editingNote.is_important
+          })
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to update note');
+        }
+
+        const result = await response.json();
+        setNotes(notes.map(n => n.id === editingNote.id ? result.note : n));
+      } else {
+        console.log('User object before creating note:', user);
+        console.log('User ID type and value:', typeof user.id, user.id);
+        
+        let userId = user.id;
+        
+        if (typeof userId === 'string') {
+          const parsed = parseInt(userId);
+          if (isNaN(parsed)) {
+            throw new Error(`Invalid user ID format: "${userId}" is not a valid number. Please log out and log in again.`);
+          }
+          userId = parsed;
+        }
+        
+        if (!Number.isInteger(userId) || userId <= 0) {
+          throw new Error(`Invalid user ID: ${userId}. Please log out and log in again.`);
+        }
+        
+        console.log('Final user ID for request:', userId, 'type:', typeof userId);
+        
+        const noteData = {
+          user_id: userId,
+          title: formData.title,
+          description: formData.description,
+          priority: formData.priority,
+          category: formData.category,
+          tag: formData.tag,
+          is_important: false
+        };
+
+        console.log('Sending note data:', noteData);
+        console.log('Request will be sent to:', `${apiUrl}/notes`);
+
+        const response = await fetch(`${apiUrl}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(noteData)
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to create note');
+        }
+
+        const result = await response.json();
+        setNotes([result.note, ...notes]);
+      }
+
+      setIsModalOpen(false);
+      setEditingNote(null);
+    } catch (err) {
+      console.error('Error saving note:', err);
+      alert(`Failed to save note: ${err.message}`);
+    }
+  };
+
+  const handleDeleteNote = async (id) => {
+    if (window.confirm('Are you sure you want to delete this note?')) {
+      try {
+        const response = await fetch(`${apiUrl}/notes/${id}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to delete note');
+        }
+
+        setNotes(notes.filter(n => n.id !== id));
+      } catch (err) {
+        console.error('Error deleting note:', err);
+        alert('Failed to delete note');
+      }
+    }
+  };
+
+  const toggleImportant = async (note) => {
+    try {
+      const response = await fetch(`${apiUrl}/notes/${note.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          is_important: !note.is_important
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update note');
+      }
+
+      const result = await response.json();
+      setNotes(notes.map(n => n.id === note.id ? result.note : n));
+    } catch (err) {
+      console.error('Error updating note:', err);
+      alert('Failed to update note');
+    }
+  };
 
   const getCategoryColor = (category) => {
     const colors = {
@@ -113,10 +224,143 @@ const NotesPage = () => {
     return colors[priority] || 'bg-gray-100 text-gray-600';
   };
 
-  const importantNotes = notes.filter(n => n.isImportant);
+  const getTagColor = (tag) => {
+    const colors = {
+      'Pending': 'bg-blue-500',
+      'Onhold': 'bg-red-500',
+      'Inprogress': 'bg-yellow-500',
+      'Done': 'bg-green-500'
+    };
+    return colors[tag] || 'bg-gray-500';
+  };
+
+  const getFilteredNotes = () => {
+    let filtered = notes;
+
+    if (activeFilter === 'important') {
+      filtered = filtered.filter(n => n.is_important);
+    } else if (activeFilter === 'trash') {
+      filtered = [];
+    }
+
+    if (selectedTag) {
+      filtered = filtered.filter(n => n.tag === selectedTag);
+    }
+
+    if (selectedPriority) {
+      filtered = filtered.filter(n => n.priority === selectedPriority);
+    }
+
+    return filtered;
+  };
+
+  const filteredNotes = getFilteredNotes();
+  const importantNotes = notes.filter(n => n.is_important);
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleString('default', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  const NoteCard = ({ note }) => {
+    const categoryColor = getCategoryColor(note.category);
+    return (
+      <div key={note.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between mb-3">
+          <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getPriorityBadge(note.priority)}`}>
+            {note.priority}
+          </span>
+          <div className="relative group">
+            <button className="text-gray-400 hover:text-gray-600">
+              <MoreVertical size={18} />
+            </button>
+            <div className="hidden group-hover:block absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+              <button 
+                onClick={() => handleEditNote(note)}
+                className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2"
+              >
+                <Edit2 size={14} /> Edit
+              </button>
+              <button 
+                onClick={() => handleDeleteNote(note.id)}
+                className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <h3 className="text-sm font-bold text-gray-900 mb-2">{note.title}</h3>
+
+        <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
+          <Calendar size={14} />
+          {formatDate(note.created_at)}
+        </div>
+
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{note.description}</p>
+
+        <div className="mb-2">
+          <span className={`inline-block text-xs text-white px-2 py-1 rounded ${getTagColor(note.tag || 'Pending')}`}>
+            {note.tag || 'Pending'}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src={`https://i.pravatar.cc/150?u=${user?.email || 'user'}`} alt={note.category} className="w-6 h-6 rounded-full" />
+            <span className={`px-2 py-1 rounded text-xs font-medium ${categoryColor.text} ${categoryColor.bg}`}>
+              {note.category}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => toggleImportant(note)}
+              className={`${note.is_important ? 'text-yellow-400' : 'text-gray-400'} hover:text-yellow-500`}
+            >
+              <Star size={16} fill={note.is_important ? 'currentColor' : 'none'} />
+            </button>
+            <button 
+              onClick={() => handleDeleteNote(note.id)}
+              className="text-gray-400 hover:text-red-500"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const getFilterLabel = () => {
+    if (activeFilter === 'important') return 'Important Notes';
+    if (activeFilter === 'trash') return 'Trash';
+    if (selectedTag) return `${selectedTag} Notes`;
+    if (selectedPriority) return `${selectedPriority} Priority Notes`;
+    return 'All Notes';
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8 bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading notes...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-white min-h-screen">
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 flex items-center justify-between">
           <div>
@@ -140,27 +384,64 @@ const NotesPage = () => {
                 <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">Export as Excel</button>
               </div>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium text-sm">
-              + Add Notes
+            <button 
+              onClick={handleAddNote}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium text-sm"
+            >
+              <Plus size={16} />
+              Add Notes
             </button>
           </div>
         </div>
 
         <div className="flex gap-6">
           <div className="w-56 flex-shrink-0">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="bg-white border border-gray-200 rounded-lg p-4 sticky top-20">
               <h3 className="text-sm font-bold text-gray-900 mb-3">Notes List</h3>
               
-              <button className="w-full bg-red-600 text-white px-4 py-2 rounded text-sm font-medium mb-3 hover:bg-red-700 transition-smooth">
-                All Notes
+              <button 
+                onClick={() => {
+                  setActiveFilter('all');
+                  setSelectedTag(null);
+                  setSelectedPriority(null);
+                }}
+                className={`w-full px-4 py-2 rounded text-sm font-medium mb-3 transition-smooth ${
+                  activeFilter === 'all' && !selectedTag && !selectedPriority
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All Notes ({notes.length})
               </button>
               
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded flex items-center gap-2 mb-2">
+              <button 
+                onClick={() => {
+                  setActiveFilter('important');
+                  setSelectedTag(null);
+                  setSelectedPriority(null);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm rounded flex items-center gap-2 mb-2 transition-smooth ${
+                  activeFilter === 'important'
+                    ? 'bg-red-50 text-red-600 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
                 <Star size={16} className="text-yellow-400" />
-                Important
+                Important ({importantNotes.length})
               </button>
               
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  setActiveFilter('trash');
+                  setSelectedTag(null);
+                  setSelectedPriority(null);
+                }}
+                className={`w-full text-left px-4 py-2 text-sm rounded flex items-center gap-2 transition-smooth ${
+                  activeFilter === 'trash'
+                    ? 'bg-red-50 text-red-600 font-medium'
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
                 <Trash2 size={16} />
                 Trash
               </button>
@@ -168,96 +449,229 @@ const NotesPage = () => {
               <div className="border-t border-gray-200 mt-4 pt-4">
                 <h4 className="text-xs font-bold text-gray-900 mb-3">Tags</h4>
                 <div className="space-y-2">
-                  <button className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                    Pending
-                  </button>
-                  <button className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                    Onhold
-                  </button>
-                  <button className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
-                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                    Inprogress
-                  </button>
-                  <button className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    Done
-                  </button>
+                  {['Pending', 'Onhold', 'Inprogress', 'Done'].map((tag) => (
+                    <button 
+                      key={tag}
+                      onClick={() => {
+                        setSelectedTag(selectedTag === tag ? null : tag);
+                        setActiveFilter('all');
+                        setSelectedPriority(null);
+                      }}
+                      className={`flex items-center gap-2 text-sm w-full px-2 py-1 rounded transition-smooth ${
+                        selectedTag === tag
+                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${getTagColor(tag)}`}></span>
+                      {tag} ({notes.filter(n => (n.tag || 'Pending') === tag).length})
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div className="border-t border-gray-200 mt-4 pt-4">
                 <h4 className="text-xs font-bold text-gray-900 mb-3">Priority</h4>
                 <div className="space-y-2">
-                  <button className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium hover:bg-yellow-200">
-                    Medium
-                  </button>
-                  <button className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200">
-                    High
-                  </button>
-                  <button className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200">
-                    Low
-                  </button>
+                  {['High', 'Medium', 'Low'].map((priority) => (
+                    <button 
+                      key={priority}
+                      onClick={() => {
+                        setSelectedPriority(selectedPriority === priority ? null : priority);
+                        setActiveFilter('all');
+                        setSelectedTag(null);
+                      }}
+                      className={`px-3 py-1 rounded text-xs font-medium w-full transition-smooth ${
+                        selectedPriority === priority
+                          ? `${getPriorityBadge(priority)} border-2`
+                          : getPriorityBadge(priority)
+                      }`}
+                    >
+                      {priority} ({notes.filter(n => n.priority === priority).length})
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="flex-1">
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Important Notes</h2>
-                <button className="text-sm text-red-600 hover:text-red-700 font-medium">Close</button>
-              </div>
+            {(activeFilter === 'important' || selectedTag || selectedPriority) && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900">{getFilterLabel()}</h2>
+                  <button 
+                    onClick={() => {
+                      setActiveFilter('all');
+                      setSelectedTag(null);
+                      setSelectedPriority(null);
+                    }}
+                    className="text-sm text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Clear Filter
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {importantNotes.map((note) => {
-                  const categoryColor = getCategoryColor(note.category);
-                  return (
-                    <div key={note.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getPriorityBadge(note.priority)}`}>
-                          {note.priority}
-                        </span>
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <MoreVertical size={18} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredNotes.length > 0 ? (
+                    filteredNotes.map((note) => <NoteCard key={note.id} note={note} />)
+                  ) : (
+                    <div className="col-span-3 text-center py-12">
+                      <p className="text-gray-600">No notes found</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeFilter === 'all' && !selectedTag && !selectedPriority && (
+              <>
+                {importantNotes.length > 0 && (
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-bold text-gray-900">
+                        <Star size={20} className="inline text-yellow-400 mr-2" />
+                        Important Notes ({importantNotes.length})
+                      </h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {importantNotes.map((note) => <NoteCard key={note.id} note={note} />)}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">All Notes ({notes.length})</h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {notes.length > 0 ? (
+                      notes.map((note) => <NoteCard key={note.id} note={note} />)
+                    ) : (
+                      <div className="col-span-3 text-center py-12">
+                        <p className="text-gray-600 mb-4">No notes yet</p>
+                        <button 
+                          onClick={handleAddNote}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                        >
+                          Create Your First Note
                         </button>
                       </div>
-
-                      <h3 className="text-sm font-bold text-gray-900 mb-2">{note.title}</h3>
-
-                      <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
-                        <Calendar size={14} />
-                        {note.date}
-                      </div>
-
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{note.description}</p>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <img src={note.avatar} alt={note.category} className="w-6 h-6 rounded-full" />
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${categoryColor.text} ${categoryColor.bg}`}>
-                            {note.category}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button className="text-yellow-400 hover:text-yellow-500">
-                            <Star size={16} fill="currentColor" />
-                          </button>
-                          <button className="text-red-400 hover:text-red-500">
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingNote ? 'Edit Note' : 'Add New Note'}
+              </h2>
+              <button 
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingNote(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter note title"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter note description"
+                  rows="4"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <select
+                    value={formData.priority}
+                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="Personal">Personal</option>
+                    <option value="Work">Work</option>
+                    <option value="Social">Social</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
+                <select
+                  value={formData.tag}
+                  onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Onhold">Onhold</option>
+                  <option value="Inprogress">Inprogress</option>
+                  <option value="Done">Done</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setEditingNote(null);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNote}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                {editingNote ? 'Update Note' : 'Add Note'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

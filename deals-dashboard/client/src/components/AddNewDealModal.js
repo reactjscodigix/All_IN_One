@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react';
 const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = [], companies = [], dealToEdit = null }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [users, setUsers] = useState([]);
   const [openPanels, setOpenPanels] = useState({
     basic: true,
     details: true,
@@ -35,6 +36,24 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
   const [tagInput, setTagInput] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen]);
+
+  const fetchUsers = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/users`);
+      const data = await response.json();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setUsers([]);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && dealToEdit) {
@@ -559,9 +578,9 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                     className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
                   >
                     <option value="">Select Assignee</option>
-                    {contacts.map((contact) => (
-                      <option key={contact.id} value={contact.id}>
-                        {contact.first_name} {contact.last_name}
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.first_name || user.name} {user.last_name || ''}
                       </option>
                     ))}
                   </select>
