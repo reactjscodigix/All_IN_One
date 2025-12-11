@@ -658,6 +658,32 @@ async function initializeDatabase() {
         INDEX idx_shared_with_id (shared_with_id)
       )
     `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS company_plans (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        plan_name VARCHAR(255) NOT NULL,
+        plan_type VARCHAR(100),
+        plan_position INT,
+        plan_currency VARCHAR(10),
+        plan_currency_free VARCHAR(10),
+        discount_type VARCHAR(50),
+        discount DECIMAL(10, 2),
+        limitations_invoices INT,
+        max_customers INT,
+        product VARCHAR(255),
+        supplier VARCHAR(255),
+        modules LONGTEXT,
+        access_trial BOOLEAN DEFAULT FALSE,
+        trial_days INT,
+        status VARCHAR(50),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_plan_name (plan_name),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
+      )
+    `);
     
     console.log('✓ All tables initialized successfully');
     

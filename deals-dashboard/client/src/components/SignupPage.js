@@ -214,6 +214,13 @@ const SignupPage = () => {
       const roleFromResponse = userData.role_name || formData.role;
       const validRoles = ['Super Admin', 'Admin', 'Deal Manager', 'Project Manager', 'Employee'];
       const finalRole = validRoles.includes(roleFromResponse) ? roleFromResponse : 'Employee';
+      
+      console.log('🔍 ROLE VALIDATION:');
+      console.log('  Backend returned role_name:', userData.role_name);
+      console.log('  Fallback to formData.role:', formData.role);
+      console.log('  Valid roles:', validRoles);
+      console.log('  Role matches?:', validRoles.includes(roleFromResponse));
+      console.log('  Final role used:', finalRole);
 
       const loginData = {
         id: numericId,
