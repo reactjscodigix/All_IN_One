@@ -128,12 +128,12 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
 
   const reportsItems = (
     <>
-      <SubmenuItem icon={BarChart3} label="Lead Reports" page="lead-report" />
-      <SubmenuItem icon={BarChart3} label="Deal Reports" page="deal-report" />
-      <SubmenuItem icon={BarChart3} label="Contact Reports" page="contact-report" />
-      <SubmenuItem icon={BarChart3} label="Company Reports" page="company-report" />
-      <SubmenuItem icon={BarChart3} label="Project Reports" page="project-report" />
-      <SubmenuItem icon={BarChart3} label="Task Reports" page="task-report" />
+      <SubmenuItem icon={BarChart3} label="Lead Reports" page="lead-report" moduleKey="Leads" />
+      <SubmenuItem icon={BarChart3} label="Deal Reports" page="deal-report" moduleKey="Deals" />
+      <SubmenuItem icon={BarChart3} label="Contact Reports" page="contact-report" moduleKey="Contacts" />
+      <SubmenuItem icon={BarChart3} label="Company Reports" page="company-report" moduleKey="Companies" />
+      <SubmenuItem icon={BarChart3} label="Project Reports" page="project-report" moduleKey="Projects" />
+      <SubmenuItem icon={BarChart3} label="Task Reports" page="task-report" moduleKey="Tasks" />
     </>
   );
 
