@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Mail, Lock, User, LogIn, Check, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, LogIn, Check, AlertCircle, Plus, X } from 'lucide-react';
+import AddNewDealModal from './AddNewDealModal';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -10,10 +11,11 @@ const SignupPage = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'Lead',
+    role: 'Employee',
     phone: '',
     company: '',
     companyId: null,
+    projects: [],
   });
 
   const [loading, setLoading] = useState(false);
@@ -21,21 +23,19 @@ const SignupPage = () => {
   const [passwordsMatch, setPasswordsMatch] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [companies, setCompanies] = useState([]);
-  const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+  const [selectedDeals, setSelectedDeals] = useState([]);
+  const [projectInput, setProjectInput] = useState('');
+  const [deals, setDeals] = useState([]);
 
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
   const ROLES = [
-    { id: 'Admin', label: 'Admin', color: 'red' },
-    { id: 'Company Owner', label: 'Company Owner', color: 'blue' },
-    { id: 'Deal Owner', label: 'Deal Owner', color: 'purple' },
+    { id: 'Super Admin', label: 'Super Admin', color: 'red' },
+    { id: 'Admin', label: 'Admin', color: 'orange' },
+    { id: 'Deal Manager', label: 'Deal Manager', color: 'purple' },
     { id: 'Project Manager', label: 'Project Manager', color: 'green' },
-    { id: 'Client', label: 'Client', color: 'yellow' },
-    { id: 'Lead', label: 'Lead', color: 'indigo' },
     { id: 'Employee', label: 'Employee', color: 'cyan' },
   ];
 
@@ -48,6 +48,23 @@ const SignupPage = () => {
   useEffect(() => {
     setPasswordsMatch(formData.password === formData.confirmPassword || formData.confirmPassword === '');
   }, [formData.password, formData.confirmPassword]);
+
+  useEffect(() => {
+    fetchDeals();
+  }, []);
+
+  const fetchDeals = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/deals`);
+      if (response.ok) {
+        const data = await response.json();
+        setDeals(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Error fetching deals:', err);
+    }
+  };
 
   const validateForm = () => {
     if (!formData.firstName.trim()) {
@@ -89,15 +106,73 @@ const SignupPage = () => {
     }));
   };
 
+  const handleAddProject = (e) => {
+    if (e.key === 'Enter' && projectInput.trim()) {
+      e.preventDefault();
+      setFormData(prev => ({
+        ...prev,
+        projects: [...prev.projects, projectInput.trim()]
+      }));
+      setProjectInput('');
+    }
+  };
+
+  const handleRemoveProject = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      projects: prev.projects.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleDealSubmit = async (dealData) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/deals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dealData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create deal');
+      }
+
+      const newDeal = await response.json();
+      setSelectedDeals(prev => [...prev, newDeal]);
+      setIsDealModalOpen(false);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Failed to create deal');
+      console.error('Deal creation error:', err);
+    }
+  };
+
+  const handleRemoveDeal = (dealId) => {
+    setSelectedDeals(prev => prev.filter(deal => deal.id !== dealId));
+  };
+
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     if (!validateForm()) {
+      console.error('Form validation failed');
       setLoading(false);
       return;
     }
+
+    console.log('Form validation passed, proceeding with signup');
+    console.log('Form data:', { 
+      firstName: formData.firstName, 
+      lastName: formData.lastName, 
+      email: formData.email, 
+      role: formData.role,
+      passwordLength: formData.password.length
+    });
 
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -120,10 +195,12 @@ const SignupPage = () => {
 
       if (!response.ok) {
         const data = await response.json();
+        console.error('Signup API error:', data);
         throw new Error(data.error || 'Signup failed');
       }
 
       const userData = await response.json();
+      console.log('Signup response:', userData);
 
       console.log('Signup response received:', userData);
       console.log('Received ID - type:', typeof userData.id, 'value:', userData.id);
@@ -134,15 +211,20 @@ const SignupPage = () => {
         throw new Error(`Invalid user ID received from server: ${userData.id}`);
       }
 
+      const roleFromResponse = userData.role_name || formData.role;
+      const validRoles = ['Super Admin', 'Admin', 'Deal Manager', 'Project Manager', 'Employee'];
+      const finalRole = validRoles.includes(roleFromResponse) ? roleFromResponse : 'Employee';
+
       const loginData = {
         id: numericId,
         email: userData.email,
         name: userData.first_name,
-        role: userData.role_name || formData.role,
+        role: finalRole,
         avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.email}`,
       };
 
       console.log('Logging in user with data (after conversion):', loginData);
+      console.log('Final role set to:', finalRole);
       login(loginData);
     } catch (err) {
       setError(err.message || 'Failed to create account. Please try again.');
@@ -290,6 +372,70 @@ const SignupPage = () => {
               </p>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Projects (Optional)
+              </label>
+              <input
+                type="text"
+                value={projectInput}
+                onChange={(e) => setProjectInput(e.target.value)}
+                onKeyPress={handleAddProject}
+                placeholder="Type project name and press Enter"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              />
+              {formData.projects.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {formData.projects.map((project, index) => (
+                    <span key={index} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      {project}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveProject(index)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <X size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Deals (Optional)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsDealModalOpen(true)}
+                  className="flex items-center gap-1 text-red-600 hover:text-red-700 text-sm font-medium"
+                >
+                  <Plus size={16} /> Add New Deal
+                </button>
+              </div>
+              {selectedDeals.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedDeals.map((deal) => (
+                    <span key={deal.id} className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                      {deal.deal_name || deal.name}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDeal(deal.id)}
+                        className="text-purple-600 hover:text-purple-800"
+                      >
+                        <X size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {selectedDeals.length === 0 && (
+                <p className="text-xs text-gray-500 mt-2">No deals added yet</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -357,7 +503,7 @@ const SignupPage = () => {
 
           <button
             type="submit"
-            disabled={loading || !passwordsMatch}
+            disabled={loading || (formData.confirmPassword && !passwordsMatch)}
             className="w-full mt-8 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
           >
             <LogIn size={18} />
@@ -398,6 +544,16 @@ const SignupPage = () => {
             </div>
           </div>
         </form>
+
+        <AddNewDealModal
+          isOpen={isDealModalOpen}
+          onClose={() => setIsDealModalOpen(false)}
+          onSubmit={handleDealSubmit}
+          contacts={[]}
+          projects={formData.projects}
+          companies={[]}
+          isCompanyContext={true}
+        />
       </div>
     </div>
   );

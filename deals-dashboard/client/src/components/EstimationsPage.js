@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Download, Plus, MoreVertical, FileText, Send, Copy, Trash2, Eye, Edit2, FileJson } from 'lucide-react';
+import Swal from 'sweetalert2';
 import AddNewEstimationModal from './AddNewEstimationModal';
 import { estimationsAPI } from '../services/api';
 
@@ -13,112 +14,7 @@ const EstimationsPage = () => {
   const [selectedEstimation, setSelectedEstimation] = useState(null);
   const [actionMenu, setActionMenu] = useState(null);
   const [isLoadingEstimations, setIsLoadingEstimations] = useState(true);
-  const [estimations, setEstimations] = useState([
-    {
-      id: 1,
-      company: 'Truelysell',
-      type: 'Mobile App',
-      desc: 'TruelySell provides a multiple on-demand service based bootstrap html template.',
-      estimateId: '#EST00020',
-      amount: '$01,23,000',
-      date: '15 Oct 2023',
-      expiry: '05 Nov 2026',
-      owner: 'Dawn Mercha',
-      status: 'Draft',
-      avatar: 'T',
-    },
-    {
-      id: 2,
-      company: 'Kofejob',
-      type: 'Meeting',
-      desc: 'TruelySell provides a multiple on-demand service based bootstrap html template.',
-      estimateId: '#EST00021',
-      amount: '$01,23,000',
-      date: '15 Oct 2023',
-      expiry: '05 Nov 2026',
-      owner: 'Darlee Robertson',
-      status: 'Draft',
-      avatar: 'K',
-    },
-    {
-      id: 3,
-      company: 'Truelysell',
-      type: 'Web App',
-      desc: 'TruelySell provides a multiple on-demand service based bootstrap html template.',
-      estimateId: '#EST00022',
-      amount: '$01,23,000',
-      date: '15 Oct 2023',
-      expiry: '05 Nov 2026',
-      owner: 'Darlee Robertson',
-      status: 'Sent',
-      avatar: 'T',
-    },
-    {
-      id: 4,
-      company: 'Doccure',
-      type: 'Meeting',
-      desc: 'TruelySell provides a multiple on-demand service based bootstrap html template.',
-      estimateId: '#EST00023',
-      amount: '$01,23,000',
-      date: '15 Oct 2023',
-      expiry: '05 Nov 2026',
-      owner: 'Rachel Hampton',
-      status: 'Sent',
-      avatar: 'D',
-    },
-    {
-      id: 5,
-      company: 'Dreamschat',
-      type: 'Meeting',
-      desc: 'TruelySell provides a multiple on-demand service based bootstrap html template.',
-      estimateId: '#EST00024',
-      amount: '$01,23,000',
-      date: '15 Oct 2023',
-      expiry: '05 Nov 2026',
-      owner: 'Sharon Roy',
-      status: 'Accepted',
-      avatar: 'D',
-    },
-    {
-      id: 6,
-      company: 'servbook',
-      type: 'Meeting',
-      desc: 'TruelySell provides a multiple on-demand service based bootstrap html template.',
-      estimateId: '#EST00025',
-      amount: '$01,23,000',
-      date: '15 Oct 2023',
-      expiry: '05 Nov 2026',
-      owner: 'Jessica Louise',
-      status: 'Accepted',
-      avatar: 'S',
-    },
-    {
-      id: 7,
-      company: 'DreamPOS',
-      type: 'Web App',
-      desc: 'TruelySell provides a multiple on-demand service based bootstrap html template.',
-      estimateId: '#EST00026',
-      amount: '$01,23,000',
-      date: '15 Oct 2023',
-      expiry: '05 Nov 2026',
-      owner: 'Carol Thomas',
-      status: 'Declined',
-      avatar: 'D',
-    },
-    {
-      id: 8,
-      company: 'Dreamsports',
-      type: 'Meeting',
-      desc: 'TruelySell provides a multiple on-demand service based bootstrap html template.',
-      estimateId: '#EST00027',
-      amount: '$01,23,000',
-      date: '15 Oct 2023',
-      expiry: '05 Nov 2026',
-      owner: 'Jonathan Smith',
-      status: 'Declined',
-      avatar: 'D',
-    },
-  ]);
+  const [estimations, setEstimations] = useState([]);
 
   const columns = [
     { id: 'Draft', name: 'Draft', color: '#FDB022' },
@@ -129,12 +25,19 @@ const EstimationsPage = () => {
 
   useEffect(() => {
     fetchEstimations();
+    
+    const interval = setInterval(() => {
+      fetchEstimations();
+    }, 3000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchEstimations = async () => {
     setIsLoadingEstimations(true);
     try {
       const data = await estimationsAPI.getAll();
+      console.log('📋 Estimations fetched:', Array.isArray(data) ? data.length : 0, 'estimations');
       setEstimations(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching estimations:', err);
@@ -204,14 +107,94 @@ const EstimationsPage = () => {
     alert(`PDF download initiated for ${estimation.estimateId}`);
   };
 
-  const handleSendEstimation = (estimation) => {
-    console.log('Sending estimation:', estimation.estimateId);
-    alert(`Estimation ${estimation.estimateId} sent to client`);
+  const handleSendEstimation = async (estimation) => {
+    try {
+      const estimationNumber = estimation.estimateId || estimation.estimation_number || `EST-${estimation.id}`;
+      
+      const result = await Swal.fire({
+        title: 'Send Estimation?',
+        html: `<p>Send <strong>${estimationNumber}</strong> to client?</p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Send it!',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        console.log(`🔄 Sending estimation ${estimation.id}...`);
+        await estimationsAPI.send(estimation.id, { action_by: 1 });
+        
+        await Swal.fire({
+          title: 'Success!',
+          html: `<p>Estimation <strong>${estimationNumber}</strong> sent successfully!</p>`,
+          icon: 'success',
+          confirmButtonColor: '#3085d6',
+          timer: 2000,
+          timerProgressBar: true
+        });
+
+        setActionMenu(null);
+        await fetchEstimations();
+      }
+    } catch (err) {
+      console.error('Error sending estimation:', err);
+      await Swal.fire({
+        title: 'Error',
+        html: `<p>Failed to send estimation: ${err.message}</p>`,
+        icon: 'error',
+        confirmButtonColor: '#d33'
+      });
+    }
   };
 
-  const handleConvertToInvoice = (estimation) => {
-    console.log('Converting to invoice:', estimation.estimateId);
-    alert(`Estimation ${estimation.estimateId} converted to invoice`);
+  const handleConvertToInvoice = async (estimation) => {
+    try {
+      const estimationNumber = estimation.estimateId || estimation.estimation_number || `EST-${estimation.id}`;
+      
+      const result = await Swal.fire({
+        title: 'Convert to Invoice?',
+        html: `<p>Convert estimation <strong>${estimationNumber}</strong> to an invoice?</p>
+               <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Amount: <strong>${estimation.currency || '$'}${parseFloat(estimation.amount || 0).toLocaleString()}</strong></p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Convert it!',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        console.log(`🔄 Converting estimation ${estimation.id} to invoice...`);
+        const response = await estimationsAPI.convertToInvoice(estimation.id, { created_by: 1 });
+        
+        await Swal.fire({
+          title: 'Success!',
+          html: `<p>Estimation converted to invoice successfully!</p>
+                 <p style="font-size: 0.9em; color: #666; margin-top: 10px;"><strong>${response.invoiceNumber || 'Invoice'}</strong></p>
+                 <p style="font-size: 0.85em; color: #666; margin-top: 15px; padding: 8px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
+                   ✅ New invoice will appear in Invoices page in a few seconds
+                 </p>`,
+          icon: 'success',
+          confirmButtonColor: '#16a34a',
+          confirmButtonText: 'OK',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+
+        setActionMenu(null);
+        await fetchEstimations();
+      }
+    } catch (err) {
+      console.error('Error converting to invoice:', err);
+      await Swal.fire({
+        title: 'Error',
+        html: `<p>Failed to convert to invoice: ${err.message}</p>`,
+        icon: 'error',
+        confirmButtonColor: '#d33'
+      });
+    }
   };
 
   const getStatusColor = (status) => {
@@ -396,6 +379,12 @@ const EstimationsPage = () => {
             <button className="px-5 py-2.5 border border-gray-300 rounded-lg flex items-center gap-2 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
               <Download size={18} />
               Export
+            </button>
+            <button 
+              onClick={() => fetchEstimations()}
+              title="Refresh estimations"
+              className="px-5 py-2.5 border border-gray-300 rounded-lg flex items-center gap-2 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm">
+              ⟳
             </button>
             <button 
               onClick={() => setIsModalOpen(true)}

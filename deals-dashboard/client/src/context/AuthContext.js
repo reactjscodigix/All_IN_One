@@ -1,9 +1,63 @@
 import React, { createContext, useState, useCallback, useEffect } from 'react';
+import { getDataAccessLevel } from '../utils/roleBasedAccess';
 
 export const AuthContext = createContext();
 
-const ROLE_PERMISSIONS = {
+const DATA_ACCESS_LEVELS = {
+  'Super Admin': {
+    deals: 'all',
+    leads: 'all',
+    contacts: 'all',
+    companies: 'all',
+    projects: 'all',
+    tasks: 'all',
+    proposals: 'all',
+    invoices: 'all',
+  },
   'Admin': {
+    deals: 'all',
+    leads: 'all',
+    contacts: 'all',
+    companies: 'all',
+    projects: 'all',
+    tasks: 'all',
+    proposals: 'all',
+    invoices: 'all',
+  },
+  'Deal Manager': {
+    deals: 'assigned_and_team',
+    leads: 'assigned_and_team',
+    contacts: 'assigned_and_team',
+    companies: 'assigned_and_team',
+    projects: 'assigned_and_team',
+    tasks: 'assigned_and_team',
+    proposals: 'assigned_and_team',
+    invoices: 'assigned_and_team',
+  },
+  'Project Manager': {
+    deals: 'linked_to_project',
+    leads: 'none',
+    contacts: 'linked_to_project',
+    companies: 'none',
+    projects: 'assigned',
+    tasks: 'assigned',
+    proposals: 'assigned',
+    invoices: 'assigned',
+  },
+  'Employee': {
+    deals: 'assigned_only',
+    leads: 'assigned_only',
+    contacts: 'assigned_only',
+    companies: 'assigned_only',
+    projects: 'assigned_only',
+    tasks: 'assigned_only',
+    proposals: 'none',
+    invoices: 'none',
+  },
+};
+
+const ROLE_PERMISSIONS = {
+  'Super Admin': {
     dashboard: ['view', 'edit', 'create', 'delete'],
     contacts: ['view', 'create', 'edit', 'delete', 'export'],
     companies: ['view', 'create', 'edit', 'delete', 'export'],
@@ -25,42 +79,64 @@ const ROLE_PERMISSIONS = {
     reports: ['view', 'export', 'create'],
     settings: ['view', 'edit'],
   },
-  'Company Owner': {
+  'Admin': {
+    dashboard: ['view', 'edit', 'create', 'delete'],
+    contacts: ['view', 'create', 'edit', 'delete', 'export'],
+    companies: ['view', 'create', 'edit', 'delete', 'export'],
+    leads: ['view', 'create', 'edit', 'delete', 'convert', 'export'],
+    deals: ['view', 'create', 'edit', 'delete', 'assign', 'export'],
+    pipeline: ['view', 'create', 'edit', 'delete'],
+    campaign: ['view', 'create', 'edit', 'delete'],
+    projects: ['view', 'create', 'edit', 'delete', 'manage_team'],
+    tasks: ['view', 'create', 'edit', 'delete', 'assign'],
+    proposals: ['view', 'create', 'edit', 'delete'],
+    contracts: ['view', 'create', 'edit', 'delete'],
+    estimations: ['view', 'create', 'edit', 'delete'],
+    invoices: ['view', 'create', 'edit', 'delete'],
+    payments: ['view', 'create', 'edit', 'delete'],
+    activities: ['view', 'export'],
+    analytics: ['view', 'export'],
+    users: ['view', 'create', 'edit'],
+    roles: [],
+    reports: ['view', 'export', 'create'],
+    settings: [],
+  },
+  'Deal Manager': {
     dashboard: ['view', 'edit'],
     contacts: ['view', 'create', 'edit'],
-    companies: ['view', 'edit'],
+    companies: ['view', 'create', 'edit'],
     leads: ['view', 'create', 'edit', 'convert'],
     deals: ['view', 'create', 'edit', 'assign'],
-    pipeline: ['view'],
+    pipeline: ['view', 'create', 'edit'],
     campaign: ['view', 'create', 'edit'],
-    projects: ['view', 'create', 'edit', 'manage_team'],
-    tasks: ['view', 'create', 'edit', 'assign'],
+    projects: ['view'],
+    tasks: ['view', 'edit'],
     proposals: ['view', 'create', 'edit'],
-    contracts: ['view', 'create', 'edit'],
+    contracts: ['view'],
     estimations: ['view', 'create', 'edit'],
     invoices: ['view', 'create', 'edit'],
     payments: ['view'],
     activities: ['view'],
     analytics: ['view'],
-    users: ['view'],
+    users: [],
     roles: [],
     reports: ['view', 'create'],
     settings: [],
   },
-  'Deal Owner': {
+  'Project Manager': {
     dashboard: ['view'],
-    contacts: ['view', 'edit'],
+    contacts: ['view'],
     companies: ['view'],
-    leads: ['view', 'create', 'edit', 'convert'],
-    deals: ['view', 'create', 'edit', 'assign'],
-    pipeline: ['view'],
-    campaign: ['view'],
-    projects: ['view'],
-    tasks: ['view', 'create', 'edit'],
+    leads: [],
+    deals: ['view'],
+    pipeline: [],
+    campaign: [],
+    projects: ['view', 'create', 'edit', 'manage_team'],
+    tasks: ['view', 'create', 'edit', 'delete', 'assign'],
     proposals: ['view', 'create', 'edit'],
     contracts: ['view'],
     estimations: ['view', 'create', 'edit'],
-    invoices: ['view'],
+    invoices: ['view', 'create', 'edit'],
     payments: ['view'],
     activities: ['view'],
     analytics: ['view'],
@@ -69,82 +145,16 @@ const ROLE_PERMISSIONS = {
     reports: ['view'],
     settings: [],
   },
-  'Project Manager': {
-    dashboard: ['view'],
-    contacts: ['view'],
-    companies: ['view'],
-    leads: ['view'],
-    deals: ['view'],
-    pipeline: ['view'],
-    campaign: ['view', 'create', 'edit'],
-    projects: ['view', 'create', 'edit', 'manage_team'],
-    tasks: ['view', 'create', 'edit', 'delete', 'assign'],
-    proposals: ['view'],
-    contracts: ['view'],
-    estimations: ['view'],
-    invoices: ['view'],
-    payments: ['view'],
-    activities: ['view'],
-    analytics: ['view'],
-    users: [],
-    roles: [],
-    reports: ['view', 'create'],
-    settings: [],
-  },
-  'Client': {
+  'Employee': {
     dashboard: ['view'],
     contacts: ['view'],
     companies: ['view'],
     leads: [],
-    deals: ['view'],
-    pipeline: ['view'],
-    campaign: [],
-    projects: ['view'],
-    tasks: ['view'],
-    proposals: ['view'],
-    contracts: ['view'],
-    estimations: ['view'],
-    invoices: ['view'],
-    payments: ['view'],
-    activities: [],
-    analytics: [],
-    users: [],
-    roles: [],
-    reports: [],
-    settings: [],
-  },
-  'Lead': {
-    dashboard: ['view'],
-    contacts: ['view', 'create', 'edit'],
-    companies: ['view'],
-    leads: ['view', 'create', 'edit'],
-    deals: ['view', 'create', 'edit'],
-    pipeline: ['view'],
-    campaign: [],
-    projects: ['view'],
-    tasks: ['view', 'create', 'edit'],
-    proposals: ['view'],
-    contracts: [],
-    estimations: [],
-    invoices: [],
-    payments: [],
-    activities: ['view'],
-    analytics: [],
-    users: [],
-    roles: [],
-    reports: [],
-    settings: [],
-  },
-  'Employee': {
-    dashboard: ['view'],
-    contacts: ['view', 'edit'],
-    companies: ['view'],
-    leads: ['view'],
     deals: ['view', 'edit'],
-    pipeline: ['view'],
+    pipeline: [],
     campaign: [],
     projects: ['view'],
-    tasks: ['view', 'create', 'edit'],
+    tasks: ['view', 'edit'],
     proposals: ['view'],
     contracts: ['view'],
     estimations: ['view'],
@@ -207,15 +217,57 @@ export const AuthProvider = ({ children }) => {
     if (!user) return false;
     if (!Array.isArray(modules)) modules = [modules];
     
+    if (!user.role) {
+      console.warn('User role is not defined:', user);
+      return false;
+    }
+    
+    const rolePermissions = ROLE_PERMISSIONS[user.role];
+    if (!rolePermissions) {
+      console.warn(`Role "${user.role}" not found in ROLE_PERMISSIONS. Available roles:`, Object.keys(ROLE_PERMISSIONS));
+      return false;
+    }
+    
     return modules.some(module => {
-      const rolePermissions = ROLE_PERMISSIONS[user.role];
-      return rolePermissions && rolePermissions[module] && rolePermissions[module].length > 0;
+      return rolePermissions[module] && rolePermissions[module].length > 0;
     });
   }, [user]);
 
   const getRolePermissions = useCallback((role) => {
     return ROLE_PERMISSIONS[role] || {};
   }, []);
+
+  const getDataAccessLevel = useCallback((module) => {
+    if (!user) return 'none';
+    const userDataAccess = DATA_ACCESS_LEVELS[user.role];
+    if (!userDataAccess) return 'none';
+    return userDataAccess[module] || 'none';
+  }, [user]);
+
+  const canAccessData = useCallback((module, dataItem = null) => {
+    if (!user) return false;
+    
+    const accessLevel = getDataAccessLevel(module);
+    
+    if (accessLevel === 'all') return true;
+    if (accessLevel === 'none') return false;
+    
+    if (accessLevel === 'assigned_only' && dataItem) {
+      return dataItem.assignedTo?.includes(user.id) || dataItem.userId === user.id;
+    }
+    
+    if (accessLevel === 'assigned_and_team' && dataItem) {
+      return dataItem.assignedTo?.includes(user.id) || 
+             dataItem.userId === user.id ||
+             dataItem.teamMembers?.includes(user.id);
+    }
+    
+    if (accessLevel === 'assigned' && dataItem) {
+      return dataItem.assignedTo?.includes(user.id) || dataItem.userId === user.id;
+    }
+    
+    return false;
+  }, [user, getDataAccessLevel]);
 
   const value = {
     user,
@@ -226,6 +278,8 @@ export const AuthProvider = ({ children }) => {
     hasRole,
     canAccess,
     getRolePermissions,
+    getDataAccessLevel,
+    canAccessData,
     isAuthenticated: !!user,
   };
 

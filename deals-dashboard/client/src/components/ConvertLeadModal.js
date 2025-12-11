@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react';
 const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, companies = [] }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isCompletable, setIsCompletable] = useState(false);
   const [formData, setFormData] = useState({});
 
   React.useEffect(() => {
@@ -19,8 +20,13 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
         position: '',
         website: '',
         address: '',
-        description: ''
+        email: '',
+        phone: '',
+        description: '',
+        status: 'New'
       });
+      setError('');
+      setIsCompletable(false);
     }
   }, [leadData, isOpen]);
 
@@ -36,17 +42,15 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
     e.preventDefault();
     setError('');
 
-    if (convertType === 'contact' && (!formData.first_name || !formData.last_name)) {
-      setError('Please fill in required fields: First Name and Last Name');
-      return;
-    }
-
-    if (convertType === 'company' && !formData.company_name) {
+    if (convertType === 'contact') {
+      if (!formData.first_name || !formData.last_name || !formData.company_name) {
+        setError('Please fill in required fields: First Name, Last Name, and Company Name');
+        return;
+      }
+    } else if (convertType === 'company' && !formData.company_name) {
       setError('Please fill in required field: Company Name');
       return;
-    }
-
-    if (convertType === 'deal' && (!formData.deal_name || !formData.deal_value)) {
+    } else if (convertType === 'deal' && (!formData.deal_name || !formData.deal_value)) {
       setError('Please fill in required fields: Deal Name and Value');
       return;
     }
@@ -105,6 +109,74 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {convertType === 'contact' && (
             <>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-700 font-medium">
+                  Convert Lead to Contact & Company
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  This will create both a company (if not exists) and link the contact to it
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="company_name"
+                  value={formData.company_name || ''}
+                  onChange={handleInputChange}
+                  placeholder="Company name (will create if not exists)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Industry
+                  </label>
+                  <input
+                    type="text"
+                    name="industry"
+                    value={formData.industry || ''}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Technology"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Website
+                  </label>
+                  <input
+                    type="text"
+                    name="website"
+                    value={formData.website || ''}
+                    onChange={handleInputChange}
+                    placeholder="www.example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address || ''}
+                  onChange={handleInputChange}
+                  placeholder="Company address"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              <hr className="my-4" />
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -144,25 +216,6 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-600"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company
-                </label>
-                <select
-                  name="company_id"
-                  value={formData.company_id || ''}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
-                >
-                  <option value="">Select or leave empty</option>
-                  {companies.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.company_name || c.name}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div>

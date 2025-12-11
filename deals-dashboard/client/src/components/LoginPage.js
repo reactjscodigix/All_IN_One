@@ -41,11 +41,15 @@ const LoginPage = () => {
 
       const userData = await response.json();
       
+      const validRoles = ['Super Admin', 'Admin', 'Deal Manager', 'Project Manager', 'Employee'];
+      const roleFromServer = userData.role_name || 'Employee';
+      const finalRole = validRoles.includes(roleFromServer) ? roleFromServer : 'Employee';
+      
       login({
         id: userData.id,
         email: userData.email,
         name: userData.first_name,
-        role: userData.role_name || 'Lead',
+        role: finalRole,
         avatar: userData.avatar,
       });
 
@@ -90,11 +94,15 @@ const LoginPage = () => {
 
       const userData = await response.json();
       
+      const validRoles = ['Super Admin', 'Admin', 'Deal Manager', 'Project Manager', 'Employee'];
+      const roleFromServer = userData.role_name || 'Employee';
+      const finalRole = validRoles.includes(roleFromServer) ? roleFromServer : 'Employee';
+      
       login({
         id: userData.id,
         email: userData.email,
         name: userData.first_name,
-        role: userData.role_name || 'Lead',
+        role: finalRole,
         avatar: userData.avatar,
       });
 

@@ -113,10 +113,20 @@ CREATE TABLE IF NOT EXISTS leads (
   lead_status ENUM('New', 'Qualified', 'Unqualified', 'Contacted') DEFAULT 'New',
   rating INT,
   notes TEXT,
+  owner_id INT,
+  value DECIMAL(15, 2),
+  currency VARCHAR(10) DEFAULT 'USD',
+  lead_type VARCHAR(50),
+  industry VARCHAR(100),
+  visibility VARCHAR(50) DEFAULT 'Public',
+  tags JSON,
+  people_assigned JSON,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_lead_status (lead_status),
-  INDEX idx_created_at (created_at)
+  INDEX idx_created_at (created_at),
+  INDEX idx_owner_id (owner_id),
+  INDEX idx_industry (industry)
 );
 
 CREATE TABLE IF NOT EXISTS pipeline (

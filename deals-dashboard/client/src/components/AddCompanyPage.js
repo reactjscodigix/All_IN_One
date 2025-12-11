@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, ChevronDown, X } from 'lucide-react';
+import { Upload, ChevronDown, X, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import AddNewDealModal from './AddNewDealModal';
 
 const AddCompanyPage = () => {
   const fileInputRef = useRef(null);
+  const dealDropdownRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +26,11 @@ const AddCompanyPage = () => {
   const [selectedContacts, setSelectedContacts] = useState([]);
   const [contactInput, setContactInput] = useState('');
   const [loadingData, setLoadingData] = useState(true);
+  const [isDealModalOpen, setIsDealModalOpen] = useState(false);
+  const [selectedDeals, setSelectedDeals] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [dealInput, setDealInput] = useState('');
+  const [showDealDropdown, setShowDealDropdown] = useState(false);
   
   const [formData, setFormData] = useState({
     logo: null,
@@ -99,15 +106,27 @@ const AddCompanyPage = () => {
     fetchBackendData();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dealDropdownRef.current && !dealDropdownRef.current.contains(event.target)) {
+        setShowDealDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const fetchBackendData = async () => {
     setLoadingData(true);
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const [contactsRes, usersRes, sourcesRes, industriesRes] = await Promise.all([
+      const [contactsRes, usersRes, sourcesRes, industriesRes, dealsRes] = await Promise.all([
         fetch(`${apiUrl}/contacts`),
         fetch(`${apiUrl}/users`),
         fetch(`${apiUrl}/sources`),
-        fetch(`${apiUrl}/industries`)
+        fetch(`${apiUrl}/industries`),
+        fetch(`${apiUrl}/deals`)
       ]);
 
       if (contactsRes.ok) {
@@ -166,6 +185,14 @@ const AddCompanyPage = () => {
           { id: 14, name: 'Consulting' },
           { id: 15, name: 'Legal Services' }
         ]);
+      }
+
+      if (dealsRes.ok) {
+        const data = await dealsRes.json();
+        console.log('Deals loaded:', data);
+        setDeals(Array.isArray(data) ? data : []);
+      } else {
+        console.warn('Deals response not ok:', dealsRes.status);
       }
     } catch (err) {
       console.error('Error fetching backend data:', err);
@@ -243,6 +270,78 @@ const AddCompanyPage = () => {
       ...prev,
       contacts: prev.contacts.filter(id => id !== contactId)
     }));
+  };
+
+  const handleAddDeal = (deal) => {
+    if (deal && !selectedDeals.find(d => d.id === deal.id)) {
+      setSelectedDeals([...selectedDeals, deal]);
+      setDealInput('');
+      setShowDealDropdown(false);
+    }
+  };
+
+  const handleAddCustomDeal = () => {
+    if (dealInput.trim() && !selectedDeals.find(d => d.deal_name === dealInput.trim())) {
+      const customDeal = {
+        id: `custom_${Date.now()}`,
+        deal_name: dealInput.trim(),
+        custom: true
+      };
+      setSelectedDeals([...selectedDeals, customDeal]);
+      setDealInput('');
+      setShowDealDropdown(false);
+    }
+  };
+
+  const getFilteredDeals = () => {
+    if (!dealInput.trim()) return deals;
+    return deals.filter(deal => 
+      (deal.deal_name || deal.name || '').toLowerCase().includes(dealInput.toLowerCase())
+    );
+  };
+
+  const handleDealSubmit = async (dealData) => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const payload = {
+        deal_name: dealData.deal_name,
+        company_id: editingCompanyId || null,
+        contact_id: dealData.contact_id || null,
+        stage: dealData.pipeline || 'Inpipeline',
+        deal_value: parseFloat(dealData.deal_value) || 0,
+        status: dealData.status || 'Pending',
+        expected_close_date: dealData.expected_close_date || null,
+        probability: 50,
+        description: dealData.description || null,
+      };
+
+      const response = await fetch(`${apiUrl}/deals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create deal');
+      }
+
+      const createdDeal = await response.json();
+      setSelectedDeals(prev => [...prev, { 
+        ...createdDeal, 
+        deal_name: dealData.deal_name,
+        deal_value: dealData.deal_value,
+        status: dealData.status 
+      }]);
+      setIsDealModalOpen(false);
+    } catch (err) {
+      setError(err.message || 'Failed to create deal');
+      console.error('Deal creation error:', err);
+    }
+  };
+
+  const handleRemoveDeal = (dealId) => {
+    setSelectedDeals(selectedDeals.filter(d => d.id !== dealId));
   };
 
   const handleSubmit = async (e) => {
@@ -644,7 +743,7 @@ const AddCompanyPage = () => {
                 {/* Contacts */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Contacts <span className="text-red-500">*</span>
+                    Contacts
                   </label>
                   <div className="flex flex-wrap gap-2 p-3 border border-[#E5E7EB] rounded-lg bg-white min-h-[40px]">
                     {selectedContacts.map((contact) => (
@@ -679,6 +778,92 @@ const AddCompanyPage = () => {
                         ))}
                       </select>
                     )}
+                  </div>
+                </div>
+
+                {/* Deals */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Deals
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsDealModalOpen(true)}
+                      className="flex items-center gap-1 text-red-600 hover:text-red-700 font-medium text-sm transition"
+                    >
+                      <Plus size={16} />
+                      Add New
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="relative" ref={dealDropdownRef}>
+                      <input
+                        type="text"
+                        value={dealInput}
+                        onChange={(e) => {
+                          setDealInput(e.target.value);
+                          setShowDealDropdown(true);
+                        }}
+                        onFocus={() => setShowDealDropdown(true)}
+                        placeholder="Search or type deal name..."
+                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      />
+                      
+                      {showDealDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E5E7EB] rounded-lg shadow-lg z-10">
+                          <div className="max-h-48 overflow-y-auto">
+                            {getFilteredDeals().length > 0 ? (
+                              getFilteredDeals().map((deal) => (
+                                <button
+                                  key={deal.id}
+                                  type="button"
+                                  onClick={() => handleAddDeal(deal)}
+                                  className="w-full text-left px-3 py-2 hover:bg-purple-50 transition text-sm text-gray-700 border-b border-[#EAECF0] last:border-b-0"
+                                >
+                                  <div className="font-medium">{deal.deal_name || deal.name}</div>
+                                  {deal.deal_value && <div className="text-xs text-gray-500">${deal.deal_value}</div>}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-3 py-2 text-sm text-gray-500">
+                                {dealInput ? `No deals found matching "${dealInput}"` : (deals.length === 0 ? 'No deals available' : 'Fetching deals...')}
+                              </div>
+                            )}
+                          </div>
+                          {dealInput.trim() && (
+                            <button
+                              type="button"
+                              onClick={handleAddCustomDeal}
+                              className="w-full text-left px-3 py-2 hover:bg-red-50 transition text-sm text-red-600 font-medium border-t border-[#EAECF0]"
+                            >
+                              + Add "{dealInput.trim()}" as new deal
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 p-3 border border-[#E5E7EB] rounded-lg bg-white min-h-[40px]">
+                      {selectedDeals.length > 0 ? (
+                        selectedDeals.map((deal) => (
+                          <span key={deal.id} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-purple-200">
+                            <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs">📊</span>
+                            {deal.deal_name}
+                            {deal.custom && <span className="text-xs font-semibold">(Custom)</span>}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDeal(deal.id)}
+                              className="text-purple-600 hover:text-purple-800 ml-1"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-400 text-sm">No deals selected</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -920,16 +1105,24 @@ const AddCompanyPage = () => {
                             selectedPeople: selected
                           }));
                         }}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                        disabled={loadingData}
+                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
                         value={formData.selectedPeople}
                       >
-                        {contacts.map(contact => (
-                          <option key={contact.id} value={contact.id}>
-                            {contact.first_name} {contact.last_name}
-                          </option>
-                        ))}
+                        <option value="" disabled>{loadingData ? 'Loading users...' : 'Select users'}</option>
+                        {users.length > 0 ? (
+                          users.map(user => (
+                            <option key={user.id} value={user.id}>
+                              {user.first_name} {user.last_name}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="" disabled>No users available</option>
+                        )}
                       </select>
-                      <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple users</p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {users.length > 0 ? 'Hold Ctrl/Cmd to select multiple users' : 'No users available for selection'}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -956,6 +1149,15 @@ const AddCompanyPage = () => {
             {isLoading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Company' : 'Create Company')}
           </button>
         </div>
+
+        <AddNewDealModal
+          isOpen={isDealModalOpen}
+          onClose={() => setIsDealModalOpen(false)}
+          onSubmit={handleDealSubmit}
+          companies={[]}
+          contacts={contacts}
+          isCompanyContext={true}
+        />
       </div>
     </div>
   );

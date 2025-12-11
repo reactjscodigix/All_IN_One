@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MoreVertical, Plus, Download, Grid3x3, List, Eye, Trash2, Send, X, Filter, Search } from 'lucide-react';
+import { MoreVertical, Plus, Download, Grid3x3, List, Eye, Trash2, Send, X, Filter, Search, FileText } from 'lucide-react';
+import Swal from 'sweetalert2';
 import AddNewContractModal from './AddNewContractModal';
 import ContractDetailsPage from './ContractDetailsPage';
 import { contractsAPI, createContract } from '../services/api';
@@ -33,6 +34,12 @@ const ContractsPage = () => {
   useEffect(() => {
     fetchCompanies();
     fetchContracts();
+    
+    const interval = setInterval(() => {
+      fetchContracts();
+    }, 3000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchCompanies = async () => {
@@ -56,9 +63,10 @@ const ContractsPage = () => {
     setIsLoading(true);
     try {
       const data = await contractsAPI.getAll();
+      console.log('📋 Contracts fetched:', Array.isArray(data) ? data.length : 0, 'contracts');
       setContracts(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error fetching contracts:', err);
+      console.error('❌ Error fetching contracts:', err);
       setContracts([]);
     } finally {
       setIsLoading(false);
@@ -97,17 +105,91 @@ const ContractsPage = () => {
     }
   };
 
+  const handleConvertToEstimation = async (contract) => {
+    try {
+      const result = await Swal.fire({
+        title: 'Convert to Estimation?',
+        html: `<p>Convert <strong>${contract.subject}</strong> to estimation?</p>
+               <p style="font-size: 0.85em; color: #666; margin-top: 10px;">Amount: $${contract.contract_value}</p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Convert!',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        await contractsAPI.convertToEstimation(contract.id, {});
+        
+        await Swal.fire({
+          title: 'Success!',
+          html: `<p>Contract <strong>${contract.subject}</strong> converted to estimation!</p>
+                 <p style="font-size: 0.85em; color: #666; margin-top: 10px;">will appear in Estimations page in a few seconds</p>`,
+          icon: 'success',
+          confirmButtonColor: '#3085d6',
+          timer: 2000,
+          timerProgressBar: true
+        });
+
+        setShowActionMenu(null);
+        await fetchContracts();
+      }
+    } catch (err) {
+      console.error('Error converting contract to estimation:', err);
+      await Swal.fire({
+        title: 'Error',
+        html: `<p>Failed to convert contract: ${err.message}</p>`,
+        icon: 'error',
+        confirmButtonColor: '#d33'
+      });
+    }
+  };
+
   const handleSendContract = async () => {
     try {
-      await contractsAPI.update(showSendModal, { 
-        status: 'Sent',
-        sent_to_email: sendEmail 
+      const contract = contracts.find(c => c.id === showSendModal);
+      if (!contract) return;
+
+      const result = await Swal.fire({
+        title: 'Send Contract?',
+        html: `<p>Send <strong>${contract.subject}</strong> to <strong>${sendEmail}</strong>?</p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Send it!',
+        cancelButtonText: 'Cancel'
       });
-      fetchContracts();
-      setShowSendModal(null);
-      setSendEmail('');
+
+      if (result.isConfirmed) {
+        await contractsAPI.update(showSendModal, { 
+          status: 'Sent',
+          sent_to_email: sendEmail 
+        });
+        
+        await Swal.fire({
+          title: 'Success!',
+          html: `<p>Contract <strong>${contract.subject}</strong> sent successfully!</p>
+                 <p style="font-size: 0.85em; color: #666; margin-top: 10px;">Sent to: ${sendEmail}</p>`,
+          icon: 'success',
+          confirmButtonColor: '#3085d6',
+          timer: 2000,
+          timerProgressBar: true
+        });
+
+        setShowSendModal(null);
+        setSendEmail('');
+        await fetchContracts();
+      }
     } catch (err) {
       console.error('Error sending contract:', err);
+      await Swal.fire({
+        title: 'Error',
+        html: `<p>Failed to send contract: ${err.message}</p>`,
+        icon: 'error',
+        confirmButtonColor: '#d33'
+      });
     }
   };
 
@@ -206,6 +288,15 @@ const ContractsPage = () => {
               </button>
               <button 
                 onClick={() => {
+                  handleConvertToEstimation(contract);
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+              >
+                <FileText size={16} className="text-gray-600" />
+                <span className="text-sm">Convert to Estimation</span>
+              </button>
+              <button 
+                onClick={() => {
                   handleDownloadContract(contract);
                   setShowActionMenu(null);
                 }}
@@ -301,6 +392,15 @@ const ContractsPage = () => {
               </button>
               <button 
                 onClick={() => {
+                  handleConvertToEstimation(contract);
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
+              >
+                <FileText size={16} className="text-gray-600" />
+                <span className="text-sm">Convert to Estimation</span>
+              </button>
+              <button 
+                onClick={() => {
                   handleDownloadContract(contract);
                   setShowActionMenu(null);
                 }}
@@ -362,6 +462,12 @@ const ContractsPage = () => {
               <List size={18} />
             </button>
           </div>
+          <button 
+            onClick={() => fetchContracts()}
+            title="Refresh contracts"
+            className="border border-gray-300 px-3 py-2 rounded-md text-sm bg-white hover:bg-gray-50 transition-colors text-gray-600">
+            ⟳
+          </button>
           <button 
             onClick={() => setIsModalOpen(true)}
             className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2">
@@ -506,6 +612,12 @@ const ContractsPage = () => {
               </button>
             </div>
             <div className="p-6">
+              {contracts.find(c => c.id === showSendModal) && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-xs text-gray-600 mb-1">Contract:</p>
+                  <p className="text-sm font-medium text-gray-900">{contracts.find(c => c.id === showSendModal)?.subject}</p>
+                </div>
+              )}
               <label className="block text-sm font-medium text-gray-700 mb-2">Client Email</label>
               <input
                 type="email"
@@ -527,7 +639,8 @@ const ContractsPage = () => {
               </button>
               <button 
                 onClick={handleSendContract}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:bg-gray-400"
+                disabled={!sendEmail || !sendEmail.includes('@')}
               >
                 Send
               </button>

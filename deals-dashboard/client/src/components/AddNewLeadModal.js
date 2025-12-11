@@ -31,10 +31,14 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
   const [selectPeopleDropdownOpen, setSelectPeopleDropdownOpen] = useState(false);
   const [isCompanyFormOpen, setIsCompanyFormOpen] = useState(false);
   const [localCompanies, setLocalCompanies] = useState(companies);
+  const [companySearchOpen, setCompanySearchOpen] = useState(false);
+  const [companySearchTerm, setCompanySearchTerm] = useState('');
+  const [fetchedCompanies, setFetchedCompanies] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
       fetchUsers();
+      fetchCompaniesData();
     }
   }, [isOpen]);
 
@@ -46,7 +50,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     setLoadingData(true);
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/contacts`);
+      const response = await fetch(`${apiUrl}/users`);
       if (response.ok) {
         const data = await response.json();
         setUsers(Array.isArray(data) ? data : []);
@@ -56,6 +60,21 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
       setUsers([]);
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const fetchCompaniesData = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/companies`);
+      if (response.ok) {
+        const data = await response.json();
+        const companiesArray = Array.isArray(data) ? data : [];
+        setFetchedCompanies(companiesArray);
+        setLocalCompanies(companiesArray);
+      }
+    } catch (err) {
+      console.error('Error fetching companies:', err);
     }
   };
 
@@ -72,6 +91,24 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     return formData.selectedPeople
       .map(id => users.find(u => u.id === parseInt(id)))
       .filter(Boolean);
+  };
+
+  const getFilteredCompanies = () => {
+    if (!companySearchTerm.trim()) {
+      return localCompanies;
+    }
+    return localCompanies.filter(c => {
+      const companyName = (c.company_name || c.name || '').toLowerCase();
+      const industry = (c.industry || '').toLowerCase();
+      const searchTerm = companySearchTerm.toLowerCase();
+      return companyName.includes(searchTerm) || industry.includes(searchTerm);
+    });
+  };
+
+  const getSelectedCompanyName = () => {
+    if (!formData.company) return '';
+    const company = localCompanies.find(c => c.id.toString() === formData.company.toString());
+    return company ? (company.company_name || company.name) : '';
   };
 
   const handleInputChange = (e) => {
@@ -217,8 +254,32 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
 
     setIsLoading(true);
     try {
+      const visibility = formData.visibility === 'Select People' ? 'People' : formData.visibility;
+      
+      const payload = {
+        name: formData.name,
+        lead_name: formData.name,
+        email: formData.email || null,
+        phone: formData.phone,
+        company: formData.company || null,
+        source: formData.source,
+        lead_source: formData.source,
+        status: formData.status,
+        rating: formData.rating || 5,
+        description: formData.description,
+        notes: formData.description,
+        owner_id: formData.owner ? parseInt(formData.owner) : null,
+        value: formData.value ? parseFloat(formData.value) : null,
+        currency: formData.currency,
+        lead_type: formData.lead_type,
+        industry: formData.industry,
+        visibility: visibility,
+        tags: formData.tags && formData.tags.length > 0 ? formData.tags : [],
+        people_assigned: visibility === 'People' ? formData.selectedPeople.map(p => parseInt(p)) : []
+      };
+
       if (onSubmit) {
-        await onSubmit(formData);
+        await onSubmit(payload);
       }
       handleCancel();
     } catch (err) {
@@ -251,6 +312,8 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     setTagInput('');
     setOwnerDropdownOpen(false);
     setSelectPeopleDropdownOpen(false);
+    setCompanySearchOpen(false);
+    setCompanySearchTerm('');
     onClose();
   };
 
@@ -325,32 +388,17 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Company Name
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsCompanyFormOpen(true)}
-                className="flex items-center gap-1 text-red-600 hover:text-red-700 font-medium text-sm transition"
-              >
-                <Plus size={16} />
-                Add New
-              </button>
-            </div>
-            <select
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Company Name
+            </label>
+            <input
+              type="text"
               name="company"
               value={formData.company}
               onChange={handleInputChange}
+              placeholder="Enter company name"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-            >
-              <option value="">Select</option>
-              {localCompanies.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.company_name || c.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

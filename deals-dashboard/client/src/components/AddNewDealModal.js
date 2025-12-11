@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = [], companies = [], dealToEdit = null }) => {
+const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = [], companies = [], dealToEdit = null, isCompanyContext = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [users, setUsers] = useState([]);
@@ -10,6 +10,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
     details: true,
     dates: true,
     advanced: true,
+    visibility: false,
   });
 
   const [formData, setFormData] = useState({
@@ -31,11 +32,14 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
     priority: 'Medium',
     description: '',
     company_id: '',
+    visibility: 'public',
+    selectedPeople: [],
   });
 
   const [tagInput, setTagInput] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [selectPeopleDropdownOpen, setSelectPeopleDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -76,6 +80,8 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
         priority: dealToEdit.priority || 'Medium',
         description: dealToEdit.description || '',
         company_id: dealToEdit.company_id || '',
+        visibility: dealToEdit.visibility || 'public',
+        selectedPeople: Array.isArray(dealToEdit.selectedPeople) ? dealToEdit.selectedPeople : [],
       });
     } else if (isOpen) {
       setFormData({
@@ -97,6 +103,8 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
         priority: 'Medium',
         description: '',
         company_id: '',
+        visibility: 'public',
+        selectedPeople: [],
       });
     }
   }, [isOpen, dealToEdit]);
@@ -151,12 +159,12 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
       return;
     }
 
-    if (!formData.company_id) {
+    if (!isCompanyContext && !formData.company_id) {
       setError('Please select a Company');
       return;
     }
 
-    if (!formData.contact_id) {
+    if (!isCompanyContext && !formData.contact_id) {
       setError('Please select a Contact');
       return;
     }
@@ -208,15 +216,31 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
       priority: 'Medium',
       description: '',
       company_id: '',
+      visibility: 'public',
+      selectedPeople: [],
     });
     setError('');
     setTagInput('');
     setProjectSearch('');
+    setSelectPeopleDropdownOpen(false);
     onClose();
   };
 
   const getProjectName = (project) => {
     return project?.title || project?.project_name || project?.name || `Project ${project?.id}`;
+  };
+
+  const getInitials = (firstName, lastName) => {
+    const first = (firstName || '').charAt(0).toUpperCase();
+    const last = (lastName || '').charAt(0).toUpperCase();
+    return (first + last) || '?';
+  };
+
+  const getSelectedPeopleNames = () => {
+    return users.filter(user => 
+      formData.selectedPeople.includes(user.id.toString()) || 
+      formData.selectedPeople.includes(user.id)
+    );
   };
 
   const filteredProjects = projects.filter(p => {
@@ -405,45 +429,49 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                   </div>
                 </div>
 
-                {/* Company */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="company_id"
-                    value={formData.company_id}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                  >
-                    <option value="">Select Company</option>
-                    {companies.map((company) => (
-                      <option key={company.id} value={company.id}>
-                        {company.company_name || company.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {!isCompanyContext && (
+                  <>
+                    {/* Company */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Company <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="company_id"
+                        value={formData.company_id}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      >
+                        <option value="">Select Company</option>
+                        {companies.map((company) => (
+                          <option key={company.id} value={company.id}>
+                            {company.company_name || company.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                {/* Contact */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Contact <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="contact_id"
-                    value={formData.contact_id}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-                  >
-                    <option value="">Select Contact</option>
-                    {contacts.map((contact) => (
-                      <option key={contact.id} value={contact.id}>
-                        {contact.first_name} {contact.last_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    {/* Contact */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Contact <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="contact_id"
+                        value={formData.contact_id}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      >
+                        <option value="">Select Contact</option>
+                        {contacts.map((contact) => (
+                          <option key={contact.id} value={contact.id}>
+                            {contact.first_name} {contact.last_name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
 
                 {/* Projects */}
                 <div>
@@ -720,6 +748,140 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
                     className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
                   />
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Visibility Panel */}
+          <div className="border-b border-[#EAECF0]">
+            <button
+              type="button"
+              onClick={() => togglePanel('visibility')}
+              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
+                  🔒
+                </div>
+                <span className="font-semibold text-gray-900 text-sm">Visibility</span>
+              </div>
+              <ChevronDown 
+                size={18} 
+                className={`text-gray-500 transition ${openPanels.visibility ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {openPanels.visibility && (
+              <div className="px-4 py-5 space-y-4 border-t border-[#EAECF0] bg-white">
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="public"
+                      checked={formData.visibility === 'public'}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 accent-red-500"
+                    />
+                    <span className="text-sm text-gray-700">Public</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="private"
+                      checked={formData.visibility === 'private'}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 accent-red-500"
+                    />
+                    <span className="text-sm text-gray-700">Private</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="select"
+                      checked={formData.visibility === 'select'}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 accent-red-500"
+                    />
+                    <span className="text-sm text-gray-700">Select People</span>
+                  </label>
+                </div>
+
+                {formData.visibility === 'select' && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Users
+                    </label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setSelectPeopleDropdownOpen(!selectPeopleDropdownOpen)}
+                        disabled={users.length === 0}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50 text-left"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getSelectedPeopleNames().length > 0 ? (
+                              <>
+                                <div className="flex -space-x-2">
+                                  {getSelectedPeopleNames().slice(0, 3).map(user => (
+                                    <div key={user.id} className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold border border-white">
+                                      {getInitials(user.first_name, user.last_name)}
+                                    </div>
+                                  ))}
+                                </div>
+                                <span className="text-sm text-gray-700">
+                                  {getSelectedPeopleNames().length} user{getSelectedPeopleNames().length !== 1 ? 's' : ''} selected
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-gray-500">Select users</span>
+                            )}
+                          </div>
+                          <span className="text-gray-400">▼</span>
+                        </div>
+                      </button>
+
+                      {selectPeopleDropdownOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                          {users.map(user => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => {
+                                const isSelected = formData.selectedPeople.includes(user.id.toString()) || formData.selectedPeople.includes(user.id);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  selectedPeople: isSelected
+                                    ? prev.selectedPeople.filter(id => id !== user.id.toString() && id !== user.id)
+                                    : [...prev.selectedPeople, user.id.toString()]
+                                }));
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100 last:border-b-0"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedPeople.includes(user.id.toString()) || formData.selectedPeople.includes(user.id)}
+                                readOnly
+                                className="w-4 h-4"
+                              />
+                              <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                                {getInitials(user.first_name, user.last_name)}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{user.first_name} {user.last_name}</div>
+                                <div className="text-xs text-gray-500">{user.email || 'No email'}</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Click users to select/deselect</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

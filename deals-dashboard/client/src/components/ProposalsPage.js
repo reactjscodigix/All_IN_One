@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MoreVertical, Plus, Grid3x3, List, Download, Send, CheckCircle, XCircle, Edit2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { proposalsAPI, companiesAPI, contactsAPI, dealsAPI } from '../services/api';
 import AddNewProposalModal from './AddNewProposalModal';
 
@@ -140,12 +141,103 @@ const ProposalsPage = ({ onViewDetails }) => {
     }
   };
 
+  const handleSendProposal = async (proposalId) => {
+    try {
+      const proposal = proposals.find(p => p.id === proposalId);
+      if (!proposal) return;
+
+      const result = await Swal.fire({
+        title: 'Send Proposal?',
+        html: `<p>Send <strong>${proposal.proposal_number}</strong> to client?</p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Send it!',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        await proposalsAPI.send(proposalId, { action_by: 1, client_email: proposal.client_email });
+        
+        await Swal.fire({
+          title: 'Success!',
+          html: `<p>Proposal <strong>${proposal.proposal_number}</strong> sent successfully!</p>`,
+          icon: 'success',
+          confirmButtonColor: '#3085d6',
+          timer: 2000,
+          timerProgressBar: true
+        });
+
+        setShowActionMenu(null);
+        await loadInitialData();
+      }
+    } catch (err) {
+      await Swal.fire({
+        title: 'Error',
+        html: `<p>Failed to send proposal: ${err.message}</p>`,
+        icon: 'error',
+        confirmButtonColor: '#d33'
+      });
+    }
+  };
+
+  const handleConvertToContract = async (proposalId) => {
+    try {
+      const proposal = proposals.find(p => p.id === proposalId);
+      if (!proposal) return;
+
+      const result = await Swal.fire({
+        title: 'Convert to Contract?',
+        html: `<p>Convert proposal <strong>${proposal.proposal_number}</strong> to a contract?</p>
+               <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Amount: <strong>${proposal.currency || 'USD'} ${(proposal.total_amount || 0).toLocaleString()}</strong></p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Convert it!',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        console.log(`🔄 Calling convertToContract API for proposal ${proposalId}...`);
+        const response = await proposalsAPI.convertToContract(proposalId, { created_by: 1 });
+        console.log(`✅ API Response:`, response);
+        
+        await Swal.fire({
+          title: 'Success!',
+          html: `<p>Contract created successfully!</p>
+                 <p style="font-size: 0.9em; color: #666; margin-top: 10px;"><strong>${response.contractSubject}</strong></p>
+                 <p style="font-size: 0.85em; color: #666; margin-top: 15px; padding: 8px; background: #f0f9ff; border-left: 3px solid #3b82f6; border-radius: 4px;">
+                   ✅ New contract will appear in Contracts page in a few seconds
+                 </p>`,
+          icon: 'success',
+          confirmButtonColor: '#16a34a',
+          confirmButtonText: 'OK',
+          allowOutsideClick: false,
+          allowEscapeKey: false
+        });
+
+        setShowActionMenu(null);
+        console.log(`🔄 Reloading proposals after conversion...`);
+        await loadInitialData();
+      }
+    } catch (err) {
+      await Swal.fire({
+        title: 'Error',
+        html: `<p>Failed to convert to contract: ${err.message}</p>`,
+        icon: 'error',
+        confirmButtonColor: '#d33'
+      });
+    }
+  };
+
   const getStatusColor = (status) => {
     const colors = {
       'Accepted': 'bg-green-100 text-green-700',
       'Draft': 'bg-blue-100 text-blue-700',
       'Submitted': 'bg-purple-100 text-purple-700',
-      'Approved': 'bg-emerald-100 text-emerald-700',
+      'Approved': 'bg-orange-100 text-orange-700',
       'Sent': 'bg-teal-100 text-teal-700',
       'Declined': 'bg-red-100 text-red-700',
       'Rejected': 'bg-red-100 text-red-700'
@@ -180,12 +272,14 @@ const ProposalsPage = ({ onViewDetails }) => {
               </button>
               {showActionMenu === proposal.id && (
                 <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
-                  <button
-                    onClick={() => handleStatusChange(proposal.id, 'Sent')}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                  >
-                    <Send size={14} /> Send
-                  </button>
+                  {proposal.status === 'Approved' && (
+                    <button
+                      onClick={() => handleSendProposal(proposal.id)}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Send size={14} /> Send
+                    </button>
+                  )}
                   <button
                     onClick={() => handleStatusChange(proposal.id, 'Approved')}
                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -204,6 +298,14 @@ const ProposalsPage = ({ onViewDetails }) => {
                       className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 border-t"
                     >
                       <Download size={14} /> Convert to Invoice
+                    </button>
+                  )}
+                  {proposal.status === 'Sent' && (
+                    <button
+                      onClick={() => handleConvertToContract(proposal.id)}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-green-700 flex items-center gap-2 border-t"
+                    >
+                      📋 Convert to Contract
                     </button>
                   )}
                   <button
@@ -293,12 +395,14 @@ const ProposalsPage = ({ onViewDetails }) => {
             </button>
             {showActionMenu === proposal.id && (
               <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-300 rounded shadow-lg z-10">
-                <button
-                  onClick={() => handleStatusChange(proposal.id, 'Sent')}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                >
-                  Send
-                </button>
+                {proposal.status === 'Approved' && (
+                  <button
+                    onClick={() => handleSendProposal(proposal.id)}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  >
+                    Send
+                  </button>
+                )}
                 <button
                   onClick={() => handleStatusChange(proposal.id, 'Approved')}
                   className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
@@ -317,6 +421,14 @@ const ProposalsPage = ({ onViewDetails }) => {
                     className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 border-t"
                   >
                     Convert to Invoice
+                  </button>
+                )}
+                {proposal.status === 'Sent' && (
+                  <button
+                    onClick={() => handleConvertToContract(proposal.id)}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-green-700 border-t"
+                  >
+                    Convert to Contract
                   </button>
                 )}
                 <button

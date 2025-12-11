@@ -1,10 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, Download, MoreVertical, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import Swal from 'sweetalert2';
 import dealsData from '../data/crmDealsData.json';
 import AddNewDealModal from './AddNewDealModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { dealsAPI, contactsAPI, companiesAPI, projectAPI } from '../services/api';
 import projectsData from '../data/crmProjectsData.json';
+
+const PIPELINE_STAGE_ORDER = [
+  'New',
+  'Discovery',
+  'Follow Up',
+  'Inpipeline',
+  'Conversation',
+  'Proposal Sent',
+  'Negotiation',
+  'Qualified To Buy',
+  'Won',
+  'Lost'
+];
 
 const CrmDealsPage = () => {
   const [deals, setDeals] = useState([]);
@@ -61,8 +75,33 @@ const CrmDealsPage = () => {
         console.log('📊 actualDeals.length:', actualDeals?.length);
         
         if (actualDeals && Array.isArray(actualDeals) && actualDeals.length > 0) {
+          const getProbabilityFromPipeline = (pipeline, status) => {
+            const statusProbabilityMap = {
+              'Won': 100,
+              'Lost': 0
+            };
+            
+            if (statusProbabilityMap[status] !== undefined) {
+              return statusProbabilityMap[status];
+            }
+
+            const pipelineProbabilityMap = {
+              'New': 10,
+              'Discovery': 20,
+              'Follow Up': 30,
+              'Inpipeline': 40,
+              'Conversation': 50,
+              'Proposal Sent': 60,
+              'Negotiation': 70,
+              'Qualified To Buy': 80
+            };
+            return pipelineProbabilityMap[pipeline] || 10;
+          };
+
           const formattedDeals = actualDeals.map(deal => {
             const stage = deal.pipeline || deal.deal_stage || 'Unclassified';
+            const probability = getProbabilityFromPipeline(stage, deal.status);
+            
             const formatted = {
               ...deal,
               id: deal.id,
@@ -70,16 +109,16 @@ const CrmDealsPage = () => {
               company: deal.company_name || deal.deal_name || 'Unknown Company',
               initials: ((deal.company_name || deal.deal_name || 'UC').substring(0, 2)).toUpperCase(),
               value: parseFloat(deal.deal_value) || 0,
-              email: deal.email || 'contact@example.com',
-              phone: deal.phone || '+1 (555) 000-0000',
-              location: deal.location || 'Unknown',
+              email: deal.contact_email || 'N/A',
+              phone: deal.contact_phone || 'N/A',
+              location: deal.contact_position || 'N/A',
               owner: deal.assignee_first_name && deal.assignee_last_name 
                 ? `${deal.assignee_first_name} ${deal.assignee_last_name}` 
-                : deal.first_name && deal.last_name 
-                ? `${deal.first_name} ${deal.last_name}`
+                : deal.contact_first_name && deal.contact_last_name 
+                ? `${deal.contact_first_name} ${deal.contact_last_name}`
                 : 'Unassigned',
               ownerImage: 'avatar-1',
-              progress: deal.probability || 10,
+              progress: probability,
               date: deal.follow_up_date 
                 ? new Date(deal.follow_up_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) 
                 : deal.due_date 
@@ -90,11 +129,17 @@ const CrmDealsPage = () => {
             if (!formatted.company_id && deal.company_id) {
               formatted.company_id = deal.company_id;
             }
+            if (!formatted.contact_id && deal.contact_id) {
+              formatted.contact_id = deal.contact_id;
+            }
             if (!formatted.deal_name && deal.deal_name) {
               formatted.deal_name = deal.deal_name;
             }
+            if (!formatted.currency && deal.currency) {
+              formatted.currency = deal.currency;
+            }
             
-            console.log(`📋 Formatted deal ${deal.id} - company_id: ${formatted.company_id}, deal_name: ${formatted.deal_name}`);
+            console.log(`📋 Formatted deal ${deal.id} - company_id: ${formatted.company_id}, deal_name: ${formatted.deal_name}, probability: ${formatted.progress}, email: ${formatted.email}`);
             
             return formatted;
           });
@@ -105,16 +150,22 @@ const CrmDealsPage = () => {
           const uniqueStages = [...new Set(formattedDeals.map(d => d.stage))].filter(s => s && s !== 'Unclassified');
           console.log('📋 Unique stages from deals:', uniqueStages);
           
-          const updatedStats = uniqueStages.map(stage => {
-            const stageDeals = formattedDeals.filter(d => d.stage === stage);
-            return {
-              stage,
-              leads: stageDeals.length,
-              value: stageDeals.reduce((sum, d) => sum + (d.value || 0), 0)
-            };
-          });
+          const updatedStats = uniqueStages
+            .map(stage => {
+              const stageDeals = formattedDeals.filter(d => d.stage === stage);
+              return {
+                stage,
+                leads: stageDeals.length,
+                value: stageDeals.reduce((sum, d) => sum + (d.value || 0), 0)
+              };
+            })
+            .sort((a, b) => {
+              const indexA = PIPELINE_STAGE_ORDER.indexOf(a.stage);
+              const indexB = PIPELINE_STAGE_ORDER.indexOf(b.stage);
+              return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+            });
           
-          console.log('✅ Updated Stage Stats:', updatedStats);
+          console.log('✅ Updated Stage Stats (sorted):', updatedStats);
           
           console.log('🔄 Setting deals state to:', formattedDeals.length, 'deals');
           setDeals(formattedDeals);
@@ -126,16 +177,22 @@ const CrmDealsPage = () => {
           
           const fallbackDeals = dealsData.deals || [];
           const fallbackStages = [...new Set(fallbackDeals.map(d => d.stage))].filter(s => s && s !== 'Unclassified');
-          const fallbackStats = fallbackStages.map(stage => {
-            const stageDealsList = fallbackDeals.filter(d => d.stage === stage);
-            return {
-              stage,
-              leads: stageDealsList.length,
-              value: stageDealsList.reduce((sum, d) => sum + (d.value || 0), 0)
-            };
-          });
+          const fallbackStats = fallbackStages
+            .map(stage => {
+              const stageDealsList = fallbackDeals.filter(d => d.stage === stage);
+              return {
+                stage,
+                leads: stageDealsList.length,
+                value: stageDealsList.reduce((sum, d) => sum + (d.value || 0), 0)
+              };
+            })
+            .sort((a, b) => {
+              const indexA = PIPELINE_STAGE_ORDER.indexOf(a.stage);
+              const indexB = PIPELINE_STAGE_ORDER.indexOf(b.stage);
+              return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+            });
           
-          console.log('📋 Fallback stages:', fallbackStages);
+          console.log('📋 Fallback stages (sorted):', fallbackStats);
           setDeals(fallbackDeals);
           setStageStats(fallbackStats);
         }
@@ -148,14 +205,20 @@ const CrmDealsPage = () => {
         
         const fallbackDeals = dealsData.deals || [];
         const fallbackStages = [...new Set(fallbackDeals.map(d => d.stage))].filter(s => s && s !== 'Unclassified');
-        const fallbackStats = fallbackStages.map(stage => {
-          const stageDealsList = fallbackDeals.filter(d => d.stage === stage);
-          return {
-            stage,
-            leads: stageDealsList.length,
-            value: stageDealsList.reduce((sum, d) => sum + (d.value || 0), 0)
-          };
-        });
+        const fallbackStats = fallbackStages
+          .map(stage => {
+            const stageDealsList = fallbackDeals.filter(d => d.stage === stage);
+            return {
+              stage,
+              leads: stageDealsList.length,
+              value: stageDealsList.reduce((sum, d) => sum + (d.value || 0), 0)
+            };
+          })
+          .sort((a, b) => {
+            const indexA = PIPELINE_STAGE_ORDER.indexOf(a.stage);
+            const indexB = PIPELINE_STAGE_ORDER.indexOf(b.stage);
+            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+          });
         
         setDeals(fallbackDeals);
         setStageStats(fallbackStats);
@@ -193,6 +256,29 @@ const CrmDealsPage = () => {
 
   const handleCreateDeal = async (formData) => {
     try {
+      const getProbabilityFromPipeline = (pipeline, status) => {
+        const statusProbabilityMap = {
+          'Won': 100,
+          'Lost': 0
+        };
+        
+        if (statusProbabilityMap[status] !== undefined) {
+          return statusProbabilityMap[status];
+        }
+
+        const pipelineProbabilityMap = {
+          'New': 10,
+          'Discovery': 20,
+          'Follow Up': 30,
+          'Inpipeline': 40,
+          'Conversation': 50,
+          'Proposal Sent': 60,
+          'Negotiation': 70,
+          'Qualified To Buy': 80
+        };
+        return pipelineProbabilityMap[pipeline] || 10;
+      };
+
       const cleanedData = {
         ...formData,
         company_id: formData.company_id ? parseInt(formData.company_id, 10) : null,
@@ -212,6 +298,7 @@ const CrmDealsPage = () => {
         
         const dealValue = parseFloat(formData.deal_value) || 0;
         const dealStage = formData.pipeline || 'Qualify To Buy';
+        const probability = getProbabilityFromPipeline(dealStage, formData.status);
         
         const newDeal = {
           id: response.id,
@@ -219,14 +306,14 @@ const CrmDealsPage = () => {
           company: companyName,
           initials: initials,
           value: dealValue,
-          email: selectedContact?.email || 'contact@example.com',
-          phone: selectedContact?.phone || '+1 (555) 000-0000',
-          location: selectedContact?.location || 'Unknown',
+          email: selectedContact?.email || 'N/A',
+          phone: selectedContact?.phone || 'N/A',
+          location: selectedContact?.position || 'N/A',
           owner: selectedContact?.first_name && selectedContact?.last_name
             ? `${selectedContact.first_name} ${selectedContact.last_name}`
             : selectedContact?.name || 'Unassigned',
           ownerImage: 'avatar-1',
-          progress: 10,
+          progress: probability,
           date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
           deal_name: formData.deal_name,
           pipeline: formData.pipeline,
@@ -305,23 +392,50 @@ const CrmDealsPage = () => {
 
   const handleUpdateDeal = async (formData) => {
     try {
+      const getProbabilityFromPipeline = (pipeline, status) => {
+        const statusProbabilityMap = {
+          'Won': 100,
+          'Lost': 0
+        };
+        
+        if (statusProbabilityMap[status] !== undefined) {
+          return statusProbabilityMap[status];
+        }
+
+        const pipelineProbabilityMap = {
+          'New': 10,
+          'Discovery': 20,
+          'Follow Up': 30,
+          'Inpipeline': 40,
+          'Conversation': 50,
+          'Proposal Sent': 60,
+          'Negotiation': 70,
+          'Qualified To Buy': 80
+        };
+        return pipelineProbabilityMap[pipeline] || 10;
+      };
+
       console.log('📝 Updating deal:', selectedDealToEdit.id);
       console.log('📝 Form data being sent:', formData);
       await dealsAPI.update(selectedDealToEdit.id, formData);
       console.log('✅ Deal updated successfully');
       
+      const newStage = formData.pipeline || selectedDealToEdit.stage;
+      const newStatus = formData.status || selectedDealToEdit.status;
+      const newProbability = getProbabilityFromPipeline(newStage, newStatus);
+      
       const updatedDeal = {
         ...selectedDealToEdit,
         ...formData,
-        stage: formData.pipeline || selectedDealToEdit.stage,
+        stage: newStage,
         value: parseFloat(formData.deal_value) || selectedDealToEdit.value,
         company: formData.company_name || selectedDealToEdit.company,
+        progress: newProbability,
       };
       
       setDeals(prev => prev.map(d => d.id === selectedDealToEdit.id ? updatedDeal : d));
       
       const oldStage = selectedDealToEdit.stage;
-      const newStage = formData.pipeline || oldStage;
       const oldValue = selectedDealToEdit.value;
       const newValue = parseFloat(formData.deal_value) || selectedDealToEdit.value;
       
@@ -353,16 +467,139 @@ const CrmDealsPage = () => {
     }
   };
 
-  const groupedDeals = stageStats.map(stageStat => ({
-    ...stageStat,
-    deals: deals.filter(d => d.stage === stageStat.stage)
-  }));
+  const groupedDeals = PIPELINE_STAGE_ORDER.map(stage => {
+    const stageStat = stageStats.find(s => s.stage === stage);
+    return {
+      stage: stage,
+      leads: stageStat?.leads || 0,
+      value: stageStat?.value || 0,
+      deals: deals.filter(d => d.stage === stage)
+    };
+  });
   
   const hasAnyDeals = deals.length > 0;
   console.log('📊 Grouped Deals:', groupedDeals);
   console.log('📊 Has Any Deals:', hasAnyDeals);
   console.log('📊 Total Groups:', groupedDeals.length);
   console.log('📊 Total Deals:', deals.length);
+
+  const handleDragStart = (e, deal) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('dealId', deal.id);
+    e.dataTransfer.setData('fromStage', deal.stage);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e, toStage) => {
+    e.preventDefault();
+    const dealId = parseInt(e.dataTransfer.getData('dealId'), 10);
+    const fromStage = e.dataTransfer.getData('fromStage');
+    
+    if (fromStage === toStage) return;
+    
+    const dealToMove = deals.find(d => d.id === dealId);
+    if (!dealToMove) return;
+
+    try {
+      const payload = {
+        deal_name: dealToMove.deal_name || dealToMove.company,
+        company_id: dealToMove.company_id,
+        contact_id: dealToMove.contact_id,
+        deal_value: dealToMove.value,
+        currency: dealToMove.currency || 'USD',
+        pipeline: toStage,
+        status: dealToMove.status
+      };
+
+      await dealsAPI.update(dealId, payload);
+      
+      const getProbabilityFromPipeline = (pipeline, status) => {
+        const statusProbabilityMap = {
+          'Won': 100,
+          'Lost': 0
+        };
+        
+        if (statusProbabilityMap[status] !== undefined) {
+          return statusProbabilityMap[status];
+        }
+
+        const pipelineProbabilityMap = {
+          'New': 10,
+          'Discovery': 20,
+          'Follow Up': 30,
+          'Inpipeline': 40,
+          'Conversation': 50,
+          'Proposal Sent': 60,
+          'Negotiation': 70,
+          'Qualified To Buy': 80
+        };
+        return pipelineProbabilityMap[pipeline] || 10;
+      };
+
+      const updatedDeal = {
+        ...dealToMove,
+        stage: toStage,
+        progress: getProbabilityFromPipeline(toStage, dealToMove.status)
+      };
+
+      setDeals(prev => prev.map(d => d.id === dealId ? updatedDeal : d));
+      
+      setStageStats(prev => prev.map(stat => {
+        let newStat = { ...stat };
+        if (stat.stage === fromStage) {
+          newStat.leads = Math.max(0, newStat.leads - 1);
+          newStat.value = newStat.value - dealToMove.value;
+        }
+        if (stat.stage === toStage) {
+          newStat.leads = newStat.leads + 1;
+          newStat.value = newStat.value + dealToMove.value;
+        }
+        return newStat;
+      }));
+    } catch (err) {
+      console.error('Failed to move deal:', err);
+    }
+  };
+
+  const handleWinDeal = async (deal) => {
+    if (deal.stage !== 'Qualified To Buy') return;
+    try {
+      const payload = {
+        deal_name: deal.deal_name || deal.company,
+        company_id: deal.company_id,
+        contact_id: deal.contact_id,
+        deal_value: deal.value,
+        currency: deal.currency || 'USD',
+        pipeline: 'Won',
+        status: 'Won'
+      };
+      await dealsAPI.update(deal.id, payload);
+      setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, stage: 'Won', status: 'Won', progress: 100 } : d));
+      setStageStats(prev => prev.map(stat => {
+        if (stat.stage === 'Qualified To Buy') return { ...stat, leads: Math.max(0, stat.leads - 1), value: stat.value - deal.value };
+        if (stat.stage === 'Won') return { ...stat, leads: stat.leads + 1, value: stat.value + deal.value };
+        return stat;
+      }));
+      Swal.fire({
+        icon: 'success',
+        title: 'Deal Won!',
+        text: `${deal.company} has been successfully moved to Won stage!`,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Great!',
+        timer: 3000,
+        timerProgressBar: true,
+        toast: true,
+        position: 'top-end'
+      });
+    } catch (err) {
+      console.error('Failed to win deal:', err);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to move deal to Won stage', confirmButtonColor: '#ef4444' });
+    }
+  };
 
   return (
     <div className="w-full bg-gray-50 min-h-screen flex flex-col">
@@ -429,7 +666,12 @@ const CrmDealsPage = () => {
             className="flex gap-6 h-full overflow-x-auto overflow-y-auto pr-2 pb-4"
           >
             {groupedDeals.map((group) => (
-              <div key={group.stage} className="flex-shrink-0 w-96">
+              <div 
+                key={group.stage} 
+                className="flex-shrink-0 w-96"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, group.stage)}
+              >
                 <div className="sticky top-0 bg-gray-50 mb-4 pt-0 pb-2">
                   <div className="flex items-center justify-between">
                     <div>
@@ -437,7 +679,7 @@ const CrmDealsPage = () => {
                         <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
                         <h2 className="text-[15px] font-bold text-gray-900">{group.stage}</h2>
                       </div>
-                      <p className="text-[12px] text-gray-600 mt-1">{group.deals.length} Deals - {formatCurrency(group.value)}</p>
+                      <p className="text-[12px] text-gray-600 mt-1">{group.leads} Deals - {formatCurrency(group.value)}</p>
                     </div>
                     <button className="text-gray-400 hover:bg-gray-100 p-1.5 rounded-md transition">
                       <MoreVertical size={18} strokeWidth={1.5} />
@@ -445,11 +687,13 @@ const CrmDealsPage = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 min-h-96">
                   {group.deals.map((deal) => (
                     <div
                       key={deal.id}
-                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-3.5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer flex-shrink-0 relative"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, deal)}
+                      className="bg-white border border-gray-200 rounded-lg shadow-sm p-3.5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-move flex-shrink-0 relative"
                       onClick={() => openMenu === deal.id && setOpenMenu(null)}
                     >
                       <div className="flex items-start justify-between mb-2">
@@ -515,6 +759,17 @@ const CrmDealsPage = () => {
                           </span>
                         </div>
                       </div>
+
+                      {group.stage === 'Qualified To Buy' && (
+                        <div className="mb-3">
+                          <button 
+                            onClick={() => handleWinDeal(deal)}
+                            className="w-full bg-green-600 text-white py-2 rounded-lg text-[12px] font-semibold hover:bg-green-700 transition"
+                          >
+                            🏆 Mark as Won
+                          </button>
+                        </div>
+                      )}
 
                       <div className="flex items-center justify-between text-[11px] text-gray-500">
                         <span>📅 {deal.date}</span>

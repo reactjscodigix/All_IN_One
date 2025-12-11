@@ -49,12 +49,15 @@ const CrmLeadsPage = () => {
               email: lead.email || '',
               phone: lead.phone || '',
               company: lead.company || lead.company_name || '',
-              source: lead.source || 'Website',
-              status: lead.status || 'Not Contacted',
+              source: lead.source || lead.lead_source || 'Website',
+              status: lead.status || lead.lead_status || 'Not Contacted',
               rating: lead.rating || 5,
               initials: initials,
-              value: (lead.value || 0) * 100000,
+              value: lead.value || 0,
               location: lead.location || '',
+              currency: lead.currency || 'USD',
+              industry: lead.industry || '',
+              owner_id: lead.owner_id || null,
               ...lead
             };
           });
@@ -98,7 +101,9 @@ const CrmLeadsPage = () => {
           .join('')
           .toUpperCase() || 'N/A';
         
+        const leadValue = response.value || parseFloat(formData.value || 0);
         const newLead = {
+          ...formData,
           id: response.id,
           name: displayName,
           email: formData.email || '',
@@ -108,9 +113,11 @@ const CrmLeadsPage = () => {
           status: formData.status || 'Not Contacted',
           rating: formData.rating || 5,
           initials: initials,
-          value: parseInt(formData.value || 0) * 100000,
+          value: leadValue,
           location: formData.location || '',
-          ...formData
+          currency: response.currency || formData.currency || 'USD',
+          industry: response.industry || formData.industry || '',
+          owner_id: response.owner_id || formData.owner_id || null
         };
         
         setLeads(prev => [newLead, ...prev]);
@@ -139,7 +146,9 @@ const CrmLeadsPage = () => {
   };
 
   const formatCurrency = (value) => {
-    return `$${(value / 100000).toFixed(2).replace('.', ',')}`;
+    if (!value) return '$0.00';
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return `$${numValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const handleEditLead = (leadId) => {
@@ -373,8 +382,14 @@ const CrmLeadsPage = () => {
                           <div className="space-y-1 mb-3 text-[12px]">
                             <div className="flex items-center gap-1.5">
                               <span>💰</span>
-                              <span className="font-semibold text-gray-900">{formatCurrency(lead.value)}</span>
+                              <span className="font-semibold text-gray-900">{formatCurrency(lead.value)} {lead.currency || 'USD'}</span>
                             </div>
+                            {lead.industry && (
+                              <div className="flex items-center gap-1.5">
+                                <span>🏭</span>
+                                <span className="text-gray-600 text-[11px]">{lead.industry}</span>
+                              </div>
+                            )}
                             <div className="flex items-center gap-1.5">
                               <span>✉️</span>
                               <span className="text-gray-600 truncate text-[11px]">{lead.email}</span>
@@ -383,10 +398,12 @@ const CrmLeadsPage = () => {
                               <span>📞</span>
                               <span className="text-gray-600 text-[11px]">{lead.phone}</span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <span>📍</span>
-                              <span className="text-gray-600 text-[11px]">{lead.location}</span>
-                            </div>
+                            {lead.location && (
+                              <div className="flex items-center gap-1.5">
+                                <span>📍</span>
+                                <span className="text-gray-600 text-[11px]">{lead.location}</span>
+                              </div>
+                            )}
                           </div>
 
                           <div className="border-t border-gray-200 pt-2.5">

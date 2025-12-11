@@ -217,6 +217,7 @@ export const proposalsAPI = {
   send: (id, data) => apiService.post(`/proposals/${id}/send`, data),
   getHistory: (id) => apiService.get(`/proposals/${id}/history`),
   convertToInvoice: (id, data) => apiService.post(`/proposals/${id}/convert-to-invoice`, data),
+  convertToContract: (id, data) => apiService.post(`/proposals/${id}/convert-to-contract`, data),
 };
 
 export const contractsAPI = {
@@ -228,6 +229,7 @@ export const contractsAPI = {
   create: (data) => apiService.post('/contracts', data),
   update: (id, data) => apiService.put(`/contracts/${id}`, data),
   delete: (id) => apiService.delete(`/contracts/${id}`),
+  convertToEstimation: (id, data) => apiService.post(`/contracts/${id}/convert-to-estimation`, data),
 };
 
 export const estimationsAPI = {

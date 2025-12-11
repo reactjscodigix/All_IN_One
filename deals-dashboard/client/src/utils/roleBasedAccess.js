@@ -1,5 +1,5 @@
 const ROLE_UI_VISIBILITY = {
-  'Admin': {
+  'Super Admin': {
     sidebar: {
       dashboard: true,
       crm: true,
@@ -11,7 +11,7 @@ const ROLE_UI_VISIBILITY = {
       content: true,
       blog: false,
       settings: true,
-      superAdmin: false,
+      superAdmin: true,
     },
     components: {
       createButton: true,
@@ -23,6 +23,23 @@ const ROLE_UI_VISIBILITY = {
       settingsButton: true,
       assignButton: true,
       transferButton: true,
+    },
+    menuItems: {
+      dealsDashboard: 'view',
+      leadsDashboard: 'view',
+      projectDashboard: 'view',
+      applications: 'view',
+      chatCallEmailCalendar: 'view',
+      crmContacts: 'view',
+      crmCompanies: 'view',
+      crmDeals: 'view',
+      crmLeads: 'view',
+      crmPipeline: 'view',
+      projectsAndTasks: 'view',
+      proposalsAndEstimations: 'view',
+      invoicesAndPayments: 'view',
+      analytics: 'view',
+      reports: 'view',
     },
     modules: {
       Dashboard: true,
@@ -46,16 +63,16 @@ const ROLE_UI_VISIBILITY = {
       Reports: true,
     }
   },
-  'Company Owner': {
+  'Admin': {
     sidebar: {
       dashboard: true,
       crm: true,
       applications: true,
       reports: true,
-      userManagement: false,
+      userManagement: true,
       crmSettings: true,
       membership: false,
-      content: false,
+      content: true,
       blog: false,
       settings: false,
       superAdmin: false,
@@ -63,13 +80,30 @@ const ROLE_UI_VISIBILITY = {
     components: {
       createButton: true,
       editButton: true,
-      deleteButton: false,
+      deleteButton: true,
       bulkActions: true,
       exportButton: true,
-      importButton: false,
+      importButton: true,
       settingsButton: false,
       assignButton: true,
-      transferButton: false,
+      transferButton: true,
+    },
+    menuItems: {
+      dealsDashboard: 'view',
+      leadsDashboard: 'view',
+      projectDashboard: 'view',
+      applications: 'view',
+      chatCallEmailCalendar: 'view',
+      crmContacts: 'view',
+      crmCompanies: 'view',
+      crmDeals: 'view',
+      crmLeads: 'view',
+      crmPipeline: 'view',
+      projectsAndTasks: 'view',
+      proposalsAndEstimations: 'view',
+      invoicesAndPayments: 'view',
+      analytics: 'view',
+      reports: 'view',
     },
     modules: {
       Dashboard: true,
@@ -88,12 +122,12 @@ const ROLE_UI_VISIBILITY = {
       Payments: true,
       Activities: true,
       Analytics: true,
-      UserManagement: false,
+      UserManagement: true,
       Roles: false,
       Reports: true,
     }
   },
-  'Deal Owner': {
+  'Deal Manager': {
     sidebar: {
       dashboard: true,
       crm: true,
@@ -111,12 +145,29 @@ const ROLE_UI_VISIBILITY = {
       createButton: true,
       editButton: true,
       deleteButton: false,
-      bulkActions: false,
+      bulkActions: true,
       exportButton: true,
       importButton: false,
       settingsButton: false,
       assignButton: true,
       transferButton: false,
+    },
+    menuItems: {
+      dealsDashboard: 'view',
+      leadsDashboard: 'view',
+      projectDashboard: 'view_only',
+      applications: 'view',
+      chatCallEmailCalendar: 'view',
+      crmContacts: 'view',
+      crmCompanies: 'view',
+      crmDeals: 'view',
+      crmLeads: 'view',
+      crmPipeline: 'view',
+      projectsAndTasks: 'view_only',
+      proposalsAndEstimations: 'view',
+      invoicesAndPayments: 'view',
+      analytics: 'view',
+      reports: 'view',
     },
     modules: {
       Dashboard: true,
@@ -125,11 +176,11 @@ const ROLE_UI_VISIBILITY = {
       Leads: true,
       Deals: true,
       Pipelines: true,
-      Campaign: false,
-      Projects: true,
+      Campaign: true,
+      Projects: false,
       Tasks: true,
       Proposals: true,
-      Contracts: true,
+      Contracts: false,
       Estimations: true,
       Invoices: true,
       Payments: true,
@@ -143,7 +194,7 @@ const ROLE_UI_VISIBILITY = {
   'Project Manager': {
     sidebar: {
       dashboard: true,
-      crm: true,
+      crm: false,
       applications: true,
       reports: true,
       userManagement: false,
@@ -165,60 +216,30 @@ const ROLE_UI_VISIBILITY = {
       assignButton: true,
       transferButton: true,
     },
-    modules: {
-      Dashboard: true,
-      Contacts: true,
-      Companies: true,
-      Leads: false,
-      Deals: true,
-      Pipelines: true,
-      Campaign: true,
-      Projects: true,
-      Tasks: true,
-      Proposals: true,
-      Contracts: true,
-      Estimations: false,
-      Invoices: false,
-      Payments: false,
-      Activities: true,
-      Analytics: true,
-      UserManagement: false,
-      Roles: false,
-      Reports: true,
-    }
-  },
-  'Client': {
-    sidebar: {
-      dashboard: true,
-      crm: false,
-      applications: false,
-      reports: false,
-      userManagement: false,
-      crmSettings: false,
-      membership: false,
-      content: false,
-      blog: false,
-      settings: false,
-      superAdmin: false,
-    },
-    components: {
-      createButton: false,
-      editButton: false,
-      deleteButton: false,
-      bulkActions: false,
-      exportButton: false,
-      importButton: false,
-      settingsButton: false,
-      assignButton: false,
-      transferButton: false,
+    menuItems: {
+      dealsDashboard: 'view_only_if_assigned',
+      leadsDashboard: false,
+      projectDashboard: 'view',
+      applications: 'view',
+      chatCallEmailCalendar: 'view',
+      crmContacts: 'view_only_if_linked',
+      crmCompanies: false,
+      crmDeals: 'view_only',
+      crmLeads: false,
+      crmPipeline: false,
+      projectsAndTasks: 'view',
+      proposalsAndEstimations: 'view',
+      invoicesAndPayments: 'view',
+      analytics: 'view_only',
+      reports: 'view_only',
     },
     modules: {
       Dashboard: true,
       Contacts: true,
-      Companies: true,
+      Companies: false,
       Leads: false,
       Deals: true,
-      Pipelines: true,
+      Pipelines: false,
       Campaign: false,
       Projects: true,
       Tasks: true,
@@ -227,14 +248,14 @@ const ROLE_UI_VISIBILITY = {
       Estimations: true,
       Invoices: true,
       Payments: true,
-      Activities: false,
-      Analytics: false,
+      Activities: true,
+      Analytics: true,
       UserManagement: false,
       Roles: false,
-      Reports: false,
+      Reports: true,
     }
   },
-  'Lead': {
+  'Employee': {
     sidebar: {
       dashboard: true,
       crm: true,
@@ -249,53 +270,6 @@ const ROLE_UI_VISIBILITY = {
       superAdmin: false,
     },
     components: {
-      createButton: true,
-      editButton: true,
-      deleteButton: false,
-      bulkActions: false,
-      exportButton: false,
-      importButton: false,
-      settingsButton: false,
-      assignButton: false,
-      transferButton: false,
-    },
-    modules: {
-      Dashboard: true,
-      Contacts: true,
-      Companies: true,
-      Leads: true,
-      Deals: true,
-      Pipelines: true,
-      Campaign: false,
-      Projects: true,
-      Tasks: true,
-      Proposals: true,
-      Contracts: false,
-      Estimations: false,
-      Invoices: false,
-      Payments: false,
-      Activities: true,
-      Analytics: false,
-      UserManagement: false,
-      Roles: false,
-      Reports: false,
-    }
-  },
-  'Employee': {
-    sidebar: {
-      dashboard: true,
-      crm: true,
-      applications: false,
-      reports: false,
-      userManagement: false,
-      crmSettings: false,
-      membership: false,
-      content: false,
-      blog: false,
-      settings: false,
-      superAdmin: false,
-    },
-    components: {
       createButton: false,
       editButton: true,
       deleteButton: false,
@@ -306,13 +280,30 @@ const ROLE_UI_VISIBILITY = {
       assignButton: false,
       transferButton: false,
     },
+    menuItems: {
+      dealsDashboard: 'assigned_only',
+      leadsDashboard: 'assigned_only',
+      projectDashboard: 'assigned_only',
+      applications: 'view',
+      chatCallEmailCalendar: 'view',
+      crmContacts: 'assigned_only',
+      crmCompanies: 'assigned_only',
+      crmDeals: 'assigned_only',
+      crmLeads: 'assigned_only',
+      crmPipeline: false,
+      projectsAndTasks: 'assigned_tasks_only',
+      proposalsAndEstimations: false,
+      invoicesAndPayments: false,
+      analytics: false,
+      reports: false,
+    },
     modules: {
       Dashboard: true,
       Contacts: true,
       Companies: true,
       Leads: false,
       Deals: true,
-      Pipelines: true,
+      Pipelines: false,
       Campaign: false,
       Projects: true,
       Tasks: true,
@@ -340,6 +331,8 @@ export const getVisibility = (role, category, key) => {
     return roleVisibility.components[key] || false;
   } else if (category === 'modules') {
     return roleVisibility.modules[key] || false;
+  } else if (category === 'menuItems') {
+    return roleVisibility.menuItems[key] || false;
   }
   
   return false;
@@ -355,6 +348,30 @@ export const isComponentVisible = (role, component) => {
 
 export const isModuleAccessible = (role, module) => {
   return getVisibility(role, 'modules', module);
+};
+
+export const getMenuItemAccess = (role, menuItem) => {
+  return getVisibility(role, 'menuItems', menuItem) || false;
+};
+
+export const canViewMenuItem = (role, menuItem) => {
+  const access = getMenuItemAccess(role, menuItem);
+  return access && access !== false;
+};
+
+export const canEditMenuItem = (role, menuItem) => {
+  const access = getMenuItemAccess(role, menuItem);
+  return access === 'view' || access === 'view_only_if_assigned' || access === 'assigned_only';
+};
+
+export const isAssignedOnly = (role, menuItem) => {
+  const access = getMenuItemAccess(role, menuItem);
+  return access === 'assigned_only' || access === 'assigned_tasks_only';
+};
+
+export const isViewOnly = (role, menuItem) => {
+  const access = getMenuItemAccess(role, menuItem);
+  return access === 'view_only' || access === 'view_only_if_assigned' || access === 'view_only_if_linked';
 };
 
 export const getVisibleModules = (role) => {
@@ -373,4 +390,15 @@ export const getVisibleSidebarSections = (role) => {
   return Object.keys(roleVisibility.sidebar).filter(
     section => roleVisibility.sidebar[section]
   );
+};
+
+export const getDataAccessLevel = (role) => {
+  const levelMap = {
+    'Super Admin': 'all',
+    'Admin': 'all',
+    'Deal Manager': 'assigned_and_team',
+    'Project Manager': 'assigned_projects',
+    'Employee': 'assigned_only',
+  };
+  return levelMap[role] || 'none';
 };

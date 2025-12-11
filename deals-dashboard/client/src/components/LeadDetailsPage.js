@@ -86,9 +86,23 @@ const LeadDetailsPage = () => {
 
   const handleConvert = async (data) => {
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
       if (convertType === 'contact') {
-        await leadsAPI.convertToContact(id, data);
-        alert('Lead converted to contact successfully');
+        const response = await fetch(`${apiUrl}/leads/${id}/convert-complete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Conversion failed');
+        }
+        
+        alert('Lead converted to contact and company successfully');
       } else if (convertType === 'company') {
         await leadsAPI.convertToCompany(id, data);
         alert('Lead converted to company successfully');
@@ -162,17 +176,33 @@ const LeadDetailsPage = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-6 border-b pb-4">
               <h2 className="text-xl font-semibold text-gray-900">Lead Information</h2>
-              <div className="flex gap-2">
-                <select
-                  value={editData.status || editData.lead_status || 'New'}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium border-0 cursor-pointer ${getStatusColor(editData.status || editData.lead_status)}`}
-                >
-                  <option value="New">New</option>
-                  <option value="Contacted">Contacted</option>
-                  <option value="Qualified">Qualified</option>
-                  <option value="Unqualified">Unqualified</option>
-                </select>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <select
+                    value={editData.status || editData.lead_status || 'New'}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium border-0 cursor-pointer ${getStatusColor(editData.status || editData.lead_status)}`}
+                  >
+                    <option value="New">New</option>
+                    <option value="Contacted">Contacted</option>
+                    <option value="Qualified">Qualified</option>
+                    <option value="Unqualified">Unqualified</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleStatusChange('Contacted')}
+                    className="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-lg text-xs font-medium transition"
+                  >
+                    Mark Contacted
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange('Qualified')}
+                    className="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition"
+                  >
+                    Mark Qualified
+                  </button>
+                </div>
               </div>
             </div>
 

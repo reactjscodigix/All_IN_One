@@ -108,13 +108,17 @@ const LeadsDashboard = () => {
 
   const transformLead = (lead) => ({
     id: lead.id,
-    name: lead.name || '',
+    name: lead.name || lead.lead_name || '',
     email: lead.email || '',
     phone: lead.phone || '',
     company: lead.company || '',
-    source: lead.source || '',
-    status: lead.status || '',
+    source: lead.source || lead.lead_source || '',
+    status: lead.status || lead.lead_status || '',
     rating: lead.rating || 0,
+    value: parseFloat(lead.value) || 0,
+    currency: lead.currency || 'USD',
+    industry: lead.industry || '',
+    owner_id: lead.owner_id || null,
     createdAt: lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : '',
   });
 

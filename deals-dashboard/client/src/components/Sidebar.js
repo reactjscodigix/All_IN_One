@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronDown, X, Home, Users, Building2, Settings, BarChart3, FileText, Briefcase, MessageCircle, Shield, Trash2, Users2, FileJson, MapPin, MessageSquare, HelpCircle } from 'lucide-react';
+import { ChevronDown, X, Home, Users, Building2, Settings, BarChart3, FileText, Briefcase, MessageCircle, Shield, Trash2, Users2, FileJson, MapPin, MessageSquare, HelpCircle, Lock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { isSidebarItemVisible } from '../utils/roleBasedAccess';
+import { isSidebarItemVisible, isModuleAccessible, getMenuItemAccess } from '../utils/roleBasedAccess';
 
 const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
   const { user } = useAuth();
@@ -28,22 +28,34 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
     }));
   };
 
-  const SubmenuItem = ({ icon: Icon, label, onClick, active, page }) => (
-    <button
-      onClick={() => {
-        onNavigate(page);
-        if (toggleSidebar) toggleSidebar();
-      }}
-      className={`menu-item w-full flex items-center gap-3 px-6 py-2 text-sm rounded-md transition-smooth ${
-        currentPage === page
-          ? 'bg-red-50 text-red-600 font-semibold shadow-sm'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-      }`}
-    >
-      <span className={`w-1 h-1 rounded-full bg-current transition-transform ${currentPage === page ? 'scale-125' : ''}`}></span>
-      <span>{label}</span>
-    </button>
-  );
+  const SubmenuItem = ({ icon: Icon, label, onClick, active, page, moduleKey }) => {
+    const isAccessible = !moduleKey || isModuleAccessible(user?.role, moduleKey);
+    const accessLevel = page ? getMenuItemAccess(user?.role, `${page.charAt(0).toUpperCase()}${page.slice(1)}`) : null;
+    const isViewOnly = accessLevel === 'view_only' || accessLevel === 'view_only_if_assigned';
+    
+    if (!isAccessible) {
+      return null;
+    }
+    
+    return (
+      <button
+        onClick={() => {
+          onNavigate(page);
+          if (toggleSidebar) toggleSidebar();
+        }}
+        title={isViewOnly ? 'View-only access' : ''}
+        className={`menu-item w-full flex items-center gap-3 px-6 py-2 text-sm rounded-md transition-smooth ${
+          currentPage === page
+            ? 'bg-red-50 text-red-600 font-semibold shadow-sm'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+        }`}
+      >
+        <span className={`w-1 h-1 rounded-full bg-current transition-transform ${currentPage === page ? 'scale-125' : ''}`}></span>
+        <span className="flex-1">{label}</span>
+        {isViewOnly && <Lock size={14} className="opacity-60" title="View-only" />}
+      </button>
+    );
+  };
 
   const MenuSection = ({ title, items, expanded, onToggle }) => (
     <div className="space-y-1">
@@ -96,21 +108,21 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
 
   const crmMenuItems = (
     <>
-      <SubmenuItem icon={Users} label="Contacts" page="contacts" />
-      <SubmenuItem icon={Building2} label="Companies" page="companies" />
-      <SubmenuItem icon={FileText} label="Deals" page="deals-list" />
-      <SubmenuItem icon={Users} label="Leads" page="leads" />
-      <SubmenuItem icon={Briefcase} label="Pipeline" page="pipeline" />
-      <SubmenuItem icon={FileText} label="Campaign" page="campaign" />
-      <SubmenuItem icon={FileText} label="Projects" page="projects" />
-      <SubmenuItem icon={FileText} label="Tasks" page="tasks" />
-      <SubmenuItem icon={FileText} label="Proposals" page="proposals" />
-      <SubmenuItem icon={FileText} label="Contracts" page="contracts" />
-      <SubmenuItem icon={FileText} label="Estimations" page="estimations" />
-      <SubmenuItem icon={FileText} label="Invoices" page="invoices" />
-      <SubmenuItem icon={FileText} label="Payments" page="payments" />
-      <SubmenuItem icon={BarChart3} label="Analytics" page="analytics" />
-      <SubmenuItem icon={FileText} label="Activities" page="activities" />
+      <SubmenuItem icon={Users} label="Contacts" page="contacts" moduleKey="Contacts" />
+      <SubmenuItem icon={Building2} label="Companies" page="companies" moduleKey="Companies" />
+      <SubmenuItem icon={FileText} label="Deals" page="deals-list" moduleKey="Deals" />
+      <SubmenuItem icon={Users} label="Leads" page="leads" moduleKey="Leads" />
+      <SubmenuItem icon={Briefcase} label="Pipeline" page="pipeline" moduleKey="Pipelines" />
+      <SubmenuItem icon={FileText} label="Campaign" page="campaign" moduleKey="Campaign" />
+      <SubmenuItem icon={FileText} label="Projects" page="projects" moduleKey="Projects" />
+      <SubmenuItem icon={FileText} label="Tasks" page="tasks" moduleKey="Tasks" />
+      <SubmenuItem icon={FileText} label="Proposals" page="proposals" moduleKey="Proposals" />
+      <SubmenuItem icon={FileText} label="Contracts" page="contracts" moduleKey="Contracts" />
+      <SubmenuItem icon={FileText} label="Estimations" page="estimations" moduleKey="Estimations" />
+      <SubmenuItem icon={FileText} label="Invoices" page="invoices" moduleKey="Invoices" />
+      <SubmenuItem icon={FileText} label="Payments" page="payments" moduleKey="Payments" />
+      <SubmenuItem icon={BarChart3} label="Analytics" page="analytics" moduleKey="Analytics" />
+      <SubmenuItem icon={FileText} label="Activities" page="activities" moduleKey="Activities" />
     </>
   );
 

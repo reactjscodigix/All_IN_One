@@ -663,11 +663,21 @@ async function initializeDatabase() {
     
     const [existingRoles] = await connection.query('SELECT COUNT(*) as count FROM roles');
     if (existingRoles[0].count === 0) {
-      const defaultRoles = ['Admin', 'Company Owner', 'Deal Owner', 'Project Manager', 'Client', 'Lead', 'Employee'];
+      const defaultRoles = [
+        { name: 'Super Admin', description: 'Full system access - can manage everything' },
+        { name: 'Admin', description: 'Company-wide management - cannot change system settings' },
+        { name: 'Deal Manager', description: 'Focus on deals, leads, and pipelines' },
+        { name: 'Project Manager', description: 'Focus on projects and team management' },
+        { name: 'Employee', description: 'Limited access - only assigned items' }
+      ];
       for (const role of defaultRoles) {
-        await connection.query('INSERT INTO roles (name) VALUES (?)', [role]);
+        await connection.query('INSERT INTO roles (name, description) VALUES (?, ?)', [role.name, role.description]);
+        console.log(`✓ Role created: ${role.name}`);
       }
-      console.log('✓ Default roles created');
+      console.log('✓ All default roles created');
+    } else {
+      const [roles] = await connection.query('SELECT id, name FROM roles ORDER BY id');
+      console.log('✓ Existing roles found:', roles.map(r => `${r.id}: ${r.name}`).join(', '));
     }
     
     const [existingModules] = await connection.query('SELECT COUNT(*) as count FROM modules');
@@ -718,6 +728,68 @@ async function testConnection() {
   }
 }
 
+async function checkPermission(userId, module, action) {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    
+    const [users] = await connection.query(
+      'SELECT role_id FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      connection.release();
+      return false;
+    }
+    
+    const roleId = users[0].role_id;
+    const [roles] = await connection.query(
+      'SELECT name FROM roles WHERE id = ?',
+      [roleId]
+    );
+    
+    connection.release();
+    
+    if (roles.length === 0) {
+      return false;
+    }
+    
+    const role = roles[0].name;
+    const ROLE_PERMISSIONS = {
+      'Super Admin': { canAll: true },
+      'Admin': { canAll: true, except: ['settings'] },
+      'Deal Manager': {
+        Deals: ['view', 'create', 'edit', 'delete'],
+        Leads: ['view', 'create', 'edit'],
+        Pipeline: ['view', 'create', 'edit'],
+      },
+      'Project Manager': {
+        Projects: ['view', 'create', 'edit', 'delete'],
+        Tasks: ['view', 'create', 'edit', 'delete'],
+      },
+      'Employee': {
+        Deals: ['view', 'edit'],
+        Tasks: ['view', 'edit'],
+      }
+    };
+    
+    const rolePerms = ROLE_PERMISSIONS[role];
+    if (!rolePerms) return false;
+    
+    if (rolePerms.canAll) {
+      return !rolePerms.except || !rolePerms.except.includes(module);
+    }
+    
+    const modulePerms = rolePerms[module];
+    return modulePerms && modulePerms.includes(action);
+  } catch (error) {
+    console.error('Error checking permission:', error.message);
+    if (connection) connection.release();
+    return false;
+  }
+}
+
 // Auth Routes
 app.post('/api/auth/login', async (req, res) => {
   let connection;
@@ -765,16 +837,18 @@ app.post('/api/auth/login', async (req, res) => {
 
     connection.release();
 
+    const finalRole = user.role_name || 'Employee';
+
     const loginResponse = {
       id: parseInt(user.id) || user.id,
       first_name: user.first_name,
       last_name: user.last_name,
       email: user.email,
       avatar: user.avatar,
-      role_name: user.role_name || 'Lead',
+      role_name: finalRole,
     };
     
-    console.log('Login successful - returning user with ID type:', typeof loginResponse.id, 'value:', loginResponse.id);
+    console.log('Login successful - returning user with ID type:', typeof loginResponse.id, 'value:', loginResponse.id, 'role:', loginResponse.role_name);
     res.json(loginResponse);
   } catch (error) {
     console.error('Login error:', error.message);
@@ -805,19 +879,35 @@ app.post('/api/auth/signup', async (req, res) => {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    const roleMapping = {
-      'Admin': 1,
-      'Company Owner': 2,
-      'Deal Owner': 3,
-      'Project Manager': 4,
-      'Client': 5,
-      'Lead': 6,
-      'Employee': 7,
-    };
+    console.log('\n📝 SIGNUP - Frontend role_name received:', role_name);
+    const [allRoles] = await connection.query('SELECT id, name FROM roles ORDER BY id');
+    console.log('📋 Available roles:', allRoles.map(r => `${r.id}=${r.name}`).join(', '));
 
-    const roleId = roleMapping[role_name] || 6;
+    const [roleRows] = await connection.query(
+      'SELECT id FROM roles WHERE name = ?',
+      [role_name || 'Employee']
+    );
+
+    let roleId = 5;
+    if (roleRows.length > 0) {
+      roleId = roleRows[0].id;
+      console.log(`✅ Found role "${role_name}" with ID ${roleId}`);
+    } else {
+      console.warn(`❌ Role "${role_name}" not found! Available: ${allRoles.map(r => r.name).join(', ')}`);
+      const [employeeRole] = await connection.query(
+        'SELECT id FROM roles WHERE name = ?',
+        ['Employee']
+      );
+      if (employeeRole.length > 0) {
+        roleId = employeeRole[0].id;
+        console.log(`✅ Falling back to Employee role with ID ${roleId}`);
+      }
+    }
+
     const username = email.split('@')[0];
     const hashedPassword = hashPassword(password);
+    
+    console.log(`📌 Assigning user role_id=${roleId} (${role_name || 'Employee'})`);
 
     const [insertResult] = await connection.query(
       `INSERT INTO users (first_name, last_name, username, email, password, role_id, phone1, location, status)
@@ -842,33 +932,35 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 
     const newUser = newUsers[0];
-    console.log('Raw newUser from DB:', {
+    console.log('📊 User created in DB:', {
       id: newUser.id,
       username: newUser.username,
-      first_name: newUser.first_name,
       email: newUser.email,
-      idType: typeof newUser.id
+      role_id: newUser.role_id,
+      role_name: newUser.role_name
     });
     
     const userId = parseInt(newUser.id);
     const finalUserId = isNaN(userId) ? insertResult.insertId : userId;
     
     if (isNaN(userId)) {
-      console.warn('WARNING: newUser.id is not numeric! Using insertResult.insertId:', insertResult.insertId);
+      console.warn('⚠️  WARNING: newUser.id is not numeric! Using insertResult.insertId:', insertResult.insertId);
     }
     
-    console.log('Using user ID:', finalUserId, 'Type:', typeof finalUserId);
-    
+    console.log(`🔄 Role transformation: Requested="${role_name}" → Assigned_role_id=${newUser.role_id} → Retrieved_role_name="${newUser.role_name}"`);
+
+    const finalRoleName = newUser.role_name || role_name || 'Employee';
+
     const responseData = {
       id: finalUserId,
       first_name: newUser.first_name,
       last_name: newUser.last_name,
       email: newUser.email,
       avatar: newUser.avatar,
-      role_name: newUser.role_name || role_name,
+      role_name: finalRoleName,
     };
     
-    console.log('✅ SIGNUP SUCCESSFUL - Returning user with ID:', responseData.id, '(type:', typeof responseData.id + ')');
+    console.log(`✅ SIGNUP SUCCESSFUL\n   → Returning user ID=${responseData.id} with role="${responseData.role_name}"\n`);
     res.status(201).json(responseData);
   } catch (error) {
     console.error('Signup error:', error.message);
@@ -878,17 +970,132 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
+app.get('/api/roles', async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [roles] = await connection.query('SELECT * FROM roles ORDER BY id');
+    connection.release();
+    res.json(roles);
+  } catch (error) {
+    console.error('Error fetching roles:', error.message);
+    if (connection) connection.release();
+    res.status(500).json({ error: 'Failed to fetch roles' });
+  }
+});
+
+app.get('/api/roles/:roleId/permissions', async (req, res) => {
+  let connection;
+  try {
+    const { roleId } = req.params;
+    connection = await pool.getConnection();
+    const [permissions] = await connection.query(
+      `SELECT p.*, m.name as module_name FROM permissions p 
+       LEFT JOIN modules m ON p.module_id = m.id 
+       WHERE p.role_id = ?`,
+      [roleId]
+    );
+    connection.release();
+    res.json(permissions);
+  } catch (error) {
+    console.error('Error fetching permissions:', error.message);
+    if (connection) connection.release();
+    res.status(500).json({ error: 'Failed to fetch permissions' });
+  }
+});
+
+app.post('/api/roles/:roleId/permissions', async (req, res) => {
+  let connection;
+  try {
+    const { roleId } = req.params;
+    const { module_id, can_create, can_read, can_update, can_delete } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    await connection.query(
+      `INSERT INTO permissions (role_id, module_id, can_create, can_read, can_update, can_delete) 
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE can_create = ?, can_read = ?, can_update = ?, can_delete = ?`,
+      [roleId, module_id, can_create, can_read, can_update, can_delete, can_create, can_read, can_update, can_delete]
+    );
+    
+    connection.release();
+    res.json({ message: 'Permission updated successfully' });
+  } catch (error) {
+    console.error('Error updating permissions:', error.message);
+    if (connection) connection.release();
+    res.status(500).json({ error: 'Failed to update permissions' });
+  }
+});
+
+app.post('/api/auth/check-permission', async (req, res) => {
+  let connection;
+  try {
+    const { userId, module, action } = req.body;
+    
+    if (!userId || !module || !action) {
+      return res.status(400).json({ allowed: false, error: 'Missing required fields' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const [users] = await connection.query(
+      'SELECT role_id FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (users.length === 0) {
+      connection.release();
+      return res.status(401).json({ allowed: false, error: 'User not found' });
+    }
+    
+    const roleId = users[0].role_id;
+    
+    const [permissions] = await connection.query(
+      `SELECT * FROM permissions WHERE role_id = ? AND module_id = (SELECT id FROM modules WHERE name = ?)`,
+      [roleId, module]
+    );
+    
+    connection.release();
+    
+    if (permissions.length === 0) {
+      return res.json({ allowed: false });
+    }
+    
+    const permission = permissions[0];
+    let allowed = false;
+    
+    if (action === 'read') allowed = permission.can_read;
+    else if (action === 'create') allowed = permission.can_create;
+    else if (action === 'update') allowed = permission.can_update;
+    else if (action === 'delete') allowed = permission.can_delete;
+    
+    res.json({ allowed });
+  } catch (error) {
+    console.error('Error checking permission:', error.message);
+    if (connection) connection.release();
+    res.status(500).json({ error: 'Failed to check permission' });
+  }
+});
+
 app.get('/api/deals', async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
     const [rows] = await connection.query(`
-      SELECT d.*, c.company_name, ct.first_name, ct.last_name,
-             a.first_name as assignee_first_name, a.last_name as assignee_last_name
+      SELECT d.*, 
+             c.company_name, 
+             ct.first_name as contact_first_name, 
+             ct.last_name as contact_last_name,
+             ct.email as contact_email,
+             ct.phone as contact_phone,
+             ct.position as contact_position,
+             u.first_name as assignee_first_name, 
+             u.last_name as assignee_last_name
       FROM deals d 
       LEFT JOIN companies c ON d.company_id = c.id 
       LEFT JOIN contacts ct ON d.contact_id = ct.id 
-      LEFT JOIN contacts a ON d.assignee_id = a.id
+      LEFT JOIN users u ON d.assignee_id = u.id
       ORDER BY d.created_at DESC
     `);
     res.json(rows);
@@ -906,12 +1113,19 @@ app.get('/api/deals/:id', async (req, res) => {
     const { id } = req.params;
     connection = await pool.getConnection();
     const [rows] = await connection.query(`
-      SELECT d.*, c.company_name, ct.first_name, ct.last_name,
-             a.first_name as assignee_first_name, a.last_name as assignee_last_name
+      SELECT d.*, 
+             c.company_name, 
+             ct.first_name as contact_first_name, 
+             ct.last_name as contact_last_name,
+             ct.email as contact_email,
+             ct.phone as contact_phone,
+             ct.position as contact_position,
+             u.first_name as assignee_first_name, 
+             u.last_name as assignee_last_name
       FROM deals d 
       LEFT JOIN companies c ON d.company_id = c.id 
       LEFT JOIN contacts ct ON d.contact_id = ct.id 
-      LEFT JOIN contacts a ON d.assignee_id = a.id
+      LEFT JOIN users u ON d.assignee_id = u.id
       WHERE d.id = ?
     `, [id]);
     
@@ -961,26 +1175,33 @@ app.post('/api/deals', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: deal_name, deal_value' });
     }
 
-    if (!company_id) {
-      console.warn('⚠️ Missing company_id');
-      return res.status(400).json({ error: 'Missing required field: company_id' });
-    }
-
-    if (!contact_id) {
-      console.warn('⚠️ Missing contact_id');
-      return res.status(400).json({ error: 'Missing required field: contact_id' });
-    }
-
     connection = await pool.getConnection();
     
     const tagsString = Array.isArray(tags) ? tags.join(',') : tags || '';
+
+    const probabilityMap = {
+      'New': 10,
+      'Discovery': 20,
+      'Follow Up': 30,
+      'Inpipeline': 40,
+      'Conversation': 50,
+      'Proposal Sent': 60,
+      'Negotiation': 70,
+      'Qualified To Buy': 80,
+      'Won': 100,
+      'Lost': 0
+    };
+
+    let probability = probabilityMap[pipeline] || 10;
+    if (status === 'Won') probability = 100;
+    else if (status === 'Lost') probability = 0;
 
     const [result] = await connection.query(`
       INSERT INTO deals (
         deal_name, company_id, contact_id, pipeline, status, deal_value, currency, 
         period, period_value, due_date, expected_close_date, assignee_id,
-        follow_up_date, source, tags, priority, description
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        follow_up_date, source, tags, priority, description, probability
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       deal_name,
       company_id,
@@ -998,13 +1219,15 @@ app.post('/api/deals', async (req, res) => {
       source || null,
       tagsString,
       priority || 'Medium',
-      description || ''
+      description || '',
+      probability
     ]);
 
-    console.log('✅ Deal created successfully - ID:', result.insertId, 'for company_id:', company_id);
+    console.log('✅ Deal created successfully - ID:', result.insertId, 'for company_id:', company_id, 'with probability:', probability);
     res.json({ 
       message: 'Deal created successfully', 
-      id: result.insertId 
+      id: result.insertId,
+      probability: probability
     });
   } catch (error) {
     console.error('❌ Error creating deal:');
@@ -1050,10 +1273,34 @@ app.put('/api/deals/:id', async (req, res) => {
     console.log('📝 Updating deal ID:', id);
     console.log('📝 deal_name:', deal_name);
     console.log('📝 company_id:', company_id);
+    console.log('📝 new status:', status);
     
     if (!deal_name || !company_id) {
       return res.status(400).json({ error: 'deal_name and company_id are required' });
     }
+
+    const probabilityMap = {
+      'New': 10,
+      'Discovery': 20,
+      'Follow Up': 30,
+      'Inpipeline': 40,
+      'Conversation': 50,
+      'Proposal Sent': 60,
+      'Negotiation': 70,
+      'Qualified To Buy': 80,
+      'Won': 100,
+      'Lost': 0
+    };
+
+    let probability = probabilityMap[pipeline] || 10;
+    if (status === 'Won') probability = 100;
+    else if (status === 'Lost') probability = 0;
+
+    const [existingDeal] = await connection.query(
+      'SELECT status FROM deals WHERE id = ?',
+      [id]
+    );
+    const wasWon = existingDeal.length > 0 && existingDeal[0].status === 'Won';
 
     await connection.query(`
       UPDATE deals 
@@ -1061,7 +1308,7 @@ app.put('/api/deals/:id', async (req, res) => {
           period = ?, period_value = ?, contact_id = ?, 
           due_date = ?, expected_close_date = ?, assignee_id = ?,
           follow_up_date = ?, source = ?, tags = ?, priority = ?,
-          description = ?, company_id = ?, updated_at = NOW()
+          description = ?, company_id = ?, probability = ?, updated_at = NOW()
       WHERE id = ?
     `, [
       deal_name,
@@ -1081,10 +1328,68 @@ app.put('/api/deals/:id', async (req, res) => {
       priority || 'Medium',
       description || '',
       company_id,
+      probability,
       id
     ]);
 
-    res.json({ message: 'Deal updated successfully' });
+    if (status === 'Won' && !wasWon) {
+      const [company] = await connection.query('SELECT company_name FROM companies WHERE id = ?', [company_id]);
+      const companyName = company.length > 0 ? company[0].company_name : 'Company';
+
+      const [projectResult] = await connection.query(`
+        INSERT INTO projects (
+          name, deal_id, company_id, contact_id, budget, status, start_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())
+      `, [
+        `${deal_name} - Project`,
+        id,
+        company_id,
+        contact_id || null,
+        deal_value || null,
+        'Active'
+      ]);
+
+      const proposalNumber = `PROP-${Date.now()}`;
+      const [proposalResult] = await connection.query(`
+        INSERT INTO proposals (
+          proposal_number, title, client_id, contact_id, deal_id, status, total_amount, currency, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      `, [
+        proposalNumber,
+        `${deal_name} - Proposal`,
+        company_id,
+        contact_id || null,
+        id,
+        'Approved',
+        deal_value || null,
+        currency || 'USD'
+      ]);
+
+      const invoiceNumber = `INV-${Date.now()}`;
+      await connection.query(`
+        INSERT INTO invoices (
+          invoice_number, client_id, contact_id, deal_id, status, amount, currency, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      `, [
+        invoiceNumber,
+        company_id,
+        contact_id || null,
+        id,
+        'Draft',
+        deal_value || null,
+        currency || 'USD'
+      ]);
+
+      console.log('✅ Won deal auto-creation: Project ID:', projectResult.insertId, 'Proposal ID:', proposalResult.insertId);
+    } else if (status === 'Lost') {
+      console.log('📝 Deal marked as Lost:', deal_name);
+    }
+
+    res.json({ 
+      message: 'Deal updated successfully',
+      probability: probability,
+      status: status
+    });
   } catch (error) {
     console.error('❌ Error updating deal:', error.message);
     console.error('❌ Full error:', error);
@@ -1106,6 +1411,79 @@ app.delete('/api/deals/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting deal:', error.message);
     res.status(500).json({ error: 'Failed to delete deal', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.patch('/api/deals/:id/stage', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { pipeline, probability, status } = req.body;
+
+    if (!pipeline) {
+      return res.status(400).json({ error: 'Missing required field: pipeline' });
+    }
+
+    connection = await pool.getConnection();
+
+    const probabilityMap = {
+      'New': 10,
+      'Discovery': 20,
+      'Follow Up': 30,
+      'Inpipeline': 40,
+      'Conversation': 50,
+      'Proposal Sent': 60,
+      'Negotiation': 70,
+      'Qualified To Buy': 80,
+      'Won': 100,
+      'Lost': 0
+    };
+
+    let calculatedProbability = probability;
+    if (!calculatedProbability) {
+      if (status === 'Won') calculatedProbability = 100;
+      else if (status === 'Lost') calculatedProbability = 0;
+      else calculatedProbability = probabilityMap[pipeline] || 10;
+    }
+
+    await connection.query(`
+      UPDATE deals 
+      SET pipeline = ?, probability = ?, status = ?, updated_at = NOW()
+      WHERE id = ?
+    `, [pipeline, calculatedProbability, status || 'In Progress', id]);
+
+    res.json({ 
+      message: 'Deal stage updated successfully',
+      stage: pipeline,
+      probability: calculatedProbability
+    });
+  } catch (error) {
+    console.error('Error updating deal stage:', error.message);
+    res.status(500).json({ error: 'Failed to update deal stage', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/pipelines/:pipelineId/stages', async (req, res) => {
+  let connection;
+  try {
+    const { pipelineId } = req.params;
+    connection = await pool.getConnection();
+
+    const [stages] = await connection.query(`
+      SELECT id, stage_name as name, stage_order as order
+      FROM pipeline_stages 
+      WHERE pipeline_id = ? 
+      ORDER BY stage_order ASC
+    `, [pipelineId]);
+
+    res.json(stages);
+  } catch (error) {
+    console.error('Error fetching pipeline stages:', error.message);
+    res.status(500).json({ error: 'Failed to fetch pipeline stages' });
   } finally {
     if (connection) connection.release();
   }
@@ -1468,12 +1846,19 @@ app.get('/api/companies/:companyId/deals', async (req, res) => {
     const { companyId } = req.params;
     const connection = await pool.getConnection();
     const [rows] = await connection.query(`
-      SELECT d.*, c.company_name, ct.first_name, ct.last_name,
-             a.first_name as assignee_first_name, a.last_name as assignee_last_name
+      SELECT d.*, 
+             c.company_name, 
+             ct.first_name as contact_first_name, 
+             ct.last_name as contact_last_name,
+             ct.email as contact_email,
+             ct.phone as contact_phone,
+             ct.position as contact_position,
+             u.first_name as assignee_first_name, 
+             u.last_name as assignee_last_name
       FROM deals d 
       LEFT JOIN companies c ON d.company_id = c.id 
       LEFT JOIN contacts ct ON d.contact_id = ct.id 
-      LEFT JOIN contacts a ON d.assignee_id = a.id
+      LEFT JOIN users u ON d.assignee_id = u.id
       WHERE d.company_id = ?
       ORDER BY d.created_at DESC
     `, [companyId]);
@@ -1510,10 +1895,8 @@ app.get('/api/companies/:id', async (req, res) => {
     const [rows] = await connection.query(`
       SELECT 
         c.id, c.company_name, c.industry, c.email, c.phone, c.website, c.address, c.city, c.state, c.country,
-        c.employees, c.revenue, c.status, c.logo, c.created_at, c.updated_at, c.description, c.created_by, 
-        c.owner_id, u.first_name as owner_first_name, u.last_name as owner_last_name
+        c.employees, c.revenue, c.status, c.logo, c.created_at, c.updated_at, c.description
       FROM companies c
-      LEFT JOIN users u ON c.owner_id = u.id
       WHERE c.id = ?
     `, [id]);
     connection.release();
@@ -1548,11 +1931,11 @@ app.post('/api/companies', async (req, res) => {
     const [result] = await connection.query(
       `INSERT INTO companies 
        (company_name, email, phone, website, address, city, state, country, 
-        status, industry, description, logo, revenue, employees, owner_id) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        status, industry, description, logo, revenue, employees) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
       [company_name, email, phone, website || null, address || null, city || null, state || null, 
        country || null, status || 'Active', industry || null, description || null, logo || null, 
-       revenue || null, employees || null, owner || null]
+       revenue || null, employees || null]
     );
     
     const companyId = result.insertId;
@@ -1568,14 +1951,12 @@ app.post('/api/companies', async (req, res) => {
 app.put('/api/companies/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { company_name, email, phone, website, address, account_url, status, logo, owner, owner_id } = req.body;
+    const { company_name, email, phone, website, address, account_url, status, logo } = req.body;
     const connection = await pool.getConnection();
     
-    const ownerValue = owner_id || owner || null;
-    
     await connection.query(
-      'UPDATE companies SET company_name = ?, email = ?, phone = ?, website = ?, address = ?, account_url = ?, status = ?, logo = ?, owner_id = ?, updated_at = NOW() WHERE id = ?',
-      [company_name, email, phone, website, address, account_url, status, logo || null, ownerValue, id]
+      'UPDATE companies SET company_name = ?, email = ?, phone = ?, website = ?, address = ?, account_url = ?, status = ?, logo = ?, updated_at = NOW() WHERE id = ?',
+      [company_name, email, phone, website, address, account_url, status, logo || null, id]
     );
     
     connection.release();
@@ -1712,7 +2093,6 @@ app.get('/api/leads', async (req, res) => {
         c.address,
         c.city,
         c.state,
-        c.zip_code,
         c.country,
         c.email as company_email,
         c.phone as company_phone
@@ -1726,7 +2106,9 @@ app.get('/api/leads', async (req, res) => {
       name: r.lead_name,
       source: r.lead_source,
       status: r.lead_status,
-      company_id: r.company
+      company_id: r.company,
+      tags: r.tags ? (typeof r.tags === 'string' ? JSON.parse(r.tags) : r.tags) : [],
+      people_assigned: r.people_assigned ? (typeof r.people_assigned === 'string' ? JSON.parse(r.people_assigned) : r.people_assigned) : []
     }));
     res.json(formatted);
   } catch (error) {
@@ -1737,31 +2119,51 @@ app.get('/api/leads', async (req, res) => {
 
 app.post('/api/leads', async (req, res) => {
   try {
-    const { name, email, phone, company, source, status, rating, description } = req.body;
+    const { lead_name, name, email, phone, company, lead_source, source, lead_status, status, rating, notes, description, owner_id, value, currency, lead_type, industry, visibility, tags, people_assigned } = req.body;
     
-    if (!name) {
+    const leadName = lead_name || name;
+    if (!leadName) {
       return res.status(400).json({ error: 'Lead name is required' });
     }
+    
+    const numericValue = value ? parseFloat(value) : null;
+    const numericRating = rating ? parseInt(rating) : 5;
+    const numericOwnerId = owner_id ? parseInt(owner_id) : null;
+    const leadStatus = status || lead_status || 'New';
+    const leadVisibility = visibility || 'Public';
+    const tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
+    const peopleAssignedArray = Array.isArray(people_assigned) ? people_assigned : (people_assigned ? [people_assigned] : []);
     
     const connection = await pool.getConnection();
     
     const result = await connection.query(
-      'INSERT INTO leads (lead_name, email, phone, company, lead_source, lead_status, rating, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 
-      [name, email || null, phone || null, company || null, source || 'Website', status || 'New', rating || 5, description || null]
+      'INSERT INTO leads (lead_name, email, phone, company, lead_source, lead_status, rating, notes, owner_id, value, currency, lead_type, industry, visibility, tags, people_assigned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+      [leadName, email || null, phone || null, company || null, lead_source || source || 'Website', leadStatus, numericRating, notes || description || null, numericOwnerId, numericValue, currency || null, lead_type || null, industry || null, leadVisibility, JSON.stringify(tagsArray), JSON.stringify(peopleAssignedArray)]
     );
     
     connection.release();
-    res.json({ 
+    const responseData = {
       id: result[0].insertId,
-      name,
+      name: leadName,
+      lead_name: leadName,
       email,
       phone,
       company,
-      source: source || 'Website',
-      status: status || 'New',
-      rating: rating || 5,
+      source: lead_source || source || 'Website',
+      status: leadStatus,
+      rating: numericRating,
+      owner_id: numericOwnerId,
+      value: numericValue,
+      currency: currency || 'USD',
+      lead_type: lead_type || null,
+      industry: industry || null,
+      visibility: leadVisibility,
+      tags: tagsArray,
+      people_assigned: peopleAssignedArray,
+      notes: notes || description || null,
       message: 'Lead created successfully'
-    });
+    };
+    res.json(responseData);
   } catch (error) {
     console.error('Error creating lead:', error);
     res.status(500).json({ error: 'Failed to create lead', details: error.message });
@@ -1779,7 +2181,6 @@ app.get('/api/leads/:id', async (req, res) => {
         c.address,
         c.city,
         c.state,
-        c.zip_code,
         c.country,
         c.email as company_email,
         c.phone as company_phone
@@ -1799,7 +2200,9 @@ app.get('/api/leads/:id', async (req, res) => {
       name: lead.lead_name,
       source: lead.lead_source,
       status: lead.lead_status,
-      company_id: lead.company
+      company_id: lead.company,
+      tags: lead.tags ? (typeof lead.tags === 'string' ? JSON.parse(lead.tags) : lead.tags) : [],
+      people_assigned: lead.people_assigned ? (typeof lead.people_assigned === 'string' ? JSON.parse(lead.people_assigned) : lead.people_assigned) : []
     });
   } catch (error) {
     console.error(error);
@@ -1810,12 +2213,18 @@ app.get('/api/leads/:id', async (req, res) => {
 app.put('/api/leads/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { lead_name, email, phone, company, lead_source, lead_status, rating, notes } = req.body;
+    const { lead_name, email, phone, company, lead_source, lead_status, rating, notes, value, currency, lead_type, industry, visibility, tags, people_assigned, owner_id } = req.body;
     const connection = await pool.getConnection();
     
+    const numericValue = value ? parseFloat(value) : null;
+    const numericRating = rating ? parseInt(rating) : null;
+    const numericOwnerId = owner_id ? parseInt(owner_id) : null;
+    const tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
+    const peopleAssignedArray = Array.isArray(people_assigned) ? people_assigned : (people_assigned ? [people_assigned] : []);
+    
     await connection.query(
-      'UPDATE leads SET lead_name = ?, email = ?, phone = ?, company = ?, lead_source = ?, lead_status = ?, rating = ?, notes = ?, updated_at = NOW() WHERE id = ?',
-      [lead_name, email, phone, company || null, lead_source, lead_status, rating || 5, notes || null, id]
+      'UPDATE leads SET lead_name = ?, email = ?, phone = ?, company = ?, lead_source = ?, lead_status = ?, rating = ?, notes = ?, value = ?, currency = ?, lead_type = ?, industry = ?, visibility = ?, tags = ?, people_assigned = ?, owner_id = ?, updated_at = NOW() WHERE id = ?',
+      [lead_name, email, phone, company || null, lead_source, lead_status, numericRating || 5, notes || null, numericValue, currency || null, lead_type || null, industry || null, visibility || 'Public', JSON.stringify(tagsArray), JSON.stringify(peopleAssignedArray), numericOwnerId, id]
     );
     
     connection.release();
@@ -1836,6 +2245,104 @@ app.delete('/api/leads/:id', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete lead' });
+  }
+});
+
+app.post('/api/leads/:id/convert-complete', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { 
+      first_name, 
+      last_name, 
+      company_name, 
+      position, 
+      industry,
+      website,
+      address,
+      email,
+      phone
+    } = req.body;
+    
+    if (!first_name || !last_name || !company_name) {
+      return res.status(400).json({ error: 'Missing required fields: first_name, last_name, company_name' });
+    }
+    
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      const [lead] = await connection.query('SELECT * FROM leads WHERE id = ?', [id]);
+      if (lead.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ error: 'Lead not found' });
+      }
+      
+      const leadData = lead[0];
+      
+      const [existingCompany] = await connection.query(
+        'SELECT * FROM companies WHERE company_name = ?',
+        [company_name]
+      );
+      
+      let companyId;
+      
+      if (existingCompany.length > 0) {
+        companyId = existingCompany[0].id;
+      } else {
+        const [companyResult] = await connection.query(
+          'INSERT INTO companies (company_name, industry, email, phone, website, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [company_name, industry || null, email || leadData.email, phone || leadData.phone, website || null, address || null, 'Active']
+        );
+        companyId = companyResult.insertId;
+      }
+      
+      const [contactResult] = await connection.query(
+        'INSERT INTO contacts (first_name, last_name, email, phone, company_id, position, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [first_name, last_name, leadData.email, leadData.phone, companyId, position || '', 'Active']
+      );
+      
+      const contactId = contactResult.insertId;
+      
+      await connection.commit();
+      
+      res.json({
+        message: 'Lead converted successfully',
+        success: true,
+        data: {
+          contactId,
+          companyId,
+          contact: {
+            id: contactId,
+            first_name,
+            last_name,
+            email: leadData.email,
+            phone: leadData.phone,
+            company_id: companyId,
+            position,
+            status: 'Active'
+          },
+          company: {
+            id: companyId,
+            company_name,
+            industry,
+            email: email || leadData.email,
+            phone: phone || leadData.phone,
+            website,
+            address,
+            status: 'Active'
+          }
+        }
+      });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in complete lead conversion:', error.message);
+    res.status(500).json({ error: 'Failed to convert lead', details: error.message });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
@@ -1904,17 +2411,26 @@ app.post('/api/leads/:id/convert-to-company', async (req, res) => {
     }
     
     const leadData = lead[0];
-    const [result] = await connection.query(
-      'INSERT INTO companies (company_name, industry, email, phone, website, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [company_name, industry || null, email || leadData.email, phone || leadData.phone, website || null, address || null, companyStatus || 'Active']
+    
+    const [existingCompany] = await connection.query(
+      'SELECT * FROM companies WHERE company_name = ?',
+      [company_name]
     );
     
-    const companyId = result.insertId;
+    let companyId;
+    let company;
     
-    res.json({
-      message: 'Lead converted to company successfully',
-      companyId,
-      company: {
+    if (existingCompany.length > 0) {
+      companyId = existingCompany[0].id;
+      company = existingCompany[0];
+    } else {
+      const [result] = await connection.query(
+        'INSERT INTO companies (company_name, industry, email, phone, website, address, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [company_name, industry || null, email || leadData.email, phone || leadData.phone, website || null, address || null, companyStatus || 'Active']
+      );
+      
+      companyId = result.insertId;
+      company = {
         id: companyId,
         company_name,
         industry,
@@ -1923,11 +2439,53 @@ app.post('/api/leads/:id/convert-to-company', async (req, res) => {
         website,
         address,
         status: companyStatus || 'Active'
-      }
+      };
+    }
+    
+    res.json({
+      message: 'Lead converted to company successfully',
+      companyId,
+      company: company,
+      isExisting: existingCompany.length > 0
     });
   } catch (error) {
     console.error('Error converting lead to company:', error.message);
     res.status(500).json({ error: 'Failed to convert lead to company', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/leads/:id/status', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+    
+    const validStatuses = ['New', 'Contacted', 'Qualified', 'Unqualified'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    }
+    
+    connection = await pool.getConnection();
+    
+    await connection.query(
+      'UPDATE leads SET lead_status = ?, status = ? WHERE id = ?',
+      [status, status, id]
+    );
+    
+    res.json({
+      message: 'Lead status updated successfully',
+      id,
+      status
+    });
+  } catch (error) {
+    console.error('Error updating lead status:', error.message);
+    res.status(500).json({ error: 'Failed to update lead status', details: error.message });
   } finally {
     if (connection) connection.release();
   }
@@ -1943,6 +2501,10 @@ app.post('/api/leads/:id/convert-to-deal', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: deal_name, deal_value' });
     }
     
+    if (!contact_id || !company_id) {
+      return res.status(400).json({ error: 'Deal must be linked to both company and contact' });
+    }
+    
     connection = await pool.getConnection();
     
     const [lead] = await connection.query('SELECT * FROM leads WHERE id = ?', [id]);
@@ -1952,7 +2514,7 @@ app.post('/api/leads/:id/convert-to-deal', async (req, res) => {
     
     const [result] = await connection.query(
       'INSERT INTO deals (deal_name, company_id, contact_id, deal_value, currency, pipeline, status, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [deal_name, company_id || null, contact_id || null, deal_value, currency || 'USD', pipeline || null, dealStatus || 'Pending', description || null]
+      [deal_name, company_id, contact_id, deal_value, currency || 'USD', pipeline || null, dealStatus || 'Pending', description || null]
     );
     
     const dealId = result.insertId;
@@ -4370,6 +4932,66 @@ app.post('/api/proposals/:id/convert-to-invoice', async (req, res) => {
   }
 });
 
+app.post('/api/proposals/:id/convert-to-contract', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { created_by } = req.body;
+    
+    console.log(`🔄 Converting proposal ${id} to contract...`);
+    
+    connection = await pool.getConnection();
+    
+    const [proposal] = await connection.query(`
+      SELECT * FROM proposals WHERE id = ?
+    `, [id]);
+    
+    if (proposal.length === 0) {
+      console.error(`❌ Proposal ${id} not found`);
+      return res.status(404).json({ error: 'Proposal not found' });
+    }
+    
+    const prop = proposal[0];
+    console.log(`✅ Found proposal:`, prop.id, prop.title, prop.total_amount);
+    
+    const contractSubject = `${prop.title} - Contract`;
+    const startDate = new Date().toISOString().split('T')[0];
+    const endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    console.log(`📝 Creating contract with:`, { contractSubject, startDate, endDate, client_id: prop.client_id });
+    
+    const [result] = await connection.query(`
+      INSERT INTO contracts (
+        subject, start_date, end_date, client_id, contract_type, 
+        contract_value, description, created_by, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Draft')
+    `, [
+      contractSubject,
+      startDate,
+      endDate,
+      prop.client_id,
+      'Service Agreement',
+      prop.total_amount || 0,
+      prop.description || prop.title,
+      created_by || null
+    ]);
+    
+    const contractId = result.insertId;
+    console.log(`✅ Contract created successfully! ID: ${contractId}`);
+    
+    res.json({ 
+      message: 'Proposal converted to contract successfully',
+      contractId,
+      contractSubject
+    });
+  } catch (error) {
+    console.error('❌ Error converting proposal to contract:', error.message);
+    res.status(500).json({ error: 'Failed to convert proposal to contract', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
 app.post('/api/proposals/:id/submit', async (req, res) => {
   let connection;
   try {
@@ -4807,8 +5429,8 @@ app.post('/api/estimations/:id/convert-to-invoice', async (req, res) => {
     const [result] = await connection.query(`
       INSERT INTO invoices (
         invoice_number, client_id, project_id, amount, currency,
-        invoice_date, due_date, status, description, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        invoice_date, open_till, status, description
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       invoice_number,
       est.client_id,
@@ -4818,8 +5440,7 @@ app.post('/api/estimations/:id/convert-to-invoice', async (req, res) => {
       new Date().toISOString().split('T')[0],
       est.expiry_date,
       'Draft',
-      est.description,
-      est.estimate_by
+      est.description
     ]);
 
     res.json({
@@ -5055,6 +5676,66 @@ app.delete('/api/contracts/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting contract:', error.message);
     res.status(500).json({ error: 'Failed to delete contract', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/contracts/:id/convert-to-estimation', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { created_by } = req.body;
+    
+    console.log(`🔄 Converting contract ${id} to estimation...`);
+    
+    connection = await pool.getConnection();
+    
+    const [contract] = await connection.query(`
+      SELECT * FROM contracts WHERE id = ?
+    `, [id]);
+    
+    if (contract.length === 0) {
+      console.error(`❌ Contract ${id} not found`);
+      return res.status(404).json({ error: 'Contract not found' });
+    }
+    
+    const cont = contract[0];
+    console.log(`✅ Found contract:`, cont.id, cont.subject, cont.contract_value);
+    
+    const estimationNumber = `EST-${Date.now()}`;
+    const estimateDate = new Date().toISOString().split('T')[0];
+    const expiryDate = cont.end_date;
+    
+    console.log(`📝 Creating estimation with:`, { estimationNumber, estimateDate, expiryDate, client_id: cont.client_id, amount: cont.contract_value });
+    
+    const [result] = await connection.query(`
+      INSERT INTO estimations (
+        client_id, estimation_number, amount, currency,
+        estimate_date, expiry_date, status, description, estimate_by
+      ) VALUES (?, ?, ?, ?, ?, ?, 'Draft', ?, ?)
+    `, [
+      cont.client_id,
+      estimationNumber,
+      cont.contract_value || 0,
+      'USD',
+      estimateDate,
+      expiryDate,
+      cont.description || cont.subject,
+      created_by || null
+    ]);
+    
+    const estimationId = result.insertId;
+    console.log(`✅ Estimation created successfully! ID: ${estimationId}`);
+    
+    res.json({ 
+      message: 'Contract converted to estimation successfully',
+      estimationId,
+      estimationNumber
+    });
+  } catch (error) {
+    console.error('❌ Error converting contract to estimation:', error.message);
+    res.status(500).json({ error: 'Failed to convert contract to estimation', details: error.message });
   } finally {
     if (connection) connection.release();
   }
