@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, MoreVertical, Plus, Search, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const CrmCompaniesPage = () => {
   const navigate = useNavigate();
@@ -74,14 +75,14 @@ const CrmCompaniesPage = () => {
       });
       if (response.ok) {
         const data = await response.json();
-        alert(`✅ ${data.count} mock companies added successfully!`);
+        showSuccessToast(`${data.count} mock companies added successfully!`);
         fetchCompanies();
       } else {
-        alert('Failed to seed mock companies');
+        showErrorToast('Failed to seed mock companies');
       }
     } catch (error) {
       console.error('Error seeding companies:', error);
-      alert('Error seeding mock companies: ' + error.message);
+      showErrorToast('Error seeding mock companies: ' + error.message);
     }
   };
 
@@ -105,13 +106,13 @@ const CrmCompaniesPage = () => {
           setCompanies(companies.filter(c => c.id !== companyId));
           setFilteredCompanies(filteredCompanies.filter(c => c.id !== companyId));
           setDeleteConfirm(null);
-          alert('Company deleted successfully!');
+          showSuccessToast('Company deleted successfully!');
         } else {
-          alert('Failed to delete company');
+          showErrorToast('Failed to delete company');
         }
       } catch (error) {
         console.error('Error deleting company:', error);
-        alert('Error deleting company: ' + error.message);
+        showErrorToast('Error deleting company: ' + error.message);
       } finally {
         setIsDeleting(false);
       }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, X, Home, Users, Building2, Settings, BarChart3, FileText, Briefcase, MessageCircle, Shield, Trash2, Users2, FileJson, MapPin, MessageSquare, HelpCircle, Lock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { isSidebarItemVisible, isModuleAccessible, getMenuItemAccess } from '../utils/roleBasedAccess';
+import { showInfoToast } from '../utils/toast';
 
 const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
   const { user } = useAuth();
@@ -37,12 +38,15 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       return null;
     }
     
+    const handleClick = () => {
+      showInfoToast(`Navigating to ${label}...`);
+      onNavigate(page);
+      if (toggleSidebar) toggleSidebar();
+    };
+    
     return (
       <button
-        onClick={() => {
-          onNavigate(page);
-          if (toggleSidebar) toggleSidebar();
-        }}
+        onClick={handleClick}
         title={isViewOnly ? 'View-only access' : ''}
         className={`menu-item w-full flex items-center gap-3 px-6 py-2 text-sm rounded-md transition-smooth ${
           currentPage === page
@@ -72,8 +76,8 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
 
   const mainMenuItems = (
     <>
-      <SubmenuItem icon={Home} label="Deals Dashboard" page="deals" />
-      <SubmenuItem icon={Users} label="Leads Dashboard" page="leads-dashboard" />
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={Home} label="Deals Dashboard" page="deals" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={Users} label="Leads Dashboard" page="leads-dashboard" />}
       <SubmenuItem icon={Briefcase} label="Project Dashboard" page="projects-dashboard" />
     </>
   );
@@ -100,38 +104,38 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       <SubmenuItem icon={Home} label="To Do" page="todo" />
       <SubmenuItem icon={Home} label="Notes" page="notes" />
       <SubmenuItem icon={Home} label="File Manager" page="file-manager" />
-      <SubmenuItem icon={Home} label="Social Feed" page="social-feed" />
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={Home} label="Social Feed" page="social-feed" />}
       <SubmenuItem icon={Home} label="Kanban" page="kanban" />
-      <SubmenuItem icon={Home} label="Invoices" page="invoices" />
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={Home} label="Invoices" page="invoices" />}
     </>
   );
 
   const crmMenuItems = (
     <>
-      <SubmenuItem icon={Users} label="Contacts" page="contacts" moduleKey="Contacts" />
-      <SubmenuItem icon={Building2} label="Companies" page="companies" moduleKey="Companies" />
-      <SubmenuItem icon={FileText} label="Deals" page="deals-list" moduleKey="Deals" />
-      <SubmenuItem icon={Users} label="Leads" page="leads" moduleKey="Leads" />
-      <SubmenuItem icon={Briefcase} label="Pipeline" page="pipeline" moduleKey="Pipelines" />
-      <SubmenuItem icon={FileText} label="Campaign" page="campaign" moduleKey="Campaign" />
-      <SubmenuItem icon={FileText} label="Projects" page="projects" moduleKey="Projects" />
-      <SubmenuItem icon={FileText} label="Tasks" page="tasks" moduleKey="Tasks" />
-      <SubmenuItem icon={FileText} label="Proposals" page="proposals" moduleKey="Proposals" />
-      <SubmenuItem icon={FileText} label="Contracts" page="contracts" moduleKey="Contracts" />
-      <SubmenuItem icon={FileText} label="Estimations" page="estimations" moduleKey="Estimations" />
-      <SubmenuItem icon={FileText} label="Invoices" page="invoices" moduleKey="Invoices" />
-      <SubmenuItem icon={FileText} label="Payments" page="payments" moduleKey="Payments" />
-      <SubmenuItem icon={BarChart3} label="Analytics" page="analytics" moduleKey="Analytics" />
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={Users} label="Contacts" page="contacts" moduleKey="Contacts" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={Building2} label="Companies" page="companies" moduleKey="Companies" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={FileText} label="Deals" page="deals-list" moduleKey="Deals" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={Users} label="Leads" page="leads" moduleKey="Leads" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={Briefcase} label="Pipeline" page="pipeline" moduleKey="Pipelines" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={FileText} label="Campaign" page="campaign" moduleKey="Campaign" />}
+      {(user?.role === 'Project Manager' || user?.role === 'Employee') && <SubmenuItem icon={FileText} label="Projects" page="projects" moduleKey="Projects" />}
+      {(user?.role === 'Project Manager' || user?.role === 'Employee') && <SubmenuItem icon={FileText} label="Tasks" page="tasks" moduleKey="Tasks" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={FileText} label="Proposals" page="proposals" moduleKey="Proposals" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={FileText} label="Contracts" page="contracts" moduleKey="Contracts" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={FileText} label="Estimations" page="estimations" moduleKey="Estimations" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={FileText} label="Invoices" page="invoices" moduleKey="Invoices" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={FileText} label="Payments" page="payments" moduleKey="Payments" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={BarChart3} label="Analytics" page="analytics" moduleKey="Analytics" />}
       <SubmenuItem icon={FileText} label="Activities" page="activities" moduleKey="Activities" />
     </>
   );
 
   const reportsItems = (
     <>
-      <SubmenuItem icon={BarChart3} label="Lead Reports" page="lead-report" moduleKey="Leads" />
-      <SubmenuItem icon={BarChart3} label="Deal Reports" page="deal-report" moduleKey="Deals" />
-      <SubmenuItem icon={BarChart3} label="Contact Reports" page="contact-report" moduleKey="Contacts" />
-      <SubmenuItem icon={BarChart3} label="Company Reports" page="company-report" moduleKey="Companies" />
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={BarChart3} label="Lead Reports" page="lead-report" moduleKey="Leads" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={BarChart3} label="Deal Reports" page="deal-report" moduleKey="Deals" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={BarChart3} label="Contact Reports" page="contact-report" moduleKey="Contacts" />}
+      {user?.role !== 'Project Manager' && user?.role !== 'Employee' && <SubmenuItem icon={BarChart3} label="Company Reports" page="company-report" moduleKey="Companies" />}
       <SubmenuItem icon={BarChart3} label="Project Reports" page="project-report" moduleKey="Projects" />
       <SubmenuItem icon={BarChart3} label="Task Reports" page="task-report" moduleKey="Tasks" />
     </>
@@ -141,6 +145,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
     <>
       <button
         onClick={() => {
+          showInfoToast('Navigating to Manage Users...');
           onNavigate('manage-users');
           if (toggleSidebar) toggleSidebar();
         }}
