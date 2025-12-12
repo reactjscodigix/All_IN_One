@@ -6,6 +6,7 @@ import AddNewDealModal from './AddNewDealModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { dealsAPI, contactsAPI, companiesAPI, projectAPI } from '../services/api';
 import projectsData from '../data/crmProjectsData.json';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const PIPELINE_STAGE_ORDER = [
   'New',
@@ -338,9 +339,12 @@ const CrmDealsPage = () => {
         }
         
         setIsModalOpen(false);
+        showSuccessToast(`Deal "${formData.deal_name}" created successfully!`);
       }
     } catch (err) {
-      throw new Error(err.message || 'Failed to create deal');
+      const errorMessage = err.message || 'Failed to create deal';
+      showErrorToast(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -384,9 +388,11 @@ const CrmDealsPage = () => {
       setStageStats(updatedStats);
       
       setDeleteConfirm({ isOpen: false, deal: null, isDeleting: false });
+      showSuccessToast(`Deal "${deleteConfirm.deal.company}" deleted successfully!`);
     } catch (err) {
       console.error('Failed to delete deal:', err);
       setDeleteConfirm(prev => ({ ...prev, isDeleting: false }));
+      showErrorToast('Failed to delete deal');
     }
   };
 
@@ -462,8 +468,11 @@ const CrmDealsPage = () => {
       
       setIsEditModalOpen(false);
       setSelectedDealToEdit(null);
+      showSuccessToast(`Deal "${formData.deal_name || 'Unknown'}" updated successfully!`);
     } catch (err) {
-      throw new Error(err.message || 'Failed to update deal');
+      const errorMessage = err.message || 'Failed to update deal';
+      showErrorToast(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -560,8 +569,10 @@ const CrmDealsPage = () => {
         }
         return newStat;
       }));
+      showSuccessToast(`Deal "${dealToMove.company}" moved to ${toStage}!`);
     } catch (err) {
       console.error('Failed to move deal:', err);
+      showErrorToast('Failed to move deal');
     }
   };
 
@@ -584,20 +595,10 @@ const CrmDealsPage = () => {
         if (stat.stage === 'Won') return { ...stat, leads: stat.leads + 1, value: stat.value + deal.value };
         return stat;
       }));
-      Swal.fire({
-        icon: 'success',
-        title: 'Deal Won!',
-        text: `${deal.company} has been successfully moved to Won stage!`,
-        confirmButtonColor: '#ef4444',
-        confirmButtonText: 'Great!',
-        timer: 3000,
-        timerProgressBar: true,
-        toast: true,
-        position: 'top-end'
-      });
+      showSuccessToast(`Deal "${deal.company}" won successfully!`);
     } catch (err) {
       console.error('Failed to win deal:', err);
-      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to move deal to Won stage', confirmButtonColor: '#ef4444' });
+      showErrorToast('Failed to move deal to Won stage');
     }
   };
 

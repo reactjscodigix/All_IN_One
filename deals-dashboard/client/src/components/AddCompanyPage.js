@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, ChevronDown, X, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AddNewDealModal from './AddNewDealModal';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const AddCompanyPage = () => {
   const fileInputRef = useRef(null);
@@ -433,8 +434,11 @@ const AddCompanyPage = () => {
           }
         }
       });
+      showSuccessToast(`Company "${companyData.company_name}" ${isEditMode ? 'updated' : 'created'} successfully!`);
     } catch (err) {
-      setError(err.message || `Failed to ${isEditMode ? 'update' : 'create'} company`);
+      const errorMessage = err.message || `Failed to ${isEditMode ? 'update' : 'create'} company`;
+      setError(errorMessage);
+      showErrorToast(errorMessage);
       console.error('Form submission error:', err);
     } finally {
       setIsLoading(false);

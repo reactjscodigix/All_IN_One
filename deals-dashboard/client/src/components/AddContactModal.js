@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Plus } from 'lucide-react';
 import AddNewDealModal from './AddNewDealModal';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEditMode = false, autoFillCompanyId = null, autoFillCompanyName = null }) => {
   const [companies, setCompanies] = useState([]);
@@ -237,8 +238,10 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
       setIsDealFormOpen(false);
       fetchDeals();
+      showSuccessToast(`Deal "${dealData.deal_name}" created successfully!`);
     } catch (err) {
       console.error('Error creating deal:', err);
+      showErrorToast('Failed to create deal');
       throw err;
     }
   };

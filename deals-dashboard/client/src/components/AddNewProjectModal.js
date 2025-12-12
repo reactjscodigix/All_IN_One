@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { projectAPI } from '../services/api';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -183,9 +184,12 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
       if (onSuccess) {
         onSuccess();
       }
+      showSuccessToast(`Project "${formData.name}" created successfully!`);
       handleCancel();
     } catch (err) {
-      setError(err.message || 'Failed to create project');
+      const errorMessage = err.message || 'Failed to create project';
+      setError(errorMessage);
+      showErrorToast(errorMessage);
       console.error('Form submission error:', err);
     } finally {
       setIsLoading(false);

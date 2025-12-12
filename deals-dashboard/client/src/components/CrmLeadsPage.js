@@ -4,6 +4,7 @@ import { Search, Filter, Plus, MoreVertical } from 'lucide-react';
 import leadsData from '../data/crmLeadsData.json';
 import AddNewLeadModal from './AddNewLeadModal';
 import { leadsAPI, companiesAPI } from '../services/api';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const CrmLeadsPage = () => {
   const navigate = useNavigate();
@@ -139,9 +140,12 @@ const CrmLeadsPage = () => {
         }
         
         setIsModalOpen(false);
+        showSuccessToast(`Lead "${displayName}" created successfully!`);
       }
     } catch (err) {
-      throw new Error(err.message || 'Failed to create lead');
+      const errorMessage = err.message || 'Failed to create lead';
+      showErrorToast(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 
@@ -156,10 +160,17 @@ const CrmLeadsPage = () => {
     setOpenMenuId(null);
   };
 
-  const handleDeleteLead = (leadId) => {
+  const handleDeleteLead = async (leadId) => {
     if (window.confirm('Are you sure you want to delete this lead?')) {
-      setLeads(prev => prev.filter(l => l.id !== leadId));
-      setOpenMenuId(null);
+      try {
+        await leadsAPI.delete(leadId);
+        const deletedLead = leads.find(l => l.id === leadId);
+        setLeads(prev => prev.filter(l => l.id !== leadId));
+        setOpenMenuId(null);
+        showSuccessToast(`Lead "${deletedLead?.name || 'Unknown'}" deleted successfully!`);
+      } catch (err) {
+        showErrorToast('Failed to delete lead');
+      }
     }
   };
 
@@ -171,6 +182,7 @@ const CrmLeadsPage = () => {
     };
     setLeads(prev => [...prev, clonedLead]);
     setOpenMenuId(null);
+    showSuccessToast(`Lead "${lead.name}" cloned successfully!`);
   };
 
   const handleConvertLead = (lead) => {

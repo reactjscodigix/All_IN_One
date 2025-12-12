@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, Trash2, Eye } from 'lucide-react';
 import { projectAPI } from '../services/api';
 import AddNewProjectModal from './AddNewProjectModal';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const ProjectsListPage = ({ onProjectSelect }) => {
   const [projects, setProjects] = useState([]);
@@ -30,10 +31,13 @@ const ProjectsListPage = ({ onProjectSelect }) => {
   const handleDeleteProject = async (projectId) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
+        const projectToDelete = projects.find(p => p.id === projectId);
         await projectAPI.delete(projectId);
         fetchProjects();
+        showSuccessToast(`Project "${projectToDelete?.name || 'Unknown'}" deleted successfully!`);
       } catch (err) {
         console.error('Error deleting project:', err);
+        showErrorToast('Failed to delete project');
       }
     }
   };

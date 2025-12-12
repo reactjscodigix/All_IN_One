@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin, Plus, MessageCircle, Users, ChevronDown, X, Search
 import { useNavigate } from 'react-router-dom';
 import AddContactModal from './AddContactModal';
 import ContactActionDropdown from './ContactActionDropdown';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const Contacts = () => {
   const navigate = useNavigate();
@@ -212,14 +213,17 @@ const Contacts = () => {
         const result = await response.json();
         setIsModalOpen(false);
         await fetchContacts();
+        const contactName = `${formData.first_name} ${formData.last_name}`;
+        showSuccessToast(`Contact "${contactName}" created successfully!`);
         navigate('/contact-details', { state: { contactId: result.id } });
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Failed to create contact'}`);
+        const errorMessage = error.error || 'Failed to create contact';
+        showErrorToast(errorMessage);
       }
     } catch (error) {
       console.error('Error creating contact:', error);
-      alert('Error creating contact. Check console for details.');
+      showErrorToast('Error creating contact');
     }
   };
 
@@ -230,21 +234,23 @@ const Contacts = () => {
 
   const handleDelete = async (contactId) => {
     try {
+      const contactToDelete = contacts.find(c => c.id === contactId);
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${apiUrl}/contacts/${contactId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        alert('Contact deleted successfully!');
         fetchContacts();
+        showSuccessToast(`Contact "${contactToDelete?.name || 'Unknown'}" deleted successfully!`);
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Failed to delete contact'}`);
+        const errorMessage = error.error || 'Failed to delete contact';
+        showErrorToast(errorMessage);
       }
     } catch (error) {
       console.error('Error deleting contact:', error);
-      alert('Error deleting contact. Check console for details.');
+      showErrorToast('Error deleting contact');
     }
   };
 
@@ -264,17 +270,19 @@ const Contacts = () => {
       });
 
       if (response.ok) {
-        alert('Contact updated successfully!');
         setIsEditModalOpen(false);
         setSelectedContact(null);
-        fetchContacts();
+        await fetchContacts();
+        const contactName = `${formData.first_name} ${formData.last_name}`;
+        showSuccessToast(`Contact "${contactName}" updated successfully!`);
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Failed to update contact'}`);
+        const errorMessage = error.error || 'Failed to update contact';
+        showErrorToast(errorMessage);
       }
     } catch (error) {
       console.error('Error updating contact:', error);
-      alert('Error updating contact. Check console for details.');
+      showErrorToast('Error updating contact');
     }
   };
 
