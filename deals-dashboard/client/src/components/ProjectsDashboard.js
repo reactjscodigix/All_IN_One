@@ -451,7 +451,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 gap-4 mb-6">
         <div className="chart-container transition-smooth">
           <WonDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
         </div>

@@ -704,6 +704,26 @@ async function initializeDatabase() {
         INDEX idx_created_at (created_at)
       )
     `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS plans (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        plan_name VARCHAR(255) NOT NULL,
+        plan_type VARCHAR(100) NOT NULL,
+        price DECIMAL(15, 2) NOT NULL DEFAULT 0,
+        currency VARCHAR(10) DEFAULT 'USD',
+        total_subscribers INT DEFAULT 0,
+        description LONGTEXT,
+        features JSON,
+        status ENUM('Active', 'Inactive', 'Archived') DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_plan_name (plan_name),
+        INDEX idx_plan_type (plan_type),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
+      )
+    `);
     
     console.log('✓ All tables initialized successfully');
     
@@ -2085,7 +2105,7 @@ app.post('/api/plans', async (req, res) => {
     
     const positionValue = positionMap[planPosition] !== undefined ? positionMap[planPosition] : null;
 
-    await connection.query(
+    const result = await connection.query(
       `INSERT INTO company_plans 
       (plan_name, plan_type, plan_position, plan_currency, plan_currency_free, discount_type, discount, 
        limitations_invoices, max_customers, product, supplier, modules, access_trial, trial_days, status) 
@@ -2110,7 +2130,10 @@ app.post('/api/plans', async (req, res) => {
     );
 
     connection.release();
-    res.json({ message: 'Plan created successfully' });
+    res.json({ 
+      message: 'Plan created successfully',
+      planId: result[0].insertId
+    });
   } catch (error) {
     console.error('Error creating plan:', error.code || error.message, error.sql);
     res.status(500).json({ error: 'Failed to create plan', details: error.message });
@@ -2119,13 +2142,161 @@ app.post('/api/plans', async (req, res) => {
 
 app.get('/api/plans', async (req, res) => {
   try {
+    const { search = '', status = '', planType = '', sortBy = 'created_at', order = 'DESC', page = 1, limit = 10 } = req.query;
     const connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT * FROM company_plans ORDER BY created_at DESC');
+    
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const validSortFields = ['plan_name', 'plan_type', 'plan_currency', 'created_at', 'status'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'created_at';
+    const orderDirection = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    
+    let whereClause = '1=1';
+    const params = [];
+    
+    if (search) {
+      whereClause += ' AND (plan_name LIKE ? OR plan_type LIKE ? OR product LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+    
+    if (status && status !== 'all') {
+      whereClause += ' AND status = ?';
+      params.push(status);
+    }
+    
+    if (planType && planType !== 'all') {
+      whereClause += ' AND plan_type = ?';
+      params.push(planType);
+    }
+    
+    const totalCountQuery = `SELECT COUNT(*) as total FROM company_plans WHERE ${whereClause}`;
+    const [countResult] = await connection.query(totalCountQuery, params);
+    const total = countResult[0].total;
+    
+    const query = `
+      SELECT * FROM company_plans 
+      WHERE ${whereClause}
+      ORDER BY ${sortField} ${orderDirection}
+      LIMIT ? OFFSET ?
+    `;
+    
+    const [rows] = await connection.query(query, [...params, parseInt(limit), offset]);
     connection.release();
-    res.json(rows);
+    
+    res.json({
+      data: rows,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch plans' });
+  }
+});
+
+app.get('/api/plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const connection = await pool.getConnection();
+    const [rows] = await connection.query('SELECT * FROM company_plans WHERE id = ?', [id]);
+    connection.release();
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch plan' });
+  }
+});
+
+app.put('/api/plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      planName,
+      planType,
+      planPosition,
+      planCurrency,
+      planCurrencyFree,
+      discountType,
+      discount,
+      limitationsInvoices,
+      maxCustomers,
+      product,
+      supplier,
+      planModules,
+      accessTrial,
+      trialDays,
+      status,
+    } = req.body;
+
+    const connection = await pool.getConnection();
+    
+    const modulesString = Object.keys(planModules || {})
+      .filter(key => planModules[key])
+      .join(',');
+
+    const positionMap = {
+      'Basic': 1,
+      'Standard': 2,
+      'Premium': 3,
+      'Select': null
+    };
+    
+    const positionValue = positionMap[planPosition] !== undefined ? positionMap[planPosition] : null;
+
+    await connection.query(
+      `UPDATE company_plans SET 
+       plan_name = ?, plan_type = ?, plan_position = ?, plan_currency = ?, plan_currency_free = ?, 
+       discount_type = ?, discount = ?, limitations_invoices = ?, max_customers = ?, product = ?, 
+       supplier = ?, modules = ?, access_trial = ?, trial_days = ?, status = ?, updated_at = NOW()
+       WHERE id = ?`,
+      [
+        planName,
+        planType,
+        positionValue,
+        planCurrency,
+        planCurrencyFree || null,
+        discountType || null,
+        discount || null,
+        limitationsInvoices || null,
+        maxCustomers || null,
+        product || null,
+        supplier || null,
+        modulesString,
+        accessTrial ? 1 : 0,
+        trialDays === 'Select' ? null : trialDays,
+        status,
+        id
+      ]
+    );
+
+    connection.release();
+    res.json({ message: 'Plan updated successfully' });
+  } catch (error) {
+    console.error('Error updating plan:', error.code || error.message, error.sql);
+    res.status(500).json({ error: 'Failed to update plan', details: error.message });
+  }
+});
+
+app.delete('/api/plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const connection = await pool.getConnection();
+    
+    await connection.query('DELETE FROM company_plans WHERE id = ?', [id]);
+    
+    connection.release();
+    res.json({ message: 'Plan deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting plan:', error);
+    res.status(500).json({ error: 'Failed to delete plan', details: error.message });
   }
 });
 
@@ -6592,6 +6763,232 @@ app.delete('/api/folders/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting folder:', error.message);
     res.status(500).json({ error: 'Failed to delete folder' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/plans', async (req, res) => {
+  let connection;
+  try {
+    const { search = '', status = '', planType = '', sortBy = 'created_at', order = 'DESC', page = 1, limit = 10 } = req.query;
+    
+    connection = await pool.getConnection();
+    
+    let query = 'SELECT * FROM plans WHERE 1=1';
+    let countQuery = 'SELECT COUNT(*) as total FROM plans WHERE 1=1';
+    const params = [];
+    const countParams = [];
+    
+    if (search) {
+      query += ' AND plan_name LIKE ?';
+      countQuery += ' AND plan_name LIKE ?';
+      const searchParam = `%${search}%`;
+      params.push(searchParam);
+      countParams.push(searchParam);
+    }
+    
+    if (status) {
+      query += ' AND status = ?';
+      countQuery += ' AND status = ?';
+      params.push(status);
+      countParams.push(status);
+    }
+    
+    if (planType) {
+      query += ' AND plan_type = ?';
+      countQuery += ' AND plan_type = ?';
+      params.push(planType);
+      countParams.push(planType);
+    }
+    
+    const [countResult] = await connection.query(countQuery, countParams);
+    const total = countResult[0].total;
+    const pages = Math.ceil(total / limit);
+    
+    const offset = (page - 1) * limit;
+    const allowedSortFields = ['id', 'plan_name', 'plan_type', 'price', 'status', 'created_at', 'updated_at'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
+    const sortOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    
+    query += ` ORDER BY ${sortField} ${sortOrder} LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), offset);
+    
+    const [plans] = await connection.query(query, params);
+    
+    res.json({
+      success: true,
+      data: plans,
+      pagination: {
+        total,
+        pages,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching plans:', error.message);
+    res.status(500).json({ error: 'Failed to fetch plans', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.get('/api/plans/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [plans] = await connection.query('SELECT * FROM plans WHERE id = ?', [id]);
+    
+    if (plans.length === 0) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+    
+    res.json({ success: true, data: plans[0] });
+  } catch (error) {
+    console.error('Error fetching plan:', error.message);
+    res.status(500).json({ error: 'Failed to fetch plan', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.post('/api/plans', async (req, res) => {
+  let connection;
+  try {
+    const { plan_name, plan_type, price, currency, description, features, status } = req.body;
+    
+    if (!plan_name || !plan_type) {
+      return res.status(400).json({ error: 'Missing required fields: plan_name, plan_type' });
+    }
+    
+    connection = await pool.getConnection();
+    
+    const featuresJson = typeof features === 'string' ? features : JSON.stringify(features || []);
+    
+    const [result] = await connection.query(`
+      INSERT INTO plans (plan_name, plan_type, price, currency, description, features, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [
+      plan_name,
+      plan_type,
+      price || 0,
+      currency || 'USD',
+      description || null,
+      featuresJson,
+      status || 'Active'
+    ]);
+    
+    const [newPlan] = await connection.query('SELECT * FROM plans WHERE id = ?', [result.insertId]);
+    
+    res.status(201).json({ 
+      success: true,
+      message: 'Plan created successfully',
+      data: newPlan[0]
+    });
+  } catch (error) {
+    console.error('Error creating plan:', error.message);
+    res.status(500).json({ error: 'Failed to create plan', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.put('/api/plans/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    const { plan_name, plan_type, price, currency, description, features, status } = req.body;
+    
+    connection = await pool.getConnection();
+    
+    const [existingPlan] = await connection.query('SELECT * FROM plans WHERE id = ?', [id]);
+    if (existingPlan.length === 0) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+    
+    const updateFields = [];
+    const updateParams = [];
+    
+    if (plan_name !== undefined) {
+      updateFields.push('plan_name = ?');
+      updateParams.push(plan_name);
+    }
+    if (plan_type !== undefined) {
+      updateFields.push('plan_type = ?');
+      updateParams.push(plan_type);
+    }
+    if (price !== undefined) {
+      updateFields.push('price = ?');
+      updateParams.push(price);
+    }
+    if (currency !== undefined) {
+      updateFields.push('currency = ?');
+      updateParams.push(currency);
+    }
+    if (description !== undefined) {
+      updateFields.push('description = ?');
+      updateParams.push(description);
+    }
+    if (features !== undefined) {
+      const featuresJson = typeof features === 'string' ? features : JSON.stringify(features);
+      updateFields.push('features = ?');
+      updateParams.push(featuresJson);
+    }
+    if (status !== undefined) {
+      updateFields.push('status = ?');
+      updateParams.push(status);
+    }
+    
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+    
+    updateFields.push('updated_at = NOW()');
+    updateParams.push(id);
+    
+    await connection.query(
+      `UPDATE plans SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateParams
+    );
+    
+    const [updatedPlan] = await connection.query('SELECT * FROM plans WHERE id = ?', [id]);
+    
+    res.json({ 
+      success: true,
+      message: 'Plan updated successfully',
+      data: updatedPlan[0]
+    });
+  } catch (error) {
+    console.error('Error updating plan:', error.message);
+    res.status(500).json({ error: 'Failed to update plan', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+app.delete('/api/plans/:id', async (req, res) => {
+  let connection;
+  try {
+    const { id } = req.params;
+    connection = await pool.getConnection();
+    
+    const [existingPlan] = await connection.query('SELECT * FROM plans WHERE id = ?', [id]);
+    if (existingPlan.length === 0) {
+      return res.status(404).json({ error: 'Plan not found' });
+    }
+    
+    await connection.query('DELETE FROM plans WHERE id = ?', [id]);
+    
+    res.json({ 
+      success: true,
+      message: 'Plan deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting plan:', error.message);
+    res.status(500).json({ error: 'Failed to delete plan', details: error.message });
   } finally {
     if (connection) connection.release();
   }

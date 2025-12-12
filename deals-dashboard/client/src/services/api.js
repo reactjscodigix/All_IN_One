@@ -132,8 +132,14 @@ export const leadsAPI = {
 };
 
 export const plansAPI = {
-  getAll: () => apiService.get('/plans'),
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/plans${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => apiService.get(`/plans/${id}`),
   create: (data) => apiService.post('/plans', data),
+  update: (id, data) => apiService.put(`/plans/${id}`, data),
+  delete: (id) => apiService.delete(`/plans/${id}`),
 };
 
 export const pipelineAPI = {

@@ -87,7 +87,7 @@ src\components\CrmCampaignPage.js
   Line 16:6:  React Hook useEffect has a missing dependency: 'loadCampaigns'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 src\components\CrmCompaniesPage.js
-  Line 11:10:  'isLoading' is assigned a value but never used  no-unused-vars
+  Line 12:10:  'isLoading' is assigned a value but never used  no-unused-vars
 
 src\components\CrmProjectsPage.js
   Line 84:9:  'getInitials' is assigned a value but never used  no-unused-vars
@@ -176,7 +176,7 @@ To ignore, add // eslint-disable-next-line to the line before.
 
 File sizes after gzip:
 
-  571.02 kB  build\static\js\main.2a5e94f7.js
+  573.24 kB  build\static\js\main.27dd0480.js
   12.59 kB   build\static\css\main.b6621bc9.css
   1.76 kB    build\static\js\453.d456ce70.chunk.js
 
