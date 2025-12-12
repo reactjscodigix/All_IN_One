@@ -245,7 +245,7 @@ const DealReport = () => {
           stage: deal.deal_stage || deal.stage || 'Prospecting',
           value: parseFloat(deal.deal_value) || 0,
           currency: deal.currency || 'USD',
-          contact: deal.first_name && deal.last_name ? `${deal.first_name} ${deal.last_name}` : 'N/A',
+          contact: deal.contact_first_name && deal.contact_last_name ? `${deal.contact_first_name} ${deal.contact_last_name}` : 'N/A',
           company: deal.company_name || 'N/A',
           assignee: deal.assignee_first_name && deal.assignee_last_name ? `${deal.assignee_first_name} ${deal.assignee_last_name}` : 'N/A',
           tags: deal.tags ? (typeof deal.tags === 'string' ? [deal.tags] : deal.tags) : [],

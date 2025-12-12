@@ -466,6 +466,26 @@ async function initializeDatabase() {
     await connection.query(`
       ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS tax_amount DECIMAL(15, 2) DEFAULT 0
     `).catch(() => {});
+
+    await connection.query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS address VARCHAR(255)
+    `).catch(() => {});
+
+    await connection.query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS city VARCHAR(100)
+    `).catch(() => {});
+
+    await connection.query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS state VARCHAR(100)
+    `).catch(() => {});
+
+    await connection.query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS country VARCHAR(100)
+    `).catch(() => {});
+
+    await connection.query(`
+      ALTER TABLE contacts ADD COLUMN IF NOT EXISTS tag VARCHAR(100)
+    `).catch(() => {});
     
     await connection.query(`
       CREATE TABLE IF NOT EXISTS estimations (
@@ -2121,9 +2141,14 @@ app.get('/api/leads', async (req, res) => {
         c.state,
         c.country,
         c.email as company_email,
-        c.phone as company_phone
+        c.phone as company_phone,
+        u.id as owner_id_actual,
+        u.first_name as owner_first_name,
+        u.last_name as owner_last_name,
+        u.avatar as owner_avatar
       FROM leads l
-      LEFT JOIN companies c ON l.company = c.id
+      LEFT JOIN companies c ON l.company = c.company_name
+      LEFT JOIN users u ON l.owner_id = u.id
       ORDER BY l.created_at DESC
     `);
     connection.release();
@@ -2133,6 +2158,9 @@ app.get('/api/leads', async (req, res) => {
       source: r.lead_source,
       status: r.lead_status,
       company_id: r.company,
+      company_name: r.company_name || (typeof r.company === 'string' ? r.company : 'Unknown Company'),
+      company_location: r.city || r.address || 'Unknown Location',
+      owner_name: r.owner_first_name && r.owner_last_name ? `${r.owner_first_name} ${r.owner_last_name}` : null,
       tags: r.tags ? (typeof r.tags === 'string' ? JSON.parse(r.tags) : r.tags) : [],
       people_assigned: r.people_assigned ? (typeof r.people_assigned === 'string' ? JSON.parse(r.people_assigned) : r.people_assigned) : []
     }));
@@ -3270,41 +3298,7 @@ app.delete('/api/campaigns/:id', async (req, res) => {
   }
 });
 
-app.get('/api/projects', async (req, res) => {
-  let connection;
-  try {
-    connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT * FROM projects ORDER BY created_at DESC');
-    res.json(rows);
-  } catch (error) {
-    console.error('Error fetching projects:', error.message);
-    res.status(500).json({ error: 'Failed to fetch projects', details: error.message });
-  } finally {
-    if (connection) connection.release();
-  }
-});
 
-app.get('/api/projects/:id', async (req, res) => {
-  let connection;
-  try {
-    const { id } = req.params;
-    connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT * FROM projects WHERE id = ?', [id]);
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-    const project = rows[0];
-    if (project.responsible_persons) {
-      project.responsible_persons = project.responsible_persons.split(',');
-    }
-    res.json(project);
-  } catch (error) {
-    console.error('Error fetching project:', error.message);
-    res.status(500).json({ error: 'Failed to fetch project', details: error.message });
-  } finally {
-    if (connection) connection.release();
-  }
-});
 
 app.post('/api/projects', async (req, res) => {
   let connection;
@@ -4055,13 +4049,28 @@ app.get('/api/projects', async (req, res) => {
   let connection;
   try {
     connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT * FROM projects ORDER BY created_at DESC');
+    const [rows] = await connection.query(
+      `SELECT p.*, c.company_name 
+       FROM projects p 
+       LEFT JOIN companies c ON p.company_id = c.id 
+       ORDER BY p.created_at DESC`
+    );
     connection.release();
+    
+    console.log('DEBUG: Query returned', rows.length, 'rows');
+    if (rows.length > 0) {
+      console.log('DEBUG: First project from query keys:', Object.keys(rows[0]));
+      console.log('DEBUG: First project company_name:', rows[0].company_name);
+    }
     
     const projects = rows.map(p => ({
       ...p,
       responsible_persons: p.responsible_persons ? JSON.parse(p.responsible_persons) : []
     }));
+    
+    if (projects.length > 0) {
+      console.log('DEBUG: First project after mapping has company_name:', projects[0].company_name);
+    }
     
     res.json(projects);
   } catch (error) {
@@ -4075,7 +4084,13 @@ app.get('/api/projects/:id', async (req, res) => {
   try {
     const { id } = req.params;
     connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT * FROM projects WHERE id = ?', [id]);
+    const [rows] = await connection.query(
+      `SELECT p.*, c.company_name 
+       FROM projects p 
+       LEFT JOIN companies c ON p.company_id = c.id 
+       WHERE p.id = ?`,
+      [id]
+    );
     connection.release();
     
     if (rows.length === 0) {

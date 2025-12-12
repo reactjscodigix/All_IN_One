@@ -266,8 +266,8 @@ export default function ProjectReportsPage() {
         
         const formattedProjects = data.map((project, index) => ({
           id: project.id,
-          name: project.project_name || 'Untitled Project',
-          client: 'Client',
+          name: project.name || project.title || 'Untitled Project',
+          client: project.company_name || 'No Company',
           clientLogo: `https://i.pravatar.cc/40?img=${index}`,
           priority: project.priority || 'Medium',
           startDate: project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A',

@@ -540,8 +540,12 @@ const ContactReportsPage = () => {
           source: contact.source,
           status: contact.status,
           notes: contact.notes,
-          avatar: `https://i.pravatar.cc/100?img=${index}`,
-          rating: 4.0,
+          avatar: contact.avatar || `https://i.pravatar.cc/100?img=${index}`,
+          rating: contact.rating || 4.0,
+          location: contact.city || contact.address || 'N/A',
+          tag: contact.tag || 'N/A',
+          flag: '🌍',
+          role: contact.position || 'Contact',
         }));
         
         setContacts(formattedContacts);

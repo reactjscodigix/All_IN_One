@@ -268,11 +268,14 @@ const LeadReport = () => {
           name: lead.name || 'Unknown Lead',
           avatar: `https://i.pravatar.cc/100?img=${index}`,
           company: lead.company_name || 'N/A',
-          companySub: lead.city || 'Unknown',
+          companySub: lead.company_location || 'Unknown',
           phone: lead.phone || 'N/A',
           status: lead.status || 'Contacted',
           created: lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'N/A',
-          owner: { name: 'N/A', avatar: `https://i.pravatar.cc/100?img=${index + 20}` },
+          owner: { 
+            name: lead.owner_name || 'Unassigned', 
+            avatar: lead.owner_avatar || `https://i.pravatar.cc/100?img=${index + 20}` 
+          },
         }));
         
         setLeads(formattedLeads);
