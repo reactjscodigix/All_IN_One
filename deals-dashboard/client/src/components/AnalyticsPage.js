@@ -118,7 +118,7 @@ const AnalyticsPage = () => {
       acc.push({ stage, value: 1 });
     }
     return acc;
-  }, []);
+  }, []).filter(d => d.value > 0);
 
   const wonDealsData = deals
     .filter(d => d.status === 'Won')

@@ -44,19 +44,28 @@ const RecentDealsTable = ({ deals, onDateRangeChange }) => {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-border-light">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Deal Name</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stage</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Deal Value</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 min-w-[180px]">Deal Name</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 min-w-[160px]">Pipeline / Stage</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 min-w-[100px]">Deal Value</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 min-w-[100px]">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-light">
             {deals.slice(0, 5).map((deal) => (
               <tr key={deal.id} className="hover:bg-gray-50 transition-colors">
-                <td className=" p-3 text-xs font-medium text-gray-900">{deal.name}</td>
-                <td className=" p-3 text-xs text-gray-600">{deal.stage}</td>
-                <td className=" p-3 text-xs font-medium text-gray-900">{formatCurrency(deal.value)}</td>
-                <td className=" p-3 text-xs">
+                <td className="px-6 py-4 text-xs font-medium text-gray-900">{deal.name || 'N/A'}</td>
+                <td className="px-6 py-4 text-xs text-gray-600 font-medium">
+                  {deal.pipeline || deal.stage ? (
+                    <>
+                      {deal.pipeline && <span className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs mr-2">{deal.pipeline}</span>}
+                      {deal.stage && <span className="inline-block bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">{deal.stage}</span>}
+                    </>
+                  ) : (
+                    'N/A'
+                  )}
+                </td>
+                <td className="px-6 py-4 text-xs font-medium text-gray-900">{formatCurrency(deal.value)}</td>
+                <td className="px-6 py-4 text-xs">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(deal.status)}`}>
                     {deal.status}
                   </span>

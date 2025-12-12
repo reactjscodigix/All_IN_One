@@ -4,26 +4,30 @@ import CustomDropdown from './CustomDropdown';
 import DateRangeDropdown from './DateRangeDropdown';
 
 const DealsByStageChart = ({ deals, onDateRangeChange }) => {
-  const [selectedPipeline, setSelectedPipeline] = useState('Marketing Pipeline');
+  const [selectedPipeline, setSelectedPipeline] = useState('All');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 15 Days');
   const chartData = [];
   const stageMap = {};
 
   deals.forEach((deal) => {
-    if (!stageMap[deal.stage]) {
-      stageMap[deal.stage] = 0;
+    const pipeline = deal.pipeline || 'Unassigned';
+    const stage = deal.stage || 'No Stage';
+    const key = `${pipeline} - ${stage}`;
+    
+    if (!stageMap[key]) {
+      stageMap[key] = 0;
     }
-    stageMap[deal.stage] += 1;
+    stageMap[key] += 1;
   });
 
-  const stageOrder = ['Inpipeline', 'Follow Up', 'Schedule Conversation', 'Conversation', 'Won', 'Lost'];
-  
-  stageOrder.forEach((stage) => {
+  Object.keys(stageMap).forEach((key) => {
     chartData.push({
-      name: stage,
-      deals: stageMap[stage] || 0,
+      name: key,
+      deals: stageMap[key],
     });
   });
+  
+  chartData.sort((a, b) => b.deals - a.deals);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">

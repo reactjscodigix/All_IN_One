@@ -81,7 +81,7 @@ const LeadsProjectsByStageChart = ({ projects, onDateRangeChange }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">
-      <div className="p-2 border-b border-border-light">
+      <div className="p-4 border-b border-border-light">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Projects By Stage</h2>
           <DateRangeDropdown
@@ -93,12 +93,15 @@ const LeadsProjectsByStageChart = ({ projects, onDateRangeChange }) => {
         </div>
       </div>
 
-      <div className="p-2">
+      <div className="p-6 min-h-96">
         {chartData.length > 0 ? (
-          <Chart options={options} series={chartData} type="pie" height={300} />
+          <Chart options={options} series={chartData} type="pie" height={320} />
         ) : (
-          <div className="h-80 flex items-center justify-center text-gray-500">
-            No data available
+          <div className="h-96 flex flex-col items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-600 text-lg font-medium mb-2">No Projects Available</p>
+              <p className="text-gray-500 text-sm">Create projects to see them displayed here by status.</p>
+            </div>
           </div>
         )}
       </div>

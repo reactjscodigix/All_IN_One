@@ -39,9 +39,9 @@ const LeadsProjectsAreaChart = ({ projects, onDateRangeChange }) => {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">
-      <div className="p-2 border-b border-border-light">
+      <div className="p-4 border-b border-border-light">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Projects By Stage</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Projects Timeline</h2>
           <div className="flex gap-2">
             <CustomDropdown
               options={['Marketing Pipeline', 'Sales Pipeline', 'Email', 'Chats', 'Operational']}
@@ -58,9 +58,9 @@ const LeadsProjectsAreaChart = ({ projects, onDateRangeChange }) => {
         </div>
       </div>
 
-      <div className="p-2">
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" >
+      <div className="p-6 min-h-96">
+        {chartData.length > 0 && chartData.some(d => d.value > 0) ? (
+          <ResponsiveContainer width="100%" height={350}>
             <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -89,8 +89,11 @@ const LeadsProjectsAreaChart = ({ projects, onDateRangeChange }) => {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-80 flex items-center justify-center text-gray-500">
-            No data available
+          <div className="h-96 flex flex-col items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-600 text-lg font-medium mb-2">No Projects Data</p>
+              <p className="text-gray-500 text-sm">Projects will appear here over time as they are created.</p>
+            </div>
           </div>
         )}
       </div>

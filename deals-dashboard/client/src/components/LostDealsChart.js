@@ -4,23 +4,40 @@ import CustomDropdown from './CustomDropdown';
 import DateRangeDropdown from './DateRangeDropdown';
 
 const LostDealsChart = ({ deals, onDateRangeChange }) => {
-  const [selectedPipeline, setSelectedPipeline] = useState('Marketing Pipeline');
+  const [selectedPipeline, setSelectedPipeline] = useState('All');
   const [selectedPeriod, setSelectedPeriod] = useState('Last 15 Days');
   
   const stageMap = {};
+  let hasLostDeals = false;
+  
   deals.forEach((deal) => {
-    if (deal.status === 'Lost') {
-      if (!stageMap[deal.stage]) {
-        stageMap[deal.stage] = 0;
+    const lostStatuses = ['Lost', 'Cancelled', 'Closed Lost', 'Rejected'];
+    const isLost = lostStatuses.includes(deal.status);
+    
+    if (isLost) {
+      hasLostDeals = true;
+      const pipeline = deal.pipeline || 'Unassigned';
+      const stage = deal.stage || 'No Stage';
+      const key = `${pipeline} - ${stage}`;
+      
+      if (!stageMap[key]) {
+        stageMap[key] = 0;
       }
-      stageMap[deal.stage] += 1;
+      stageMap[key] += 1;
     }
   });
 
-  const chartData = Object.entries(stageMap).map(([name, value]) => ({
+  let chartData = Object.entries(stageMap).map(([name, value]) => ({
     name,
     value
   })).sort((a, b) => b.value - a.value);
+  
+  if (chartData.length === 0) {
+    chartData = [{
+      name: 'No lost deals',
+      value: 0
+    }];
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-border-light">
@@ -44,32 +61,27 @@ const LostDealsChart = ({ deals, onDateRangeChange }) => {
       </div>
 
       <div className="p-2">
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart
-              data={chartData}
-              layout="vertical"
-              margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-              barCategoryGap="30%"
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis type="number" tick={{ fontSize: 12 }} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 12 }} width={90} />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
-                }}
-              />
-              <Bar dataKey="value" fill="#ef4444" radius={[0, 0, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            No lost deals data
-          </div>
-        )}
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+            barCategoryGap="30%"
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis type="number" tick={{ fontSize: 12 }} />
+            <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={110} />
+            <Tooltip 
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '0.5rem',
+              }}
+              formatter={(value) => value === 0 ? 'No data' : value}
+            />
+            <Bar dataKey="value" fill="#ef4444" radius={[0, 0, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
