@@ -31,24 +31,38 @@ const CrmCompaniesPage = () => {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${apiUrl}/companies`);
       if (response.ok) {
-        const data = await response.json();
-        const companiesWithDefaults = data.map(company => ({
-          ...company,
-          name: company.company_name || company.name,
-          rating: company.rating || 4.5,
-          tags: company.tags ? (typeof company.tags === 'string' ? company.tags.split(',').map(t => t.trim()) : company.tags) : [],
-          icon: 'bg-blue-500',
-          id: company.id || Math.random(),
-          country: company.country || 'USA'
-        }));
-        setCompanies(companiesWithDefaults);
-        setFilteredCompanies(companiesWithDefaults);
+        let data = await response.json();
+        
+        // Handle both array and object response formats
+        if (!Array.isArray(data)) {
+          data = data.data || data.companies || [];
+        }
+        
+        if (Array.isArray(data)) {
+          const companiesWithDefaults = data.map(company => ({
+            ...company,
+            name: company.company_name || company.name,
+            rating: company.rating || 4.5,
+            tags: company.tags ? (typeof company.tags === 'string' ? company.tags.split(',').map(t => t.trim()) : company.tags) : [],
+            icon: 'bg-blue-500',
+            id: company.id || Math.random(),
+            country: company.country || 'USA'
+          }));
+          setCompanies(companiesWithDefaults);
+          setFilteredCompanies(companiesWithDefaults);
+          console.log('✅ Companies fetched:', companiesWithDefaults.length);
+        } else {
+          console.warn('⚠️ Invalid data format:', data);
+          setCompanies([]);
+          setFilteredCompanies([]);
+        }
       } else {
+        console.error('❌ API error:', response.status);
         setCompanies([]);
         setFilteredCompanies([]);
       }
     } catch (error) {
-      console.error('Error fetching companies:', error);
+      console.error('❌ Error fetching companies:', error);
       setCompanies([]);
       setFilteredCompanies([]);
     } finally {

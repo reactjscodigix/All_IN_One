@@ -527,37 +527,46 @@ const ContactReportsPage = () => {
         const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
         const response = await fetch(`${apiUrl}/contacts`);
         if (!response.ok) throw new Error('Failed to fetch contacts');
-        const data = await response.json();
+        let data = await response.json();
         
-        const formattedContacts = data.map((contact, index) => ({
-          id: contact.id,
-          name: `${contact.first_name} ${contact.last_name}`,
-          email: contact.email,
-          phone: contact.phone,
-          company: contact.company_name,
-          position: contact.position,
-          department: contact.department,
-          source: contact.source,
-          status: contact.status,
-          notes: contact.notes,
-          avatar: contact.avatar || `https://i.pravatar.cc/100?img=${index}`,
-          rating: contact.rating || 4.0,
-          location: contact.city || contact.address || 'N/A',
-          tag: contact.tag || 'N/A',
-          flag: '🌍',
-          role: contact.position || 'Contact',
-        }));
+        if (!Array.isArray(data)) {
+          data = data?.data || data?.contacts || [];
+        }
         
-        setContacts(formattedContacts);
-        
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        setMonthlyData(months.map((month, idx) => ({
-          month,
-          value: Math.floor(formattedContacts.length / 12 * (idx + 1))
-        })));
-        
-        setError('');
+        if (Array.isArray(data)) {
+          const formattedContacts = data.map((contact, index) => ({
+            id: contact.id,
+            name: `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown',
+            email: contact.email,
+            phone: contact.phone,
+            company: contact.company_name || 'N/A',
+            position: contact.position,
+            department: contact.department,
+            source: contact.source,
+            status: contact.status || 'Active',
+            notes: contact.notes,
+            avatar: contact.avatar || `https://i.pravatar.cc/100?img=${index}`,
+            rating: contact.rating || 4.0,
+            location: contact.location || contact.address || 'N/A',
+            tag: contact.tag || 'Contact',
+            flag: '🌍',
+            role: contact.position || 'Contact',
+          }));
+          
+          setContacts(formattedContacts);
+          
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          setMonthlyData(months.map((month, idx) => ({
+            month,
+            value: Math.floor(formattedContacts.length / 12 * (idx + 1))
+          })));
+          
+          setError('');
+        } else {
+          throw new Error('Invalid data format');
+        }
       } catch (err) {
+        console.error('❌ Error fetching contacts:', err);
         setError(err.message || 'Failed to fetch contacts');
         setContacts([]);
       } finally {

@@ -237,26 +237,35 @@ const DealReport = () => {
         const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
         const response = await fetch(`${apiUrl}/deals`);
         if (!response.ok) throw new Error('Failed to fetch deals');
-        const data = await response.json();
+        let data = await response.json();
         
-        const formattedDeals = data.map((deal) => ({
-          id: deal.id,
-          name: deal.deal_name || 'Untitled Deal',
-          stage: deal.deal_stage || deal.stage || 'Prospecting',
-          value: parseFloat(deal.deal_value) || 0,
-          currency: deal.currency || 'USD',
-          contact: deal.contact_first_name && deal.contact_last_name ? `${deal.contact_first_name} ${deal.contact_last_name}` : 'N/A',
-          company: deal.company_name || 'N/A',
-          assignee: deal.assignee_first_name && deal.assignee_last_name ? `${deal.assignee_first_name} ${deal.assignee_last_name}` : 'N/A',
-          tags: deal.tags ? (typeof deal.tags === 'string' ? [deal.tags] : deal.tags) : [],
-          expectedClose: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : 'N/A',
-          probability: deal.probability || 50,
-          status: deal.deal_stage || deal.status || 'open',
-        }));
+        if (!Array.isArray(data)) {
+          data = data?.data || data?.deals || [];
+        }
         
-        setDeals(formattedDeals);
-        setError('');
+        if (Array.isArray(data)) {
+          const formattedDeals = data.map((deal) => ({
+            id: deal.id,
+            name: deal.deal_name || 'Untitled Deal',
+            stage: deal.deal_stage || deal.stage || 'Prospecting',
+            value: parseFloat(deal.deal_value) || 0,
+            currency: deal.currency || 'USD',
+            contact: deal.contact_first_name && deal.contact_last_name ? `${deal.contact_first_name} ${deal.contact_last_name}` : 'N/A',
+            company: deal.company_name || 'N/A',
+            assignee: deal.assignee_first_name && deal.assignee_last_name ? `${deal.assignee_first_name} ${deal.assignee_last_name}` : 'N/A',
+            tags: deal.tags ? (typeof deal.tags === 'string' ? [deal.tags] : deal.tags) : [],
+            expectedClose: deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : 'N/A',
+            probability: deal.probability || 50,
+            status: deal.deal_stage || deal.status || 'open',
+          }));
+          
+          setDeals(formattedDeals);
+          setError('');
+        } else {
+          throw new Error('Invalid data format');
+        }
       } catch (err) {
+        console.error('❌ Error fetching deals:', err);
         setError(err.message || 'Failed to fetch deals');
         setDeals([]);
       } finally {

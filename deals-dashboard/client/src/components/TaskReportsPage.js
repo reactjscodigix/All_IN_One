@@ -80,30 +80,39 @@ const TaskReportsPage = () => {
         const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
         const response = await fetch(`${apiUrl}/tasks`);
         if (!response.ok) throw new Error('Failed to fetch tasks');
-        const data = await response.json();
+        let data = await response.json();
 
-        const formattedTasks = data.map((task, index) => ({
-          id: task.id,
-          color: ['blue', 'yellow', 'green', 'red'][index % 4],
-          title: task.title || 'Untitled Task',
-          tags: [task.status || 'Pending'],
-          category: task.priority || 'Medium',
-          date: task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A',
-          avatar: `https://i.pravatar.cc/32?img=${index}`,
-          created_at: task.created_at,
-          status: task.status,
-          priority: task.priority
-        }));
+        if (!Array.isArray(data)) {
+          data = data?.data || data?.tasks || [];
+        }
 
-        setTasks(formattedTasks);
-        
-        const monthly = generateMonthlyDataFromTasks(formattedTasks, year);
-        const typeBreakdown = generateTypeDataFromTasks(formattedTasks);
-        
-        setMonthlyData(monthly);
-        setTypeData(typeBreakdown);
-        setError('');
+        if (Array.isArray(data)) {
+          const formattedTasks = data.map((task, index) => ({
+            id: task.id,
+            color: ['blue', 'yellow', 'green', 'red'][index % 4],
+            title: task.title || 'Untitled Task',
+            tags: [task.status || 'Pending'],
+            category: task.priority || 'Medium',
+            date: task.created_at ? new Date(task.created_at).toLocaleDateString() : 'N/A',
+            avatar: `https://i.pravatar.cc/32?img=${index}`,
+            created_at: task.created_at,
+            status: task.status,
+            priority: task.priority
+          }));
+
+          setTasks(formattedTasks);
+          
+          const monthly = generateMonthlyDataFromTasks(formattedTasks, year);
+          const typeBreakdown = generateTypeDataFromTasks(formattedTasks);
+          
+          setMonthlyData(monthly);
+          setTypeData(typeBreakdown);
+          setError('');
+        } else {
+          throw new Error('Invalid data format');
+        }
       } catch (err) {
+        console.error('❌ Error fetching tasks:', err);
         setError(err.message || 'Failed to fetch tasks');
         setTasks([]);
         setMonthlyData([]);
@@ -173,11 +182,18 @@ const TaskReportsPage = () => {
         <span className="text-gray-400 cursor-move">≡</span>
         <span className="font-medium text-sm text-gray-900">{task.title}</span>
         <div className="flex gap-2">
-          {task.tags.map((tag, i) => (
-            <span key={i} className={`text-xs px-2 py-0.5 rounded ${getTagColor(tag)}`}>
-              {tag}
-            </span>
-          ))}
+          {task.tags && (() => {
+            try {
+              const tagsArray = typeof task.tags === 'string' ? JSON.parse(task.tags) : task.tags;
+              return Array.isArray(tagsArray) ? tagsArray.map((tag, i) => (
+                <span key={i} className={`text-xs px-2 py-0.5 rounded ${getTagColor(tag)}`}>
+                  {tag}
+                </span>
+              )) : null;
+            } catch (e) {
+              return null;
+            }
+          })()}
         </div>
       </div>
       <div className="flex items-center gap-4 ml-4">

@@ -37,7 +37,8 @@ const RolePermissionsDetailPage = () => {
 
   const fetchModules = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/modules');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/modules`);
       if (!response.ok) throw new Error('Failed to fetch modules');
       const data = await response.json();
       setModules(data);

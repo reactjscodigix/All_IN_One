@@ -276,6 +276,54 @@ export const fileManagerAPI = {
   deleteFolder: (folderId) => apiService.delete(`/folders/${folderId}`),
 };
 
+export const activitiesAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/activities${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => apiService.get(`/activities/${id}`),
+  create: (data) => apiService.post('/activities', data),
+  update: (id, data) => apiService.put(`/activities/${id}`, data),
+  delete: (id) => apiService.delete(`/activities/${id}`),
+  getUnifiedFeed: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/activities/unified-feed${queryString ? '?' + queryString : ''}`);
+  },
+};
+
+export const conversationsAPI = {
+  getByUserId: (userId) => apiService.get(`/conversations/${userId}`),
+  getMessagesByUserId: (userId, conversationWith) => {
+    const params = new URLSearchParams({ conversationWith }).toString();
+    return apiService.get(`/messages/${userId}${params ? '?' + params : ''}`);
+  },
+  getAvailableUsers: (userId, search = '') => {
+    const params = new URLSearchParams(search ? { search } : {}).toString();
+    return apiService.get(`/available-users/${userId}${params ? '?' + params : ''}`);
+  },
+  sendMessage: (data) => apiService.post('/messages', data),
+};
+
+export const filesAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/files${queryString ? '?' + queryString : ''}`);
+  },
+  create: (data) => apiService.post('/files', data),
+  toggleFavorite: (fileId) => apiService.put(`/files/${fileId}/favorite`, {}),
+  delete: (fileId) => apiService.delete(`/files/${fileId}`),
+  getStorageStats: () => apiService.get('/files/storage-stats'),
+};
+
+export const foldersAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/folders${queryString ? '?' + queryString : ''}`);
+  },
+  create: (data) => apiService.post('/folders', data),
+  delete: (folderId) => apiService.delete(`/folders/${folderId}`),
+};
+
 export const createContract = (data) => contractsAPI.create(data);
 
 export default apiService;

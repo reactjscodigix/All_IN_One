@@ -18,7 +18,8 @@ const TasksPage = () => {
   const loadTasks = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/tasks');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/tasks`);
       if (response.ok) {
         const data = await response.json();
         setTasks(Array.isArray(data) ? data : []);
@@ -33,7 +34,8 @@ const TasksPage = () => {
 
   const handleCreateTask = async (formData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/tasks', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -188,11 +190,18 @@ const TasksPage = () => {
           <span className={`text-xs px-2 py-1 rounded font-medium ${getStatusColor(task.status)}`}>
             {task.status}
           </span>
-          {task.tags && task.tags.length > 0 && task.tags.map((tag, i) => (
-            <span key={i} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded font-medium">
-              {tag}
-            </span>
-          ))}
+          {task.tags && (() => {
+            try {
+              const tagsArray = typeof task.tags === 'string' ? JSON.parse(task.tags) : task.tags;
+              return Array.isArray(tagsArray) && tagsArray.length > 0 && tagsArray.map((tag, i) => (
+                <span key={i} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded font-medium">
+                  {tag}
+                </span>
+              ));
+            } catch (e) {
+              return null;
+            }
+          })()}
         </div>
       </div>
 

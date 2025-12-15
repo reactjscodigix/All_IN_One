@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
@@ -137,6 +138,30 @@ const routeMap = {
   '/super-admin-purchase-transaction': 'super-admin-purchase-transaction',
 };
 
+const DashboardRouter = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    if (user.role === 'Super Admin') {
+      navigate('/super-admin');
+    } else if (user.role === 'Project Manager') {
+      navigate('/projects-dashboard');
+    } else if (user.role === 'Employee') {
+      navigate('/projects-dashboard');
+    } else {
+      navigate('/deals');
+    }
+  }, [user, navigate]);
+
+  return null;
+};
+
 function AppContent() {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -195,7 +220,7 @@ function AppContent() {
   return (
     <Layout currentPage={currentPage} onNavigate={handleNavigate}>
       <Routes>
-        <Route path="/" element={<DealsDashboard />} />
+        <Route path="/" element={<DashboardRouter />} />
         <Route path="/deals" element={<DealsDashboard />} />
         <Route path="/deals-kanban" element={<DealsKanbanBoard onDealClick={handleViewDealDetails} />} />
         <Route path="/deal/:id" element={<DealDetailsPage dealId={selectedDealId} onBack={handleBackFromDealDetails} />} />
@@ -256,12 +281,12 @@ function AppContent() {
         <Route path="/location" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Location</h1><p className="text-gray-600">Location page coming soon...</p></div></div>} />
         <Route path="/testimonials" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Testimonials</h1><p className="text-gray-600">Testimonials page coming soon...</p></div></div>} />
         <Route path="/faq" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">FAQ</h1><p className="text-gray-600">FAQ page coming soon...</p></div></div>} />
-        <Route path="/super-admin" element={<SuperAdminDashboard />} />
-        <Route path="/super-admin-companies" element={<Companies />} />
-        <Route path="/super-admin-subscriptions" element={<Subscriptions />} />
-        <Route path="/super-admin-packages" element={<Packages />} />
-        <Route path="/super-admin-domain" element={<Domain />} />
-        <Route path="/super-admin-purchase-transaction" element={<PurchaseTransaction />} />
+        <Route path="/super-admin" element={<ProtectedRoute requiredRoles="Super Admin"><SuperAdminDashboard /></ProtectedRoute>} />
+        <Route path="/super-admin-companies" element={<ProtectedRoute requiredRoles="Super Admin"><Companies /></ProtectedRoute>} />
+        <Route path="/super-admin-subscriptions" element={<ProtectedRoute requiredRoles="Super Admin"><Subscriptions /></ProtectedRoute>} />
+        <Route path="/super-admin-packages" element={<ProtectedRoute requiredRoles="Super Admin"><Packages /></ProtectedRoute>} />
+        <Route path="/super-admin-domain" element={<ProtectedRoute requiredRoles="Super Admin"><Domain /></ProtectedRoute>} />
+        <Route path="/super-admin-purchase-transaction" element={<ProtectedRoute requiredRoles="Super Admin"><PurchaseTransaction /></ProtectedRoute>} />
       </Routes>
     </Layout>
   );
@@ -277,9 +302,7 @@ function App() {
           <Route
             path="/*"
             element={
-              <ProtectedRoute
-                requiredModules={['deals', 'leads', 'contacts']}
-              >
+              <ProtectedRoute>
                 <AppContent />
               </ProtectedRoute>
             }

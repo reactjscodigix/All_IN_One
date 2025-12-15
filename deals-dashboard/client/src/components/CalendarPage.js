@@ -50,7 +50,8 @@ const CalendarPage = () => {
 
   const fetchCallHistory = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/call-history?limit=100');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/call-history?limit=100`);
       if (response.ok) {
         const data = await response.json();
         const events = data.map((call) => ({

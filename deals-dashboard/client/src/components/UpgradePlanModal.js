@@ -16,7 +16,8 @@ const UpgradePlanModal = ({ isOpen, onClose, company, onUpgrade }) => {
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/plans');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/plans`);
       const data = await response.json();
       
       const uniquePlans = [...new Set(data.map(p => p.plan_name))];

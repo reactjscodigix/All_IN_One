@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown, Filter, Plus, MoreVertical } from 'lucide-react';
 import AddNewCampaignModal from './AddNewCampaignModal';
 import { campaignAPI } from '../services/api';
-import campaignData from '../data/crmCampaignData.json';
 
 const CrmCampaignPage = () => {
-  const [stats, setStats] = useState(campaignData.stats);
-  const [campaigns, setCampaigns] = useState(campaignData.campaigns);
+  const [stats, setStats] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('Active Campaign');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,13 +18,29 @@ const CrmCampaignPage = () => {
 
   const loadCampaigns = async () => {
     try {
+      setIsLoading(true);
+      setError('');
       const data = await campaignAPI.getAll();
-      if (Array.isArray(data) && data.length > 0) {
-        setCampaigns(data);
-        calculateStats(data);
+      
+      let campaignsList = data;
+      if (!Array.isArray(data)) {
+        campaignsList = data?.data || data?.campaigns || [];
+      }
+      
+      if (Array.isArray(campaignsList)) {
+        setCampaigns(campaignsList);
+        calculateStats(campaignsList);
+      } else {
+        setCampaigns([]);
+        setStats([]);
       }
     } catch (error) {
-      console.error('Failed to load campaigns:', error);
+      console.error('❌ Failed to load campaigns:', error);
+      setError('Failed to load campaigns: ' + error.message);
+      setCampaigns([]);
+      setStats([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -105,14 +122,33 @@ const CrmCampaignPage = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="w-full bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading campaigns...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-gray-50 min-h-screen flex flex-col">
+      {error && (
+        <div className="px-6 pt-6 pb-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-700 text-sm">❌ {error}</p>
+          </div>
+        </div>
+      )}
+
       <div className="px-6 pt-6 pb-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-3xl font-bold text-red-600">Campaign</h1>
-              <span className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold">125</span>
+              <span className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold">{campaigns.length}</span>
             </div>
             <div className="flex items-center gap-1 text-sm mt-1">
               <button className="text-orange-500 hover:text-orange-600 font-medium bg-transparent border-none cursor-pointer p-0">Home</button>

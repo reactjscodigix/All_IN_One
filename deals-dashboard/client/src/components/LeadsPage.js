@@ -24,14 +24,14 @@ const LeadsPage = () => {
         if (leadsRes && Array.isArray(leadsRes)) {
           const formattedLeads = leadsRes.map(lead => ({
             id: lead.id,
-            name: lead.first_name && lead.last_name 
+            name: lead.lead_name || (lead.first_name && lead.last_name 
               ? `${lead.first_name} ${lead.last_name}` 
-              : lead.name || 'Unknown',
+              : lead.name || 'Unknown'),
             email: lead.email || '',
             phone: lead.phone || '',
             company: lead.company_name || lead.company || '',
-            source: lead.source || 'Website',
-            status: lead.status || 'New',
+            source: lead.lead_source || lead.source || 'Website',
+            status: lead.lead_status || lead.status || 'New',
             rating: lead.rating || 5,
             ...lead
           }));
@@ -58,15 +58,26 @@ const LeadsPage = () => {
       
       if (response.id) {
         const newLead = {
+          ...formData,
+          ...response,
           id: response.id,
-          name: formData.name || 'New Lead',
-          email: formData.email || '',
-          phone: formData.phone || '',
-          company: formData.company || '',
-          source: formData.source || 'Website',
-          status: formData.status || 'New',
-          rating: formData.rating || 5,
-          ...formData
+          name: response.lead_name || formData.name || 'New Lead',
+          email: response.email || formData.email || '',
+          phone: response.phone || formData.phone || '',
+          company: response.company || formData.company || '',
+          lead_source: response.lead_source || formData.source || 'Website',
+          source: response.lead_source || formData.source || 'Website',
+          lead_status: response.lead_status || formData.status || 'New',
+          status: response.lead_status || formData.status || 'New',
+          rating: response.rating || formData.rating || 5,
+          value: response.value || formData.value || null,
+          currency: response.currency || formData.currency || 'USD',
+          lead_type: response.lead_type || formData.lead_type || null,
+          industry: response.industry || formData.industry || null,
+          visibility: response.visibility || formData.visibility || 'Public',
+          tags: response.tags || formData.tags || [],
+          people_assigned: response.people_assigned || formData.people_assigned || [],
+          owner_id: response.owner_id || formData.owner_id || null
         };
         
         setLeads(prev => [newLead, ...prev]);

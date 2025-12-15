@@ -59,8 +59,13 @@ const Companies = () => {
       setMockCompanies(transformedMock);
       setCompanies(transformedMock);
       
-      const data = await companiesAPI.getAll();
-      if (data && data.length > 0) {
+      let data = await companiesAPI.getAll();
+      
+      if (!Array.isArray(data)) {
+        data = data?.data || data?.companies || [];
+      }
+      
+      if (Array.isArray(data) && data.length > 0) {
         setCompanies(data);
         console.log('✅ Fetched companies from API:', data);
       } else {
@@ -78,8 +83,13 @@ const Companies = () => {
   
   const fetchCompanies = async () => {
     try {
-      const data = await companiesAPI.getAll();
-      if (data && data.length > 0) {
+      let data = await companiesAPI.getAll();
+      
+      if (!Array.isArray(data)) {
+        data = data?.data || data?.companies || [];
+      }
+      
+      if (Array.isArray(data) && data.length > 0) {
         setCompanies(data);
         console.log('✅ Companies refreshed from API');
       } else {

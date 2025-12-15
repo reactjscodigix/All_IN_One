@@ -29,7 +29,8 @@ export default function CallHistoryPage() {
   const fetchCallHistory = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/call-history?limit=50');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/call-history?limit=50`);
       if (!response.ok) {
         throw new Error('Failed to fetch call history');
       }
@@ -68,7 +69,8 @@ export default function CallHistoryPage() {
 
   const handleDeleteCall = async (callId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/call-history/${callId}`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/call-history/${callId}`, {
         method: 'DELETE'
       });
       if (!response.ok) {

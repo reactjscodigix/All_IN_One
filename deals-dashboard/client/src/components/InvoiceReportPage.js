@@ -23,7 +23,13 @@ const InvoiceReportPage = () => {
         invoicesAPI.getAll(),
         companiesAPI.getAll()
       ]);
-      setInvoices(invoicesData || []);
+      
+      let invoices = invoicesData || [];
+      if (!Array.isArray(invoices) && invoices?.data) {
+        invoices = invoices.data;
+      }
+      
+      setInvoices(invoices);
       setCompanies(companiesData || []);
     } catch (err) {
       setError('Failed to load report data');
@@ -64,10 +70,13 @@ const InvoiceReportPage = () => {
     };
 
     filtered.forEach(inv => {
-      data.totalAmount += parseFloat(inv.total) || 0;
-      data.totalPaid += parseFloat(inv.amount_paid) || 0;
+      const invoiceTotal = parseFloat(inv.total) || 0;
+      const amountPaid = parseFloat(inv.amount_paid) || 0;
       
-      const dueAmount = parseFloat(inv.total) - parseFloat(inv.amount_paid || 0);
+      data.totalAmount += invoiceTotal;
+      data.totalPaid += amountPaid;
+      
+      const dueAmount = invoiceTotal - amountPaid;
       if (dueAmount > 0) {
         data.totalDue += dueAmount;
       }
@@ -76,15 +85,15 @@ const InvoiceReportPage = () => {
         data.byStatus[inv.status] = { count: 0, total: 0 };
       }
       data.byStatus[inv.status].count++;
-      data.byStatus[inv.status].total += parseFloat(inv.total) || 0;
+      data.byStatus[inv.status].total += invoiceTotal;
 
-      const companyName = inv.company_name || 'Unknown';
+      const companyName = inv.company_name || 'Unknown Client';
       if (!data.byCompany[companyName]) {
         data.byCompany[companyName] = { count: 0, total: 0, paid: 0 };
       }
       data.byCompany[companyName].count++;
-      data.byCompany[companyName].total += parseFloat(inv.total) || 0;
-      data.byCompany[companyName].paid += parseFloat(inv.amount_paid) || 0;
+      data.byCompany[companyName].total += invoiceTotal;
+      data.byCompany[companyName].paid += amountPaid;
 
       if (inv.status === 'Overdue' || (inv.status === 'Unpaid' && new Date(inv.open_till) < new Date())) {
         data.overdue.push(inv);
@@ -107,8 +116,10 @@ const InvoiceReportPage = () => {
     let csv = 'Invoice Number,Client,Amount,Status,Invoice Date,Due Date,Amount Paid,Amount Due\n';
     
     filtered.forEach(inv => {
-      const due = parseFloat(inv.total) - parseFloat(inv.amount_paid || 0);
-      csv += `"${inv.invoice_number}","${inv.company_name || 'N/A'}",${inv.total},"${inv.status}","${new Date(inv.invoice_date).toLocaleDateString()}","${new Date(inv.open_till).toLocaleDateString()}",${inv.amount_paid || 0},${due}\n`;
+      const invoiceTotal = parseFloat(inv.total) || 0;
+      const amountPaid = parseFloat(inv.amount_paid) || 0;
+      const due = invoiceTotal - amountPaid;
+      csv += `"${inv.invoice_number}","${inv.company_name || 'Unknown'}",${invoiceTotal},"${inv.status}","${new Date(inv.invoice_date).toLocaleDateString()}","${new Date(inv.open_till).toLocaleDateString()}",${amountPaid},${due}\n`;
     });
 
     csv += '\n\nSummary\n';

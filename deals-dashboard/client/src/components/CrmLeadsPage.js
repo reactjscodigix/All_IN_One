@@ -34,7 +34,7 @@ const CrmLeadsPage = () => {
 
         if (leadsRes && Array.isArray(leadsRes)) {
           const formattedLeads = leadsRes.map(lead => {
-            const displayName = lead.name || (lead.first_name && lead.last_name 
+            const displayName = lead.lead_name || lead.name || (lead.first_name && lead.last_name 
               ? `${lead.first_name} ${lead.last_name}` 
               : 'Unknown');
             const initials = displayName
@@ -50,8 +50,8 @@ const CrmLeadsPage = () => {
               email: lead.email || '',
               phone: lead.phone || '',
               company: lead.company || lead.company_name || '',
-              source: lead.source || lead.lead_source || 'Website',
-              status: lead.status || lead.lead_status || 'Not Contacted',
+              source: lead.lead_source || lead.source || 'Website',
+              status: lead.lead_status || lead.status || 'Not Contacted',
               rating: lead.rating || 5,
               initials: initials,
               value: lead.value || 0,
@@ -105,19 +105,26 @@ const CrmLeadsPage = () => {
         const leadValue = response.value || parseFloat(formData.value || 0);
         const newLead = {
           ...formData,
+          ...response,
           id: response.id,
           name: displayName,
-          email: formData.email || '',
-          phone: formData.phone || '',
-          company: formData.company || '',
-          source: formData.source || 'Website',
-          status: formData.status || 'Not Contacted',
-          rating: formData.rating || 5,
+          email: response.email || formData.email || '',
+          phone: response.phone || formData.phone || '',
+          company: response.company || formData.company || '',
+          lead_source: response.lead_source || formData.source || 'Website',
+          source: response.lead_source || formData.source || 'Website',
+          lead_status: response.lead_status || formData.status || 'Not Contacted',
+          status: response.lead_status || formData.status || 'Not Contacted',
+          rating: response.rating || formData.rating || 5,
           initials: initials,
           value: leadValue,
           location: formData.location || '',
           currency: response.currency || formData.currency || 'USD',
+          lead_type: response.lead_type || formData.lead_type || 'Person',
           industry: response.industry || formData.industry || '',
+          visibility: response.visibility || formData.visibility || 'Public',
+          tags: response.tags || formData.tags || [],
+          people_assigned: response.people_assigned || formData.people_assigned || [],
           owner_id: response.owner_id || formData.owner_id || null
         };
         

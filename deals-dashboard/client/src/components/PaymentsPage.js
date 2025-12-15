@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Download, Filter, Settings2, ChevronDown, MoreVertical } from 'lucide-react';
 import AddNewPaymentModal from './AddNewPaymentModal';
 import PaymentActionDropdown from './PaymentActionDropdown';
-import { paymentsAPI, invoicesAPI, companiesAPI } from '../services/api';
+import { paymentsAPI, invoicesAPI } from '../services/api';
 
 const PaymentsPage = () => {
   const navigate = useNavigate();
@@ -12,7 +12,6 @@ const PaymentsPage = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [payments, setPayments] = useState([]);
   const [invoices, setInvoices] = useState([]);
-  const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,14 +24,8 @@ const PaymentsPage = () => {
       try {
         setIsLoading(true);
         setError('');
-        const [paymentsData, invoicesData, companiesData] = await Promise.all([
-          paymentsAPI.getAll().catch(() => []),
-          invoicesAPI.getAll().catch(() => []),
-          companiesAPI.getAll().catch(() => [])
-        ]);
-        setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+        const invoicesData = await invoicesAPI.getAll().catch(() => []);
         setInvoices(Array.isArray(invoicesData) ? invoicesData : []);
-        setCompanies(Array.isArray(companiesData) ? companiesData : []);
       } catch (err) {
         console.error('Error loading data:', err);
         setError('Failed to load payments');
@@ -55,16 +48,12 @@ const PaymentsPage = () => {
     return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-700' };
   };
 
-  const enrichedInvoices = invoices.map(invoice => {
-    const company = companies.find(c => c.id === invoice.company_id);
-    return {
-      ...invoice,
-      client_name: company?.name || invoice.client_name || 'N/A',
-      client_avatar: company?.logo || company?.name?.charAt(0).toUpperCase() || 'N',
-      client_email: company?.email || 'N/A',
-      client_phone: company?.phone || 'N/A',
-    };
-  });
+  const enrichedInvoices = invoices.map(invoice => ({
+    ...invoice,
+    client_name: invoice.client_name || 'N/A',
+    client_email: invoice.company_email || 'N/A',
+    client_phone: invoice.company_phone || 'N/A',
+  }));
 
   const filteredPayments = enrichedInvoices.filter(invoice => {
     const matchesSearch = 
@@ -417,7 +406,6 @@ const PaymentsPage = () => {
         onClose={() => setShowAddPaymentModal(false)}
         onSubmit={handleAddPayment}
         invoices={invoices}
-        companies={companies}
       />
 
       {/* Delete Confirmation Modal */}

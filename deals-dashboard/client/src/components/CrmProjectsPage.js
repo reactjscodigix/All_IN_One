@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, MoreVertical, Plus, Star } from 'lucide-react';
-import projectsData from '../data/crmProjectsData.json';
 import AddNewProjectModal from './AddNewProjectModal';
 import { projectAPI } from '../services/api';
 
 const CrmProjectsPage = () => {
-  const [projects, setProjects] = useState(projectsData.projects);
+  const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,12 +34,26 @@ const CrmProjectsPage = () => {
 
   const loadProjects = async () => {
     try {
+      setIsLoading(true);
+      setError('');
       const data = await projectAPI.getAll();
-      if (Array.isArray(data) && data.length > 0) {
-        setProjects([...projectsData.projects, ...data]);
+      
+      let projectsList = data;
+      if (!Array.isArray(data)) {
+        projectsList = data?.data || data?.projects || [];
+      }
+      
+      if (Array.isArray(projectsList)) {
+        setProjects(projectsList);
+      } else {
+        setProjects([]);
       }
     } catch (error) {
-      console.error('Failed to load projects:', error);
+      console.error('❌ Failed to load projects:', error);
+      setError('Failed to load projects: ' + error.message);
+      setProjects([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -130,8 +145,27 @@ const CrmProjectsPage = () => {
     return projectTitle.includes(searchTerm.toLowerCase());
   });
 
+  if (isLoading) {
+    return (
+      <div className="w-full bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading projects...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-gray-50 min-h-screen flex flex-col">
+      {error && (
+        <div className="px-6 pt-6 pb-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-700 text-sm">❌ {error}</p>
+          </div>
+        </div>
+      )}
+
       <div className="px-6 pt-6 pb-4">
         <div className="flex items-center justify-between mb-6">
           <div>

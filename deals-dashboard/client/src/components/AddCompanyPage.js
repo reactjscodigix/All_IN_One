@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, ChevronDown, X, Plus } from 'lucide-react';
+import { Upload, ChevronDown, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AddNewDealModal from './AddNewDealModal';
 import { showSuccessToast, showErrorToast } from '../utils/toast';

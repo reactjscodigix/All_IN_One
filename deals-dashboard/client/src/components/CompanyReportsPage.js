@@ -235,39 +235,37 @@ export default function CompanyReportsPage() {
         setLoading(true);
         const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
         
-        const [companiesRes, contactsRes] = await Promise.all([
-          fetch(`${apiUrl}/companies`),
-          fetch(`${apiUrl}/contacts`)
-        ]);
+        const companiesRes = await fetch(`${apiUrl}/companies`);
 
         if (!companiesRes.ok) throw new Error('Failed to fetch companies');
         
-        const companiesData = await companiesRes.json();
-        const contactsData = contactsRes.ok ? await contactsRes.json() : [];
+        let companiesData = await companiesRes.json();
 
-        const contactsByCompany = {};
-        contactsData.forEach(contact => {
-          if (contact.company_id) {
-            contactsByCompany[contact.company_id] = (contactsByCompany[contact.company_id] || 0) + 1;
-          }
-        });
+        if (!Array.isArray(companiesData)) {
+          companiesData = companiesData?.data || companiesData?.companies || [];
+        }
 
-        const formattedCompanies = companiesData.map((company, index) => ({
-          id: company.id,
-          name: company.company_name,
-          email: company.email,
-          phone: company.phone,
-          website: company.website,
-          industry: company.industry,
-          status: company.status || 'Active',
-          color: COLORS[index % COLORS.length],
-          contactCount: contactsByCompany[company.id] || 0,
-        }));
-        
-        setCompanies(formattedCompanies);
-        setMonthlyData(generateMonthlyData(formattedCompanies));
-        setError('');
+        if (Array.isArray(companiesData)) {
+          const formattedCompanies = companiesData.map((company, index) => ({
+            id: company.id,
+            name: company.company_name,
+            email: company.email,
+            phone: company.phone,
+            website: company.website,
+            industry: company.industry,
+            status: company.status || 'Active',
+            color: COLORS[index % COLORS.length],
+            contactCount: company.contact_count || 0,
+          }));
+          
+          setCompanies(formattedCompanies);
+          setMonthlyData(generateMonthlyData(formattedCompanies));
+          setError('');
+        } else {
+          throw new Error('Invalid data format');
+        }
       } catch (err) {
+        console.error('❌ Error fetching companies:', err);
         setError(err.message || 'Failed to fetch companies');
         setCompanies([]);
       } finally {

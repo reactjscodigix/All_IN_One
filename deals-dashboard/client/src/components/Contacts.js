@@ -132,6 +132,11 @@ const Contacts = () => {
   };
 
   const transformContactData = (apiContacts) => {
+    if (!Array.isArray(apiContacts)) {
+      console.warn('⚠️ Expected array, got:', typeof apiContacts);
+      return [];
+    }
+    
     return apiContacts.map((contact) => {
       const initials = `${contact.first_name?.charAt(0) || ''}${contact.last_name?.charAt(0) || ''}`.toUpperCase();
       return {
@@ -184,13 +189,21 @@ const Contacts = () => {
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${apiUrl}/contacts`);
-      const data = await response.json();
+      let data = await response.json();
+      
+      if (!Array.isArray(data)) {
+        data = data.data || data.contacts || [];
+      }
+      
       const transformedData = transformContactData(data);
       setContacts(transformedData);
       setFilteredContacts(transformedData);
       generateFilterOptions(transformedData);
+      console.log('✅ Contacts fetched:', transformedData.length);
     } catch (error) {
-      console.error('Error fetching contacts:', error);
+      console.error('❌ Error fetching contacts:', error);
+      setContacts([]);
+      setFilteredContacts([]);
     }
   }, [generateFilterOptions]);
 

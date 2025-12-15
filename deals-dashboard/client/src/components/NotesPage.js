@@ -35,7 +35,11 @@ const NotesPage = () => {
           }
           
           const data = await response.json();
-          setNotes(data);
+          const notesWithDefaults = Array.isArray(data) ? data.map(note => ({
+            ...note,
+            is_important: note.is_important === true || note.is_important === 1 ? 1 : 0
+          })) : [];
+          setNotes(notesWithDefaults);
           setError('');
         } catch (err) {
           console.error('Error fetching notes:', err);
@@ -108,7 +112,11 @@ const NotesPage = () => {
         }
 
         const result = await response.json();
-        setNotes(notes.map(n => n.id === editingNote.id ? result.note : n));
+        const normalizedNote = {
+          ...result.note,
+          is_important: result.note.is_important === true || result.note.is_important === 1 ? 1 : 0
+        };
+        setNotes(notes.map(n => n.id === editingNote.id ? normalizedNote : n));
       } else {
         console.log('User object before creating note:', user);
         console.log('User ID type and value:', typeof user.id, user.id);
@@ -154,7 +162,11 @@ const NotesPage = () => {
         }
 
         const result = await response.json();
-        setNotes([result.note, ...notes]);
+        const normalizedNote = {
+          ...result.note,
+          is_important: result.note.is_important === true || result.note.is_important === 1 ? 1 : 0
+        };
+        setNotes([normalizedNote, ...notes]);
       }
 
       setIsModalOpen(false);
@@ -199,7 +211,11 @@ const NotesPage = () => {
       }
 
       const result = await response.json();
-      setNotes(notes.map(n => n.id === note.id ? result.note : n));
+      const normalizedNote = {
+        ...result.note,
+        is_important: result.note.is_important === true || result.note.is_important === 1 ? 1 : 0
+      };
+      setNotes(notes.map(n => n.id === note.id ? normalizedNote : n));
     } catch (err) {
       console.error('Error updating note:', err);
       alert('Failed to update note');
@@ -238,7 +254,7 @@ const NotesPage = () => {
     let filtered = notes;
 
     if (activeFilter === 'important') {
-      filtered = filtered.filter(n => n.is_important);
+      filtered = filtered.filter(n => n.is_important === true || n.is_important === 1);
     } else if (activeFilter === 'trash') {
       filtered = [];
     }
@@ -255,7 +271,7 @@ const NotesPage = () => {
   };
 
   const filteredNotes = getFilteredNotes();
-  const importantNotes = notes.filter(n => n.is_important);
+  const importantNotes = notes.filter(n => n.is_important === true || n.is_important === 1);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);

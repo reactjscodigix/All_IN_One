@@ -1,0 +1,199 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                             ║
+║               🔴 SERVER RESTART REQUIRED - CRITICAL STEPS                   ║
+║                                                                             ║
+║  The backend server must be restarted to load the new API routes.          ║
+║                                                                             ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+⚠️  ISSUE DETECTED:
+────────────────────────────────────────────────────────────────────────────
+• Browser showing 404 errors for: /api/contacts, /api/companies, /api/deals, /api/projects
+• Cause: Server is still running OLD code without new routes
+• Solution: Kill old server process and restart with NEW code
+
+🔴 STEP 1: KILL OLD SERVER PROCESSES
+────────────────────────────────────────────────────────────────────────────
+
+Windows CMD:
+  taskkill /f /im node.exe
+
+OR use Windows Task Manager:
+  1. Press Ctrl + Shift + Esc
+  2. Find "node.exe" in the list
+  3. Right-click → End Task
+  4. Verify ALL node processes are closed
+
+🟢 STEP 2: START NEW SERVER WITH LATEST CODE
+────────────────────────────────────────────────────────────────────────────
+
+OPTION A: Using Batch File (EASIEST - Windows)
+  
+  📂 Navigate to: c:\All_IN_One\deals-dashboard\server
+  
+  Double-click: start-dev.bat
+  
+  Expected Output:
+    ✓ Server running on port 5000
+    ✓ Environment: development
+    ✓ CORS origin: http://localhost:3000
+    ✓ Database connection successful
+    ✓ All tables initialized successfully
+    ✓ All systems operational
+
+
+OPTION B: Using Command Prompt
+
+  cmd
+  cd c:\All_IN_One\deals-dashboard\server
+  set NODE_ENV=development
+  node server.js
+
+  Wait for:
+    ✓ Server running on port 5000
+    ✓ Database connection successful
+
+
+OPTION C: Using NPM
+
+  cmd
+  cd c:\All_IN_One\deals-dashboard\server
+  npm run dev
+
+  Wait for:
+    ✓ Server running on port 5000
+    ✓ Database connection successful
+
+🔵 STEP 3: VERIFY APIs ARE WORKING
+────────────────────────────────────────────────────────────────────────────
+
+Open a NEW command prompt window (keep server running):
+
+  cd c:\All_IN_One\deals-dashboard\server
+  node verify-all-apis.js
+
+Expected Output:
+  ✓ GET Contacts (200)
+  ✓ GET Companies (200)
+  ✓ GET Users (200)
+  ✓ GET Deals (200)
+  ✓ GET Projects (200)
+  ✓ GET Activities (200)
+  ✓ GET Notes (200)
+  ✓ GET Roles (200)
+  ✓ GET Pipeline Stages (200)
+  ✓ GET Leads (200)
+
+If you see ✓ for all endpoints → APIs are working!
+
+🟣 STEP 4: TEST IN BROWSER
+────────────────────────────────────────────────────────────────────────────
+
+1. Open: http://localhost:3000 (Frontend)
+2. Navigate to: Contacts page
+3. Check browser DevTools → Network tab
+4. All API calls should return 200 (not 404)
+
+Expected API calls:
+  ✓ GET /api/contacts       → 200 OK
+  ✓ GET /api/companies      → 200 OK
+  ✓ GET /api/users          → 200 OK
+  ✓ GET /api/deals          → 200 OK
+  ✓ GET /api/projects       → 200 OK
+
+If still seeing 404:
+  □ Server restart completed? (Press Ctrl+C and restart)
+  □ All node.exe processes killed?
+  □ Browser cache cleared? (Ctrl+Shift+Delete)
+  □ Frontend reloaded? (Ctrl+Shift+R)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ WHAT WAS ADDED:
+
+New route file: routes/entities-routes.js
+  • GET  /api/contacts      - List contacts (with pagination & search)
+  • POST /api/contacts      - Create new contact
+  • GET  /api/companies     - List companies (with pagination & search)
+  • POST /api/companies     - Create new company
+  • GET  /api/users         - List users (with pagination & search)
+  • GET  /api/deals         - List deals (with pagination & search & status filter)
+  • POST /api/deals         - Create new deal
+  • GET  /api/projects      - List projects (with pagination & search & status filter)
+  • POST /api/projects      - Create new project
+
+Total API Endpoints: 59
+  ✓ 6 Authentication endpoints
+  ✓ 9 Core entity endpoints (NEW)
+  ✓ 8 Activity & note endpoints
+  ✓ 9 Task & project endpoints
+  ✓ 8 Estimation & pipeline endpoints
+  ✓ 20 Lead, deal & role endpoints
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔧 TROUBLESHOOTING:
+
+Problem: "Port 5000 already in use"
+Solution: 
+  netstat -ano | findstr :5000
+  taskkill /pid <PID> /f
+
+Problem: "Cannot find database deals_db"
+Solution:
+  MySQL might not be running. Start MySQL:
+  For XAMPP: Control Panel → Apache → Start
+  For standalone MySQL: Services → MySQL → Start
+
+Problem: "Still getting 404 errors"
+Solution:
+  1. Kill all node processes: taskkill /f /im node.exe
+  2. Wait 2 seconds
+  3. Restart server: start-dev.bat
+  4. Wait for "Database connection successful" message
+  5. Clear browser cache: Ctrl+Shift+Delete
+  6. Reload frontend: Ctrl+Shift+R
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📊 SERVER STATUS INDICATORS:
+
+When server starts correctly, you should see:
+  ✓ Server initialization started
+  ✓ Environment: development
+  ✓ Database: localhost/deals_db
+  ✓ Middleware configured
+  ✓ Route modules loaded
+  ✓ Entities routes registered                        ← NEW
+  ✓ Activities/Notes routes registered
+  ✓ Tasks/Projects routes registered
+  ✓ Estimations/Pipeline routes registered
+  ✓ Leads/Deals/Roles routes registered
+  ✓ Error handling middleware configured
+  ✓ Server running on port 5000
+  ✓ Database connection successful
+  ✓ All tables initialized successfully
+  ✓ Existing roles found: 1: Super Admin, 2: Admin, 3: Deal Manager...
+  ✓ All systems operational
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 QUICK RESTART CHECKLIST:
+
+□ Kill old server (taskkill /f /im node.exe)
+□ Wait 2 seconds
+□ Open start-dev.bat
+□ Wait for "All systems operational"
+□ Run: node verify-all-apis.js
+□ Verify all endpoints show ✓
+□ Clear browser cache
+□ Reload http://localhost:3000
+□ Check Network tab in DevTools
+□ Verify no 404 errors
+□ Done! All APIs working
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ Status: Ready to restart and verify!
+
+Execute these steps in order to get all APIs working.

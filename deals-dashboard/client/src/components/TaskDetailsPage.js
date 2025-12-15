@@ -33,7 +33,8 @@ const TaskDetailsPage = () => {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/contacts');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/contacts`);
       if (response.ok) {
         const data = await response.json();
         setUsers(Array.isArray(data) ? data : []);
@@ -361,18 +362,25 @@ const TaskDetailsPage = () => {
           </div>
 
           {/* Tags */}
-          {task.tags && task.tags.length > 0 && (
-            <div className="mt-8 pt-8 border-t">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Tags</label>
-              <div className="flex flex-wrap gap-2">
-                {task.tags.map((tag, i) => (
-                  <span key={i} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {task.tags && (() => {
+            try {
+              const tagsArray = typeof task.tags === 'string' ? JSON.parse(task.tags) : task.tags;
+              return Array.isArray(tagsArray) && tagsArray.length > 0 && (
+                <div className="mt-8 pt-8 border-t">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Tags</label>
+                  <div className="flex flex-wrap gap-2">
+                    {tagsArray.map((tag, i) => (
+                      <span key={i} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            } catch (e) {
+              return null;
+            }
+          })()}
         </div>
       </div>
     </div>

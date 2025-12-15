@@ -26,20 +26,30 @@ const TodoPage = () => {
         return assignedTo.includes(user.id);
       });
 
-      const processedTasks = userTasks.map(task => ({
-        id: task.id,
-        title: task.title,
-        priority: task.priority,
-        date: task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        }) : 'No due date',
-        tags: task.tags || [],
-        status: task.status,
-        assignees: (task.assigned_to || []).length,
-        description: task.description
-      }));
+      const processedTasks = userTasks.map(task => {
+        let tags = [];
+        if (task.tags) {
+          try {
+            tags = typeof task.tags === 'string' ? JSON.parse(task.tags) : task.tags;
+          } catch (e) {
+            tags = [];
+          }
+        }
+        return {
+          id: task.id,
+          title: task.title,
+          priority: task.priority,
+          date: task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }) : 'No due date',
+          tags: Array.isArray(tags) ? tags : [],
+          status: task.status,
+          assignees: (task.assigned_to || []).length,
+          description: task.description
+        };
+      });
 
       setTodos(processedTasks);
       setError(null);

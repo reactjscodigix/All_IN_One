@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MoreVertical, Download, Filter as FilterIcon, Search, Phone, Mail, CheckSquare, Calendar, Video } from 'lucide-react';
+import { MoreVertical, Download, Search, Phone, Mail, CheckSquare, Calendar, Video, FileUp, Receipt, Calculator, Star, TrendingUp, Building2, User, Edit2, FileText } from 'lucide-react';
+import { activitiesAPI } from '../services/api';
 
 const ActivitiesPage = () => {
   const [selectedActivities, setSelectedActivities] = useState([]);
@@ -8,8 +9,10 @@ const ActivitiesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [callHistory, setCallHistory] = useState([]);
-  const [staticActivities] = useState([
+  const [error, setError] = useState('');
+  const [activities, setActivities] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [staticActivitiesPlaceholder] = useState([
     {
       id: '1',
       title: 'We scheduled a meeting for next week',
@@ -113,57 +116,99 @@ const ActivitiesPage = () => {
   ]);
 
   useEffect(() => {
-    fetchCallHistory();
+    fetchAllActivities();
   }, []);
 
-  const fetchCallHistory = async () => {
+  const fetchAllActivities = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/call-history?limit=100');
-      if (response.ok) {
-        const data = await response.json();
-        const callActivities = data.map((call) => ({
-          id: `call-${call.id}`,
-          title: `${call.call_type} - ${call.caller_name} (${call.call_direction})`,
-          type: call.call_type === 'Video Call' ? 'Video Call' : 'Calls',
-          dueDate: new Date(call.created_at).toLocaleString(),
-          owner: call.caller_name,
-          ownerInitial: call.caller_name.substring(0, 1),
-          ownerBg: 'bg-cyan-500',
-          createdAt: call.created_at
+      setError('');
+      
+      const data = await activitiesAPI.getUnifiedFeed();
+      
+      let activitiesList = Array.isArray(data) ? data : [];
+      
+      if (activitiesList.length > 0) {
+        const formattedActivities = activitiesList.map((activity, index) => ({
+          id: activity.id || `activity-${index}`,
+          title: activity.title || 'Activity',
+          type: activity.type || activity.activity_source || 'Task',
+          activitySource: activity.activity_source || 'Activity',
+          dueDate: activity.scheduled_date ? new Date(activity.scheduled_date).toLocaleString() : 'No date',
+          owner: activity.assigned_to_name || activity.created_by_name || 'System',
+          ownerInitial: (activity.assigned_to_name || activity.created_by_name || 'S')[0].toUpperCase(),
+          ownerBg: ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500', 'bg-red-500', 'bg-yellow-500'][index % 7],
+          createdAt: activity.created_at ? new Date(activity.created_at).toLocaleString() : 'No date',
+          icon: activity.icon || 'CheckSquare',
+          color: activity.color || 'blue',
+          description: activity.description || '',
+          status: activity.status || 'Active',
+          ...activity
         }));
-        setCallHistory(callActivities);
+        
+        setActivities(formattedActivities);
+      } else {
+        setActivities([]);
       }
     } catch (error) {
-      console.error('Error fetching call history:', error);
+      console.error('❌ Error fetching unified activity feed:', error);
+      setError('Failed to load activities: ' + error.message);
+      setActivities([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getActivityTypeColor = (type) => {
-    switch (type) {
+  const getActivityTypeColor = (type, activitySource) => {
+    const source = activitySource || type;
+    switch (source) {
       case 'Meeting':
+      case 'Activity':
         return { bg: 'bg-blue-100', text: 'text-blue-700', icon: Calendar };
+      case 'Call':
       case 'Calls':
         return { bg: 'bg-green-100', text: 'text-green-700', icon: Phone };
       case 'Video Call':
         return { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: Video };
       case 'Email':
+      case 'Message Sent':
         return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Mail };
       case 'Task':
         return { bg: 'bg-red-100', text: 'text-red-700', icon: CheckSquare };
+      case 'Note':
+        return { bg: 'bg-yellow-100', text: 'text-yellow-700', icon: Edit2 };
+      case 'Contact Created':
+        return { bg: 'bg-purple-100', text: 'text-purple-700', icon: User };
+      case 'Company Created':
+        return { bg: 'bg-orange-100', text: 'text-orange-700', icon: Building2 };
+      case 'Deal Created':
+        return { bg: 'bg-red-100', text: 'text-red-700', icon: TrendingUp };
+      case 'Lead Created':
+        return { bg: 'bg-indigo-100', text: 'text-indigo-700', icon: Star };
+      case 'Proposal Sent':
+        return { bg: 'bg-cyan-100', text: 'text-cyan-700', icon: FileText };
+      case 'Invoice Created':
+        return { bg: 'bg-green-100', text: 'text-green-700', icon: Receipt };
+      case 'Estimation Created':
+        return { bg: 'bg-pink-100', text: 'text-pink-700', icon: Calculator };
+      case 'File Uploaded':
+        return { bg: 'bg-teal-100', text: 'text-teal-700', icon: FileUp };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-700', icon: null };
     }
   };
 
-  const activities = [...staticActivities, ...callHistory];
-
-  const filteredActivities = activities.filter(activity =>
-    activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    activity.owner.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredActivities = activities.filter(activity => {
+    const matchesSearch = activity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesFilter = activeFilter === 'all' || 
+      activity.activitySource === activeFilter ||
+      activity.type === activeFilter;
+    
+    return matchesSearch && matchesFilter;
+  });
 
   const sortedActivities = [...filteredActivities].sort((a, b) => {
     if (sortBy === 'oldest') {
@@ -193,8 +238,27 @@ const ActivitiesPage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading activities...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
+      {error && (
+        <div className="mb-6 max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-700 text-sm">❌ {error}</p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -202,7 +266,7 @@ const ActivitiesPage = () => {
             <div className="flex items-center gap-3 mb-3">
               <h1 className="text-5xl font-bold text-gray-900">Activities</h1>
               <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">
-                {loading ? '...' : activities.length}
+                {activities.length}
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -242,29 +306,87 @@ const ActivitiesPage = () => {
         </div>
 
         {/* Action Bar */}
-        <div className="mb-6 flex items-center justify-between bg-white p-4 rounded-lg shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold text-gray-700">All Activities</span>
-            <div className="flex gap-2 border-l border-gray-300 pl-4">
-              <Phone size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Audio Calls" />
-              <Video size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Video Calls" />
-              <Mail size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Emails" />
-              <CheckSquare size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Tasks" />
-              <Calendar size={18} className="text-gray-600 cursor-pointer hover:text-gray-900" title="Meetings" />
-            </div>
+        <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="text-sm font-bold text-gray-700 mr-2">Filter by:</span>
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition ${activeFilter === 'all' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              All Activities
+            </button>
+            <button
+              onClick={() => setActiveFilter('Call')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Call' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <Phone size={14} /> Calls
+            </button>
+            <button
+              onClick={() => setActiveFilter('Note')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Note' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <Edit2 size={14} /> Notes
+            </button>
+            <button
+              onClick={() => setActiveFilter('Message Sent')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Message Sent' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <Mail size={14} /> Messages
+            </button>
+            <button
+              onClick={() => setActiveFilter('File Uploaded')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'File Uploaded' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <FileUp size={14} /> Files
+            </button>
+            <button
+              onClick={() => setActiveFilter('Invoice Created')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Invoice Created' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <Receipt size={14} /> Invoices
+            </button>
+            <button
+              onClick={() => setActiveFilter('Contact Created')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Contact Created' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <User size={14} /> Contacts
+            </button>
+            <button
+              onClick={() => setActiveFilter('Company Created')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Company Created' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <Building2 size={14} /> Companies
+            </button>
+            <button
+              onClick={() => setActiveFilter('Deal Created')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Deal Created' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <TrendingUp size={14} /> Deals
+            </button>
+            <button
+              onClick={() => setActiveFilter('Lead Created')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Lead Created' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <Star size={14} /> Leads
+            </button>
+            <button
+              onClick={() => setActiveFilter('Estimation Created')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Estimation Created' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <Calculator size={14} /> Estimations
+            </button>
+            <button
+              onClick={() => setActiveFilter('Proposal Sent')}
+              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Proposal Sent' ? 'bg-cyan-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              <FileText size={14} /> Proposals
+            </button>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-end gap-4 pt-2 border-t border-gray-200">
             <div className="relative">
               <button className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium">
                 Sort By ▼
-              </button>
-            </div>
-
-            <div className="relative">
-              <button className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium">
-                <FilterIcon size={16} />
-                Filter
               </button>
             </div>
 
@@ -288,7 +410,8 @@ const ActivitiesPage = () => {
                   />
                 </th>
                 <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Title</th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Activity Type</th>
+                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Type</th>
+                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Source</th>
                 <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Due Date</th>
                 <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Owner</th>
                 <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Created At</th>
@@ -298,7 +421,7 @@ const ActivitiesPage = () => {
             <tbody>
               {paginatedActivities.length > 0 ? (
                 paginatedActivities.map((activity) => {
-                  const activityColor = getActivityTypeColor(activity.type);
+                  const activityColor = getActivityTypeColor(activity.type, activity.activitySource);
                   return (
                     <tr key={activity.id} className="border-b border-gray-200 hover:bg-gray-50">
                       <td className="px-6 py-5">
@@ -309,13 +432,16 @@ const ActivitiesPage = () => {
                           className="rounded cursor-pointer"
                         />
                       </td>
-                      <td className="px-6 py-5 text-sm text-gray-600">{activity.title}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600 max-w-xs truncate">{activity.title}</td>
                       <td className="px-6 py-5">
                         <span
                           className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${activityColor.bg} ${activityColor.text}`}
                         >
                           {activity.type}
                         </span>
+                      </td>
+                      <td className="px-6 py-5 text-xs text-gray-500 font-medium">
+                        {activity.activitySource || activity.type}
                       </td>
                       <td className="px-6 py-5 text-sm text-gray-600">{activity.dueDate}</td>
                       <td className="px-6 py-5">
@@ -337,7 +463,7 @@ const ActivitiesPage = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan="8" className="px-6 py-12 text-center text-gray-500">
                     No activities found
                   </td>
                 </tr>

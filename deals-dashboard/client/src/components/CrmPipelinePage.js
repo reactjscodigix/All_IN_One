@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Download, MoreVertical, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import AddNewPipelineModal from './AddNewPipelineModal';
 import { pipelineAPI } from '../services/api';
-import pipelineData from '../data/crmPipelineData.json';
 
 const CrmPipelinePage = () => {
-  const [pipelines, setPipelines] = useState(pipelineData.pipelines);
+  const [pipelines, setPipelines] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,9 +17,17 @@ const CrmPipelinePage = () => {
 
   const loadPipelines = async () => {
     try {
+      setIsLoading(true);
+      setError('');
       const data = await pipelineAPI.getAll();
-      if (Array.isArray(data) && data.length > 0) {
-        const formattedData = data.map(p => ({
+      
+      let pipelinesList = data;
+      if (!Array.isArray(data)) {
+        pipelinesList = data?.data || data?.pipelines || [];
+      }
+      
+      if (Array.isArray(pipelinesList) && pipelinesList.length > 0) {
+        const formattedData = pipelinesList.map(p => ({
           id: p.id,
           name: p.name,
           dealValue: p.total_value || 0,
@@ -29,9 +38,15 @@ const CrmPipelinePage = () => {
           status: p.status || 'Active'
         }));
         setPipelines(formattedData);
+      } else {
+        setPipelines([]);
       }
     } catch (error) {
-      console.error('Failed to load pipelines:', error);
+      console.error('❌ Failed to load pipelines:', error);
+      setError('Failed to load pipelines: ' + error.message);
+      setPipelines([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,14 +96,33 @@ const CrmPipelinePage = () => {
       : <ChevronDown size={14} className="text-gray-600" />;
   };
 
+  if (isLoading) {
+    return (
+      <div className="w-full bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading pipelines...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-gray-50 min-h-screen flex flex-col">
+      {error && (
+        <div className="px-6 pt-6 pb-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-700 text-sm">❌ {error}</p>
+          </div>
+        </div>
+      )}
+
       <div className="px-6 pt-6 pb-4">
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-3xl font-bold text-red-600">Pipeline</h1>
-              <span className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold">125</span>
+              <span className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold">{pipelines.length}</span>
             </div>
             <div className="flex items-center gap-1 text-sm mt-1">
               <button className="text-orange-500 hover:text-orange-600 font-medium bg-transparent border-none cursor-pointer p-0">Home</button>
