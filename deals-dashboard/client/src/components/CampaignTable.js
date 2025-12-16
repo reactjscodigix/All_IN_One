@@ -1,10 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, MoreVertical } from 'lucide-react';
-import campaignData from '../data/campaignTableData.json';
+import { campaignAPI } from '../services/api';
 
 const CampaignTable = () => {
-  const [campaigns] = useState(campaignData.campaigns);
+  const [campaigns, setCampaigns] = useState([]);
   const [activeTab, setActiveTab] = useState('active');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadCampaigns();
+  }, []);
+
+  const loadCampaigns = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const data = await campaignAPI.getAll();
+      let campaignsList = data;
+      if (!Array.isArray(data)) {
+        campaignsList = data?.data || data?.campaigns || [];
+      }
+      setCampaigns(campaignsList || []);
+    } catch (err) {
+      console.error('❌ Failed to load campaigns:', err);
+      setError('Failed to load campaigns: ' + err.message);
+      setCampaigns([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="w-full bg-gray-50">
@@ -48,65 +73,79 @@ const CampaignTable = () => {
       </div>
 
       <div className="px-6 pb-8">
-        <div className="overflow-x-auto bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)]">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#EAECF0]">
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Name</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Type</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Progress</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Members</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Status</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {campaigns.map((campaign) => (
-                <tr key={campaign.id} className="border-b border-[#EAECF0] hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="text-[13px] font-medium text-gray-900">{campaign.name}</p>
-                      <p className="text-[12px] text-[#6B7280]">{campaign.type}</p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-[13px] text-gray-900">{campaign.type}</td>
-                  <td className="px-6 py-4">
-                    <div className="space-y-1 text-[11px]">
-                      {campaign.progress.map((prog, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span style={{ color: prog.bg }} className="font-semibold">{prog.value}</span>
-                          <span className="text-[#9CA3AF]">{prog.label}</span>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F62416] mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading campaigns...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            ⚠️ {error}
+          </div>
+        ) : campaigns.length === 0 ? (
+          <div className="bg-white border border-[#EAECF0] rounded-[12px] p-12 text-center">
+            <p className="text-gray-600">No campaigns found</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)]">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#EAECF0]">
+                    <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Campaign Name</th>
+                    <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Status</th>
+                    <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Budget</th>
+                    <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Start Date</th>
+                    <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">End Date</th>
+                    <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaigns.map((campaign) => (
+                    <tr key={campaign.id} className="border-b border-[#EAECF0] hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="text-[13px] font-medium text-gray-900">{campaign.name || 'N/A'}</p>
+                          <p className="text-[12px] text-[#6B7280]">{campaign.description ? campaign.description.substring(0, 40) + '...' : 'No description'}</p>
                         </div>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-1">
-                      {[0, 1, 2].map(i => (
-                        <div key={i} className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-300 to-gray-400"></div>
-                      ))}
-                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-[10px] font-bold text-gray-700">3+</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-block px-3 py-1 rounded-md text-[12px] font-medium text-white`} style={{ backgroundColor: campaign.statusBg }}>
-                      {campaign.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded"><MoreVertical size={16} strokeWidth={2} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-block px-3 py-1 rounded-md text-[12px] font-medium text-white ${
+                          campaign.status === 'Active' ? 'bg-green-500' :
+                          campaign.status === 'Draft' ? 'bg-blue-500' :
+                          campaign.status === 'Completed' ? 'bg-gray-500' :
+                          'bg-orange-500'
+                        }`}>
+                          {campaign.status || 'Unknown'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[13px] text-gray-900">
+                        ${campaign.budget ? parseFloat(campaign.budget).toFixed(2) : '0.00'} {campaign.currency || 'USD'}
+                      </td>
+                      <td className="px-6 py-4 text-[13px] text-gray-900">
+                        {campaign.start_date ? new Date(campaign.start_date).toLocaleDateString('en-GB') : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-[13px] text-gray-900">
+                        {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString('en-GB') : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded"><MoreVertical size={16} strokeWidth={2} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <button className="px-3 py-2 border border-[#EAECF0] rounded-lg hover:bg-gray-50 text-[12px] text-gray-700">←</button>
-          <button className="px-3 py-2 bg-[#F62416] text-white rounded-lg text-[12px] font-medium">1</button>
-          <button className="px-3 py-2 border border-[#EAECF0] rounded-lg hover:bg-gray-50 text-[12px] text-gray-700">→</button>
-        </div>
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button className="px-3 py-2 border border-[#EAECF0] rounded-lg hover:bg-gray-50 text-[12px] text-gray-700">←</button>
+              <button className="px-3 py-2 bg-[#F62416] text-white rounded-lg text-[12px] font-medium">1</button>
+              <button className="px-3 py-2 border border-[#EAECF0] rounded-lg hover:bg-gray-50 text-[12px] text-gray-700">→</button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,11 +1,36 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+const getAuthHeaders = () => {
+  const user = localStorage.getItem('user');
+  const headers = { 'Content-Type': 'application/json' };
+  
+  if (user) {
+    try {
+      const userData = JSON.parse(user);
+      const userId = userData.id || userData.userId;
+      const userRole = userData.role_name || userData.role || userData.userRole;
+      
+      if (userId) {
+        headers['x-user-id'] = userId.toString();
+      }
+      if (userRole) {
+        headers['x-user-role'] = userRole;
+      }
+    } catch (e) {
+      console.warn('Failed to parse user from localStorage');
+    }
+  }
+  
+  return headers;
+};
+
 const apiService = {
   
   get: async (endpoint) => {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        cache: 'no-store'
+        cache: 'no-store',
+        headers: getAuthHeaders()
       });
       if (!response.ok) {
         let errorText = await response.text();
@@ -30,7 +55,7 @@ const apiService = {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -54,7 +79,7 @@ const apiService = {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -78,7 +103,7 @@ const apiService = {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
       });
       if (!response.ok) {
         let errorText = await response.text();
@@ -148,6 +173,11 @@ export const pipelineAPI = {
   create: (data) => apiService.post('/pipeline', data),
   update: (id, data) => apiService.put(`/pipeline/${id}`, data),
   delete: (id) => apiService.delete(`/pipeline/${id}`),
+};
+
+export const pipelineStagesAPI = {
+  getAll: () => apiService.get('/pipeline-stages'),
+  create: (data) => apiService.post('/pipeline-stages', data),
 };
 
 export const invoicesAPI = {

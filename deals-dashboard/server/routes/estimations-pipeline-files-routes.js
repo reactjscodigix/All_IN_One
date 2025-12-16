@@ -91,13 +91,13 @@ module.exports = function setupEstimationsPipelineFilesRoutes(app, pool) {
   app.post('/api/pipeline-stages', async (req, res) => {
     let connection;
     try {
-      const { name, pipeline_id, position, description } = req.body;
+      const { name, pipeline_id, position, description, probability } = req.body;
       connection = await getConnection();
 
       const [result] = await connection.query(`
-        INSERT INTO pipeline_stages (name, pipeline_id, position, description)
-        VALUES (?, ?, ?, ?)
-      `, [name, pipeline_id || null, position || 0, description || null]);
+        INSERT INTO pipeline_stages (name, probability, pipeline_id, position, description)
+        VALUES (?, ?, ?, ?, ?)
+      `, [name, probability || 10, pipeline_id || null, position || 0, description || null]);
 
       res.status(201).json({
         message: 'Pipeline stage created successfully',

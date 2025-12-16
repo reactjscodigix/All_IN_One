@@ -262,32 +262,10 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
         return res.status(404).json({ error: `Receiver with ID ${receiver_id} not found` });
       }
 
-      let conversation = await connection.query(`
-        SELECT * FROM conversations 
-        WHERE (participant1_id = ? AND participant2_id = ?) 
-           OR (participant1_id = ? AND participant2_id = ?)
-      `, [sender_id, receiver_id, receiver_id, sender_id]);
-
-      let conversationId;
-      if (conversation[0].length === 0) {
-        const [result] = await connection.query(`
-          INSERT INTO conversations (participant1_id, participant2_id, last_message_text, last_message_timestamp)
-          VALUES (?, ?, ?, NOW())
-        `, [sender_id, receiver_id, message_text]);
-        conversationId = result.insertId;
-      } else {
-        conversationId = conversation[0][0].id;
-        await connection.query(`
-          UPDATE conversations 
-          SET last_message_text = ?, last_message_timestamp = NOW(), updated_at = NOW()
-          WHERE id = ?
-        `, [message_text, conversationId]);
-      }
-
       const [result] = await connection.query(`
-        INSERT INTO messages (conversation_id, sender_id, receiver_id, message_text)
-        VALUES (?, ?, ?, ?)
-      `, [conversationId, sender_id, receiver_id, message_text]);
+        INSERT INTO messages (sender_id, receiver_id, message_text)
+        VALUES (?, ?, ?)
+      `, [sender_id, receiver_id, message_text]);
 
       const [message] = await connection.query('SELECT * FROM messages WHERE id = ?', [result.insertId]);
       res.status(201).json(message[0]);

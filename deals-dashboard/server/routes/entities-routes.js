@@ -62,8 +62,6 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         last_name,
         email,
         phone,
-        phone2,
-        fax,
         company_id,
         position,
         department,
@@ -84,17 +82,15 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       connection = await getConnection();
       const [result] = await connection.query(
         `INSERT INTO contacts (
-          first_name, last_name, email, phone, phone2, fax, company_id,
+          first_name, last_name, email, phone, company_id,
           position, department, address, city, state, country, source,
           status, notes, avatar
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           first_name,
           last_name || null,
           email || null,
           phone || null,
-          phone2 || null,
-          fax || null,
           company_id || null,
           position || null,
           department || null,
@@ -129,8 +125,6 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         last_name,
         email,
         phone,
-        phone2,
-        fax,
         company_id,
         position,
         department,
@@ -147,7 +141,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       connection = await getConnection();
       await connection.query(
         `UPDATE contacts SET
-          first_name = ?, last_name = ?, email = ?, phone = ?, phone2 = ?, fax = ?,
+          first_name = ?, last_name = ?, email = ?, phone = ?,
           company_id = ?, position = ?, department = ?, address = ?, city = ?,
           state = ?, country = ?, source = ?, status = ?, notes = ?, avatar = ?,
           updated_at = NOW()
@@ -157,8 +151,6 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           last_name || null,
           email || null,
           phone || null,
-          phone2 || null,
-          fax || null,
           company_id || null,
           position || null,
           department || null,
@@ -433,22 +425,44 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         return res.status(400).json({ error: 'Deal name required' });
       }
 
-      const probabilityMap = {
-        'New': 10,
-        'Discovery': 20,
-        'Follow Up': 30,
-        'In Pipeline': 40,
-        'Conversation': 50,
-        'Proposal Sent': 60,
-        'Negotiation': 70,
-        'Qualified to Buy': 80,
-        'Won': 100,
-        'Lost': 0
-      };
-
-      const finalProbability = probability || probabilityMap[pipeline] || 10;
-
       connection = await getConnection();
+      
+      const createCompanyId = company_id ? parseInt(company_id, 10) : null;
+      const createContactId = contact_id ? parseInt(contact_id, 10) : null;
+      const createAssigneeId = assignee_id ? parseInt(assignee_id, 10) : null;
+      
+      if (createCompanyId && !isNaN(createCompanyId)) {
+        const [companyCheck] = await connection.query(
+          'SELECT id FROM companies WHERE id = ?',
+          [createCompanyId]
+        );
+        if (companyCheck.length === 0) {
+          connection.release();
+          return res.status(400).json({
+            error: 'Invalid company ID',
+            details: `Company with ID ${createCompanyId} does not exist`
+          });
+        }
+      }
+      
+      let finalProbability = probability;
+      
+      if (!finalProbability && pipeline) {
+        const [stage] = await connection.query(
+          'SELECT probability FROM pipeline_stages WHERE name = ? AND status = ?',
+          [pipeline, 'Active']
+        );
+        if (stage.length > 0) {
+          finalProbability = stage[0].probability;
+        } else {
+          finalProbability = 10;
+        }
+      }
+      
+      if (!finalProbability) {
+        finalProbability = 10;
+      }
+
       const [result] = await connection.query(
         `INSERT INTO deals (
           deal_name, description, deal_value, currency, status, company_id,
@@ -462,9 +476,9 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           deal_value || 0,
           currency || 'USD',
           status || 'Open',
-          company_id || null,
-          contact_id || null,
-          assignee_id || null,
+          createCompanyId,
+          createContactId,
+          createAssigneeId,
           pipeline || null,
           deal_stage || null,
           finalProbability,
@@ -516,22 +530,51 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         tags
       } = req.body;
 
-      const probabilityMap = {
-        'New': 10,
-        'Discovery': 20,
-        'Follow Up': 30,
-        'In Pipeline': 40,
-        'Conversation': 50,
-        'Proposal Sent': 60,
-        'Negotiation': 70,
-        'Qualified to Buy': 80,
-        'Won': 100,
-        'Lost': 0
-      };
-
-      const finalProbability = probability || (pipeline ? probabilityMap[pipeline] : probability);
+      console.log(`📝 Updating deal ${id} with company_id: ${company_id} (type: ${typeof company_id})`);
 
       connection = await getConnection();
+      
+      const finalCompanyId = company_id ? parseInt(company_id, 10) : null;
+      const finalContactId = contact_id ? parseInt(contact_id, 10) : null;
+      const finalAssigneeId = assignee_id ? parseInt(assignee_id, 10) : null;
+      
+      if (finalCompanyId && !isNaN(finalCompanyId)) {
+        const [companyCheck] = await connection.query(
+          'SELECT id FROM companies WHERE id = ?',
+          [finalCompanyId]
+        );
+        if (companyCheck.length === 0) {
+          connection.release();
+          return res.status(400).json({
+            error: 'Invalid company ID',
+            details: `Company with ID ${finalCompanyId} does not exist`
+          });
+        }
+      }
+      
+      let finalProbability = probability;
+      
+      if (!finalProbability && pipeline) {
+        const [stage] = await connection.query(
+          'SELECT probability FROM pipeline_stages WHERE name = ? AND status = ?',
+          [pipeline, 'Active']
+        );
+        if (stage.length > 0) {
+          finalProbability = stage[0].probability;
+        } else {
+          finalProbability = 10;
+        }
+      }
+      
+      if (!finalProbability) {
+        finalProbability = null;
+      }
+      
+      let autoProposal = false;
+      if (pipeline === 'Won') {
+        autoProposal = true;
+      }
+
       await connection.query(
         `UPDATE deals SET
           deal_name = ?, description = ?, deal_value = ?, currency = ?, status = ?,
@@ -546,12 +589,12 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           deal_value || 0,
           currency || 'USD',
           status || null,
-          company_id || null,
-          contact_id || null,
-          assignee_id || null,
+          finalCompanyId,
+          finalContactId,
+          finalAssigneeId,
           pipeline || null,
           deal_stage || null,
-          finalProbability || null,
+          finalProbability,
           expected_close_date || null,
           due_date || null,
           follow_up_date || null,
@@ -563,12 +606,92 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           id
         ]
       );
+      
+      if (autoProposal) {
+        const [existingProposal] = await connection.query(
+          'SELECT id, proposal_number FROM proposals WHERE deal_id = ? LIMIT 1',
+          [id]
+        );
+        
+        let proposalId = null;
+        let proposalNumber = null;
+        
+        if (existingProposal.length === 0) {
+          proposalNumber = `PROP-${Date.now()}`;
+          const proposalDate = new Date().toISOString().split('T')[0];
+          const validityDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          
+          const [proposalResult] = await connection.query(
+            `INSERT INTO proposals (
+              proposal_number, title, description, client_id, contact_id, deal_id,
+              created_by, status, proposal_date, validity_date, total_amount, currency
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              proposalNumber,
+              deal_name || 'Proposal',
+              description || null,
+              company_id || null,
+              contact_id || null,
+              id,
+              assignee_id || null,
+              'Draft',
+              proposalDate,
+              validityDate,
+              deal_value || 0,
+              currency || 'USD'
+            ]
+          );
+          proposalId = proposalResult.insertId;
+          console.log(`✓ Auto-created proposal ${proposalNumber} (ID: ${proposalId}) for deal ${id}`);
+        } else {
+          proposalId = existingProposal[0].id;
+          proposalNumber = existingProposal[0].proposal_number;
+          console.log(`⚠️ Proposal ${proposalNumber} already exists for deal ${id}, skipping creation`);
+        }
+        
+        const [existingProject] = await connection.query(
+          'SELECT id, name FROM projects WHERE deal_id = ? LIMIT 1',
+          [id]
+        );
+        
+        let projectId = null;
+        
+        if (existingProject.length === 0) {
+          const [projectResult] = await connection.query(
+            `INSERT INTO projects (
+              name, title, description, deal_id, company_id, contact_id,
+              budget, currency, status, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              deal_name || 'Project',
+              deal_name || 'New Project',
+              description || null,
+              id,
+              company_id || null,
+              contact_id || null,
+              deal_value || 0,
+              currency || 'USD',
+              'Planning',
+              assignee_id || null
+            ]
+          );
+          projectId = projectResult.insertId;
+          console.log(`✓ Auto-created project (ID: ${projectId}) for deal ${id}`);
+        } else {
+          projectId = existingProject[0].id;
+          console.log(`⚠️ Project "${existingProject[0].name}" already exists for deal ${id}, skipping creation`);
+        }
+      }
 
       const [deal] = await connection.query('SELECT * FROM deals WHERE id = ?', [id]);
       connection.release();
 
       return res.json(deal[0]);
     } catch (err) {
+      console.error('❌ Deal update error:', err.message);
+      if (err.message && err.message.includes('foreign key constraint')) {
+        return responseError(res, 400, 'Failed to update deal - Invalid company or contact', err);
+      }
       responseError(res, 500, 'Failed to update deal', err);
     } finally {
       if (connection) connection.release();

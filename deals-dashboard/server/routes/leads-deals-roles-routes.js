@@ -221,6 +221,107 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
     }
   });
 
+  app.post('/api/leads/:id/convert-to-deal', async (req, res) => {
+    let connection;
+    try {
+      const { deal_name, deal_value, currency, company_id, description } = req.body;
+      const leadId = req.params.id;
+      
+      if (!deal_name || !deal_value) {
+        return res.status(400).json({ error: 'Deal name and value are required' });
+      }
+      
+      connection = await pool.getConnection();
+      
+      const [lead] = await connection.query('SELECT * FROM leads WHERE id = ?', [leadId]);
+      
+      if (lead.length === 0) {
+        connection.release();
+        return res.status(404).json({ error: 'Lead not found' });
+      }
+      
+      const leadData = lead[0];
+      
+      let finalCompanyId = company_id || leadData.company_id;
+      
+      if (!finalCompanyId) {
+        const [companies] = await connection.query(
+          `SELECT id FROM companies LIMIT 1`
+        );
+        
+        if (companies.length > 0) {
+          finalCompanyId = companies[0].id;
+        } else {
+          const [companyResult] = await connection.query(
+            `INSERT INTO companies (company_name, status) VALUES (?, ?)`,
+            [`${leadData.lead_name || 'Unknown'} Company`, 'Active']
+          );
+          finalCompanyId = companyResult.insertId;
+        }
+      }
+      
+      let stageId = null;
+      
+      try {
+        const [defaultPipeline] = await connection.query(
+          `SELECT id FROM pipelines WHERE status = 'Active' ORDER BY id LIMIT 1`
+        );
+        
+        if (defaultPipeline.length > 0) {
+          const [defaultStage] = await connection.query(
+            `SELECT id FROM pipeline_stages WHERE pipeline_id = ? ORDER BY sequence ASC LIMIT 1`,
+            [defaultPipeline[0].id]
+          );
+          
+          if (defaultStage.length > 0) {
+            stageId = defaultStage[0].id;
+          }
+        }
+      } catch (pipelineErr) {
+        console.warn('Pipeline/stage tables not found, proceeding without pipeline assignment');
+      }
+      
+      const [dealResult] = await connection.query(
+        `INSERT INTO deals (
+          deal_name, description, deal_value, currency, status,
+          company_id, pipeline, deal_stage, probability, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [
+          deal_name,
+          description || null,
+          deal_value,
+          currency || 'USD',
+          'Open',
+          finalCompanyId, 
+          'New', 
+          stageId || 'New',
+          10
+        ]
+      );
+      
+      const dealId = dealResult.insertId;
+      
+      const [leadUpdateResult] = await connection.query(
+        `UPDATE leads SET lead_status = ?, updated_at = NOW()
+         WHERE id = ?`,
+        ['Qualified', leadId]
+      );
+      
+      const [newDeal] = await connection.query('SELECT * FROM deals WHERE id = ?', [dealId]);
+      connection.release();
+      
+      return res.status(201).json({
+        success: true,
+        message: `Lead "${leadData.lead_name}" successfully converted to deal`,
+        deal: newDeal[0],
+        leadId: leadId
+      });
+    } catch (err) {
+      console.error('Error converting lead to deal:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   app.get('/api/deals/:dealId/contacts', async (req, res) => {
     let connection;
     try {

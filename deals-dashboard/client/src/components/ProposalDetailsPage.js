@@ -46,7 +46,7 @@ const ProposalDetailsPage = ({ proposalId, onBack }) => {
   const handleConvertToInvoice = async () => {
     if (!proposal) return;
     try {
-      const result = await proposalsAPI.convertToInvoice(proposal.id, { created_by: 1 });
+      const result = await proposalsAPI.convertToInvoice(proposal.id, { total_amount: proposal.total_amount });
       alert('Proposal converted to invoice: ' + result.invoiceNumber);
       await loadProposal();
     } catch (err) {

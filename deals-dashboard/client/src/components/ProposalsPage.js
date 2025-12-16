@@ -133,11 +133,44 @@ const ProposalsPage = ({ onViewDetails }) => {
 
   const handleConvertToInvoice = async (proposalId) => {
     try {
-      const result = await proposalsAPI.convertToInvoice(proposalId, { created_by: 1 });
-      alert('Proposal converted to invoice: ' + result.invoiceNumber);
-      await loadInitialData();
+      const proposal = proposals.find(p => p.id === proposalId);
+      if (!proposal) return;
+
+      const result = await Swal.fire({
+        title: 'Convert to Invoice?',
+        html: `<p>Convert <strong>${proposal.proposal_number}</strong> to invoice?</p>
+               <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Amount: <strong>${proposal.currency || 'USD'} ${(proposal.total_amount || 0).toLocaleString()}</strong></p>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, Convert!',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        await proposalsAPI.convertToInvoice(proposalId, { total_amount: proposal.total_amount });
+        
+        await Swal.fire({
+          title: 'Success!',
+          html: `<p>Proposal <strong>${proposal.proposal_number}</strong> converted to invoice!</p>
+                 <p style="font-size: 0.85em; color: #666; margin-top: 10px;">Invoice will appear in Invoices page in a few seconds</p>`,
+          icon: 'success',
+          confirmButtonColor: '#3085d6',
+          timer: 2000,
+          timerProgressBar: true
+        });
+
+        setShowActionMenu(null);
+        await loadInitialData();
+      }
     } catch (err) {
-      alert('Failed to convert proposal: ' + err.message);
+      await Swal.fire({
+        title: 'Error',
+        html: `<p>Failed to convert to invoice: ${err.message}</p>`,
+        icon: 'error',
+        confirmButtonColor: '#d33'
+      });
     }
   };
 
@@ -201,7 +234,7 @@ const ProposalsPage = ({ onViewDetails }) => {
 
       if (result.isConfirmed) {
         console.log(`🔄 Calling convertToContract API for proposal ${proposalId}...`);
-        const response = await proposalsAPI.convertToContract(proposalId, { created_by: 1 });
+        const response = await proposalsAPI.convertToContract(proposalId, {});
         console.log(`✅ API Response:`, response);
         
         await Swal.fire({

@@ -248,6 +248,7 @@ async function initializeDatabase() {
         description LONGTEXT,
         status ENUM('Draft', 'Active', 'Completed', 'Terminated') DEFAULT 'Draft',
         created_by INT,
+        proposal_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_client_id (client_id),
@@ -255,10 +256,24 @@ async function initializeDatabase() {
         INDEX idx_end_date (end_date),
         INDEX idx_status (status),
         INDEX idx_created_at (created_at),
+        INDEX idx_proposal_id (proposal_id),
         FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE,
-        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (proposal_id) REFERENCES proposals(id) ON DELETE SET NULL
       )
     `);
+
+    try {
+      await connection.query(`
+        ALTER TABLE contracts ADD COLUMN proposal_id INT, 
+        ADD INDEX idx_proposal_id (proposal_id),
+        ADD FOREIGN KEY (proposal_id) REFERENCES proposals(id) ON DELETE SET NULL
+      `);
+    } catch (err) {
+      if (err.code !== 'ER_DUP_FIELDNAME') {
+        console.warn('Could not add proposal_id column to contracts:', err.message);
+      }
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS contacts (
@@ -471,6 +486,47 @@ async function initializeDatabase() {
         INDEX idx_position (position)
       )
     `);
+
+    try {
+      const [columns] = await connection.query(`
+        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_NAME = 'pipeline_stages' AND COLUMN_NAME IN ('probability', 'status')
+      `);
+      
+      if (columns.length < 2) {
+        await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+        await connection.query('DROP TABLE IF EXISTS pipeline_stages');
+        await connection.query('SET FOREIGN_KEY_CHECKS = 1');
+        console.log('✓ Dropped old pipeline_stages table');
+      }
+    } catch (err) {
+      console.warn('⚠️ Could not check pipeline_stages columns:', err.message);
+      try {
+        await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+        await connection.query('DROP TABLE IF EXISTS pipeline_stages');
+        await connection.query('SET FOREIGN_KEY_CHECKS = 1');
+        console.log('✓ Force dropped old pipeline_stages table');
+      } catch (dropErr) {
+        console.warn('⚠️ Could not force drop pipeline_stages:', dropErr.message);
+      }
+    }
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS pipeline_stages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        probability INT NOT NULL,
+        description LONGTEXT,
+        position INT,
+        status ENUM('Active', 'Inactive') DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        INDEX idx_probability (probability),
+        INDEX idx_position (position)
+      )
+    `);
+    console.log('✓ Pipeline stages table created/verified');
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS campaigns (
@@ -876,6 +932,39 @@ async function initializeDatabase() {
       }
       console.log('✓ Demo pipelines created');
     }
+
+    const stages = [
+      { name: 'New', probability: 10, position: 1, description: 'New opportunity entered' },
+      { name: 'Discovery', probability: 20, position: 2, description: 'Initial discovery phase' },
+      { name: 'Follow Up', probability: 30, position: 3, description: 'Follow-up conversations' },
+      { name: 'Inpipeline', probability: 40, position: 4, description: 'In the pipeline' },
+      { name: 'Conversation', probability: 50, position: 5, description: 'Active conversations' },
+      { name: 'Proposal Sent', probability: 60, position: 6, description: 'Proposal sent to client' },
+      { name: 'Negotiation', probability: 75, position: 7, description: 'In negotiation phase' },
+      { name: 'Qualified To Buy', probability: 90, position: 8, description: 'Qualified to buy' },
+      { name: 'Won', probability: 100, position: 9, description: 'Deal won' },
+      { name: 'Lost', probability: 0, position: 10, description: 'Deal lost' }
+    ];
+    
+    for (const stage of stages) {
+      const [existing] = await connection.query(
+        'SELECT id FROM pipeline_stages WHERE name = ?',
+        [stage.name]
+      );
+      
+      if (existing.length > 0) {
+        await connection.query(
+          'UPDATE pipeline_stages SET probability = ?, position = ?, description = ?, status = ? WHERE name = ?',
+          [stage.probability, stage.position, stage.description, 'Active', stage.name]
+        );
+      } else {
+        await connection.query(
+          'INSERT INTO pipeline_stages (name, probability, position, description, status) VALUES (?, ?, ?, ?, ?)',
+          [stage.name, stage.probability, stage.position, stage.description, 'Active']
+        );
+      }
+    }
+    console.log('✓ Pipeline stages synced with probabilities');
 
     const [existingContracts] = await connection.query('SELECT COUNT(*) as count FROM contracts');
     if (existingContracts[0].count === 0) {

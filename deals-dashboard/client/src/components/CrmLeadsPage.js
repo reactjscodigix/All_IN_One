@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Plus, MoreVertical } from 'lucide-react';
 import leadsData from '../data/crmLeadsData.json';
 import AddNewLeadModal from './AddNewLeadModal';
-import { leadsAPI, companiesAPI } from '../services/api';
+import { leadsAPI, companiesAPI, dealsAPI } from '../services/api';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const CrmLeadsPage = () => {
@@ -192,9 +192,45 @@ const CrmLeadsPage = () => {
     showSuccessToast(`Lead "${lead.name}" cloned successfully!`);
   };
 
-  const handleConvertLead = (lead) => {
-    console.log('Convert lead to deal:', lead);
-    setOpenMenuId(null);
+  const handleConvertLead = async (lead) => {
+    try {
+      const conversionData = {
+        deal_name: `${lead.name} - Deal`,
+        deal_value: lead.value || 0,
+        currency: lead.currency || 'USD',
+        company_id: lead.company_id || null,
+        description: `Auto-converted from lead: ${lead.name}`
+      };
+      
+      const response = await leadsAPI.convertToDeal(lead.id, conversionData);
+      
+      if (response.success && response.deal) {
+        setLeads(prev => prev.filter(l => l.id !== lead.id));
+        
+        const leadStatus = lead.status;
+        setStatusStats(prev => {
+          const updated = [...prev];
+          const statusIndex = updated.findIndex(s => s.status === leadStatus);
+          if (statusIndex >= 0) {
+            updated[statusIndex].leads = Math.max(0, updated[statusIndex].leads - 1);
+            updated[statusIndex].value = Math.max(0, updated[statusIndex].value - (lead.value || 0));
+          }
+          return updated;
+        });
+        
+        setOpenMenuId(null);
+        showSuccessToast(`Lead "${lead.name}" successfully converted to deal!`);
+        
+        setTimeout(() => {
+          navigate(`/deals`);
+        }, 1500);
+      } else {
+        throw new Error(response.error || 'Conversion failed');
+      }
+    } catch (err) {
+      const errorMessage = err.message || 'Failed to convert lead to deal';
+      showErrorToast(errorMessage);
+    }
   };
 
   const handleSendEmail = (lead) => {

@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import dealsData from '../data/crmDealsData.json';
 import AddNewDealModal from './AddNewDealModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
-import { dealsAPI, contactsAPI, companiesAPI, projectAPI } from '../services/api';
+import { dealsAPI, contactsAPI, companiesAPI, projectAPI, pipelineStagesAPI } from '../services/api';
 import projectsData from '../data/crmProjectsData.json';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
 
@@ -29,6 +29,7 @@ const CrmDealsPage = () => {
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [pipelineStages, setPipelineStages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [openMenu, setOpenMenu] = useState(null);
   const [selectedDealToEdit, setSelectedDealToEdit] = useState(null);
@@ -36,15 +37,22 @@ const CrmDealsPage = () => {
   const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, deal: null, isDeleting: false });
   const scrollRef = useRef(null);
 
+  const getProbabilityFromStage = (stageName) => {
+    if (!stageName) return 10;
+    const stage = pipelineStages.find(s => s.name === stageName);
+    return stage ? stage.probability : 10;
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [dealsRes, contactsRes, companiesRes, projectsRes] = await Promise.all([
+        const [dealsRes, contactsRes, companiesRes, projectsRes, stagesRes] = await Promise.all([
           dealsAPI.getAll(),
           contactsAPI.getAll(),
           companiesAPI.getAll(),
           projectAPI.getAll(),
+          pipelineStagesAPI.getAll(),
         ]);
         
         console.log('✅ API Response - Deals (raw):', dealsRes);
@@ -53,6 +61,8 @@ const CrmDealsPage = () => {
         console.log('✅ API Response - Deals keys:', dealsRes ? Object.keys(dealsRes).slice(0, 10) : 'N/A');
         console.log('✅ API Response - Projects:', projectsRes);
         
+        setPipelineStages(stagesRes || []);
+
         let actualDeals = dealsRes;
         if (dealsRes && !Array.isArray(dealsRes) && typeof dealsRes === 'object') {
           console.log('⚠️ API response is not an array, attempting to unwrap...');
@@ -76,32 +86,15 @@ const CrmDealsPage = () => {
         console.log('📊 actualDeals.length:', actualDeals?.length);
         
         if (actualDeals && Array.isArray(actualDeals) && actualDeals.length > 0) {
-          const getProbabilityFromPipeline = (pipeline, status) => {
-            const statusProbabilityMap = {
-              'Won': 100,
-              'Lost': 0
-            };
-            
-            if (statusProbabilityMap[status] !== undefined) {
-              return statusProbabilityMap[status];
-            }
-
-            const pipelineProbabilityMap = {
-              'New': 10,
-              'Discovery': 20,
-              'Follow Up': 30,
-              'Inpipeline': 40,
-              'Conversation': 50,
-              'Proposal Sent': 60,
-              'Negotiation': 70,
-              'Qualified To Buy': 80
-            };
-            return pipelineProbabilityMap[pipeline] || 10;
+          const getStageProb = (stageName) => {
+            if (!stageName) return 10;
+            const stage = stagesRes?.find(s => s.name === stageName);
+            return stage ? stage.probability : 10;
           };
 
           const formattedDeals = actualDeals.map(deal => {
             const stage = deal.pipeline || deal.deal_stage || 'Unclassified';
-            const probability = getProbabilityFromPipeline(stage, deal.status);
+            const probability = getStageProb(stage);
             
             const formatted = {
               ...deal,
@@ -257,29 +250,6 @@ const CrmDealsPage = () => {
 
   const handleCreateDeal = async (formData) => {
     try {
-      const getProbabilityFromPipeline = (pipeline, status) => {
-        const statusProbabilityMap = {
-          'Won': 100,
-          'Lost': 0
-        };
-        
-        if (statusProbabilityMap[status] !== undefined) {
-          return statusProbabilityMap[status];
-        }
-
-        const pipelineProbabilityMap = {
-          'New': 10,
-          'Discovery': 20,
-          'Follow Up': 30,
-          'Inpipeline': 40,
-          'Conversation': 50,
-          'Proposal Sent': 60,
-          'Negotiation': 70,
-          'Qualified To Buy': 80
-        };
-        return pipelineProbabilityMap[pipeline] || 10;
-      };
-
       const cleanedData = {
         ...formData,
         company_id: formData.company_id ? parseInt(formData.company_id, 10) : null,
@@ -299,10 +269,13 @@ const CrmDealsPage = () => {
         
         const dealValue = parseFloat(formData.deal_value) || 0;
         const dealStage = formData.pipeline || 'Qualify To Buy';
-        const probability = getProbabilityFromPipeline(dealStage, formData.status);
+        const probability = getProbabilityFromStage(dealStage);
         
         const newDeal = {
           id: response.id,
+          company_id: parseInt(formData.company_id, 10) || null,
+          contact_id: parseInt(formData.contact_id, 10) || null,
+          assignee_id: parseInt(formData.assignee_id, 10) || null,
           stage: dealStage,
           company: companyName,
           initials: initials,
@@ -317,6 +290,7 @@ const CrmDealsPage = () => {
           progress: probability,
           date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
           deal_name: formData.deal_name,
+          description: formData.description || '',
           pipeline: formData.pipeline,
           status: formData.status,
           currency: formData.currency,
@@ -398,37 +372,13 @@ const CrmDealsPage = () => {
 
   const handleUpdateDeal = async (formData) => {
     try {
-      const getProbabilityFromPipeline = (pipeline, status) => {
-        const statusProbabilityMap = {
-          'Won': 100,
-          'Lost': 0
-        };
-        
-        if (statusProbabilityMap[status] !== undefined) {
-          return statusProbabilityMap[status];
-        }
-
-        const pipelineProbabilityMap = {
-          'New': 10,
-          'Discovery': 20,
-          'Follow Up': 30,
-          'Inpipeline': 40,
-          'Conversation': 50,
-          'Proposal Sent': 60,
-          'Negotiation': 70,
-          'Qualified To Buy': 80
-        };
-        return pipelineProbabilityMap[pipeline] || 10;
-      };
-
       console.log('📝 Updating deal:', selectedDealToEdit.id);
       console.log('📝 Form data being sent:', formData);
       await dealsAPI.update(selectedDealToEdit.id, formData);
       console.log('✅ Deal updated successfully');
       
       const newStage = formData.pipeline || selectedDealToEdit.stage;
-      const newStatus = formData.status || selectedDealToEdit.status;
-      const newProbability = getProbabilityFromPipeline(newStage, newStatus);
+      const newProbability = getProbabilityFromStage(newStage);
       
       const updatedDeal = {
         ...selectedDealToEdit,
@@ -436,6 +386,9 @@ const CrmDealsPage = () => {
         stage: newStage,
         value: parseFloat(formData.deal_value) || selectedDealToEdit.value,
         company: formData.company_name || selectedDealToEdit.company,
+        company_id: formData.company_id ? parseInt(formData.company_id, 10) : selectedDealToEdit.company_id,
+        contact_id: formData.contact_id ? parseInt(formData.contact_id, 10) : selectedDealToEdit.contact_id,
+        assignee_id: formData.assignee_id ? parseInt(formData.assignee_id, 10) : selectedDealToEdit.assignee_id,
         progress: newProbability,
       };
       
@@ -515,44 +468,25 @@ const CrmDealsPage = () => {
 
     try {
       const payload = {
-        deal_name: dealToMove.deal_name || dealToMove.company,
-        company_id: dealToMove.company_id,
-        contact_id: dealToMove.contact_id,
-        deal_value: dealToMove.value,
+        deal_name: dealToMove.deal_name || dealToMove.company || 'Deal',
+        description: dealToMove.description || null,
+        company_id: dealToMove.company_id ?? null,
+        contact_id: dealToMove.contact_id ?? null,
+        assignee_id: dealToMove.assignee_id ?? null,
+        deal_value: dealToMove.value || 0,
         currency: dealToMove.currency || 'USD',
         pipeline: toStage,
-        status: dealToMove.status
+        status: dealToMove.status || 'Open',
+        priority: dealToMove.priority || 'Medium'
       };
 
+      console.log(`🔄 Moving deal ${dealId} from ${fromStage} to ${toStage}`, payload);
       await dealsAPI.update(dealId, payload);
       
-      const getProbabilityFromPipeline = (pipeline, status) => {
-        const statusProbabilityMap = {
-          'Won': 100,
-          'Lost': 0
-        };
-        
-        if (statusProbabilityMap[status] !== undefined) {
-          return statusProbabilityMap[status];
-        }
-
-        const pipelineProbabilityMap = {
-          'New': 10,
-          'Discovery': 20,
-          'Follow Up': 30,
-          'Inpipeline': 40,
-          'Conversation': 50,
-          'Proposal Sent': 60,
-          'Negotiation': 70,
-          'Qualified To Buy': 80
-        };
-        return pipelineProbabilityMap[pipeline] || 10;
-      };
-
       const updatedDeal = {
         ...dealToMove,
         stage: toStage,
-        progress: getProbabilityFromPipeline(toStage, dealToMove.status)
+        progress: getProbabilityFromStage(toStage)
       };
 
       setDeals(prev => prev.map(d => d.id === dealId ? updatedDeal : d));
@@ -569,7 +503,11 @@ const CrmDealsPage = () => {
         }
         return newStat;
       }));
-      showSuccessToast(`Deal "${dealToMove.company}" moved to ${toStage}!`);
+      
+      const successMsg = toStage === 'Won' 
+        ? `✅ Deal "${dealToMove.company}" won! Proposal & Project auto-created.`
+        : `Deal "${dealToMove.company}" moved to ${toStage}!`;
+      showSuccessToast(successMsg);
     } catch (err) {
       console.error('Failed to move deal:', err);
       showErrorToast('Failed to move deal');
@@ -595,7 +533,7 @@ const CrmDealsPage = () => {
         if (stat.stage === 'Won') return { ...stat, leads: stat.leads + 1, value: stat.value + deal.value };
         return stat;
       }));
-      showSuccessToast(`Deal "${deal.company}" won successfully!`);
+      showSuccessToast(`✅ Deal "${deal.company}" won! Proposal & Project auto-created.`);
     } catch (err) {
       console.error('Failed to win deal:', err);
       showErrorToast('Failed to move deal to Won stage');

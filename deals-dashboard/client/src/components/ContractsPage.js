@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MoreVertical, Plus, Download, Grid3x3, List, Eye, Trash2, Send, X, Filter, Search, FileText } from 'lucide-react';
+import { MoreVertical, Plus, Download, Grid3x3, List, Eye, Trash2, X, Filter, Search, FileText } from 'lucide-react';
 import Swal from 'sweetalert2';
 import AddNewContractModal from './AddNewContractModal';
 import ContractDetailsPage from './ContractDetailsPage';
@@ -25,8 +25,6 @@ const ContractsPage = () => {
     dateTo: '',
   });
   const [showActionMenu, setShowActionMenu] = useState(null);
-  const [showSendModal, setShowSendModal] = useState(null);
-  const [sendEmail, setSendEmail] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   const contractStatuses = ['Draft', 'Sent', 'Active', 'Expired', 'Cancelled'];
@@ -109,8 +107,8 @@ const ContractsPage = () => {
     try {
       const result = await Swal.fire({
         title: 'Convert to Estimation?',
-        html: `<p>Convert <strong>${contract.subject}</strong> to estimation?</p>
-               <p style="font-size: 0.85em; color: #666; margin-top: 10px;">Amount: $${contract.contract_value}</p>`,
+        html: `<p>Convert <strong>${contract.subject || 'Unnamed Contract'}</strong> to estimation?</p>
+               <p style="font-size: 0.85em; color: #666; margin-top: 10px;">Amount: $${contract.contract_value || 0}</p>`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -124,7 +122,7 @@ const ContractsPage = () => {
         
         await Swal.fire({
           title: 'Success!',
-          html: `<p>Contract <strong>${contract.subject}</strong> converted to estimation!</p>
+          html: `<p>Contract <strong>${contract.subject || 'Unnamed Contract'}</strong> converted to estimation!</p>
                  <p style="font-size: 0.85em; color: #666; margin-top: 10px;">will appear in Estimations page in a few seconds</p>`,
           icon: 'success',
           confirmButtonColor: '#3085d6',
@@ -140,53 +138,6 @@ const ContractsPage = () => {
       await Swal.fire({
         title: 'Error',
         html: `<p>Failed to convert contract: ${err.message}</p>`,
-        icon: 'error',
-        confirmButtonColor: '#d33'
-      });
-    }
-  };
-
-  const handleSendContract = async () => {
-    try {
-      const contract = contracts.find(c => c.id === showSendModal);
-      if (!contract) return;
-
-      const result = await Swal.fire({
-        title: 'Send Contract?',
-        html: `<p>Send <strong>${contract.subject}</strong> to <strong>${sendEmail}</strong>?</p>`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, Send it!',
-        cancelButtonText: 'Cancel'
-      });
-
-      if (result.isConfirmed) {
-        await contractsAPI.update(showSendModal, { 
-          status: 'Sent',
-          sent_to_email: sendEmail 
-        });
-        
-        await Swal.fire({
-          title: 'Success!',
-          html: `<p>Contract <strong>${contract.subject}</strong> sent successfully!</p>
-                 <p style="font-size: 0.85em; color: #666; margin-top: 10px;">Sent to: ${sendEmail}</p>`,
-          icon: 'success',
-          confirmButtonColor: '#3085d6',
-          timer: 2000,
-          timerProgressBar: true
-        });
-
-        setShowSendModal(null);
-        setSendEmail('');
-        await fetchContracts();
-      }
-    } catch (err) {
-      console.error('Error sending contract:', err);
-      await Swal.fire({
-        title: 'Error',
-        html: `<p>Failed to send contract: ${err.message}</p>`,
         icon: 'error',
         confirmButtonColor: '#d33'
       });
@@ -250,21 +201,37 @@ const ContractsPage = () => {
     return company ? (company.company_name || company.name) : 'Unknown';
   };
 
+  const formatContractValue = (value) => {
+    if (value === null || value === undefined) return '0.00';
+    if (typeof value === 'number') return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return String(value);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return 'N/A';
+    }
+  };
+
   const ContractCard = ({ contract }) => (
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
       <div className="flex items-start justify-between mb-3">
         <span className={`text-xs px-2 py-1 rounded font-medium ${getStatusColor(contract.status || 'Draft')}`}>
           {contract.status || 'Draft'}
         </span>
-        <div className="relative">
+        <div className="relative z-30">
           <button 
             onClick={() => setShowActionMenu(showActionMenu === contract.id ? null : contract.id)}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
+            title="More actions"
           >
             <MoreVertical size={18} className="text-gray-400" />
           </button>
           {showActionMenu === contract.id && (
-            <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
+            <div className="absolute -right-2 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-56">
               <button 
                 onClick={() => {
                   setSelectedContract(contract);
@@ -275,16 +242,6 @@ const ContractsPage = () => {
               >
                 <Eye size={16} className="text-gray-600" />
                 <span className="text-sm">View Details</span>
-              </button>
-              <button 
-                onClick={() => {
-                  setShowSendModal(contract.id);
-                  setShowActionMenu(null);
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
-              >
-                <Send size={16} className="text-gray-600" />
-                <span className="text-sm">Send to Client</span>
               </button>
               <button 
                 onClick={() => {
@@ -320,28 +277,28 @@ const ContractsPage = () => {
         </div>
       </div>
 
-      <h3 className="font-semibold text-gray-900 mb-1">{contract.subject}</h3>
-      <p className="text-xs text-gray-500 mb-3">{contract.contract_type}</p>
+      <h3 className="font-semibold text-gray-900 mb-1 truncate">{contract.subject || 'Unnamed Contract'}</h3>
+      <p className="text-xs text-gray-500 mb-3 truncate">{contract.contract_type || 'N/A'}</p>
 
       <div className="space-y-1 mb-4 text-xs text-gray-600">
         <div className="flex items-center gap-2">
           <span>📅</span>
-          <span>{new Date(contract.start_date).toLocaleDateString()}</span>
+          <span>{formatDate(contract.start_date)}</span>
         </div>
         <div className="flex items-center gap-2">
           <span>📆</span>
-          <span>Till {new Date(contract.end_date).toLocaleDateString()}</span>
+          <span>Till {formatDate(contract.end_date)}</span>
         </div>
       </div>
 
       <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-100 text-xs">
         <span>🏢</span>
-        <span className="font-medium text-gray-900">{getCompanyName(contract.client_id)}</span>
+        <span className="font-medium text-gray-900 truncate">{getCompanyName(contract.client_id)}</span>
       </div>
 
       <div className="flex items-center justify-between">
         <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded font-medium">
-          💰 ${contract.contract_value}
+          💰 ${formatContractValue(contract.contract_value)}
         </span>
       </div>
     </div>
@@ -349,26 +306,27 @@ const ContractsPage = () => {
 
   const ContractRow = ({ contract }) => (
     <tr className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4 text-sm font-medium text-gray-900">{contract.subject}</td>
+      <td className="px-6 py-4 text-sm font-medium text-gray-900">{contract.subject || 'Unnamed Contract'}</td>
       <td className="px-6 py-4 text-sm text-gray-600">{getCompanyName(contract.client_id)}</td>
-      <td className="px-6 py-4 text-sm text-gray-600">{contract.contract_type}</td>
-      <td className="px-6 py-4 text-sm text-gray-600">${contract.contract_value}</td>
-      <td className="px-6 py-4 text-sm text-gray-600">{new Date(contract.start_date).toLocaleDateString()}</td>
+      <td className="px-6 py-4 text-sm text-gray-600">{contract.contract_type || 'N/A'}</td>
+      <td className="px-6 py-4 text-sm text-gray-600">${formatContractValue(contract.contract_value)}</td>
+      <td className="px-6 py-4 text-sm text-gray-600">{formatDate(contract.start_date)}</td>
       <td className="px-6 py-4 text-sm">
         <span className={`text-xs px-2 py-1 rounded font-medium ${getStatusColor(contract.status || 'Draft')}`}>
           {contract.status || 'Draft'}
         </span>
       </td>
       <td className="px-6 py-4 text-sm">
-        <div className="relative">
+        <div className="relative z-30">
           <button 
             onClick={() => setShowActionMenu(showActionMenu === contract.id ? null : contract.id)}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
+            title="More actions"
           >
             <MoreVertical size={16} className="text-gray-400" />
           </button>
           {showActionMenu === contract.id && (
-            <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
+            <div className="absolute -right-2 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-56">
               <button 
                 onClick={() => {
                   setSelectedContract(contract);
@@ -379,16 +337,6 @@ const ContractsPage = () => {
               >
                 <Eye size={16} className="text-gray-600" />
                 <span className="text-sm">View Details</span>
-              </button>
-              <button 
-                onClick={() => {
-                  setShowSendModal(contract.id);
-                  setShowActionMenu(null);
-                }}
-                className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-100"
-              >
-                <Send size={16} className="text-gray-600" />
-                <span className="text-sm">Send to Client</span>
               </button>
               <button 
                 onClick={() => {
@@ -594,60 +542,6 @@ const ContractsPage = () => {
           </>
         )}
       </div>
-
-      {/* Send Modal */}
-      {showSendModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Send Contract to Client</h3>
-              <button 
-                onClick={() => {
-                  setShowSendModal(null);
-                  setSendEmail('');
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-6">
-              {contracts.find(c => c.id === showSendModal) && (
-                <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-xs text-gray-600 mb-1">Contract:</p>
-                  <p className="text-sm font-medium text-gray-900">{contracts.find(c => c.id === showSendModal)?.subject}</p>
-                </div>
-              )}
-              <label className="block text-sm font-medium text-gray-700 mb-2">Client Email</label>
-              <input
-                type="email"
-                value={sendEmail}
-                onChange={(e) => setSendEmail(e.target.value)}
-                placeholder="Enter client email"
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-            <div className="flex gap-3 p-6 border-t border-gray-200">
-              <button 
-                onClick={() => {
-                  setShowSendModal(null);
-                  setSendEmail('');
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSendContract}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:bg-gray-400"
-                disabled={!sendEmail || !sendEmail.includes('@')}
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

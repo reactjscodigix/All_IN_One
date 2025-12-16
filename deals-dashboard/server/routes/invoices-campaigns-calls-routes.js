@@ -1,3 +1,5 @@
+const { requireAuth, requireRole } = require('../middleware/authMiddleware');
+
 module.exports = function(app, pool) {
   
   async function getConnection() {
@@ -20,9 +22,12 @@ module.exports = function(app, pool) {
         c.company_name,
         c.company_name AS client_name,
         c.email AS company_email,
-        c.phone AS company_phone
+        c.phone AS company_phone,
+        d.due_date as deal_due_date,
+        d.expected_close_date as deal_expected_close_date
       FROM invoices i 
       LEFT JOIN companies c ON i.client_id = c.id 
+      LEFT JOIN deals d ON i.deal_id = d.id
       WHERE 1=1`;
       const params = [];
 
@@ -43,7 +48,23 @@ module.exports = function(app, pool) {
       const [invoices] = await connection.query(query, params);
       connection.release();
 
-      return res.json(invoices);
+      console.log('📊 Raw invoices from DB:', JSON.stringify(invoices.slice(0, 2), null, 2));
+
+      const processedInvoices = invoices.map(inv => {
+        const processed = {
+          ...inv,
+          amount: inv.amount !== null && inv.amount !== undefined ? parseFloat(inv.amount) : 0,
+          total: inv.total !== null && inv.total !== undefined ? parseFloat(inv.total) : (inv.amount !== null && inv.amount !== undefined ? parseFloat(inv.amount) : 0),
+          amount_paid: inv.amount_paid !== null && inv.amount_paid !== undefined ? parseFloat(inv.amount_paid) : 0,
+          open_till: inv.open_till || inv.deal_due_date || inv.deal_expected_close_date || null,
+          invoice_date: inv.invoice_date || new Date().toISOString().split('T')[0]
+        };
+        return processed;
+      });
+
+      console.log('✅ Processed invoices (sample):', JSON.stringify(processedInvoices.slice(0, 2), null, 2));
+
+      return res.json(processedInvoices);
     } catch (err) {
       responseError(res, 500, 'Failed to fetch invoices', err);
     } finally {
@@ -401,7 +422,12 @@ module.exports = function(app, pool) {
       connection = await getConnection();
 
       const [invoices] = await connection.query(
-        'SELECT i.*, c.company_name, c.company_name as client_name FROM invoices i LEFT JOIN companies c ON i.client_id = c.id WHERE i.id = ?',
+        `SELECT i.*, c.company_name, c.company_name as client_name, c.email as company_email, c.phone as company_phone,
+                d.due_date as deal_due_date, d.expected_close_date as deal_expected_close_date
+         FROM invoices i 
+         LEFT JOIN companies c ON i.client_id = c.id 
+         LEFT JOIN deals d ON i.deal_id = d.id
+         WHERE i.id = ?`,
         [id]
       );
       connection.release();
@@ -410,7 +436,17 @@ module.exports = function(app, pool) {
         return res.status(404).json({ error: 'Invoice not found' });
       }
 
-      return res.json(invoices[0]);
+      const invoice = invoices[0];
+      const processedInvoice = {
+        ...invoice,
+        amount: invoice.amount !== null && invoice.amount !== undefined ? parseFloat(invoice.amount) : 0,
+        total: invoice.total !== null && invoice.total !== undefined ? parseFloat(invoice.total) : (invoice.amount !== null && invoice.amount !== undefined ? parseFloat(invoice.amount) : 0),
+        amount_paid: invoice.amount_paid !== null && invoice.amount_paid !== undefined ? parseFloat(invoice.amount_paid) : 0,
+        open_till: invoice.open_till || invoice.deal_due_date || invoice.deal_expected_close_date || null,
+        invoice_date: invoice.invoice_date || new Date().toISOString().split('T')[0]
+      };
+
+      return res.json(processedInvoice);
     } catch (err) {
       responseError(res, 500, 'Failed to fetch invoice', err);
     } finally {
@@ -422,21 +458,40 @@ module.exports = function(app, pool) {
     let connection;
     try {
       const { id } = req.params;
-      const { bill_to, ship_to, amount, status, payment_method, notes, amount_paid, payment_date } = req.body;
+      const { bill_to, ship_to, amount, status, payment_method, notes, amount_paid, payment_date, total, open_till, deal_id } = req.body;
       
       connection = await getConnection();
       await connection.query(
-        'UPDATE invoices SET bill_to = ?, ship_to = ?, amount = ?, status = ?, payment_method = ?, notes = ?, amount_paid = ?, payment_date = ? WHERE id = ?',
-        [bill_to || null, ship_to || null, amount || null, status || null, payment_method || null, notes || null, amount_paid || null, payment_date || null, id]
+        'UPDATE invoices SET bill_to = ?, ship_to = ?, amount = ?, status = ?, payment_method = ?, notes = ?, amount_paid = ?, payment_date = ?, total = ?, open_till = ?, deal_id = ?, updated_at = NOW() WHERE id = ?',
+        [bill_to || null, ship_to || null, amount || null, status || null, payment_method || null, notes || null, amount_paid || null, payment_date || null, total || amount || null, open_till || null, deal_id || null, id]
       );
 
       const [invoice] = await connection.query(
-        'SELECT i.*, c.company_name as client_name FROM invoices i LEFT JOIN companies c ON i.client_id = c.id WHERE i.id = ?',
+        `SELECT i.*, c.company_name as client_name, c.email as company_email, c.phone as company_phone,
+                d.due_date as deal_due_date, d.expected_close_date as deal_expected_close_date
+         FROM invoices i 
+         LEFT JOIN companies c ON i.client_id = c.id 
+         LEFT JOIN deals d ON i.deal_id = d.id
+         WHERE i.id = ?`,
         [id]
       );
       connection.release();
 
-      return res.json(invoice[0]);
+      if (invoice.length === 0) {
+        return res.status(404).json({ error: 'Invoice not found' });
+      }
+
+      const inv = invoice[0];
+      const processedInvoice = {
+        ...inv,
+        amount: inv.amount !== null && inv.amount !== undefined ? parseFloat(inv.amount) : 0,
+        total: inv.total !== null && inv.total !== undefined ? parseFloat(inv.total) : (inv.amount !== null && inv.amount !== undefined ? parseFloat(inv.amount) : 0),
+        amount_paid: inv.amount_paid !== null && inv.amount_paid !== undefined ? parseFloat(inv.amount_paid) : 0,
+        open_till: inv.open_till || inv.deal_due_date || inv.deal_expected_close_date || null,
+        invoice_date: inv.invoice_date || new Date().toISOString().split('T')[0]
+      };
+
+      return res.json(processedInvoice);
     } catch (err) {
       responseError(res, 500, 'Failed to update invoice', err);
     } finally {
@@ -778,7 +833,6 @@ module.exports = function(app, pool) {
     let connection;
     try {
       const { id } = req.params;
-      const { estimation_number, estimate_date, expiry_date } = req.body;
 
       connection = await getConnection();
       
@@ -788,10 +842,15 @@ module.exports = function(app, pool) {
       }
 
       const contractData = contract[0];
+      const estimationNumber = `EST-${Date.now()}`;
+      const estimateDate = new Date().toISOString().split('T')[0];
+      const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const amount = contractData.contract_value || 0;
+
       const [result] = await connection.query(
-        `INSERT INTO estimations (estimation_number, client_id, contract_value, amount, currency, estimate_date, expiry_date, status)
-         VALUES (?, ?, ?, ?, 'USD', ?, ?, 'Draft')`,
-        [estimation_number || `EST-${Date.now()}`, contractData.client_id, contractData.contract_value, contractData.contract_value, estimate_date || null, expiry_date || null]
+        `INSERT INTO estimations (estimation_number, client_id, amount, currency, estimate_date, expiry_date, status)
+         VALUES (?, ?, ?, 'USD', ?, ?, 'Draft')`,
+        [estimationNumber, contractData.client_id, amount, estimateDate, expiryDate]
       );
 
       connection.release();
@@ -950,13 +1009,34 @@ module.exports = function(app, pool) {
 
       const estimationData = estimation[0];
       const [result] = await connection.query(
-        `INSERT INTO invoices (invoice_number, client_id, amount, currency, status)
-         VALUES (?, ?, ?, ?, 'Draft')`,
-        [invoice_number || `INV-${Date.now()}`, estimationData.client_id, estimationData.amount, estimationData.currency]
+        `INSERT INTO invoices (invoice_number, client_id, bill_to, ship_to, project_id, contact_id, amount, currency, invoice_date, open_till, status, description, total)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Draft', ?, ?)`,
+        [
+          invoice_number || `INV-${Date.now()}`,
+          estimationData.client_id,
+          estimationData.bill_to || null,
+          estimationData.ship_to || null,
+          estimationData.project_id || null,
+          estimationData.contact_id || null,
+          estimationData.amount,
+          estimationData.currency,
+          estimationData.estimate_date || null,
+          estimationData.expiry_date || null,
+          estimationData.description || null,
+          estimationData.amount
+        ]
+      );
+
+      const [invoice] = await connection.query(
+        `SELECT i.*, c.company_name AS client_name, c.email AS company_email, c.phone AS company_phone 
+         FROM invoices i 
+         LEFT JOIN companies c ON i.client_id = c.id 
+         WHERE i.id = ?`,
+        [result.insertId]
       );
 
       connection.release();
-      return res.status(201).json({ message: 'Estimation converted to invoice successfully', id: result.insertId });
+      return res.status(201).json({ message: 'Estimation converted to invoice successfully', invoiceNumber: invoice[0].invoice_number, id: result.insertId });
     } catch (err) {
       responseError(res, 500, 'Failed to convert estimation to invoice', err);
     } finally {
@@ -1088,6 +1168,225 @@ module.exports = function(app, pool) {
       return res.json({ message: 'Proposal deleted successfully' });
     } catch (err) {
       responseError(res, 500, 'Failed to delete proposal', err);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.post('/api/proposals/:id/status', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!status) {
+        return res.status(400).json({ error: 'Status is required' });
+      }
+
+      connection = await getConnection();
+      await connection.query(
+        'UPDATE proposals SET status = ?, updated_at = NOW() WHERE id = ?',
+        [status, id]
+      );
+
+      const [proposal] = await connection.query(
+        'SELECT p.*, c.company_name as client_name FROM proposals p LEFT JOIN companies c ON p.client_id = c.id WHERE p.id = ?',
+        [id]
+      );
+      connection.release();
+
+      return res.json({
+        message: `Proposal status updated to ${status}`,
+        proposal: proposal[0]
+      });
+    } catch (err) {
+      responseError(res, 500, 'Failed to update proposal status', err);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.post('/api/proposals/:id/send', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      const { client_email } = req.body;
+
+      connection = await getConnection();
+      
+      const [proposal] = await connection.query(
+        'SELECT * FROM proposals WHERE id = ?',
+        [id]
+      );
+
+      if (proposal.length === 0) {
+        connection.release();
+        return res.status(404).json({ error: 'Proposal not found' });
+      }
+
+      await connection.query(
+        'UPDATE proposals SET status = ?, updated_at = NOW() WHERE id = ?',
+        ['Sent', id]
+      );
+
+      console.log(`✓ Proposal ${proposal[0].proposal_number} marked as sent`);
+      connection.release();
+
+      return res.json({
+        message: 'Proposal sent successfully',
+        proposal_number: proposal[0].proposal_number
+      });
+    } catch (err) {
+      responseError(res, 500, 'Failed to send proposal', err);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.post('/api/proposals/:id/convert-to-invoice', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      const { total_amount } = req.body;
+
+      connection = await getConnection();
+      
+      const [proposal] = await connection.query(
+        'SELECT * FROM proposals WHERE id = ?',
+        [id]
+      );
+
+      if (proposal.length === 0) {
+        connection.release();
+        return res.status(404).json({ error: 'Proposal not found' });
+      }
+
+      const proposalData = proposal[0];
+
+      if (!['Sent', 'Approved', 'Accepted'].includes(proposalData.status)) {
+        connection.release();
+        return res.status(400).json({ 
+          error: 'Invalid proposal status',
+          message: `Proposal must be Sent, Approved, or Accepted to convert. Current status: ${proposalData.status}`
+        });
+      }
+
+      const invoiceNumber = `INV-${Date.now()}`;
+      const invoiceDate = new Date().toISOString().split('T')[0];
+      const openTill = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const invoiceAmount = total_amount !== undefined ? total_amount : (proposalData.total_amount || 0);
+
+      await connection.query(
+        `INSERT INTO invoices (invoice_number, client_id, amount, currency, invoice_date, open_till, status, description, total)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          invoiceNumber,
+          proposalData.client_id || null,
+          invoiceAmount,
+          proposalData.currency || 'USD',
+          invoiceDate,
+          openTill,
+          'Draft',
+          proposalData.description || null,
+          invoiceAmount
+        ]
+      );
+
+      await connection.query(
+        'UPDATE proposals SET status = ? WHERE id = ?',
+        ['Accepted', id]
+      );
+
+      console.log(`✓ Invoice ${invoiceNumber} created from proposal ${proposalData.proposal_number}`);
+      connection.release();
+
+      return res.json({
+        message: 'Invoice created successfully from proposal',
+        invoiceNumber,
+        proposalId: id
+      });
+    } catch (err) {
+      responseError(res, 500, 'Failed to convert proposal to invoice', err);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.post('/api/proposals/:id/convert-to-contract', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      const userId = req.headers['x-user-id'];
+
+      connection = await getConnection();
+      
+      const [proposal] = await connection.query(
+        'SELECT * FROM proposals WHERE id = ?',
+        [id]
+      );
+
+      if (proposal.length === 0) {
+        connection.release();
+        return res.status(404).json({ error: 'Proposal not found' });
+      }
+
+      const proposalData = proposal[0];
+
+      if (!['Sent', 'Approved', 'Accepted'].includes(proposalData.status)) {
+        connection.release();
+        return res.status(400).json({ 
+          error: 'Invalid proposal status',
+          message: `Proposal must be Sent, Approved, or Accepted to convert. Current status: ${proposalData.status}`
+        });
+      }
+
+      const [existingContracts] = await connection.query(
+        'SELECT id FROM contracts WHERE proposal_id = ?',
+        [id]
+      );
+
+      if (existingContracts.length > 0) {
+        connection.release();
+        return res.status(409).json({ 
+          error: 'Conflict - Contract already exists for this proposal',
+          message: `A contract has already been created from proposal ${proposalData.proposal_number}`
+        });
+      }
+
+      const startDate = new Date().toISOString().split('T')[0];
+      const endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      await connection.query(
+        `INSERT INTO contracts (subject, start_date, end_date, client_id, contract_type, contract_value, description, status, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          proposalData.title || 'Contract from Proposal',
+          startDate,
+          endDate,
+          proposalData.client_id || null,
+          'Proposal-Based Contract',
+          proposalData.total_amount || 0,
+          proposalData.description || null,
+          'Draft',
+          userId || null
+        ]
+      );
+
+      await connection.query(
+        'UPDATE proposals SET status = ? WHERE id = ?',
+        ['Accepted', id]
+      );
+
+      console.log(`✓ Contract created from proposal ${proposalData.proposal_number}`);
+      connection.release();
+
+      return res.json({
+        message: 'Contract created successfully from proposal',
+        contractSubject: proposalData.title || 'Contract from Proposal',
+        proposalId: id
+      });
+    } catch (err) {
+      responseError(res, 500, 'Failed to convert proposal to contract', err);
     } finally {
       if (connection) connection.release();
     }

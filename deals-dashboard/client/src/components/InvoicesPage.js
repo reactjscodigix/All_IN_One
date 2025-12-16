@@ -31,6 +31,13 @@ const InvoicesPage = () => {
           companiesAPI.getAll(),
           projectAPI.getAll()
         ]);
+        console.log('📊 Invoices loaded from API:', invoicesData);
+        console.log('📊 Sample invoice:', invoicesData?.[0]);
+        if (invoicesData?.[0]) {
+          console.log('   - amount:', invoicesData[0].amount);
+          console.log('   - total:', invoicesData[0].total);
+          console.log('   - open_till:', invoicesData[0].open_till);
+        }
         setInvoices(invoicesData || []);
         setCompanies(companiesData || []);
         setProjects(projectsData || []);
@@ -101,7 +108,7 @@ const InvoicesPage = () => {
   );
 
   const formatCurrency = (value, currency = 'USD') => {
-    if (!value) return '$0.00';
+    if (value === null || value === undefined || isNaN(value)) return '$0.00';
     const num = typeof value === 'string' ? parseFloat(value) : value;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -386,7 +393,7 @@ const InvoicesPage = () => {
                         <span>📄</span>
                         <span className="text-gray-600 font-medium">Total Value :</span>
                         <span className="font-bold text-gray-900 text-sm">
-                          {formatCurrency(invoice.total || invoice.amount, invoice.currency)}
+                          {formatCurrency(invoice.total !== null && invoice.total !== undefined ? invoice.total : invoice.amount, invoice.currency)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -400,13 +407,15 @@ const InvoicesPage = () => {
                         <span>💰</span>
                         <span className="text-gray-600 font-medium">Amount :</span>
                         <span className="font-bold text-gray-900">
-                          {formatCurrency(invoice.amount, invoice.currency)}
+                          {formatCurrency(invoice.amount || 0, invoice.currency)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span>💵</span>
                         <span className="text-gray-600 font-medium">Balance :</span>
-                        <span className="font-bold text-gray-900">$0</span>
+                        <span className="font-bold text-gray-900">
+                          {formatCurrency((invoice.total !== null && invoice.total !== undefined ? invoice.total : invoice.amount || 0) - (invoice.amount_paid || 0), invoice.currency)}
+                        </span>
                       </div>
                     </div>
 
