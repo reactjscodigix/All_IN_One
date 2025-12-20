@@ -9,7 +9,7 @@ const envFile = NODE_ENV === 'production' ? '.env.production' : '.env.developmen
 dotenv.config({ path: path.join(__dirname, envFile) });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 const pool = require('./config/database');
 const { testConnection } = require('./database/init');
