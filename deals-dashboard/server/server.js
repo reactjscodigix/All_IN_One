@@ -4,9 +4,8 @@ const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 const path = require('path');
 
+dotenv.config({ path: path.join(__dirname, '.env') });
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const envFile = NODE_ENV === 'production' ? '.env.production' : '.env.development';
-dotenv.config({ path: path.join(__dirname, envFile) });
 
 const app = express();
 const PORT = process.env.PORT;

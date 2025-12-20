@@ -4,10 +4,10 @@
   "description": "CRM Dashboard Backend API",
   "main": "server.js",
   "scripts": {
-    "start": "set NODE_ENV=production && node server.js",
-    "dev": "set NODE_ENV=development && node server.js",
+    "start": "node server.js",
+    "dev": "node server.js",
     "test-db": "node test-db-connection.js",
-    "test-server": "set NODE_ENV=development && node test-server.js"
+    "test-server": "node test-server.js"
   },
   "keywords": [],
   "author": "",
