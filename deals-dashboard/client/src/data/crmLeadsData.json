@@ -35,7 +35,7 @@
     },
     {
       "id": 4,
-      "status": "Not Contacted",
+      "status": "New",
       "name": "Adams",
       "value": 245000,
       "email": "vaughan12@example.com",
@@ -46,7 +46,7 @@
     },
     {
       "id": 5,
-      "status": "Not Contacted",
+      "status": "New",
       "name": "Wizosk",
       "value": 117000,
       "email": "caroltho3@example.com",
@@ -57,7 +57,7 @@
     },
     {
       "id": 6,
-      "status": "Not Contacted",
+      "status": "New",
       "name": "Heller",
       "value": 212000,
       "email": "dawnmercha@example.com",
@@ -68,7 +68,7 @@
     },
     {
       "id": 7,
-      "status": "Closed",
+      "status": "Converted to Deal",
       "name": "Gutkowsi",
       "value": 184043,
       "email": "rachel@example.com",
@@ -79,7 +79,7 @@
     },
     {
       "id": 8,
-      "status": "Closed",
+      "status": "Converted to Deal",
       "name": "Walter",
       "value": 935189,
       "email": "jonelle@example.com",
@@ -90,7 +90,7 @@
     },
     {
       "id": 9,
-      "status": "Closed",
+      "status": "Converted to Deal",
       "name": "Hansen",
       "value": 427940,
       "email": "jonathan@example.com",
@@ -123,9 +123,10 @@
     }
   ],
   "statusStats": [
+    { "status": "New", "leads": 45, "value": 1544540, "color": "bg-blue-500", "topBorder": "border-t-blue-400" },
     { "status": "Contacted", "leads": 45, "value": 1544540, "color": "bg-yellow-500", "topBorder": "border-t-yellow-400" },
-    { "status": "Not Contacted", "leads": 45, "value": 1544540, "color": "bg-blue-500", "topBorder": "border-t-blue-400" },
-    { "status": "Closed", "leads": 45, "value": 1544540, "color": "bg-green-500", "topBorder": "border-t-green-400" },
+    { "status": "Qualified", "leads": 0, "value": 0, "color": "bg-purple-500", "topBorder": "border-t-purple-400" },
+    { "status": "Converted to Deal", "leads": 45, "value": 1544540, "color": "bg-green-500", "topBorder": "border-t-green-400" },
     { "status": "Lost", "leads": 15, "value": 1489543, "color": "bg-red-500", "topBorder": "border-t-red-400" }
   ]
 }

@@ -31,8 +31,8 @@ const ProposalVersionHistory = ({ proposal, versions = [] }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Version History & Changes</h3>
+    <div className="bg-white rounded  border border-gray-200p-3 ">
+      <h3 className="text-md  text-gray-900 mb-6">Version History & Changes</h3>
 
       {mockVersions.length === 0 ? (
         <div className="text-center py-8">
@@ -44,33 +44,33 @@ const ProposalVersionHistory = ({ proposal, versions = [] }) => {
           {mockVersions.map((version) => (
             <div
               key={version.id}
-              className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+              className="border border-gray-200 rounded  overflow-hidden hover:shadow-md transition-shadow"
             >
               <button
                 onClick={() =>
                   setExpandedVersion(expandedVersion === version.id ? null : version.id)
                 }
-                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-between p-2 hover:bg-gray-50 transition-colors"
               >
-                <div className="flex items-center gap-4 flex-1">
+                <div className="flex items-center gap-2 flex-1">
                   <div className="text-center">
-                    <div className="text-sm font-bold text-gray-900">v{version.version}</div>
+                    <div className="text-xs   text-gray-900">v{version.version}</div>
                   </div>
 
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(version.status)}`}>
+                      <span className={`text-xs   p-1  rounded-full ${getStatusColor(version.status)}`}>
                         {version.status}
                       </span>
                       <span className="text-xs text-gray-500">
                         {new Date(version.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">{version.changes}</p>
+                    <p className="text-xs  text-gray-600">{version.changes}</p>
                   </div>
 
                   <div className="text-right hidden sm:block">
-                    <div className="text-sm font-semibold text-gray-900">
+                    <div className="text-xs   text-gray-900">
                       {version.total_amount ? `${proposal.currency} ${version.total_amount}` : 'N/A'}
                     </div>
                   </div>
@@ -78,22 +78,22 @@ const ProposalVersionHistory = ({ proposal, versions = [] }) => {
 
                 <div className="ml-4 flex-shrink-0">
                   {expandedVersion === version.id ? (
-                    <ChevronUp size={20} className="text-gray-400" />
+                    <ChevronUp size={20} className="text-[#1F2020]" />
                   ) : (
-                    <ChevronDown size={20} className="text-gray-400" />
+                    <ChevronDown size={20} className="text-[#1F2020]" />
                   )}
                 </div>
               </button>
 
               {expandedVersion === version.id && (
-                <div className="border-t bg-gray-50 p-4 space-y-4">
+                <div className="border-t bg-gray-50 p-2 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <Calendar size={16} className="text-gray-500" />
                         <span className="text-xs text-gray-600">Date</span>
                       </div>
-                      <p className="text-sm font-medium">
+                      <p className="text-xs   ">
                         {new Date(version.created_at).toLocaleDateString(undefined, {
                           year: 'numeric',
                           month: 'long',
@@ -109,7 +109,7 @@ const ProposalVersionHistory = ({ proposal, versions = [] }) => {
                         <User size={16} className="text-gray-500" />
                         <span className="text-xs text-gray-600">Created By</span>
                       </div>
-                      <p className="text-sm font-medium">User ID: {version.created_by}</p>
+                      <p className="text-xs   ">User ID: {version.created_by}</p>
                     </div>
 
                     <div>
@@ -117,32 +117,32 @@ const ProposalVersionHistory = ({ proposal, versions = [] }) => {
                         <FileText size={16} className="text-gray-500" />
                         <span className="text-xs text-gray-600">Status</span>
                       </div>
-                      <p className="text-sm font-medium">{version.status}</p>
+                      <p className="text-xs   ">{version.status}</p>
                     </div>
                   </div>
 
                   <div className="border-t pt-4">
-                    <h5 className="text-sm font-semibold text-gray-900 mb-2">Details</h5>
-                    <div className="space-y-2 text-sm">
+                    <h5 className="text-xs   text-gray-900 mb-2">Details</h5>
+                    <div className="space-y-2 text-xs ">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Total Amount:</span>
-                        <span className="font-medium">
+                        <span className=" ">
                           {version.total_amount ? `${proposal.currency} ${version.total_amount}` : 'N/A'}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Changes:</span>
-                        <span className="font-medium">{version.changes}</span>
+                        <span className=" ">{version.changes}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t">
-                    <button className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex-1">
+                    <button className="flex items-center justify-center gap-2 px-3 py-2 bg-red-600  text-white text-xs  rounded hover:bg-blue-700 transition-colors flex-1">
                       <Download size={14} />
                       Download PDF
                     </button>
-                    <button className="flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 text-sm rounded hover:bg-gray-100 transition-colors flex-1">
+                    <button className="flex items-center justify-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 text-xs  rounded hover:bg-gray-100 transition-colors flex-1">
                       View Details
                     </button>
                   </div>

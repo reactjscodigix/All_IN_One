@@ -270,7 +270,7 @@ npm run setup
 taskkill /F /IM node.exe
 
 # Or modify .env
-DB_PORT=5001
+DB_PORT=5000
 ```
 
 ### MySQL Password Error

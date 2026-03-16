@@ -125,27 +125,27 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
         className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white">
-          <h2 className="text-lg font-semibold text-gray-900">Add New Pipeline</h2>
+        <div className="flex justify-between items-centerp-3  border-b border-[#EAECF0] sticky top-0 bg-white">
+          <h2 className="text-md  text-gray-900">Add New Pipeline</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Pipeline Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs    text-gray-700 mb-2">
               Pipeline Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -154,13 +154,13 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
               value={formData.name}
               onChange={handleInputChange}
               placeholder="Enter pipeline name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
             />
           </div>
 
           {/* Pipeline Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs    text-gray-700 mb-2">
               Description
             </label>
             <textarea
@@ -169,20 +169,20 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
               onChange={handleInputChange}
               placeholder="Enter pipeline description"
               rows="3"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-none"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-none"
             />
           </div>
 
           {/* Pipeline Stages */}
           <div className="border-t border-gray-200 pt-6">
             <div className="flex justify-between items-center mb-4">
-              <label className="text-sm font-semibold text-gray-900">
+              <label className="text-xs   text-gray-900">
                 Pipeline Stages
               </label>
               <button
                 type="button"
                 onClick={() => setShowAddStage(true)}
-                className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                className="text-red  hover:text-red-700 text-xs    flex items-center gap-1"
               >
                 <Plus size={16} /> Add New
               </button>
@@ -190,19 +190,19 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
 
             {/* Add Stage Form */}
             {showAddStage && (
-              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded ">
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newStageName}
                     onChange={(e) => setNewStageName(e.target.value)}
                     placeholder="Enter stage name"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-xs  focus:outline-none focus:border-red-500"
                   />
                   <button
                     type="button"
                     onClick={handleAddStage}
-                    className="px-3 py-2 bg-red-600 text-white rounded text-sm font-medium hover:bg-red-700 transition"
+                    className="px-3 py-2 bg-red-600 text-white rounded text-xs    hover:bg-red-700 transition"
                   >
                     Add
                   </button>
@@ -212,7 +212,7 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
                       setShowAddStage(false);
                       setNewStageName('');
                     }}
-                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded text-sm font-medium hover:bg-gray-300 transition"
+                    className="px-3 py-2 bg-gray-200 text-gray-700 rounded text-xs    hover:bg-gray-300 transition"
                   >
                     Cancel
                   </button>
@@ -225,7 +225,7 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
               {formData.stages.map((stage, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition"
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded  border border-gray-200 hover:bg-gray-100 transition"
                 >
                   <div className="flex-1">
                     {editingStageIndex === index ? (
@@ -234,12 +234,12 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
                           type="text"
                           value={editingStageValue}
                           onChange={(e) => setEditingStageValue(e.target.value)}
-                          className="flex-1 px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-500"
+                          className="flex-1 px-3 py-1 border border-gray-300 rounded text-xs  focus:outline-none focus:border-red-500"
                         />
                         <button
                           type="button"
                           onClick={() => handleSaveStage(index)}
-                          className="px-2 py-1 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700"
+                          className="p-1  bg-red-600 text-white rounded text-xs   hover:bg-red-700"
                         >
                           Save
                         </button>
@@ -247,7 +247,7 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
                     ) : (
                       <div className="flex items-center gap-2">
                         <div className="w-1 h-6 bg-yellow-500 rounded"></div>
-                        <span className="text-sm font-medium text-gray-900">{stage}</span>
+                        <span className="text-xs    text-gray-900">{stage}</span>
                       </div>
                     )}
                   </div>
@@ -257,7 +257,7 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
                         <button
                           type="button"
                           onClick={() => handleEditStage(index)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded transition"
+                          className="p-2 text-[#1F2020] hover:text-white  hover:bg-white rounded transition"
                           title="Edit stage"
                         >
                           <Edit2 size={16} />
@@ -265,7 +265,7 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
                         <button
                           type="button"
                           onClick={() => handleDeleteStage(index)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded transition"
+                          className="p-2 text-[#1F2020] hover:text-red  hover:bg-white rounded transition"
                           title="Delete stage"
                         >
                           <Trash2 size={16} />
@@ -280,7 +280,7 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
 
           {/* Access Section */}
           <div className="border-t border-gray-200 pt-6">
-            <label className="text-sm font-semibold text-gray-900 block mb-4">
+            <label className="text-xs   text-gray-900 block mb-4">
               Access
             </label>
             <div className="space-y-3">
@@ -293,16 +293,16 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
                     value="All"
                     checked={formData.access_type === 'All'}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                    className="w-4 h-4 text-red  border-gray-300 focus:ring-red-500"
                   />
                 </div>
-                <label htmlFor="access-all" className="text-sm text-gray-700 font-medium cursor-pointer">
+                <label htmlFor="access-all" className="text-xs  text-gray-700   cursor-pointer">
                   All
                 </label>
               </div>
               <button
                 type="button"
-                className="text-sm text-gray-700 font-medium px-4 py-2 rounded border border-gray-300 hover:bg-gray-50 transition"
+                className="text-xs  text-gray-700   p-2  rounded border border-gray-300 hover:bg-gray-50 transition"
               >
                 Select Person
               </button>
@@ -315,14 +315,14 @@ const AddNewPipelineModal = ({ isOpen, onClose, onSuccess }) => {
               type="button"
               onClick={handleCancel}
               disabled={isLoading}
-              className="px-6 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+              className="p-2  text-gray-700   border border-gray-300 rounded  hover:bg-gray-50 transition disabled:opacity-50 text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+              className="p-2  bg-red-600 text-white   rounded  hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2 text-xs"
             >
               {isLoading ? 'Creating...' : 'Create New'}
             </button>

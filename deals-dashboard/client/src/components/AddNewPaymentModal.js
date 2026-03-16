@@ -62,10 +62,10 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
     }));
   };
 
-  const formatCurrency = (value, currency = 'USD') => {
-    if (!value) return '$0.00';
+  const formatCurrency = (value, currency = 'INR') => {
+    if (!value) return '₹0.00';
     const num = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: currency,
     }).format(num);
@@ -129,20 +129,20 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">Record Payment</h2>
+        <div className="flex justify-between items-center p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <h2 className="text-xl  text-gray-900">Record Payment</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
@@ -150,32 +150,32 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
           
           {/* Select Invoices Section */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
+            <label className="block text-xs   text-gray-900 mb-3">
               Related Invoice(s) <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setInvoiceDropdownOpen(!invoiceDropdownOpen)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition text-left flex items-center justify-between"
+                className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition text-left flex items-center justify-between"
               >
                 <span className="text-gray-600">
                   {selectedInvoicesData.length > 0 
                     ? `${selectedInvoicesData.length} invoice(s) selected`
                     : 'Select Invoice(s)'}
                 </span>
-                <span className="text-gray-400">▼</span>
+                <span className="text-[#1F2020]">▼</span>
               </button>
 
               {invoiceDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded  shadow-lg z-10 max-h-64 overflow-y-auto">
                   <div className="p-2 border-b border-gray-200">
                     <input
                       type="text"
                       placeholder="Search invoices..."
                       value={searchInvoice}
                       onChange={(e) => setSearchInvoice(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded text-xs  focus:outline-none focus:border-red-500"
                     />
                   </div>
                   {filteredInvoices.length > 0 ? (
@@ -194,7 +194,7 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
                             className="mt-1 w-4 h-4"
                           />
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{inv.invoice_number}</div>
+                            <div className="text-xs    text-gray-900">{inv.invoice_number}</div>
                             <div className="text-xs text-gray-600">{inv.company_name}</div>
                             <div className="text-xs text-gray-600 mt-1">
                               Total: {formatCurrency(inv.total, inv.currency)} | Outstanding: {formatCurrency(inv.total - (inv.paid_amount || 0), inv.currency)}
@@ -204,7 +204,7 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
                       </button>
                     ))
                   ) : (
-                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                    <div className="p-2 text-xs text-gray-500 text-center">
                       No unpaid invoices found
                     </div>
                   )}
@@ -215,15 +215,15 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
 
           {/* Selected Invoices Summary */}
           {selectedInvoicesData.length > 0 && (
-            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-gray-900">Selected Invoices:</h4>
+            <div className="bg-gray-50 rounded  p-2 space-y-3">
+              <h4 className="text-xs   text-gray-900">Selected Invoices:</h4>
               {selectedInvoicesData.map(inv => (
                 <div key={inv.id} className="flex items-center justify-between p-3 bg-white rounded border border-gray-200">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{inv.invoice_number}</p>
+                    <p className="text-xs    text-gray-900">{inv.invoice_number}</p>
                     <p className="text-xs text-gray-600">{inv.company_name}</p>
                     <p className="text-xs text-gray-600 mt-1">
-                      Outstanding: <span className="font-semibold text-red-600">{formatCurrency(inv.total - (inv.paid_amount || 0), inv.currency)}</span>
+                      Outstanding: <span className=" text-red ">{formatCurrency(inv.total - (inv.paid_amount || 0), inv.currency)}</span>
                     </p>
                   </div>
                   <button
@@ -236,15 +236,15 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
                 </div>
               ))}
               <div className="border-t border-gray-200 pt-3">
-                <p className="text-sm text-gray-600">Total Outstanding Amount:</p>
-                <p className="text-lg font-bold text-red-600">{formatCurrency(totalOutstanding)}</p>
+                <p className="text-xs  text-gray-600">Total Outstanding Amount:</p>
+                <p className="text-lg  text-red ">{formatCurrency(totalOutstanding)}</p>
               </div>
             </div>
           )}
 
           {/* Payment Date */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">
+            <label className="block text-xs   text-gray-900 mb-3">
               Payment Date <span className="text-red-500">*</span>
             </label>
             <input
@@ -252,14 +252,14 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
               name="paymentDate"
               value={formData.paymentDate}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
             />
           </div>
 
           {/* Payment Method & Amount */}
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">
+              <label className="block text-xs   text-gray-900 mb-3">
                 Payment Method <span className="text-red-500">*</span>
               </label>
               <div className="relative">
@@ -267,7 +267,7 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
                   name="paymentMethod"
                   value={formData.paymentMethod}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition appearance-none"
                 >
                   <option value="Bank Transfer">Bank Transfer</option>
                   <option value="Credit Card">Credit Card</option>
@@ -276,11 +276,11 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
                   <option value="Digital Wallet">Digital Wallet</option>
                   <option value="Cryptocurrency">Cryptocurrency</option>
                 </select>
-                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">
+              <label className="block text-xs   text-gray-900 mb-3">
                 Amount Received <span className="text-red-500">*</span>
               </label>
               <input
@@ -291,7 +291,7 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
                 placeholder="0.00"
                 min="0"
                 step="0.01"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
               />
             </div>
           </div>
@@ -299,44 +299,44 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
           {/* Reference & Status */}
           <div className="grid grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">Reference / Transaction ID</label>
+              <label className="block text-xs   text-gray-900 mb-3">Reference / Transaction ID</label>
               <input
                 type="text"
                 name="referenceNo"
                 value={formData.referenceNo}
                 onChange={handleInputChange}
                 placeholder="e.g., TXN-123456, Cheque #789"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">Payment Status</label>
+              <label className="block text-xs   text-gray-900 mb-3">Payment Status</label>
               <div className="relative">
                 <select
                   name="paymentStatus"
                   value={formData.paymentStatus}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition appearance-none"
                 >
                   <option value="Pending">Pending</option>
                   <option value="Completed">Completed</option>
                   <option value="Failed">Failed</option>
                 </select>
-                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
               </div>
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-3">Notes</label>
+            <label className="block text-xs   text-gray-900 mb-3">Notes</label>
             <textarea
               name="notes"
               value={formData.notes}
               onChange={handleInputChange}
               placeholder="Enter any additional notes about this payment"
               rows="4"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition resize-none"
             />
           </div>
 
@@ -346,14 +346,14 @@ const AddNewPaymentModal = ({ isOpen, onClose, onSubmit, invoices = [], companie
               type="button"
               onClick={handleCancel}
               disabled={isLoading}
-              className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="p-2  border border-gray-300 rounded  text-xs    text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading || selectedInvoicesData.length === 0}
-              className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50"
+              className="p-2  bg-red-600 hover:bg-red-700 rounded  text-xs   text-white transition-colors disabled:opacity-50"
             >
               {isLoading ? 'Recording Payment...' : 'Record Payment'}
             </button>

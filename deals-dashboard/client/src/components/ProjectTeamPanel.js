@@ -65,22 +65,22 @@ const ProjectTeamPanel = ({ projectId }) => {
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <Users size={20} className="text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Project Team</h3>
+          <h3 className="text-md  text-gray-900">Project Team</h3>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm font-medium"
+          className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red  rounded  hover:bg-red-100 transition text-xs   "
         >
           <Plus size={16} /> Add Member
         </button>
       </div>
 
       {showAddForm && (
-        <form onSubmit={handleAddMember} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3 mb-4">
+        <form onSubmit={handleAddMember} className="bg-gray-50 border border-gray-200 rounded  p-2 space-y-3 mb-4">
           <select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
           >
             <option value="">Select a user...</option>
             {availableUsers.map(user => (
@@ -92,7 +92,7 @@ const ProjectTeamPanel = ({ projectId }) => {
           <select
             value={selectedRole}
             onChange={(e) => setSelectedRole(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
           >
             <option value="Member">Member</option>
             <option value="Contributor">Contributor</option>
@@ -103,14 +103,14 @@ const ProjectTeamPanel = ({ projectId }) => {
             <button
               type="button"
               onClick={() => setShowAddForm(false)}
-              className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
+              className="px-3 py-2 text-xs    text-gray-700 border border-gray-300 rounded  hover:bg-gray-100"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!selectedUser}
-              className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              className="px-3 py-2 text-xs    text-white bg-red-600 rounded  hover:bg-red-700 disabled:opacity-50"
             >
               Add Member
             </button>
@@ -120,28 +120,28 @@ const ProjectTeamPanel = ({ projectId }) => {
 
       <div className="space-y-2">
         {teamMembers.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 text-sm">No team members yet. Add one to get started!</div>
+          <div className="text-center py-8 text-gray-500 text-xs ">No team members yet. Add one to get started!</div>
         ) : (
           teamMembers.map(member => (
-            <div key={member.user_id} className="border border-gray-200 rounded-lg p-4 flex items-center justify-between hover:shadow-sm transition bg-white">
+            <div key={member.user_id} className="border border-gray-200 rounded  p-2 flex items-center justify-between hover:shadow-sm transition bg-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center font-semibold text-sm flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center  text-xs  flex-shrink-0">
                   {member.first_name?.[0]}{member.last_name?.[0]}
                 </div>
                 <div>
-                  <p className="font-medium text-sm text-gray-900">
+                  <p className="  text-xs  text-gray-900">
                     {member.first_name} {member.last_name}
                   </p>
                   <p className="text-xs text-gray-500">{member.email}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                <span className="inline-block p-1  bg-blue-50 text-blue-700 rounded text-xs  ">
                   {member.role}
                 </span>
                 <button
                   onClick={() => handleRemoveMember(member.user_id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                  className="p-2 text-red  hover:bg-red-50 rounded transition"
                 >
                   <Trash2 size={16} />
                 </button>

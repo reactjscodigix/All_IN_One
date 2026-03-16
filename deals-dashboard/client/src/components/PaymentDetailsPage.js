@@ -58,10 +58,10 @@ const PaymentDetailsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="p-2 bg-[#F7F8F9] min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading payment details...</p>
+          <p className="mt-4 text-gray-600  ">Loading payment details...</p>
         </div>
       </div>
     );
@@ -69,17 +69,17 @@ const PaymentDetailsPage = () => {
 
   if (error || !invoice) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="p-2 bg-[#F7F8F9] min-h-screen">
         <div className="max-w-4xl mx-auto">
           <button
             onClick={() => navigate('/payments')}
-            className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+            className="mb-6 flex items-center gap-2 text-white  hover:text-blue-700  "
           >
             <ArrowLeft size={20} />
             Back to Payments
           </button>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-700 font-medium">{error || 'Payment details not found'}</p>
+          <div className="bg-red-50 border border-red-200 rounded p-3  text-center">
+            <p className="text-red-700  ">{error || 'Payment details not found'}</p>
           </div>
         </div>
       </div>
@@ -89,28 +89,28 @@ const PaymentDetailsPage = () => {
   const amountDue = (invoice.total || 0) - (invoice.paid_amount || 0);
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <button
           onClick={() => navigate('/payments')}
-          className="mb-6 flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+          className="mb-6 flex items-center gap-2 text-white  hover:text-blue-700  "
         >
           <ArrowLeft size={20} />
           Back to Payments
         </button>
 
         {/* Main Card */}
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+        <div className="bg-white shadow-sm rounded  border border-gray-200p-3 ">
           
           {/* Header */}
           <div className="flex items-center justify-between mb-6 pb-6 border-b border-gray-200">
-            <h1 className="text-xl font-semibold text-gray-900">
-              Payment for Invoice <span className="text-red-600 font-bold">#{invoice.invoice_number}</span>
+            <h1 className="text-xl  text-gray-900">
+              Payment for Invoice <span className="text-red  ">#{invoice.invoice_number}</span>
             </h1>
             <button
               onClick={handleDownloadPDF}
-              className="bg-gray-100 border border-gray-300 rounded-md px-4 py-2 hover:bg-gray-200 text-sm font-medium flex items-center gap-2 transition"
+              className="bg-gray-100 border border-gray-300 rounded  p-2  hover:bg-gray-200 text-xs    flex items-center gap-2 transition"
             >
               <Download size={16} />
               Download
@@ -118,97 +118,97 @@ const PaymentDetailsPage = () => {
           </div>
 
           {/* Proposal From & To */}
-          <div className="border border-gray-200 rounded-lg p-6 mb-6">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Proposal From & To</h2>
+          <div className="border border-gray-200 rounded p-3  mb-6">
+            <h2 className="text-xs   text-gray-700 mb-4">Proposal From & To</h2>
             
             <div className="grid grid-cols-2 gap-6">
               {/* From */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">CRMS</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <h3 className=" text-gray-900 mb-2">CRMS</h3>
+                <p className="text-xs  text-gray-600 leading-relaxed">
                   3338 Marcus Street Birmingham, AL 35211
                 </p>
-                <p className="text-sm text-gray-600 mt-2">
-                  Phone: <span className="font-medium">+1 98789 78788</span>
+                <p className="text-xs  text-gray-600 mt-2">
+                  Phone: <span className=" ">+1 98789 78788</span>
                 </p>
-                <p className="text-sm text-gray-600">Email: info@example.com</p>
+                <p className="text-xs  text-gray-600">Email: info@example.com</p>
               </div>
 
               {/* To */}
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">{company?.name || invoice.client_name || 'N/A'}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <h3 className=" text-gray-900 mb-2">{company?.name || invoice.client_name || 'N/A'}</h3>
+                <p className="text-xs  text-gray-600 leading-relaxed">
                   {invoice.billing_address || 'Address not available'}
                 </p>
-                <p className="text-sm text-gray-600 mt-2">
-                  Phone: <span className="font-medium">{company?.phone || invoice.client_phone || 'N/A'}</span>
+                <p className="text-xs  text-gray-600 mt-2">
+                  Phone: <span className=" ">{company?.phone || invoice.client_phone || 'N/A'}</span>
                 </p>
-                <p className="text-sm text-gray-600">Email: {company?.email || invoice.client_email || 'N/A'}</p>
+                <p className="text-xs  text-gray-600">Email: {company?.email || invoice.client_email || 'N/A'}</p>
               </div>
             </div>
           </div>
 
           {/* Payment Details */}
-          <div className="border border-gray-200 rounded-lg p-6 mb-6">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Payment Details</h2>
+          <div className="border border-gray-200 rounded p-3  mb-6">
+            <h2 className="text-xs   text-gray-700 mb-4">Payment Details</h2>
             
-            <div className="grid grid-cols-3 gap-6 text-sm">
+            <div className="grid grid-cols-3 gap-6 text-xs ">
               <div>
                 <p className="text-gray-500 text-xs mb-1">Payment Date</p>
-                <p className="font-medium text-gray-800">{formatDate(invoice.created_at)}</p>
+                <p className="  text-gray-800">{formatDate(invoice.created_at)}</p>
               </div>
 
               <div>
                 <p className="text-gray-500 text-xs mb-1">Payment Method</p>
-                <p className="font-medium text-gray-800">{invoice.payment_method || 'Not specified'}</p>
+                <p className="  text-gray-800">{invoice.payment_method || 'Not specified'}</p>
               </div>
 
               <div>
                 <p className="text-gray-500 text-xs mb-1">Total Amount</p>
-                <p className="font-medium text-gray-800">{formatCurrency(invoice.total)}</p>
+                <p className="  text-gray-800">{formatCurrency(invoice.total)}</p>
               </div>
             </div>
           </div>
 
           {/* Invoice Details */}
-          <div className="border border-gray-200 rounded-lg p-6">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Invoice Details</h2>
+          <div className="border border-gray-200 rounded p-3 ">
+            <h2 className="text-xs   text-gray-700 mb-4">Invoice Details</h2>
             
-            <div className="grid grid-cols-2 gap-6 text-sm">
+            <div className="grid grid-cols-2 gap-6 text-xs ">
               {/* Left Column */}
               <div>
                 <p className="text-gray-500 text-xs mb-1">Invoice Number</p>
-                <p className="text-red-600 font-semibold">#{invoice.invoice_number}</p>
+                <p className="text-red  ">#{invoice.invoice_number}</p>
               </div>
 
               {/* Right Column - Amount Due */}
               <div className="text-right">
                 <p className="text-gray-500 text-xs mb-1">Amount Due:</p>
-                <p className="text-red-600 font-semibold">{formatCurrency(amountDue)}</p>
+                <p className="text-red  ">{formatCurrency(amountDue)}</p>
               </div>
 
               {/* Invoice Date */}
               <div>
                 <p className="text-gray-500 text-xs mb-1">Invoice Date</p>
-                <p className="font-medium text-gray-800">{formatDate(invoice.invoice_date)}</p>
+                <p className="  text-gray-800">{formatDate(invoice.invoice_date)}</p>
               </div>
 
               {/* Payment Amount */}
               <div className="text-right">
                 <p className="text-gray-500 text-xs mb-1">Payment Amount</p>
-                <p className="font-medium text-gray-800">{formatCurrency(invoice.paid_amount || 0)}</p>
+                <p className="  text-gray-800">{formatCurrency(invoice.paid_amount || 0)}</p>
               </div>
 
               {/* Invoice Amount */}
               <div>
                 <p className="text-gray-500 text-xs mb-1">Invoice Amount</p>
-                <p className="font-medium text-gray-800">{formatCurrency(invoice.total)}</p>
+                <p className="  text-gray-800">{formatCurrency(invoice.total)}</p>
               </div>
 
               {/* Status */}
               <div className="text-right">
                 <p className="text-gray-500 text-xs mb-1">Status</p>
-                <span className={`inline-block px-2 py-1 rounded text-xs font-bold ${
+                <span className={`inline-block p-1  rounded text-xs  ${
                   invoice.status === 'Paid' ? 'bg-green-100 text-green-700' :
                   invoice.status === 'Partially Paid' ? 'bg-yellow-100 text-yellow-700' :
                   invoice.status === 'Unpaid' ? 'bg-red-100 text-red-700' :
@@ -222,8 +222,8 @@ const PaymentDetailsPage = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center text-gray-500 text-sm mt-8 pt-8 border-t border-gray-200 font-medium">
-          Copyright © 2025 <span className="text-red-600 font-bold">Preadmin</span>
+        <div className="text-center text-gray-500 text-xs  mt-8 pt-8 border-t border-gray-200  ">
+          Copyright © 2025 <span className="text-red  ">Preadmin</span>
         </div>
       </div>
     </div>

@@ -181,13 +181,13 @@ const DealsDashboard = () => {
   // ✅ ADD ERROR DISPLAY
   if (error) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="max-w-md mx-auto mt-8 bg-white rounded-lg border border-red-200 p-6">
-          <h2 className="text-lg font-semibold text-red-600 mb-2">Error Loading Deals</h2>
-          <p className="text-gray-600 text-sm mb-4">{error}</p>
+      <div className="p-2 bg-[#F7F8F9] min-h-screen">
+        <div className="max-w-md mx-auto mt-8 bg-white rounded  border border-red-200p-3 ">
+          <h2 className="text-lg  text-red  mb-2">Error Loading Deals</h2>
+          <p className="text-gray-600 text-xs  mb-4">{error}</p>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            className="p-2  bg-red-500 text-white rounded  hover:bg-red-600 transition-colors"
           >
             Try Again
           </button>
@@ -540,13 +540,13 @@ const DealsDashboard = () => {
 
   if (error) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="max-w-md mx-auto mt-8 bg-white rounded-lg border border-red-200 p-6">
-          <h2 className="text-lg font-semibold text-red-600 mb-2">Error Loading Deals</h2>
-          <p className="text-gray-600 text-sm mb-4">{error}</p>
+      <div className="p-2 bg-[#F7F8F9] min-h-screen">
+        <div className="max-w-md mx-auto mt-8 bg-white rounded  border border-red-200p-3 ">
+          <h2 className="text-lg  text-red  mb-2">Error Loading Deals</h2>
+          <p className="text-gray-600 text-xs  mb-4">{error}</p>
           <button
             onClick={fetchDeals}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+            className="p-2  bg-red-500 text-white rounded  hover:bg-red-600"
           >
             Try Again
           </button>

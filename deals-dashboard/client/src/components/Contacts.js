@@ -305,13 +305,13 @@ const Contacts = () => {
         <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-[28px] font-bold text-gray-900">Contacts</h1>
-              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] font-bold">
+              <h1 className="text-[28px]  text-gray-900">Contacts</h1>
+              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] ">
                 125
               </span>
             </div>
-            <div className="flex items-center gap-1 text-[13px] mt-1">
-              <button className="text-[#F97316] hover:text-[#EA580C] font-medium bg-transparent border-none cursor-pointer p-0">
+            <div className="flex items-center gap-1 text-xs  mt-1">
+              <button className="text-[#F97316] hover:text-[#EA580C]   bg-transparent border-none cursor-pointer p-0">
                 Home
               </button>
               <span className="text-[#D1D5DB]">&gt;</span>
@@ -320,12 +320,12 @@ const Contacts = () => {
           </div>
 
           <div className="flex gap-2">
-            <button className="p-2 hover:bg-white rounded-lg transition text-gray-600">
+            <button className="p-2 hover:bg-white rounded  transition text-gray-600">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
               </svg>
             </button>
-            <button className="p-2 hover:bg-white rounded-lg transition text-gray-600">
+            <button className="p-2 hover:bg-white rounded  transition text-gray-600">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 4H5a2 2 0 00-2 2v14a2 2 0 002 2h4m0-21v21m0-21h10a2 2 0 012 2v14a2 2 0 01-2 2h-10" />
               </svg>
@@ -336,29 +336,29 @@ const Contacts = () => {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-xs">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
               <input
                 type="text"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={handleSearch}
-                className="w-full pl-9 pr-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-gray-400 text-[13px] bg-white"
+                className="w-full pl-9 pr-4 py-2 border border-[#E5E7EB] rounded  focus:outline-none focus:border-gray-400 text-xs  bg-white"
               />
             </div>
             <div className="relative">
               <button
                 onClick={() => setShowFilter(!showFilter)}
-                className="px-4 py-2 border border-[#E5E7EB] rounded-lg hover:bg-gray-50 text-[13px] font-medium text-gray-700 transition bg-white flex items-center gap-2"
+                className="p-2  border border-[#E5E7EB] rounded  hover:bg-gray-50 text-xs    text-gray-700 transition bg-white flex items-center gap-2"
               >
                 Filter <ChevronDown size={16} />
               </button>
               {showFilter && (
-                <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-[#E5E7EB] rounded-lg p-5 max-h-[calc(100vh-200px)] overflow-y-auto z-50 shadow-lg">
+                <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-[#E5E7EB] rounded  p-5 max-h-[calc(100vh-200px)] overflow-y-auto z-50 shadow-lg">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900 text-sm">Filter</h3>
+                    <h3 className=" text-gray-900 text-xs ">Filter</h3>
                     <button
                       onClick={() => setShowFilter(false)}
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-[#1F2020] hover:text-gray-600"
                     >
                       <X size={18} />
                     </button>
@@ -368,7 +368,7 @@ const Contacts = () => {
                     <div className="border-b border-[#E5E7EB]">
                       <button
                         onClick={() => toggleFilterSection('name')}
-                        className="w-full flex items-center gap-2 py-2 text-sm font-medium text-gray-900"
+                        className="w-full flex items-center gap-2 py-2 text-xs    text-gray-900"
                       >
                         <ChevronDown size={16} className={`transition ${expandedFilters.name ? '' : '-rotate-90'}`} />
                         Name
@@ -380,7 +380,7 @@ const Contacts = () => {
                             placeholder="Search name"
                             value={filters.name}
                             onChange={(e) => handleFilterChange('name', e.target.value)}
-                            className="w-full px-3 py-2 border border-[#E5E7EB] rounded text-sm focus:outline-none focus:border-red-500"
+                            className="w-full px-3 py-2 border border-[#E5E7EB] rounded text-xs  focus:outline-none focus:border-red-500"
                           />
                         </div>
                       )}
@@ -389,7 +389,7 @@ const Contacts = () => {
                     <div className="border-b border-[#E5E7EB]">
                       <button
                         onClick={() => toggleFilterSection('tags')}
-                        className="w-full flex items-center gap-2 py-2 text-sm font-medium text-gray-900"
+                        className="w-full flex items-center gap-2 py-2 text-xs    text-gray-900"
                       >
                         <ChevronDown size={16} className={`transition ${expandedFilters.tags ? '' : '-rotate-90'}`} />
                         Tags
@@ -398,7 +398,7 @@ const Contacts = () => {
                         <div className="pb-3 space-y-2 px-2">
                           {filterOptions.tags.length > 0 ? (
                             filterOptions.tags.map(tag => (
-                              <label key={tag} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                              <label key={tag} className="flex items-center gap-2 text-xs  text-gray-700 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={filters.tags.includes(tag)}
@@ -418,7 +418,7 @@ const Contacts = () => {
                     <div className="border-b border-[#E5E7EB]">
                       <button
                         onClick={() => toggleFilterSection('owner')}
-                        className="w-full flex items-center gap-2 py-2 text-sm font-medium text-gray-900"
+                        className="w-full flex items-center gap-2 py-2 text-xs    text-gray-900"
                       >
                         <ChevronDown size={16} className={`transition ${expandedFilters.owner ? '' : '-rotate-90'}`} />
                         Owner
@@ -427,7 +427,7 @@ const Contacts = () => {
                         <div className="pb-3 space-y-2 px-2">
                           {filterOptions.owners.length > 0 ? (
                             filterOptions.owners.map(owner => (
-                              <label key={owner} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                              <label key={owner} className="flex items-center gap-2 text-xs  text-gray-700 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={filters.owner === owner}
@@ -447,7 +447,7 @@ const Contacts = () => {
                     <div className="border-b border-[#E5E7EB]">
                       <button
                         onClick={() => toggleFilterSection('location')}
-                        className="w-full flex items-center gap-2 py-2 text-sm font-medium text-gray-900"
+                        className="w-full flex items-center gap-2 py-2 text-xs    text-gray-900"
                       >
                         <ChevronDown size={16} className={`transition ${expandedFilters.location ? '' : '-rotate-90'}`} />
                         Location
@@ -456,7 +456,7 @@ const Contacts = () => {
                         <div className="pb-3 space-y-2 px-2">
                           {filterOptions.locations.length > 0 ? (
                             filterOptions.locations.map(location => (
-                              <label key={location} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                              <label key={location} className="flex items-center gap-2 text-xs  text-gray-700 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={filters.location.includes(location)}
@@ -476,7 +476,7 @@ const Contacts = () => {
                     <div className="border-b border-[#E5E7EB]">
                       <button
                         onClick={() => toggleFilterSection('rating')}
-                        className="w-full flex items-center gap-2 py-2 text-sm font-medium text-gray-900"
+                        className="w-full flex items-center gap-2 py-2 text-xs    text-gray-900"
                       >
                         <ChevronDown size={16} className={`transition ${expandedFilters.rating ? '' : '-rotate-90'}`} />
                         Rating
@@ -485,7 +485,7 @@ const Contacts = () => {
                         <div className="pb-3 space-y-2 px-2">
                           {filterOptions.ratings.length > 0 ? (
                             filterOptions.ratings.map(rating => (
-                              <label key={rating} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                              <label key={rating} className="flex items-center gap-2 text-xs  text-gray-700 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={filters.rating.includes(rating)}
@@ -505,7 +505,7 @@ const Contacts = () => {
                     <div className="border-b border-[#E5E7EB]">
                       <button
                         onClick={() => toggleFilterSection('status')}
-                        className="w-full flex items-center gap-2 py-2 text-sm font-medium text-gray-900"
+                        className="w-full flex items-center gap-2 py-2 text-xs    text-gray-900"
                       >
                         <ChevronDown size={16} className={`transition ${expandedFilters.status ? '' : '-rotate-90'}`} />
                         Status
@@ -514,7 +514,7 @@ const Contacts = () => {
                         <div className="pb-3 space-y-2 px-2">
                           {filterOptions.statuses.length > 0 ? (
                             filterOptions.statuses.map(status => (
-                              <label key={status} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                              <label key={status} className="flex items-center gap-2 text-xs  text-gray-700 cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={filters.status.includes(status)}
@@ -535,13 +535,13 @@ const Contacts = () => {
                   <div className="flex gap-2 pt-4 border-t border-[#E5E7EB]">
                     <button
                       onClick={handleResetFilters}
-                      className="flex-1 px-4 py-2 border border-[#E5E7EB] text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition"
+                      className="flex-1 p-2  border border-[#E5E7EB] text-gray-700 text-xs    rounded  hover:bg-gray-50 transition"
                     >
                       Reset
                     </button>
                     <button
                       onClick={() => setShowFilter(false)}
-                      className="flex-1 px-4 py-2 bg-[#F62416] text-white text-sm font-medium rounded-lg hover:bg-red-700 transition"
+                      className="flex-1 p-2  bg-[#F62416] text-white text-xs    rounded  hover:bg-red-700 transition"
                     >
                       Filter
                     </button>
@@ -553,7 +553,7 @@ const Contacts = () => {
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]"
+            className="bg-[#F62416] text-white p-2  rounded    flex items-center gap-2 hover:opacity-90 transition text-xs "
           >
             <Plus size={18} strokeWidth={2.5} />
             Add Contacts
@@ -587,7 +587,7 @@ const Contacts = () => {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[13px] flex-shrink-0 overflow-hidden">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center  text-xs  flex-shrink-0 overflow-hidden">
                       {contact.avatarImage ? (
                         <img src={contact.avatarImage} alt={contact.name} className="w-full h-full object-cover" />
                       ) : (
@@ -597,10 +597,10 @@ const Contacts = () => {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-[15px] font-semibold text-gray-900 truncate">
+                      <h3 className="text-xs   text-gray-900 truncate">
                         {contact.name}
                       </h3>
-                      <p className="text-[13px] text-[#6B7280] truncate">
+                      <p className="text-xs  text-[#6B7280] truncate">
                         {contact.position}
                       </p>
                     </div>
@@ -614,17 +614,17 @@ const Contacts = () => {
                 </div>
 
                 <div className="space-y-1.5 mb-4">
-                  <div className="flex items-center gap-2.5 text-[13px] text-[#6B7280]">
+                  <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
                     <Mail size={15} strokeWidth={1.5} className="flex-shrink-0" />
                     <a href={`mailto:${contact.email}`} className="hover:text-gray-900 truncate transition">
                       {contact.email}
                     </a>
                   </div>
-                  <div className="flex items-center gap-2.5 text-[13px] text-[#6B7280]">
+                  <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
                     <Phone size={15} strokeWidth={1.5} className="flex-shrink-0" />
                     <span className="truncate">{contact.phone}</span>
                   </div>
-                  <div className="flex items-center gap-2.5 text-[13px] text-[#6B7280]">
+                  <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
                     <MapPin size={15} strokeWidth={1.5} className="flex-shrink-0" />
                     <span className="truncate">{contact.country}</span>
                   </div>
@@ -640,7 +640,7 @@ const Contacts = () => {
                           backgroundColor: tagStyle.bg,
                           color: tagStyle.text
                         }}
-                        className="text-[12px] px-3 py-1 rounded-md font-medium"
+                        className="text-[12px] px-3 py-1 rounded   "
                       >
                         {tag}
                       </span>
@@ -649,7 +649,7 @@ const Contacts = () => {
                 </div>
 
                 <div className="pt-3 border-t border-[#F3F4F6] flex items-center justify-between">
-                  <div className="flex gap-4 text-[#6B7280]">
+                  <div className="flex gap-2 text-[#6B7280]">
                     <a href={`mailto:${contact.email}`} className="hover:text-gray-900 transition p-0.5" title="Email">
                       <Mail size={15} strokeWidth={1.5} />
                     </a>
@@ -668,7 +668,7 @@ const Contacts = () => {
                       <div
                         key={idx}
                         style={{ backgroundColor: getAvatarColor(collaborator.avatar) }}
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold border border-white"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs   border border-white"
                       >
                         {collaborator.avatar}
                       </div>
@@ -681,14 +681,14 @@ const Contacts = () => {
 
         {filteredContacts.length === 0 && (
           <div className="text-center py-16">
-            <p className="text-[13px] text-[#9CA3AF] font-medium">
+            <p className="text-xs  text-[#9CA3AF]  ">
               No contacts found
             </p>
           </div>
         )}
 
         <div className="mt-8 text-center">
-          <button className="bg-[#F62416] text-white rounded-[8px] px-8 py-3 font-medium hover:opacity-90 transition text-[14px]">
+          <button className="bg-[#F62416] text-white rounded-[8px] px-8 py-3   hover:opacity-90 transition text-[14px]">
             Load More
           </button>
         </div>

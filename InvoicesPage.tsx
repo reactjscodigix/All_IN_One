@@ -72,7 +72,7 @@ const InvoicesPage: React.FC = () => {
     <div className="flex flex-col gap-8">
       {/* MAIN MENU */}
       <div>
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 px-4">Main Menu</h3>
+        <h3 className="text-xs  text-gray-500  tracking-wider mb-4 px-4">Main Menu</h3>
         <nav className="space-y-1">
           <MenuItem icon="📊" label="Dashboard" expanded={expandedMenus.includes('dashboard')} toggle={() => toggleMenu('dashboard')}>
             <SubMenu label="Deals Dashboard" />
@@ -106,7 +106,7 @@ const InvoicesPage: React.FC = () => {
 
       {/* CRM */}
       <div>
-        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 px-4">CRM</h3>
+        <h3 className="text-xs  text-gray-500  tracking-wider mb-4 px-4">CRM</h3>
         <nav className="space-y-1">
           <SimpleMenuItem icon="👥" label="Contacts" />
           <SimpleMenuItem icon="🏢" label="Companies" />
@@ -133,12 +133,12 @@ const InvoicesPage: React.FC = () => {
       {/* SIDEBAR */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 hidden lg:flex flex-col ${!sidebarOpen && 'items-center'}`}>
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <div className={`text-2xl font-bold text-red-600 ${!sidebarOpen && 'hidden'}`}>🎨 Preadmin</div>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded-lg">
+          <div className={`text-2xl  text-red  ${!sidebarOpen && 'hidden'}`}>🎨 Preadmin</div>
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 rounded ">
             {sidebarOpen ? <Menu size={20} /> : <ChevronDown size={20} />}
           </button>
         </div>
-        <div className={`flex-1 overflow-y-auto p-4 ${!sidebarOpen && 'hidden'}`}>
+        <div className={`flex-1 overflow-y-auto p-2 ${!sidebarOpen && 'hidden'}`}>
           <SidebarMenu />
         </div>
       </aside>
@@ -146,77 +146,77 @@ const InvoicesPage: React.FC = () => {
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col">
         {/* TOP HEADER */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
+        <header className="bg-white border-b border-gray-200 p-2 ">
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1 flex items-center gap-4">
               <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="lg:hidden p-2">
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
               <div className="relative flex-1 max-w-md">
-                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
                 <input
                   type="text"
                   placeholder="Search Keyword"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded  focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-lg relative">
+              <button className="p-2 hover:bg-gray-100 rounded  relative">
                 <Bell size={20} className="text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg"><Settings size={20} className="text-gray-600" /></button>
-              <button className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">JD</button>
+              <button className="p-2 hover:bg-gray-100 rounded "><Settings size={20} className="text-gray-600" /></button>
+              <button className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white  text-xs ">JD</button>
             </div>
           </div>
         </header>
 
         {/* PAGE CONTENT */}
-        <main className="flex-1 p-6">
+        <main className="flex-1p-3 ">
           {/* PAGE HEADER */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                <h1 className="text-xl font-[500] text-gray-900 ">
                   Invoices
-                  <span className="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">348</span>
+                  <span className="bg-blue-100 text-blue-700 text-xs  px-3 py-1 rounded-full">348</span>
                 </h1>
-                <div className="flex gap-2 text-sm text-gray-600 mt-2">
+                <div className="flex gap-2 text-xs  text-gray-600 mt-2">
                   <span>Home</span>
                   <span>›</span>
                   <span>Invoices</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 font-medium text-sm">
+                <button className="flex items-center gap-2 p-2  bg-white border border-gray-200 rounded  hover:bg-gray-50   text-xs ">
                   <Download size={18} /> Export
                 </button>
-                <button className="p-2 hover:bg-gray-100 rounded-lg"><MoreVertical size={20} /></button>
+                <button className="p-2 hover:bg-gray-100 rounded "><MoreVertical size={20} /></button>
               </div>
             </div>
           </div>
 
           {/* CONTROLS */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <div className="bg-white rounded  border border-gray-200 p-2 mb-6">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Sort By</span>
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                <span className="text-xs  text-gray-600">Sort By</span>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="border border-gray-200 rounded  px-3 py-2 text-xs ">
                   <option value="newest">Newest</option>
                   <option value="oldest">Oldest</option>
                   <option value="amount">Amount High to Low</option>
                   <option value="due">Due Date</option>
                 </select>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600 border-l border-gray-200 pl-4">
+              <div className="flex items-center gap-2 text-xs  text-gray-600 border-l border-gray-200 pl-4">
                 📅 29 Nov 25 - 29 Nov 25
               </div>
               <div className="flex items-center gap-2 ml-auto">
-                <button onClick={() => setFilterOpen(!filterOpen)} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm">
+                <button onClick={() => setFilterOpen(!filterOpen)} className="flex items-center gap-2 p-2  border border-gray-200 rounded  hover:bg-gray-50 text-xs ">
                   <FilterIcon size={16} /> Filter
                 </button>
-                <button className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-sm">
+                <button className="p-2  border border-gray-200 rounded  hover:bg-gray-50 text-xs ">
                   Manage Columns
                 </button>
               </div>
@@ -225,38 +225,38 @@ const InvoicesPage: React.FC = () => {
             {filterOpen && (
               <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-sm font-bold text-gray-700 mb-2 block">Status</label>
+                  <label className="text-xs   text-gray-700 mb-2 block">Status</label>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm">
+                    <label className="flex items-center gap-2 text-xs ">
                       <input type="checkbox" className="rounded" defaultChecked /> Paid
                     </label>
-                    <label className="flex items-center gap-2 text-sm">
+                    <label className="flex items-center gap-2 text-xs ">
                       <input type="checkbox" className="rounded" defaultChecked /> Unpaid
                     </label>
-                    <label className="flex items-center gap-2 text-sm">
+                    <label className="flex items-center gap-2 text-xs ">
                       <input type="checkbox" className="rounded" defaultChecked /> Partial
                     </label>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-bold text-gray-700 mb-2 block">Amount Range</label>
+                  <label className="text-xs   text-gray-700 mb-2 block">Amount Range</label>
                   <input type="range" className="w-full" min="0" max="10000" />
                 </div>
                 <div>
-                  <label className="text-sm font-bold text-gray-700 mb-2 block">Due Date</label>
-                  <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <label className="text-xs   text-gray-700 mb-2 block">Due Date</label>
+                  <input type="date" className="w-full border border-gray-200 rounded  px-3 py-2 text-xs " />
                 </div>
               </div>
             )}
           </div>
 
           {/* TABLE */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded  border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="p-4 text-left">
+                    <th className="p-2 text-left">
                       <input
                         type="checkbox"
                         checked={selectedInvoices.length === invoices.length}
@@ -264,13 +264,13 @@ const InvoicesPage: React.FC = () => {
                         className="rounded border-gray-300"
                       />
                     </th>
-                    <th className="p-4 text-left text-sm font-bold text-gray-700">Invoice #</th>
-                    <th className="p-4 text-left text-sm font-bold text-gray-700">Client</th>
-                    <th className="p-4 text-left text-sm font-bold text-gray-700">Amount</th>
-                    <th className="p-4 text-left text-sm font-bold text-gray-700">Issue Date</th>
-                    <th className="p-4 text-left text-sm font-bold text-gray-700">Due Date</th>
-                    <th className="p-4 text-left text-sm font-bold text-gray-700">Status</th>
-                    <th className="p-4 text-left text-sm font-bold text-gray-700">Action</th>
+                    <th className="p-2 text-left text-xs   text-gray-700">Invoice #</th>
+                    <th className="p-2 text-left text-xs   text-gray-700">Client</th>
+                    <th className="p-2 text-left text-xs   text-gray-700">Amount</th>
+                    <th className="p-2 text-left text-xs   text-gray-700">Issue Date</th>
+                    <th className="p-2 text-left text-xs   text-gray-700">Due Date</th>
+                    <th className="p-2 text-left text-xs   text-gray-700">Status</th>
+                    <th className="p-2 text-left text-xs   text-gray-700">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -284,27 +284,27 @@ const InvoicesPage: React.FC = () => {
                           className="rounded border-gray-300"
                         />
                       </td>
-                      <td className="p-4 text-sm font-bold text-red-600">{invoice.invoiceNumber}</td>
+                      <td className="p-2 text-xs   text-red ">{invoice.invoiceNumber}</td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{invoice.clientIcon}</span>
-                          <span className="text-sm font-medium text-gray-900">{invoice.client}</span>
+                          <span className="text-xs    text-gray-900">{invoice.client}</span>
                         </div>
                       </td>
-                      <td className="p-4 text-sm font-bold text-gray-900">${invoice.amount}</td>
-                      <td className="p-4 text-sm text-gray-600">{invoice.issueDate}</td>
-                      <td className="p-4 text-sm text-gray-600">{invoice.dueDate}</td>
+                      <td className="p-2 text-xs   text-gray-900">₹{invoice.amount}</td>
+                      <td className="p-2 text-xs  text-gray-600">{invoice.issueDate}</td>
+                      <td className="p-2 text-xs  text-gray-600">{invoice.dueDate}</td>
                       <td className="p-4">
-                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${getStatusColor(invoice.status)}`}>
+                        <span className={`text-xs  px-3 py-1 rounded-full ${getStatusColor(invoice.status)}`}>
                           {invoice.status}
                         </span>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <button className="p-2 hover:bg-gray-200 rounded-lg text-gray-600 hover:text-gray-900" title="View">
+                          <button className="p-2 hover:bg-gray-200 rounded  text-gray-600 hover:text-gray-900" title="View">
                             <Eye size={16} />
                           </button>
-                          <button className="p-2 hover:bg-red-100 rounded-lg text-gray-600 hover:text-red-600" title="Delete">
+                          <button className="p-2 hover:bg-red-100 rounded  text-gray-600 hover:text-red " title="Delete">
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -317,7 +317,7 @@ const InvoicesPage: React.FC = () => {
           </div>
 
           {/* PAGINATION */}
-          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between text-sm text-gray-600">
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between text-xs  text-gray-600">
             <div className="flex items-center gap-2 mb-4 sm:mb-0">
               <span>Show</span>
               <select value={itemsPerPage} onChange={(e) => setItemsPerPage(Number(e.target.value))} className="border border-gray-200 rounded px-3 py-1">
@@ -329,7 +329,7 @@ const InvoicesPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <button className="border border-gray-200 px-3 py-1 rounded hover:bg-gray-50">&lt;</button>
-              <button className="border border-gray-200 px-3 py-1 rounded bg-red-500 text-white font-bold">1</button>
+              <button className="border border-gray-200 px-3 py-1 rounded bg-red-500 text-white ">1</button>
               <button className="border border-gray-200 px-3 py-1 rounded hover:bg-gray-50">2</button>
               <button className="border border-gray-200 px-3 py-1 rounded hover:bg-gray-50">3</button>
               <button className="border border-gray-200 px-3 py-1 rounded hover:bg-gray-50">&gt;</button>
@@ -338,27 +338,27 @@ const InvoicesPage: React.FC = () => {
 
           {/* SUMMARY STATS */}
           <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-              <p className="text-sm text-green-700 font-semibold">Total Paid</p>
-              <p className="text-2xl font-bold text-green-900 mt-2">$28,550</p>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded  p-2 border border-green-200">
+              <p className="text-xs  text-green-700 ">Total Paid</p>
+              <p className="text-2xl  text-green-900 mt-2">$28,550</p>
             </div>
-            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border border-red-200">
-              <p className="text-sm text-red-700 font-semibold">Total Unpaid</p>
-              <p className="text-2xl font-bold text-red-900 mt-2">$12,250</p>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded  p-2 border border-red-200">
+              <p className="text-xs  text-red-700 ">Total Unpaid</p>
+              <p className="text-2xl  text-red-900 mt-2">$12,250</p>
             </div>
-            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200">
-              <p className="text-sm text-yellow-700 font-semibold">Total Partial</p>
-              <p className="text-2xl font-bold text-yellow-900 mt-2">$9,950</p>
+            <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded  p-2 border border-yellow-200">
+              <p className="text-xs  text-yellow-700 ">Total Partial</p>
+              <p className="text-2xl  text-yellow-900 mt-2">$9,950</p>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-              <p className="text-sm text-blue-700 font-semibold">Grand Total</p>
-              <p className="text-2xl font-bold text-blue-900 mt-2">$50,750</p>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded  p-2 border border-blue-200">
+              <p className="text-xs  text-blue-700 ">Grand Total</p>
+              <p className="text-2xl  text-blue-900 mt-2">$50,750</p>
             </div>
           </div>
 
           {/* FOOTER */}
-          <footer className="mt-12 pt-6 border-t border-gray-200 text-sm text-gray-500 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div>Copyright © 2025 <span className="text-red-500 font-bold">Preadmin</span></div>
+          <footer className="mt-12 pt-6 border-t border-gray-200 text-xs  text-gray-500 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>Copyright © 2025 <span className="text-red-500 ">Preadmin</span></div>
             <div className="flex gap-6">
               <a href="#" className="hover:text-gray-700">About</a>
               <a href="#" className="hover:text-gray-700">Terms</a>
@@ -371,7 +371,7 @@ const InvoicesPage: React.FC = () => {
       {/* MOBILE MENU */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden">
-          <div className="absolute left-0 top-0 w-64 h-full bg-white border-r border-gray-200 p-4 overflow-y-auto">
+          <div className="absolute left-0 top-0 w-64 h-full bg-white border-r border-gray-200 p-2 overflow-y-auto">
             <button onClick={() => setMobileMenuOpen(false)} className="mb-4">
               <X size={24} />
             </button>
@@ -385,7 +385,7 @@ const InvoicesPage: React.FC = () => {
 
 const MenuItem: React.FC<{ icon: string; label: string; expanded: boolean; toggle: () => void; children: React.ReactNode }> = ({ icon, label, expanded, toggle, children }) => (
   <div>
-    <button onClick={toggle} className="w-full flex items-center justify-between px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg font-medium">
+    <button onClick={toggle} className="w-full flex items-center justify-between p-2  text-gray-700 hover:bg-gray-100 rounded   ">
       <span className="flex items-center gap-3">
         <span className="text-lg">{icon}</span>
         {label}
@@ -401,14 +401,14 @@ const MenuItem: React.FC<{ icon: string; label: string; expanded: boolean; toggl
 );
 
 const SimpleMenuItem: React.FC<{ icon: string; label: string; active?: boolean }> = ({ icon, label, active }) => (
-  <button className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg font-medium ${active ? 'bg-red-50 text-red-600' : 'text-gray-700 hover:bg-gray-100'}`}>
+  <button className={`w-full flex items-center gap-3 p-2  rounded    ${active ? 'bg-red-50 text-red ' : 'text-gray-700 hover:bg-gray-100'}`}>
     <span className="text-lg">{icon}</span>
     {label}
   </button>
 );
 
 const SubMenu: React.FC<{ label: string }> = ({ label }) => (
-  <button className="w-full text-left px-4 py-1 text-sm text-gray-600 hover:text-gray-900">
+  <button className="w-full text-left px-4 py-1 text-xs  text-gray-600 hover:text-gray-900">
     {label}
   </button>
 );

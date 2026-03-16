@@ -143,16 +143,16 @@ const RolePermissionsDetailPage = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center gap-4 mb-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
+        <div className="flex items-center gap-2 mb-4">
           <button
             onClick={() => navigate('/roles-permissions')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded  transition-colors"
           >
             <ChevronLeft size={20} className="text-gray-600" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Role Permissions</h1>
+            <h1 className="text-2xl  text-gray-900">Role Permissions</h1>
             <p className="text-xs text-gray-500 mt-1">Home › Roles & Permissions › {roleName}</p>
           </div>
         </div>
@@ -160,15 +160,15 @@ const RolePermissionsDetailPage = () => {
 
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <div className="bg-white rounded  shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-gray-50 p-2  border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Role Name: <span className="font-bold text-red-600">{roleName}</span></p>
+                  <p className="text-xs    text-gray-700">Role Name: <span className=" text-red ">{roleName}</span></p>
                 </div>
                 <button 
                   onClick={() => alert('Allow all modules to this role')}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-xs    text-white  hover:text-blue-700 transition-colors"
                 >
                   Allow All Modules
                 </button>
@@ -176,26 +176,26 @@ const RolePermissionsDetailPage = () => {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs ">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="px-6 py-3 text-left font-semibold text-gray-700 w-40">Modules</th>
-                    <th className="px-6 py-3 text-center font-semibold text-gray-700 w-24">Create</th>
-                    <th className="px-6 py-3 text-center font-semibold text-gray-700 w-24">Edit</th>
-                    <th className="px-6 py-3 text-center font-semibold text-gray-700 w-24">View</th>
-                    <th className="px-6 py-3 text-center font-semibold text-gray-700 w-24">Delete</th>
-                    <th className="px-6 py-3 text-center font-semibold text-gray-700 w-32">Allow All</th>
-                    <th className="px-6 py-3 text-center font-semibold text-gray-700 w-20">Reset</th>
+                    <th className="px-6 py-3 text-left  text-gray-700 w-40">Modules</th>
+                    <th className="px-6 py-3 text-center  text-gray-700 w-24">Create</th>
+                    <th className="px-6 py-3 text-center  text-gray-700 w-24">Edit</th>
+                    <th className="px-6 py-3 text-center  text-gray-700 w-24">View</th>
+                    <th className="px-6 py-3 text-center  text-gray-700 w-24">Delete</th>
+                    <th className="px-6 py-3 text-center  text-gray-700 w-32">Allow All</th>
+                    <th className="px-6 py-3 text-center  text-gray-700 w-20">Reset</th>
                   </tr>
                 </thead>
                 <tbody>
                   {modules.map(module => (
                     <tr key={module.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="font-medium text-gray-900">{module.name}</p>
+                      <td className="p-2 ">
+                        <p className="  text-gray-900">{module.name}</p>
                         <p className="text-xs text-gray-500">{module.name}</p>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="p-2  text-center">
                         <input
                           type="checkbox"
                           checked={permissions[module.name]?.can_create || false}
@@ -203,7 +203,7 @@ const RolePermissionsDetailPage = () => {
                           className="w-4 h-4 cursor-pointer"
                         />
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="p-2  text-center">
                         <input
                           type="checkbox"
                           checked={permissions[module.name]?.can_update || false}
@@ -211,7 +211,7 @@ const RolePermissionsDetailPage = () => {
                           className="w-4 h-4 cursor-pointer"
                         />
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="p-2  text-center">
                         <input
                           type="checkbox"
                           checked={permissions[module.name]?.can_read || false}
@@ -219,7 +219,7 @@ const RolePermissionsDetailPage = () => {
                           className="w-4 h-4 cursor-pointer"
                         />
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="p-2  text-center">
                         <input
                           type="checkbox"
                           checked={permissions[module.name]?.can_delete || false}
@@ -227,18 +227,18 @@ const RolePermissionsDetailPage = () => {
                           className="w-4 h-4 cursor-pointer"
                         />
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="p-2  text-center">
                         <button
                           onClick={() => handleAllowAll(module.name)}
-                          className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                          className="text-xs   text-white  hover:text-blue-700 transition-colors"
                         >
                           Allow All
                         </button>
                       </td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="p-2  text-center">
                         <button
                           onClick={() => handleResetModule(module.name)}
-                          className="text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors"
+                          className="text-xs   text-gray-600 hover:text-gray-700 transition-colors"
                         >
                           Reset
                         </button>
@@ -249,17 +249,17 @@ const RolePermissionsDetailPage = () => {
               </table>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+            <div className="p-2  border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
               <button
                 onClick={() => navigate('/roles-permissions')}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSavePermissions}
                 disabled={isSaving}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {isSaving ? 'Saving...' : 'Save Permissions'}
               </button>
@@ -269,8 +269,8 @@ const RolePermissionsDetailPage = () => {
       </div>
 
       <div className="text-center text-xs text-gray-500 py-6 border-t border-gray-200 bg-white mt-6">
-        <span>Copyright © 2025 <span className="text-red-600 font-medium">Preadmin</span></span>
-        <div className="flex gap-4 justify-center mt-2 text-xs">
+        <span>Copyright © 2025 <span className="text-red   ">Preadmin</span></span>
+        <div className="flex gap-2 justify-center mt-2 text-xs">
           <span className="cursor-pointer hover:text-gray-700">About</span>
           <span className="cursor-pointer hover:text-gray-700">Terms</span>
           <span className="cursor-pointer hover:text-gray-700">Contact Us</span>

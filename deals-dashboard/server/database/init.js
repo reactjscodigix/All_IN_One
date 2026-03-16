@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const crypto = require('crypto');
 
 async function initializeDatabase() {
   let connection;
@@ -21,13 +22,99 @@ async function initializeDatabase() {
         location VARCHAR(100),
         avatar LONGTEXT,
         role_id INT,
+        department VARCHAR(100),
+        department_id INT,
         status ENUM('Active', 'Inactive') DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_email (email),
         INDEX idx_username (username),
         INDEX idx_status (status),
-        INDEX idx_role_id (role_id)
+        INDEX idx_role_id (role_id),
+        INDEX idx_department_id (department_id)
+      )
+    `);
+    
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS departments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS service_categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        parent_category VARCHAR(100),
+        suggested_department_id INT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        FOREIGN KEY (suggested_department_id) REFERENCES departments(id) ON DELETE SET NULL
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS automation_rules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        entity_type ENUM('Lead', 'Deal', 'Invoice', 'Project', 'Task') NOT NULL,
+        trigger_condition TEXT NOT NULL,
+        action_type VARCHAR(100) NOT NULL,
+        action_payload JSON,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_entity_type (entity_type),
+        INDEX idx_is_active (is_active)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS kpi_metrics (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        department_id INT,
+        metric_name VARCHAR(100) NOT NULL,
+        metric_value DECIMAL(15, 2),
+        period_start DATE,
+        period_end DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE,
+        INDEX idx_department_id (department_id),
+        INDEX idx_metric_name (metric_name)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS approvals (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        approval_type VARCHAR(100) NOT NULL,
+        entity_id INT,
+        entity_name VARCHAR(255),
+        description LONGTEXT,
+        requested_by INT,
+        approver INT,
+        priority ENUM('Low', 'Medium', 'High') DEFAULT 'Medium',
+        status ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending',
+        discount_percentage DECIMAL(5, 2),
+        discount_amount DECIMAL(15, 2),
+        change_scope LONGTEXT,
+        impact_assessment LONGTEXT,
+        approval_comments LONGTEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (approver) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_status (status),
+        INDEX idx_approval_type (approval_type),
+        INDEX idx_approver (approver),
+        INDEX idx_created_at (created_at)
       )
     `);
     
@@ -88,22 +175,56 @@ async function initializeDatabase() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         description LONGTEXT,
-        status ENUM('Open', 'In Progress', 'Completed', 'On Hold') DEFAULT 'Open',
+        status ENUM('To Do', 'In Progress', 'Review', 'Completed', 'On Hold', 'Cancelled', 'Open') DEFAULT 'To Do',
         priority ENUM('Low', 'Medium', 'High', 'Critical') DEFAULT 'Medium',
         assigned_to JSON,
         due_date DATE,
+        due_time TIME,
         tags JSON,
-        linked_type ENUM('General', 'Deal', 'Project') DEFAULT 'General',
+        linked_type ENUM('General', 'Deal', 'Project', 'Lead') DEFAULT 'General',
         linked_id INT,
+        workflow_type VARCHAR(100),
+        department_id INT,
+        created_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_status (status),
         INDEX idx_priority (priority),
         INDEX idx_due_date (due_date),
         INDEX idx_linked_type (linked_type),
-        INDEX idx_linked_id (linked_id)
+        INDEX idx_linked_id (linked_id),
+        INDEX idx_department_id (department_id),
+        FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
       )
     `);
+
+    try {
+      await connection.query(`
+        ALTER TABLE general_tasks MODIFY COLUMN linked_type ENUM('General', 'Deal', 'Project', 'Lead') DEFAULT 'General'
+      `);
+    } catch (err) {
+      console.warn('Could not update linked_type in general_tasks:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "created_by"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN created_by INT');
+        console.log('✓ Added created_by to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not update created_by in general_tasks:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "due_time"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN due_time TIME');
+        console.log('✓ Added due_time to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not update due_time in general_tasks:', err.message);
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS proposals (
@@ -121,7 +242,7 @@ async function initializeDatabase() {
         total_amount DECIMAL(15, 2),
         discount_amount DECIMAL(15, 2) DEFAULT 0,
         tax_amount DECIMAL(15, 2) DEFAULT 0,
-        currency VARCHAR(10) DEFAULT 'USD',
+        currency VARCHAR(10) DEFAULT 'INR',
         terms_conditions LONGTEXT,
         notes LONGTEXT,
         version INT DEFAULT 1,
@@ -214,6 +335,17 @@ async function initializeDatabase() {
       )
     `);
 
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM companies LIKE "created_by"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE companies ADD COLUMN created_by INT');
+        await connection.query('ALTER TABLE companies ADD CONSTRAINT fk_companies_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL');
+        console.log('✓ Added created_by to companies');
+      }
+    } catch (err) {
+      console.warn('Could not update created_by in companies:', err.message);
+    }
+
     await connection.query(`
       CREATE TABLE IF NOT EXISTS plans (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -295,13 +427,16 @@ async function initializeDatabase() {
         state VARCHAR(100),
         country VARCHAR(100),
         tag VARCHAR(100),
+        owner_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_first_name (first_name),
         INDEX idx_email (email),
         INDEX idx_company_id (company_id),
         INDEX idx_status (status),
-        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
+        INDEX idx_owner_id (owner_id),
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
+        FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
 
@@ -312,8 +447,14 @@ async function initializeDatabase() {
         email VARCHAR(150),
         phone VARCHAR(20),
         company VARCHAR(255),
+        company_id INT,
         lead_source VARCHAR(100),
-        lead_status ENUM('New', 'Qualified', 'Contacted', 'Unqualified') DEFAULT 'New',
+        lead_status ENUM('New', 'Qualified', 'Contacted', 'Unqualified', 'Not Contacted', 'Closed', 'Lost', 'Converted to Deal', 'Quotation', 'Revised Quotation') DEFAULT 'New',
+        business_type VARCHAR(100),
+        marketing_services JSON,
+        it_services VARCHAR(255),
+        it_services_other VARCHAR(255),
+        service_category_id INT,
         rating INT DEFAULT 5,
         notes LONGTEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -321,23 +462,95 @@ async function initializeDatabase() {
         INDEX idx_lead_name (lead_name),
         INDEX idx_email (email),
         INDEX idx_lead_status (lead_status),
-        INDEX idx_created_at (created_at)
+        INDEX idx_created_at (created_at),
+        INDEX idx_service_category_id (service_category_id),
+        FOREIGN KEY (service_category_id) REFERENCES service_categories(id) ON DELETE SET NULL
       )
     `);
+
+    try {
+      await connection.query(`
+        ALTER TABLE leads MODIFY COLUMN lead_status ENUM('New', 'Qualified', 'Contacted', 'Unqualified', 'Not Contacted', 'Closed', 'Lost', 'Converted to Deal', 'Quotation', 'Revised Quotation') DEFAULT 'New'
+      `);
+      console.log('✓ Updated lead_status ENUM in leads');
+    } catch (err) {
+      console.warn('Could not update lead_status ENUM in leads:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM leads LIKE "company_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE leads ADD COLUMN company_id INT AFTER company');
+        await connection.query('ALTER TABLE leads ADD CONSTRAINT fk_leads_company_id FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL');
+        console.log('✓ Added company_id to leads');
+      }
+    } catch (err) {
+      console.warn('Could not update company_id in leads:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM leads');
+      const columnNames = columns.map(c => c.Field);
+      
+      if (!columnNames.includes('business_type')) {
+        await connection.query('ALTER TABLE leads ADD COLUMN business_type VARCHAR(100)');
+        console.log('✓ Added business_type to leads');
+      }
+      if (!columnNames.includes('marketing_services')) {
+        await connection.query('ALTER TABLE leads ADD COLUMN marketing_services JSON');
+        console.log('✓ Added marketing_services to leads');
+      }
+      if (!columnNames.includes('it_services')) {
+        await connection.query('ALTER TABLE leads ADD COLUMN it_services VARCHAR(255)');
+        console.log('✓ Added it_services to leads');
+      }
+      if (!columnNames.includes('it_services_other')) {
+        await connection.query('ALTER TABLE leads ADD COLUMN it_services_other VARCHAR(255)');
+        console.log('✓ Added it_services_other to leads');
+      }
+    } catch (err) {
+      console.warn('Could not update business columns in leads:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM leads LIKE "department_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE leads ADD COLUMN department_id INT AFTER service_category_id');
+        await connection.query('ALTER TABLE leads ADD CONSTRAINT fk_leads_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL');
+        console.log('✓ Added department_id to leads');
+      }
+    } catch (err) {
+      console.warn('Could not update department_id in leads:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM leads LIKE "converted_company_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE leads ADD COLUMN converted_company_id INT, ADD COLUMN converted_contact_id INT, ADD COLUMN converted_deal_id INT');
+        await connection.query('ALTER TABLE leads ADD CONSTRAINT fk_leads_converted_company FOREIGN KEY (converted_company_id) REFERENCES companies(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE leads ADD CONSTRAINT fk_leads_converted_contact FOREIGN KEY (converted_contact_id) REFERENCES contacts(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE leads ADD CONSTRAINT fk_leads_converted_deal FOREIGN KEY (converted_deal_id) REFERENCES deals(id) ON DELETE SET NULL');
+        console.log('✓ Added conversion tracking columns to leads');
+      }
+    } catch (err) {
+      console.warn('Could not update conversion columns in leads:', err.message);
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS deals (
         id INT AUTO_INCREMENT PRIMARY KEY,
         deal_name VARCHAR(255) NOT NULL,
-        company_id INT NOT NULL,
+        company_id INT,
         contact_id INT,
         assignee_id INT,
+        service_category_id INT,
         deal_value DECIMAL(15, 2),
-        currency VARCHAR(10) DEFAULT 'USD',
+        currency VARCHAR(10) DEFAULT 'INR',
         deal_stage VARCHAR(100),
         pipeline VARCHAR(100),
         status VARCHAR(100),
         probability INT,
+        department_id INT,
         expected_close_date DATE,
         due_date DATE,
         follow_up_date DATE,
@@ -353,9 +566,80 @@ async function initializeDatabase() {
         INDEX idx_deal_stage (deal_stage),
         INDEX idx_status (status),
         INDEX idx_expected_close_date (expected_close_date),
-        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+        INDEX idx_service_category_id (service_category_id),
+        INDEX idx_department_id (department_id),
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+        FOREIGN KEY (service_category_id) REFERENCES service_categories(id) ON DELETE SET NULL,
+        FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
       )
     `);
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM deals LIKE "department_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE deals ADD COLUMN department_id INT AFTER probability');
+        await connection.query('ALTER TABLE deals ADD CONSTRAINT fk_deals_department FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL');
+        console.log('✓ Added department_id to deals');
+      }
+    } catch (err) {
+      console.warn('Could not update department_id in deals:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM deals LIKE "assignee_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE deals ADD COLUMN assignee_id INT');
+        await connection.query('ALTER TABLE deals ADD CONSTRAINT fk_deals_assignee FOREIGN KEY (assignee_id) REFERENCES users(id) ON DELETE SET NULL');
+        console.log('✓ Added assignee_id to deals');
+      }
+    } catch (err) {
+      console.warn('Could not update assignee_id in deals:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM deals LIKE "deal_stage"');
+      if (columns.length === 0) {
+        const [stageColumn] = await connection.query('SHOW COLUMNS FROM deals LIKE "stage"');
+        if (stageColumn.length > 0) {
+          await connection.query('ALTER TABLE deals CHANGE COLUMN stage deal_stage VARCHAR(100)');
+          console.log('✓ Changed stage to deal_stage in deals');
+        } else {
+          await connection.query('ALTER TABLE deals ADD COLUMN deal_stage VARCHAR(100)');
+          console.log('✓ Added deal_stage to deals');
+        }
+      }
+    } catch (err) {
+      console.warn('Could not update deal_stage in deals:', err.message);
+    }
+    try {
+      // Make company_id nullable in deals
+      await connection.query('ALTER TABLE deals MODIFY COLUMN company_id INT NULL');
+      
+      // Update foreign key to SET NULL instead of CASCADE for company_id
+      try {
+        // Find existing constraint name
+        const [constraints] = await connection.query(`
+          SELECT CONSTRAINT_NAME 
+          FROM information_schema.KEY_COLUMN_USAGE 
+          WHERE TABLE_NAME = 'deals' 
+          AND COLUMN_NAME = 'company_id' 
+          AND REFERENCED_TABLE_NAME = 'companies'
+        `);
+        
+        if (constraints.length > 0) {
+          const constraintName = constraints[0].CONSTRAINT_NAME;
+          await connection.query(`ALTER TABLE deals DROP FOREIGN KEY ${constraintName}`);
+          await connection.query('ALTER TABLE deals ADD CONSTRAINT fk_deals_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL');
+          console.log('✓ Updated company_id foreign key in deals');
+        }
+      } catch (fkErr) {
+        console.warn('Could not update foreign key in deals:', fkErr.message);
+      }
+      
+      console.log('✓ Made company_id nullable in deals');
+    } catch (err) {
+      console.warn('Could not update company_id in deals:', err.message);
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS projects (
@@ -367,11 +651,13 @@ async function initializeDatabase() {
         company_id INT,
         contact_id INT,
         budget DECIMAL(15, 2),
-        currency VARCHAR(10) DEFAULT 'USD',
-        status ENUM('Planning', 'In Progress', 'On Hold', 'Completed', 'Cancelled', 'Active') DEFAULT 'Planning',
+        currency VARCHAR(10) DEFAULT 'INR',
+        status ENUM('Planning', 'Execution', 'Review', 'Completed', 'On Hold', 'Cancelled', 'Active') DEFAULT 'Planning',
         start_date DATE,
         end_date DATE,
         due_date DATE,
+        parent_project_id INT,
+        department_id INT,
         created_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -379,8 +665,12 @@ async function initializeDatabase() {
         INDEX idx_status (status),
         INDEX idx_deal_id (deal_id),
         INDEX idx_company_id (company_id),
+        INDEX idx_parent_project_id (parent_project_id),
+        INDEX idx_department_id (department_id),
         FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL
+        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,
+        FOREIGN KEY (parent_project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
       )
     `);
 
@@ -394,7 +684,7 @@ async function initializeDatabase() {
         project_id INT,
         deal_id INT,
         amount DECIMAL(15, 2) NOT NULL,
-        currency VARCHAR(10) DEFAULT 'USD',
+        currency VARCHAR(10) DEFAULT 'INR',
         invoice_date DATE,
         open_till DATE,
         payment_method VARCHAR(100),
@@ -412,6 +702,7 @@ async function initializeDatabase() {
         terms_conditions LONGTEXT,
         amount_paid DECIMAL(15, 2) DEFAULT 0,
         payment_date DATE,
+        created_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_client_id (client_id),
@@ -419,9 +710,21 @@ async function initializeDatabase() {
         INDEX idx_status (status),
         INDEX idx_invoice_date (invoice_date),
         INDEX idx_created_at (created_at),
-        FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE
+        FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
       )
     `);
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM invoices LIKE "created_by"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE invoices ADD COLUMN created_by INT');
+        await connection.query('ALTER TABLE invoices ADD CONSTRAINT fk_invoices_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL');
+        console.log('✓ Added created_by to invoices');
+      }
+    } catch (err) {
+      console.warn('Could not update created_by in invoices:', err.message);
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS invoice_items (
@@ -447,31 +750,102 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS estimations (
         id INT AUTO_INCREMENT PRIMARY KEY,
         estimation_number VARCHAR(50) UNIQUE NOT NULL,
-        client_id INT NOT NULL,
+        client_id INT,
+        lead_id INT,
         contact_id INT,
         project_id INT,
+        parent_id INT,
+        version INT DEFAULT 1,
         bill_to VARCHAR(255),
         ship_to VARCHAR(255),
         amount DECIMAL(15, 2) NOT NULL,
-        currency VARCHAR(10) DEFAULT 'USD',
+        currency VARCHAR(10) DEFAULT 'INR',
         estimate_date DATE,
         expiry_date DATE,
-        status ENUM('Draft', 'Sent', 'Accepted', 'Declined') DEFAULT 'Draft',
+        status ENUM('Draft', 'Sent', 'Accepted', 'Declined', 'Revised', 'Finalized') DEFAULT 'Draft',
         description LONGTEXT,
         tags JSON,
         estimate_by INT,
+        discount_percentage DECIMAL(5, 2) DEFAULT 0,
+        discount_amount DECIMAL(15, 2) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_client_id (client_id),
+        INDEX idx_lead_id (lead_id),
+        INDEX idx_parent_id (parent_id),
         INDEX idx_estimation_number (estimation_number),
         INDEX idx_status (status),
         INDEX idx_estimate_date (estimate_date),
         INDEX idx_created_at (created_at),
         FOREIGN KEY (client_id) REFERENCES companies(id) ON DELETE CASCADE,
+        FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
-        FOREIGN KEY (estimate_by) REFERENCES users(id) ON DELETE SET NULL
+        FOREIGN KEY (estimate_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (parent_id) REFERENCES estimations(id) ON DELETE SET NULL
       )
     `);
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM estimations');
+      const columnNames = columns.map(c => c.Field);
+      
+      if (!columnNames.includes('lead_id')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN lead_id INT AFTER client_id');
+        await connection.query('ALTER TABLE estimations ADD CONSTRAINT fk_estimations_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL');
+        console.log('✓ Added lead_id to estimations');
+      }
+      
+      if (!columnNames.includes('parent_id')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN parent_id INT AFTER project_id');
+        await connection.query('ALTER TABLE estimations ADD COLUMN version INT DEFAULT 1 AFTER parent_id');
+        await connection.query('ALTER TABLE estimations ADD CONSTRAINT fk_estimations_parent FOREIGN KEY (parent_id) REFERENCES estimations(id) ON DELETE SET NULL');
+        console.log('✓ Added parent_id and version to estimations');
+      }
+
+      if (!columnNames.includes('discount_percentage')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN discount_percentage DECIMAL(5, 2) DEFAULT 0');
+        console.log('✓ Added discount_percentage to estimations table');
+      }
+      
+      if (!columnNames.includes('discount_amount')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN discount_amount DECIMAL(15, 2) DEFAULT 0');
+        console.log('✓ Added discount_amount to estimations table');
+      }
+
+      if (!columnNames.includes('tax_percentage')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN tax_percentage DECIMAL(5, 2) DEFAULT 0');
+        console.log('✓ Added tax_percentage to estimations table');
+      }
+
+      if (!columnNames.includes('tax_amount')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN tax_amount DECIMAL(15, 2) DEFAULT 0');
+        console.log('✓ Added tax_amount to estimations table');
+      }
+
+      if (!columnNames.includes('subtotal')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN subtotal DECIMAL(15, 2) DEFAULT 0');
+        console.log('✓ Added subtotal to estimations table');
+      }
+
+      if (!columnNames.includes('total')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN total DECIMAL(15, 2) DEFAULT 0');
+        console.log('✓ Added total to estimations table');
+      }
+
+      if (!columnNames.includes('deal_id')) {
+        await connection.query('ALTER TABLE estimations ADD COLUMN deal_id INT AFTER lead_id');
+        console.log('✓ Added deal_id to estimations table');
+      }
+
+      // Update status ENUM if necessary
+      await connection.query("ALTER TABLE estimations MODIFY COLUMN status ENUM('Draft', 'Sent', 'Accepted', 'Declined', 'Revised', 'Finalized') DEFAULT 'Draft'");
+      
+      // Make client_id nullable if lead_id is present
+      await connection.query("ALTER TABLE estimations MODIFY COLUMN client_id INT NULL");
+      
+    } catch (err) {
+      console.warn('⚠️ Could not update estimations columns:', err.message);
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS pipeline (
@@ -537,7 +911,7 @@ async function initializeDatabase() {
         start_date DATE,
         end_date DATE,
         budget DECIMAL(15, 2),
-        currency VARCHAR(10) DEFAULT 'USD',
+        currency VARCHAR(10) DEFAULT 'INR',
         created_by INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -645,18 +1019,80 @@ async function initializeDatabase() {
         is_favorite BOOLEAN DEFAULT FALSE,
         is_shared BOOLEAN DEFAULT FALSE,
         access_count INT DEFAULT 0,
+        lead_id INT,
+        contact_id INT,
+        company_id INT,
+        deal_id INT,
+        project_id INT,
+        task_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY (folder_id) REFERENCES file_folders(id) ON DELETE CASCADE,
+        FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL,
+        FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
+        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+        FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL,
         INDEX idx_user_id (user_id),
         INDEX idx_folder_id (folder_id),
         INDEX idx_file_type (file_type),
         INDEX idx_storage_type (storage_type),
         INDEX idx_is_favorite (is_favorite),
+        INDEX idx_lead_id (lead_id),
+        INDEX idx_contact_id (contact_id),
+        INDEX idx_company_id (company_id),
+        INDEX idx_deal_id (deal_id),
+        INDEX idx_project_id (project_id),
+        INDEX idx_task_id (task_id),
         INDEX idx_created_at (created_at)
       )
     `);
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM files');
+      const columnNames = columns.map(c => c.Field);
+
+      if (!columnNames.includes('lead_id')) {
+        await connection.query('ALTER TABLE files ADD COLUMN lead_id INT AFTER access_count');
+        await connection.query('ALTER TABLE files ADD CONSTRAINT fk_files_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE files ADD INDEX idx_lead_id (lead_id)');
+        console.log('✓ Added lead_id to files');
+      }
+      if (!columnNames.includes('contact_id')) {
+        await connection.query('ALTER TABLE files ADD COLUMN contact_id INT AFTER lead_id');
+        await connection.query('ALTER TABLE files ADD CONSTRAINT fk_files_contact FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE files ADD INDEX idx_contact_id (contact_id)');
+        console.log('✓ Added contact_id to files');
+      }
+      if (!columnNames.includes('company_id')) {
+        await connection.query('ALTER TABLE files ADD COLUMN company_id INT AFTER contact_id');
+        await connection.query('ALTER TABLE files ADD CONSTRAINT fk_files_company FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE files ADD INDEX idx_company_id (company_id)');
+        console.log('✓ Added company_id to files');
+      }
+      if (!columnNames.includes('deal_id')) {
+        await connection.query('ALTER TABLE files ADD COLUMN deal_id INT AFTER company_id');
+        await connection.query('ALTER TABLE files ADD CONSTRAINT fk_files_deal FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE files ADD INDEX idx_deal_id (deal_id)');
+        console.log('✓ Added deal_id to files');
+      }
+      if (!columnNames.includes('project_id')) {
+        await connection.query('ALTER TABLE files ADD COLUMN project_id INT AFTER deal_id');
+        await connection.query('ALTER TABLE files ADD CONSTRAINT fk_files_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE files ADD INDEX idx_project_id (project_id)');
+        console.log('✓ Added project_id to files');
+      }
+      if (!columnNames.includes('task_id')) {
+        await connection.query('ALTER TABLE files ADD COLUMN task_id INT AFTER project_id');
+        await connection.query('ALTER TABLE files ADD CONSTRAINT fk_files_task FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE files ADD INDEX idx_task_id (task_id)');
+        console.log('✓ Added task_id to files');
+      }
+    } catch (err) {
+      console.warn('Could not update files table columns:', err.message);
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS file_shares (
@@ -714,6 +1150,16 @@ async function initializeDatabase() {
       )
     `);
 
+    try {
+      await connection.query('ALTER TABLE messages ADD COLUMN conversation_id INT NOT NULL AFTER id');
+      await connection.query('ALTER TABLE messages ADD INDEX idx_conversation_id (conversation_id)');
+      await connection.query('ALTER TABLE messages ADD CONSTRAINT fk_messages_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE');
+    } catch (err) {
+      if (err.code !== 'ER_DUP_FIELDNAME' && err.code !== 'ER_FK_DUP_NAME') {
+        console.warn('Could not add conversation_id column to messages:', err.message);
+      }
+    }
+
     await connection.query(`
       CREATE TABLE IF NOT EXISTS activities (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -726,6 +1172,8 @@ async function initializeDatabase() {
         deal_id INT,
         project_id INT,
         company_id INT,
+        lead_id INT,
+        task_id INT,
         assigned_to INT,
         created_by INT,
         scheduled_date DATETIME,
@@ -739,6 +1187,8 @@ async function initializeDatabase() {
         FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
         FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
+        FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL,
+        FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL,
         FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
         INDEX idx_activity_type (activity_type),
@@ -747,12 +1197,193 @@ async function initializeDatabase() {
         INDEX idx_deal_id (deal_id),
         INDEX idx_project_id (project_id),
         INDEX idx_company_id (company_id),
+        INDEX idx_lead_id (lead_id),
+        INDEX idx_task_id (task_id),
         INDEX idx_assigned_to (assigned_to),
         INDEX idx_created_by (created_by),
         INDEX idx_scheduled_date (scheduled_date),
         INDEX idx_created_at (created_at)
       )
     `);
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM activities LIKE "created_by"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE activities ADD COLUMN created_by INT');
+        await connection.query('ALTER TABLE activities ADD CONSTRAINT fk_activities_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL');
+        console.log('✓ Added created_by to activities');
+      }
+    } catch (err) {
+      console.warn('Could not update created_by in activities:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM activities LIKE "completed_date"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE activities ADD COLUMN completed_date DATETIME');
+        console.log('✓ Added completed_date to activities');
+      }
+    } catch (err) {
+      console.warn('Could not update completed_date in activities:', err.message);
+    }
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS followups (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        related_type ENUM('Lead', 'Deal', 'Customer', 'Invoice') NOT NULL,
+        related_id INT NOT NULL,
+        type VARCHAR(100) NOT NULL,
+        subject VARCHAR(255) NOT NULL,
+        description TEXT,
+        scheduled_date DATE NOT NULL,
+        scheduled_time TIME NOT NULL,
+        priority ENUM('Low', 'Medium', 'High') DEFAULT 'Medium',
+        reminder_before VARCHAR(50),
+        is_recurring BOOLEAN DEFAULT FALSE,
+        recurrence_frequency VARCHAR(50),
+        recurrence_end_date DATE,
+        meeting_link VARCHAR(500),
+        meeting_location VARCHAR(255),
+        meeting_duration VARCHAR(50),
+        assigned_to INT,
+        assigned_to_name VARCHAR(255),
+        status ENUM('Scheduled', 'Completed', 'Pending', 'Overdue', 'Cancelled') DEFAULT 'Scheduled',
+        outcome VARCHAR(100),
+        call_duration VARCHAR(50),
+        remarks TEXT,
+        next_followup_date DATE,
+        next_followup_time TIME,
+        next_followup_type VARCHAR(100),
+        recording_url VARCHAR(500),
+        transcript LONGTEXT,
+        ai_summary TEXT,
+        ai_sentiment VARCHAR(50),
+        ai_key_points JSON,
+        ai_suggested_actions JSON,
+        ai_outcome_classification VARCHAR(50),
+        lead_id INT,
+        deal_id INT,
+        contact_id INT,
+        invoice_id INT,
+        task_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL,
+        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,
+        FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE SET NULL,
+        FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_related (related_type, related_id),
+        INDEX idx_scheduled (scheduled_date, scheduled_time),
+        INDEX idx_status (status),
+        INDEX idx_lead_id (lead_id),
+        INDEX idx_deal_id (deal_id),
+        INDEX idx_contact_id (contact_id),
+        INDEX idx_invoice_id (invoice_id),
+        INDEX idx_assigned_to (assigned_to)
+      )
+    `);
+
+    // Add AI and recording columns to followups if they don't exist
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM followups');
+      const columnNames = columns.map(c => c.Field);
+      
+      const newCols = [
+        { name: 'recording_url', type: 'VARCHAR(500)' },
+        { name: 'transcript', type: 'LONGTEXT' },
+        { name: 'ai_summary', type: 'TEXT' },
+        { name: 'ai_sentiment', type: 'VARCHAR(50)' },
+        { name: 'ai_key_points', type: 'JSON' },
+        { name: 'ai_suggested_actions', type: 'JSON' },
+        { name: 'ai_outcome_classification', type: 'VARCHAR(50)' },
+        { name: 'client_email', type: 'VARCHAR(150)' },
+        { name: 'client_phone', type: 'VARCHAR(20)' },
+        { name: 'calendar_event_id', type: 'VARCHAR(255)' },
+        { name: 'formal_message', type: 'TEXT' },
+        { name: 'assigned_to_email', type: 'VARCHAR(150)' }
+      ];
+      
+      for (const col of newCols) {
+        if (!columnNames.includes(col.name)) {
+          await connection.query(`ALTER TABLE followups ADD COLUMN ${col.name} ${col.type}`);
+          console.log(`✓ Added ${col.name} to followups`);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not update followups AI columns:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM contacts LIKE "owner_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE contacts ADD COLUMN owner_id INT AFTER tag');
+        await connection.query('ALTER TABLE contacts ADD CONSTRAINT fk_contacts_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE contacts ADD INDEX idx_owner_id (owner_id)');
+        console.log('✓ Added owner_id to contacts');
+      }
+    } catch (err) {
+      console.warn('Could not update contacts owner_id:', err.message);
+    }
+
+    try {
+      await connection.query('ALTER TABLE activities ADD COLUMN lead_id INT AFTER company_id');
+      await connection.query('ALTER TABLE activities ADD CONSTRAINT fk_activities_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL');
+      await connection.query('ALTER TABLE activities ADD INDEX idx_lead_id (lead_id)');
+    } catch (err) {}
+
+    try {
+      await connection.query('ALTER TABLE activities ADD COLUMN task_id INT AFTER lead_id');
+      await connection.query('ALTER TABLE activities ADD CONSTRAINT fk_activities_task FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL');
+      await connection.query('ALTER TABLE activities ADD INDEX idx_task_id (task_id)');
+    } catch (err) {}
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM activities LIKE "scheduled_time"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE activities ADD COLUMN scheduled_time TIME AFTER scheduled_date');
+        console.log('✓ Added scheduled_time to activities');
+      }
+    } catch (err) {
+      console.warn('Could not update activities scheduled_time:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM followups LIKE "task_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE followups ADD COLUMN task_id INT AFTER invoice_id');
+        await connection.query('ALTER TABLE followups ADD CONSTRAINT fk_followups_task FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE followups ADD INDEX idx_task_id (task_id)');
+        console.log('✓ Added task_id to followups');
+      }
+    } catch (err) {
+      console.warn('Could not update followups task_id:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM followups LIKE "assigned_to"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE followups ADD COLUMN assigned_to INT AFTER meeting_duration');
+        await connection.query('ALTER TABLE followups ADD COLUMN assigned_to_name VARCHAR(255) AFTER assigned_to');
+        await connection.query('ALTER TABLE followups ADD CONSTRAINT fk_followups_assigned_to FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE followups ADD INDEX idx_assigned_to (assigned_to)');
+        console.log('✓ Added assigned_to and assigned_to_name to followups');
+      }
+    } catch (err) {
+      console.warn('Could not update followups assigned_to:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM followups LIKE "next_followup_time"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE followups ADD COLUMN next_followup_time TIME AFTER next_followup_date');
+        await connection.query('ALTER TABLE followups ADD COLUMN next_followup_type VARCHAR(100) AFTER next_followup_time');
+        console.log('✓ Added next_followup_time and next_followup_type to followups');
+      }
+    } catch (err) {
+      console.warn('Could not update followups next_followup columns:', err.message);
+    }
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS entity_notes (
@@ -763,6 +1394,8 @@ async function initializeDatabase() {
         company_id INT,
         deal_id INT,
         project_id INT,
+        lead_id INT,
+        task_id INT,
         priority ENUM('Low', 'Medium', 'High', 'Critical') DEFAULT 'Medium',
         is_important BOOLEAN DEFAULT FALSE,
         created_by INT,
@@ -772,15 +1405,31 @@ async function initializeDatabase() {
         FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
         FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+        FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL,
+        FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL,
         FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
         INDEX idx_contact_id (contact_id),
         INDEX idx_company_id (company_id),
         INDEX idx_deal_id (deal_id),
         INDEX idx_project_id (project_id),
+        INDEX idx_lead_id (lead_id),
+        INDEX idx_task_id (task_id),
         INDEX idx_is_important (is_important),
         INDEX idx_created_at (created_at)
       )
     `);
+
+    try {
+      await connection.query('ALTER TABLE entity_notes ADD COLUMN lead_id INT AFTER project_id');
+      await connection.query('ALTER TABLE entity_notes ADD CONSTRAINT fk_notes_lead FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL');
+      await connection.query('ALTER TABLE entity_notes ADD INDEX idx_lead_id (lead_id)');
+    } catch (err) {}
+
+    try {
+      await connection.query('ALTER TABLE entity_notes ADD COLUMN task_id INT AFTER lead_id');
+      await connection.query('ALTER TABLE entity_notes ADD CONSTRAINT fk_notes_task FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL');
+      await connection.query('ALTER TABLE entity_notes ADD INDEX idx_task_id (task_id)');
+    } catch (err) {}
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS company_plans (
@@ -814,7 +1463,7 @@ async function initializeDatabase() {
         plan_name VARCHAR(255) NOT NULL,
         plan_type VARCHAR(100) NOT NULL,
         price DECIMAL(15, 2) NOT NULL DEFAULT 0,
-        currency VARCHAR(10) DEFAULT 'USD',
+        currency VARCHAR(10) DEFAULT 'INR',
         total_subscribers INT DEFAULT 0,
         description LONGTEXT,
         features JSON,
@@ -827,7 +1476,290 @@ async function initializeDatabase() {
         INDEX idx_created_at (created_at)
       )
     `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS marketing_projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        campaign_id INT,
+        marketing_type ENUM('SEO', 'Social Media', 'Graphics', 'Video', 'WordPress', 'Other') NOT NULL,
+        content_plan LONGTEXT,
+        target_audience TEXT,
+        platforms JSON,
+        budget DECIMAL(15, 2),
+        status ENUM('Planning', 'Content Creation', 'Approval', 'Scheduled', 'Published', 'Archived') DEFAULT 'Planning',
+        published_at DATETIME,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL,
+        INDEX idx_project_id (project_id),
+        INDEX idx_marketing_type (marketing_type),
+        INDEX idx_status (status)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS it_projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        tech_stack JSON,
+        repository_url VARCHAR(500),
+        staging_url VARCHAR(500),
+        production_url VARCHAR(500),
+        it_project_type ENUM('Web Development', 'App Development', 'Software Development', 'DevOps', 'Other') NOT NULL,
+        status ENUM('Backlog', 'Development', 'Testing', 'Deployment', 'Maintenance', 'Completed') DEFAULT 'Backlog',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        INDEX idx_project_id (project_id),
+        INDEX idx_status (status)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS sprints (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        goal TEXT,
+        start_date DATE,
+        end_date DATE,
+        status ENUM('Planned', 'Active', 'Completed', 'Cancelled') DEFAULT 'Planned',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        INDEX idx_project_id (project_id),
+        INDEX idx_status (status)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS bugs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        sprint_id INT,
+        title VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        severity ENUM('Low', 'Medium', 'High', 'Critical') DEFAULT 'Medium',
+        priority ENUM('Low', 'Medium', 'High', 'Urgent') DEFAULT 'Medium',
+        status ENUM('New', 'Confirmed', 'In Progress', 'Resolved', 'Verified', 'Closed', 'Reopened') DEFAULT 'New',
+        reported_by INT,
+        assigned_to INT,
+        reproduction_steps LONGTEXT,
+        fix_version VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (sprint_id) REFERENCES sprints(id) ON DELETE SET NULL,
+        FOREIGN KEY (reported_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_project_id (project_id),
+        INDEX idx_status (status),
+        INDEX idx_severity (severity)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS code_reviews (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        pull_request_url VARCHAR(500),
+        status ENUM('Pending', 'In Review', 'Approved', 'Rejected', 'Merged') DEFAULT 'Pending',
+        reviewer_id INT,
+        author_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_project_id (project_id),
+        INDEX idx_status (status)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS deployments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        environment ENUM('Staging', 'Production', 'Development') NOT NULL,
+        version VARCHAR(100),
+        status ENUM('Pending', 'In Progress', 'Success', 'Failed', 'Rolled Back') DEFAULT 'Pending',
+        deployed_by INT,
+        approved_by INT,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (deployed_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_project_id (project_id),
+        INDEX idx_environment (environment)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS seo_management (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        keyword VARCHAR(255) NOT NULL,
+        target_url VARCHAR(500),
+        current_ranking INT,
+        target_ranking INT,
+        search_volume INT,
+        competition VARCHAR(50),
+        last_updated DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        INDEX idx_project_id (project_id),
+        INDEX idx_keyword (keyword)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS creative_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        request_type ENUM('Graphic', 'Video', 'Content', 'Logo', 'Other') NOT NULL,
+        status ENUM('Requested', 'In Design', 'Review', 'Approved', 'Rejected') DEFAULT 'Requested',
+        priority ENUM('Low', 'Medium', 'High', 'Critical') DEFAULT 'Medium',
+        requested_by INT,
+        assigned_to INT,
+        due_date DATE,
+        attachment_url VARCHAR(500),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_project_id (project_id),
+        INDEX idx_status (status)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS content_calendar (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        content_type ENUM('Blog', 'Social Post', 'Video', 'Newsletter', 'Other') NOT NULL,
+        scheduled_date DATETIME NOT NULL,
+        status ENUM('Draft', 'Review', 'Approved', 'Scheduled', 'Published') DEFAULT 'Draft',
+        assigned_to INT,
+        platform VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_project_id (project_id),
+        INDEX idx_scheduled_date (scheduled_date),
+        INDEX idx_status (status)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS commissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        deal_id INT,
+        invoice_id INT,
+        amount DECIMAL(15, 2) NOT NULL,
+        percentage DECIMAL(5, 2),
+        status ENUM('Pending', 'Approved', 'Paid', 'Cancelled') DEFAULT 'Pending',
+        approved_by INT,
+        approved_at DATETIME,
+        paid_at DATETIME,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,
+        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE SET NULL,
+        FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS campaign_performance (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        campaign_id INT NOT NULL,
+        metric_name VARCHAR(100) NOT NULL,
+        metric_value DECIMAL(15, 2) NOT NULL,
+        recorded_at DATE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+        INDEX idx_campaign_id (campaign_id),
+        INDEX idx_recorded_at (recorded_at)
+      )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS reminders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        entity_type VARCHAR(50) NOT NULL,
+        entity_id INT NOT NULL,
+        entity_name VARCHAR(255),
+        reminder_type ENUM('email', 'sms', 'call', 'notification') DEFAULT 'email',
+        reminder_datetime DATETIME NOT NULL,
+        message LONGTEXT,
+        frequency ENUM('once', 'daily', 'weekly', 'monthly') DEFAULT 'once',
+        status ENUM('Pending', 'Sent', 'Completed', 'Skipped') DEFAULT 'Pending',
+        created_by INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+        INDEX idx_entity_type (entity_type),
+        INDEX idx_entity_id (entity_id),
+        INDEX idx_reminder_datetime (reminder_datetime),
+        INDEX idx_status (status),
+        INDEX idx_created_at (created_at)
+      )
+    `);
     
+    try {
+      await connection.query('ALTER TABLE users ADD COLUMN department VARCHAR(100)');
+      console.log('✓ Added department column to users table');
+    } catch (err) {
+      if (err.code !== 'ER_DUP_FIELDNAME') {
+        console.warn('Could not add department column to users:', err.message);
+      }
+    }
+
+    // Add additional columns to existing tables for multi-department workflows
+    const alterTables = [
+      { table: 'users', column: 'department_role', definition: "ENUM('Executive', 'Manager') DEFAULT 'Executive'" },
+      { table: 'leads', column: 'follow_up_count', definition: "INT DEFAULT 0" },
+      { table: 'leads', column: 'last_follow_up', definition: "DATETIME" },
+      { table: 'deals', column: 'discount_amount', definition: "DECIMAL(15, 2) DEFAULT 0" },
+      { table: 'deals', column: 'discount_reason', definition: "TEXT" },
+      { table: 'deals', column: 'discount_approved_by', definition: "INT" },
+      { table: 'deals', column: 'discount_status', definition: "ENUM('None', 'Pending', 'Approved', 'Rejected') DEFAULT 'None'" },
+      { table: 'projects', column: 'workflow_type', definition: "ENUM('Standard', 'Marketing', 'IT') DEFAULT 'Standard'" },
+      { table: 'general_tasks', column: 'sprint_id', definition: "INT" },
+      { table: 'general_tasks', column: 'department_id', definition: "INT" },
+      { table: 'general_tasks', column: 'task_type', definition: "VARCHAR(100)" },
+      { table: 'invoices', column: 'approval_status', definition: "ENUM('Pending', 'Approved', 'Rejected') DEFAULT 'Pending'" },
+      { table: 'invoices', column: 'approved_by', definition: "INT" }
+    ];
+
+    for (const alter of alterTables) {
+      try {
+        await connection.query(`ALTER TABLE ${alter.table} ADD COLUMN ${alter.column} ${alter.definition}`);
+        console.log(`✓ Added ${alter.column} column to ${alter.table} table`);
+      } catch (err) {
+        if (err.code !== 'ER_DUP_FIELDNAME') {
+          console.warn(`Could not add ${alter.column} column to ${alter.table}:`, err.message);
+        }
+      }
+    }
+
     console.log('✓ All tables initialized successfully');
     
     const [existingRoles] = await connection.query('SELECT COUNT(*) as count FROM roles');
@@ -835,9 +1767,17 @@ async function initializeDatabase() {
       const defaultRoles = [
         { name: 'Super Admin', description: 'Full system access - can manage everything' },
         { name: 'Admin', description: 'Company-wide management - cannot change system settings' },
-        { name: 'Deal Manager', description: 'Focus on deals, leads, and pipelines' },
-        { name: 'Project Manager', description: 'Focus on projects and team management' },
-        { name: 'Employee', description: 'Limited access - only assigned items' }
+        { name: 'Leads Manager', description: 'Manages leads, distribution, and conversion' },
+        { name: 'Deals Manager', description: 'Manages deal pipeline, approvals, and forecasts' },
+        { name: 'Sales Manager', description: 'Manages sales team, targets, and commissions' },
+        { name: 'Marketing Manager', description: 'Manages marketing projects, campaigns, and creative requests' },
+        { name: 'IT Manager', description: 'Manages IT projects, sprints, bugs, and deployments' },
+        { name: 'Accounting Manager', description: 'Manages invoices, payments, and financial reports' },
+        { name: 'Sales Executive', description: 'Sales person focusing on individual leads and deals' },
+        { name: 'Marketing Executive', description: 'Creative, SEO, or content contributor' },
+        { name: 'IT Specialist', description: 'Developer, Tester, or DevOps engineer' },
+        { name: 'Accountant', description: 'Handles day-to-day accounting tasks' },
+        { name: 'Employee', description: 'General staff with limited access' }
       ];
       for (const role of defaultRoles) {
         await connection.query('INSERT INTO roles (name, description) VALUES (?, ?)', [role.name, role.description]);
@@ -849,6 +1789,36 @@ async function initializeDatabase() {
       console.log('✓ Existing roles found:', roles.map(r => `${r.id}: ${r.name}`).join(', '));
     }
     
+    const [existingDepts] = await connection.query('SELECT COUNT(*) as count FROM departments');
+    if (existingDepts[0].count === 0) {
+      const defaultDepts = [
+        'Admin', 'Leads Management', 'Deals Management', 'Sales Department', 
+        'Marketing Department', 'IT Department', 'Accounting Department'
+      ];
+      for (const name of defaultDepts) {
+        await connection.query('INSERT INTO departments (name) VALUES (?)', [name]);
+      }
+      console.log('✓ Default departments created');
+
+      const categories = [
+        { name: 'SEO', parent: 'Marketing Services', dept: 'Marketing Department' },
+        { name: 'Social Media', parent: 'Marketing Services', dept: 'Marketing Department' },
+        { name: 'Graphics', parent: 'Marketing Services', dept: 'Marketing Department' },
+        { name: 'Video', parent: 'Marketing Services', dept: 'Marketing Department' },
+        { name: 'WordPress', parent: 'Marketing Services', dept: 'Marketing Department' },
+        { name: 'Web Development', parent: 'IT Services', dept: 'IT Department' },
+        { name: 'App Development', parent: 'IT Services', dept: 'IT Department' },
+        { name: 'Software Development', parent: 'IT Services', dept: 'IT Department' }
+      ];
+
+      for (const cat of categories) {
+        const [dept] = await connection.query('SELECT id FROM departments WHERE name = ?', [cat.dept]);
+        const deptId = dept.length > 0 ? dept[0].id : null;
+        await connection.query('INSERT INTO service_categories (name, parent_category, suggested_department_id) VALUES (?, ?, ?)', [cat.name, cat.parent, deptId]);
+      }
+      console.log('✓ Service categories seeded');
+    }
+
     const [existingModules] = await connection.query('SELECT COUNT(*) as count FROM modules');
     if (existingModules[0].count === 0) {
       const defaultModules = ['Dashboard', 'Contacts', 'Companies', 'Leads', 'Deals', 'Pipelines', 'Campaign', 'Projects', 'Tasks', 'Activity'];
@@ -860,53 +1830,80 @@ async function initializeDatabase() {
 
     const [existingUsers] = await connection.query('SELECT COUNT(*) as count FROM users');
     if (existingUsers[0].count === 0) {
-      const demoUsers = [
-        { first_name: 'Admin', last_name: 'User', email: 'admin@example.com', password: 'admin123', role_id: 1 },
-        { first_name: 'John', last_name: 'Doe', email: 'john@example.com', password: 'pass123', role_id: 2 },
-        { first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com', password: 'pass123', role_id: 3 },
-        { first_name: 'Mike', last_name: 'Johnson', email: 'mike@example.com', password: 'pass123', role_id: 4 },
-        { first_name: 'Client', last_name: 'User', email: 'client@example.com', password: 'pass123', role_id: 5 },
-        { first_name: 'Lead', last_name: 'User', email: 'lead@example.com', password: 'pass123', role_id: 6 }
-      ];
-      for (const user of demoUsers) {
-        const username = user.email.split('@')[0];
-        await connection.query(
-          'INSERT INTO users (first_name, last_name, username, email, password, role_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [user.first_name, user.last_name, username, user.email, user.password, user.role_id, 'Active']
-        );
-      }
-      console.log('✓ Demo users created');
+      const adminUser = { first_name: 'Super', last_name: 'Admin', email: 'admin@example.com', password: 'admin123', role_id: 1, department: 'Admin' };
+      const username = adminUser.email.split('@')[0];
+      const hashedPassword = crypto.pbkdf2Sync(adminUser.password, 'salt', 1000, 64, 'sha512').toString('hex');
+      await connection.query(
+        'INSERT INTO users (first_name, last_name, username, email, password, role_id, status, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [adminUser.first_name, adminUser.last_name, username, adminUser.email, hashedPassword, adminUser.role_id, 'Active', adminUser.department]
+      );
+      console.log('✓ Default admin user created');
     }
 
-    const [existingCompanies] = await connection.query('SELECT COUNT(*) as count FROM companies');
-    if (existingCompanies[0].count === 0) {
-      const demoCompanies = [
-        { company_name: 'Acme Corporation', email: 'contact@acme.com', phone: '555-0101', website: 'https://acme.com', industry: 'Technology', status: 'Active', created_by: 1 },
-        { company_name: 'Global Solutions Inc', email: 'info@globalsol.com', phone: '555-0102', website: 'https://globalsol.com', industry: 'Consulting', status: 'Active', created_by: 1 },
-        { company_name: 'Tech Innovations Ltd', email: 'hello@techinnovations.com', phone: '555-0103', website: 'https://techinnovations.com', industry: 'Software', status: 'Active', created_by: 1 }
-      ];
-      for (const company of demoCompanies) {
-        await connection.query(
-          'INSERT INTO companies (company_name, email, phone, website, industry, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [company.company_name, company.email, company.phone, company.website, company.industry, company.status, company.created_by]
-        );
+    if (process.env.SEED_DEMO_DATA === 'true') {
+      console.log('🌱 Seeding demo data...');
+      if (existingUsers[0].count <= 1) { // If only admin or no users
+        const demoUsers = [
+          { first_name: 'Leads', last_name: 'Manager', email: 'leads@example.com', password: 'pass123', role_id: 3, department: 'Leads Management' },
+          { first_name: 'Deals', last_name: 'Manager', email: 'deals@example.com', password: 'pass123', role_id: 4, department: 'Deals Management' },
+          { first_name: 'Sales', last_name: 'Manager', email: 'sales@example.com', password: 'pass123', role_id: 5, department: 'Sales Department' },
+          { first_name: 'Marketing', last_name: 'Manager', email: 'marketing@example.com', password: 'pass123', role_id: 6, department: 'Marketing Department' },
+          { first_name: 'IT', last_name: 'Manager', email: 'it@example.com', password: 'pass123', role_id: 7, department: 'IT Department' },
+          { first_name: 'Accounting', last_name: 'Manager', email: 'accounting@example.com', password: 'pass123', role_id: 8, department: 'Accounting Department' }
+        ];
+        for (const user of demoUsers) {
+          const username = user.email.split('@')[0];
+          const [existing] = await connection.query('SELECT id FROM users WHERE email = ?', [user.email]);
+          if (existing.length === 0) {
+            const hashedPassword = crypto.pbkdf2Sync(user.password, 'salt', 1000, 64, 'sha512').toString('hex');
+            await connection.query(
+              'INSERT INTO users (first_name, last_name, username, email, password, role_id, status, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              [user.first_name, user.last_name, username, user.email, hashedPassword, user.role_id, 'Active', user.department]
+            );
+          }
+        }
+        console.log('✓ Demo users for each department created');
       }
-      console.log('✓ Demo companies created');
-    }
+
+      // Fetch user IDs for subsequent seeding
+      const [users] = await connection.query('SELECT id FROM users LIMIT 10');
+      const userIds = users.map(u => u.id);
+      const adminId = userIds[0] || null;
+
+      const [existingCompanies] = await connection.query('SELECT COUNT(*) as count FROM companies');
+      if (existingCompanies[0].count === 0) {
+        const demoCompanies = [
+          { company_name: 'Acme Corporation', email: 'contact@acme.com', phone: '555-0101', website: 'https://acme.com', industry: 'Technology', status: 'Active', created_by: adminId },
+          { company_name: 'Global Solutions Inc', email: 'info@globalsol.com', phone: '555-0102', website: 'https://globalsol.com', industry: 'Consulting', status: 'Active', created_by: adminId },
+          { company_name: 'Tech Innovations Ltd', email: 'hello@techinnovations.com', phone: '555-0103', website: 'https://techinnovations.com', industry: 'Software', status: 'Active', created_by: adminId }
+        ];
+        for (const company of demoCompanies) {
+          await connection.query(
+            'INSERT INTO companies (company_name, email, phone, website, industry, status, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [company.company_name, company.email, company.phone, company.website, company.industry, company.status, company.created_by]
+          );
+        }
+        console.log('✓ Demo companies created');
+      }
+
+    // Fetch company IDs for subsequent seeding
+    const [companies] = await connection.query('SELECT id FROM companies LIMIT 10');
+    const companyIds = companies.map(c => c.id);
+    const mainCompanyId = companyIds[0] || null;
 
     const [existingActivities] = await connection.query('SELECT COUNT(*) as count FROM activities');
     if (existingActivities[0].count === 0) {
       const demoActivities = [
-        { activity_type: 'Meeting', title: 'We scheduled a meeting for next week', status: 'Pending', priority: 'High', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Calls', title: 'Had conversation with Fred regarding task', status: 'Completed', priority: 'Medium', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Email', title: 'Analysing latest time estimation for new project', status: 'Pending', priority: 'Medium', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Task', title: 'Store and manage contact data', status: 'Pending', priority: 'High', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Meeting', title: 'Will have a meeting before project start', status: 'Pending', priority: 'Medium', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Calls', title: 'Call John and discuss about project', status: 'Pending', priority: 'Low', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Task', title: 'Built landing pages', status: 'Completed', priority: 'High', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Email', title: 'Regarding latest updates in project', status: 'Pending', priority: 'Medium', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Calls', title: 'Discussed budget proposal with Edwin', status: 'Completed', priority: 'High', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 23 * 24 * 60 * 60 * 1000) },
-        { activity_type: 'Email', title: 'Attach final proposal for upcoming project', status: 'Pending', priority: 'High', assigned_to: null, created_by: null, scheduled_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) }
+        { activity_type: 'Meeting', title: 'We scheduled a meeting for next week', status: 'Pending', priority: 'High', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Calls', title: 'Had conversation with Fred regarding task', status: 'Completed', priority: 'Medium', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Email', title: 'Analysing latest time estimation for new project', status: 'Pending', priority: 'Medium', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Task', title: 'Store and manage contact data', status: 'Pending', priority: 'High', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Meeting', title: 'Will have a meeting before project start', status: 'Pending', priority: 'Medium', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Calls', title: 'Call John and discuss about project', status: 'Pending', priority: 'Low', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Task', title: 'Built landing pages', status: 'Completed', priority: 'High', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Email', title: 'Regarding latest updates in project', status: 'Pending', priority: 'Medium', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Calls', title: 'Discussed budget proposal with Edwin', status: 'Completed', priority: 'High', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 23 * 24 * 60 * 60 * 1000) },
+        { activity_type: 'Email', title: 'Attach final proposal for upcoming project', status: 'Pending', priority: 'High', assigned_to: adminId, created_by: adminId, scheduled_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) }
       ];
       for (const activity of demoActivities) {
         await connection.query(
@@ -967,11 +1964,11 @@ async function initializeDatabase() {
     console.log('✓ Pipeline stages synced with probabilities');
 
     const [existingContracts] = await connection.query('SELECT COUNT(*) as count FROM contracts');
-    if (existingContracts[0].count === 0) {
+    if (existingContracts[0].count === 0 && mainCompanyId && adminId) {
       const demoContracts = [
-        { subject: 'Service Agreement - 2024', start_date: new Date(), end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), client_id: 1, contract_type: 'Service Agreement', contract_value: 50000, status: 'Active', created_by: 1 },
-        { subject: 'Software License Agreement', start_date: new Date(), end_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), client_id: 2, contract_type: 'License Agreement', contract_value: 25000, status: 'Draft', created_by: 1 },
-        { subject: 'Maintenance Contract - Annual', start_date: new Date(), end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), client_id: 3, contract_type: 'Maintenance', contract_value: 15000, status: 'Active', created_by: 2 }
+        { subject: 'Service Agreement - 2024', start_date: new Date(), end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), client_id: mainCompanyId, contract_type: 'Service Agreement', contract_value: 50000, status: 'Active', created_by: adminId },
+        { subject: 'Software License Agreement', start_date: new Date(), end_date: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), client_id: companyIds[1] || mainCompanyId, contract_type: 'License Agreement', contract_value: 25000, status: 'Draft', created_by: adminId },
+        { subject: 'Maintenance Contract - Annual', start_date: new Date(), end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), client_id: companyIds[2] || mainCompanyId, contract_type: 'Maintenance', contract_value: 15000, status: 'Active', created_by: userIds[1] || adminId }
       ];
       for (const contract of demoContracts) {
         await connection.query(
@@ -983,11 +1980,11 @@ async function initializeDatabase() {
     }
 
     const [existingEstimations] = await connection.query('SELECT COUNT(*) as count FROM estimations');
-    if (existingEstimations[0].count === 0) {
+    if (existingEstimations[0].count === 0 && mainCompanyId) {
       const demoEstimations = [
-        { estimation_number: 'EST-001', client_id: 1, amount: 35000, currency: 'USD', status: 'Draft', estimate_date: new Date(), expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
-        { estimation_number: 'EST-002', client_id: 2, amount: 18000, currency: 'USD', status: 'Sent', estimate_date: new Date(), expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
-        { estimation_number: 'EST-003', client_id: 3, amount: 12000, currency: 'USD', status: 'Accepted', estimate_date: new Date(), expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+        { estimation_number: 'EST-001', client_id: mainCompanyId, amount: 35000, currency: 'INR', status: 'Draft', estimate_date: new Date(), expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        { estimation_number: 'EST-002', client_id: companyIds[1] || mainCompanyId, amount: 18000, currency: 'INR', status: 'Sent', estimate_date: new Date(), expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        { estimation_number: 'EST-003', client_id: companyIds[2] || mainCompanyId, amount: 12000, currency: 'INR', status: 'Accepted', estimate_date: new Date(), expiry_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
       ];
       for (const estimation of demoEstimations) {
         await connection.query(
@@ -1017,11 +2014,11 @@ async function initializeDatabase() {
     }
 
     const [existingProposals] = await connection.query('SELECT COUNT(*) as count FROM proposals');
-    if (existingProposals[0].count === 0) {
+    if (existingProposals[0].count === 0 && mainCompanyId) {
       const demoProposals = [
-        { proposal_number: 'PROP-001', title: 'Web Development Project Proposal', client_id: 1, total_amount: 45000, currency: 'USD', status: 'Submitted', proposal_date: new Date(), validity_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
-        { proposal_number: 'PROP-002', title: 'Mobile App Development Proposal', client_id: 2, total_amount: 65000, currency: 'USD', status: 'Draft', proposal_date: new Date(), validity_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
-        { proposal_number: 'PROP-003', title: 'Cloud Infrastructure Proposal', client_id: 3, total_amount: 28000, currency: 'USD', status: 'Approved', proposal_date: new Date(), validity_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+        { proposal_number: 'PROP-001', title: 'Web Development Project Proposal', client_id: mainCompanyId, total_amount: 45000, currency: 'INR', status: 'Submitted', proposal_date: new Date(), validity_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        { proposal_number: 'PROP-002', title: 'Mobile App Development Proposal', client_id: companyIds[1] || mainCompanyId, total_amount: 65000, currency: 'INR', status: 'Draft', proposal_date: new Date(), validity_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        { proposal_number: 'PROP-003', title: 'Cloud Infrastructure Proposal', client_id: companyIds[2] || mainCompanyId, total_amount: 28000, currency: 'INR', status: 'Approved', proposal_date: new Date(), validity_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
       ];
       for (const proposal of demoProposals) {
         await connection.query(
@@ -1033,17 +2030,19 @@ async function initializeDatabase() {
     }
 
     const [existingConversations] = await connection.query('SELECT COUNT(*) as count FROM conversations');
-    if (existingConversations[0].count === 0) {
+    if (existingConversations[0].count === 0 && userIds.length >= 2) {
       const demoConversations = [
-        { participant1_id: 1, participant2_id: 2, last_message_text: 'Hey, how are you doing?', last_message_timestamp: new Date() },
-        { participant1_id: 1, participant2_id: 3, last_message_text: 'Let\'s sync up next week', last_message_timestamp: new Date() },
-        { participant1_id: 2, participant2_id: 3, last_message_text: 'Sounds good to me', last_message_timestamp: new Date() }
+        { participant1_id: userIds[0], participant2_id: userIds[1], last_message_text: 'Hey, how are you doing?', last_message_timestamp: new Date() },
+        { participant1_id: userIds[0], participant2_id: userIds[2] || userIds[1], last_message_text: 'Let\'s sync up next week', last_message_timestamp: new Date() },
+        { participant1_id: userIds[1], participant2_id: userIds[2] || userIds[0], last_message_text: 'Sounds good to me', last_message_timestamp: new Date() }
       ];
       for (const conversation of demoConversations) {
-        await connection.query(
-          'INSERT INTO conversations (participant1_id, participant2_id, last_message_text, last_message_timestamp) VALUES (?, ?, ?, ?)',
-          [conversation.participant1_id, conversation.participant2_id, conversation.last_message_text, conversation.last_message_timestamp]
-        );
+        if (conversation.participant1_id !== conversation.participant2_id) {
+          await connection.query(
+            'INSERT IGNORE INTO conversations (participant1_id, participant2_id, last_message_text, last_message_timestamp) VALUES (?, ?, ?, ?)',
+            [conversation.participant1_id, conversation.participant2_id, conversation.last_message_text, conversation.last_message_timestamp]
+          );
+        }
       }
       console.log('✓ Demo conversations created');
     }
@@ -1054,12 +2053,11 @@ async function initializeDatabase() {
       
       if (conversations.length > 0) {
         const demoMessages = [
-          { conversation_id: conversations[0].id, sender_id: 1, receiver_id: 2, message_text: 'Hi there!' },
-          { conversation_id: conversations[0].id, sender_id: 2, receiver_id: 1, message_text: 'Hey! How are you?' },
-          { conversation_id: conversations[0].id, sender_id: 1, receiver_id: 2, message_text: 'Great! How about you?' },
-          { conversation_id: conversations[1].id, sender_id: 1, receiver_id: 3, message_text: 'Let\'s schedule a call' },
-          { conversation_id: conversations[1].id, sender_id: 3, receiver_id: 1, message_text: 'Sure, how about Tuesday?' },
-          { conversation_id: conversations[2].id, sender_id: 2, receiver_id: 3, message_text: 'Sounds good to me' }
+          { conversation_id: conversations[0].id, sender_id: conversations[0].participant1_id, receiver_id: conversations[0].participant2_id, message_text: 'Hi there!' },
+          { conversation_id: conversations[0].id, sender_id: conversations[0].participant2_id, receiver_id: conversations[0].participant1_id, message_text: 'Hey! How are you?' },
+          { conversation_id: conversations[0].id, sender_id: conversations[0].participant1_id, receiver_id: conversations[0].participant2_id, message_text: 'Great! How about you?' },
+          { conversation_id: conversations.length > 1 ? conversations[1].id : conversations[0].id, sender_id: conversations.length > 1 ? conversations[1].participant1_id : conversations[0].participant1_id, receiver_id: conversations.length > 1 ? conversations[1].participant2_id : conversations[0].participant2_id, message_text: 'Let\'s schedule a call' },
+          { conversation_id: conversations.length > 1 ? conversations[1].id : conversations[0].id, sender_id: conversations.length > 1 ? conversations[1].participant2_id : conversations[0].participant2_id, receiver_id: conversations.length > 1 ? conversations[1].participant1_id : conversations[0].participant1_id, message_text: 'Sure, how about Tuesday?' }
         ];
         for (const message of demoMessages) {
           await connection.query(
@@ -1072,13 +2070,13 @@ async function initializeDatabase() {
     }
 
     const [existingFiles] = await connection.query('SELECT COUNT(*) as count FROM files');
-    if (existingFiles[0].count === 0) {
+    if (existingFiles[0].count === 0 && adminId) {
       const demoFiles = [
-        { user_id: 1, name: 'Project Proposal.pdf', file_type: 'pdf', size_bytes: 2048000, mime_type: 'application/pdf', storage_type: 'Internal' },
-        { user_id: 1, name: 'Budget Spreadsheet.xlsx', file_type: 'xlsx', size_bytes: 512000, mime_type: 'application/vnd.ms-excel', storage_type: 'Internal' },
-        { user_id: 2, name: 'Meeting Notes.docx', file_type: 'docx', size_bytes: 256000, mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', storage_type: 'Google Drive' },
-        { user_id: 2, name: 'Client Presentation.pptx', file_type: 'pptx', size_bytes: 4096000, mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', storage_type: 'Internal' },
-        { user_id: 3, name: 'Design Assets.zip', file_type: 'zip', size_bytes: 10485760, mime_type: 'application/zip', storage_type: 'Dropbox' }
+        { user_id: adminId, name: 'Project Proposal.pdf', file_type: 'pdf', size_bytes: 2048000, mime_type: 'application/pdf', storage_type: 'Internal' },
+        { user_id: adminId, name: 'Budget Spreadsheet.xlsx', file_type: 'xlsx', size_bytes: 512000, mime_type: 'application/vnd.ms-excel', storage_type: 'Internal' },
+        { user_id: userIds[1] || adminId, name: 'Meeting Notes.docx', file_type: 'docx', size_bytes: 256000, mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', storage_type: 'Google Drive' },
+        { user_id: userIds[1] || adminId, name: 'Client Presentation.pptx', file_type: 'pptx', size_bytes: 4096000, mime_type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', storage_type: 'Internal' },
+        { user_id: userIds[2] || adminId, name: 'Design Assets.zip', file_type: 'zip', size_bytes: 10485760, mime_type: 'application/zip', storage_type: 'Dropbox' }
       ];
       for (const file of demoFiles) {
         await connection.query(
@@ -1088,9 +2086,9 @@ async function initializeDatabase() {
       }
       console.log('✓ Demo files created');
     }
+}
 
 
-    
     connection.release();
   } catch (error) {
     console.error('Database initialization error:', error.message);
@@ -1111,3 +2109,13 @@ async function testConnection() {
 }
 
 module.exports = { initializeDatabase, testConnection };
+
+if (require.main === module) {
+  testConnection().then(() => {
+    console.log('Database initialization complete');
+    process.exit(0);
+  }).catch(err => {
+    console.error('Database initialization failed:', err);
+    process.exit(1);
+  });
+}

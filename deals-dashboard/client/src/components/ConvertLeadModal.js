@@ -92,34 +92,34 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded  shadow-xl overflow-hidden">
         <div className="p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
-          <h2 className="text-xl font-semibold text-gray-900">{getTitle()}</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Converting: <span className="font-medium">{leadData?.name || leadData?.lead_name}</span>
+          <h2 className="text-xl  text-gray-900">{getTitle()}</h2>
+          <p className="text-xs  text-gray-600 mt-1">
+            Converting: <span className=" ">{leadData?.name || leadData?.lead_name}</span>
           </p>
         </div>
 
         {error && (
-          <div className="p-4 mx-4 mt-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 mx-4 mt-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {convertType === 'contact' && (
             <>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                <p className="text-sm text-blue-700 font-medium">
+              <div className="bg-blue-50 border border-blue-200 rounded  p-3 mb-4">
+                <p className="text-xs  text-blue-700  ">
                   Convert Lead to Contact & Company
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-white  mt-1">
                   This will create both a company (if not exists) and link the contact to it
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Company Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -128,13 +128,13 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   value={formData.company_name || ''}
                   onChange={handleInputChange}
                   placeholder="Company name (will create if not exists)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Industry
                   </label>
                   <input
@@ -143,11 +143,11 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                     value={formData.industry || ''}
                     onChange={handleInputChange}
                     placeholder="e.g., Technology"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Website
                   </label>
                   <input
@@ -156,13 +156,13 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                     value={formData.website || ''}
                     onChange={handleInputChange}
                     placeholder="www.example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Company Address
                 </label>
                 <input
@@ -171,7 +171,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   value={formData.address || ''}
                   onChange={handleInputChange}
                   placeholder="Company address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
 
@@ -179,7 +179,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -188,11 +188,11 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                     value={formData.first_name || ''}
                     onChange={handleInputChange}
                     placeholder="First name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -201,25 +201,25 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                     value={formData.last_name || ''}
                     onChange={handleInputChange}
                     placeholder="Last name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Email (Pre-filled)
                 </label>
                 <input
                   type="email"
                   value={leadData?.email || ''}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-600"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  bg-gray-100 text-gray-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Position
                 </label>
                 <input
@@ -228,7 +228,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   value={formData.position || ''}
                   onChange={handleInputChange}
                   placeholder="e.g., CEO, Manager"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
             </>
@@ -237,7 +237,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
           {convertType === 'company' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Company Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -246,13 +246,13 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   value={formData.company_name || ''}
                   onChange={handleInputChange}
                   placeholder="Company name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Industry
                   </label>
                   <input
@@ -261,11 +261,11 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                     value={formData.industry || ''}
                     onChange={handleInputChange}
                     placeholder="e.g., Technology"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Website
                   </label>
                   <input
@@ -274,37 +274,37 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                     value={formData.website || ''}
                     onChange={handleInputChange}
                     placeholder="www.example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Email (Pre-filled)
                 </label>
                 <input
                   type="email"
                   value={leadData?.email || ''}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-600"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  bg-gray-100 text-gray-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Phone (Pre-filled)
                 </label>
                 <input
                   type="tel"
                   value={leadData?.phone || ''}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-100 text-gray-600"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  bg-gray-100 text-gray-600"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Address
                 </label>
                 <input
@@ -313,7 +313,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   value={formData.address || ''}
                   onChange={handleInputChange}
                   placeholder="Full address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
             </>
@@ -322,7 +322,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
           {convertType === 'deal' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Deal Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -331,13 +331,13 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   value={formData.deal_name || ''}
                   onChange={handleInputChange}
                   placeholder="Deal name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Deal Value <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -347,18 +347,18 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                     onChange={handleInputChange}
                     placeholder="0.00"
                     step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Currency
                   </label>
                   <select
                     name="currency"
                     value={formData.currency || 'USD'}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
@@ -369,14 +369,14 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Company
                 </label>
                 <select
                   name="company_id"
                   value={formData.company_id || ''}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 >
                   <option value="">Select or leave empty</option>
                   {companies.map(c => (
@@ -388,7 +388,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
@@ -397,7 +397,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   onChange={handleInputChange}
                   placeholder="Deal description"
                   rows="2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500 resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500 resize-none"
                 />
               </div>
             </>
@@ -408,14 +408,14 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
               type="button"
               onClick={handleCancel}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+              className="flex-1 p-2  border border-gray-300 rounded  text-gray-700   hover:bg-gray-50 transition disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+              className="flex-1 p-2  bg-red-600 text-white   rounded  hover:bg-red-700 transition disabled:opacity-50"
             >
               {isLoading ? 'Converting...' : 'Convert'}
             </button>

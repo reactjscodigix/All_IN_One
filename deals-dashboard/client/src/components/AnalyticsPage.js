@@ -7,8 +7,14 @@ import {
   Tooltip,
   CartesianGrid,
   ResponsiveContainer,
+  PieChart as RePieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
-import { contactsAPI, dealsAPI, leadsAPI, companiesAPI, campaignAPI } from '../services/api';
+import { contactsAPI, dealsAPI, leadsAPI, companiesAPI, campaignAPI, activitiesAPI, salesAPI, followupsAPI } from '../services/api';
+import DataTable from './DataTable';
+import { Zap, TrendingUp, Users, Clock, CheckCircle } from 'lucide-react';
 
 const AnalyticsPage = () => {
   const [contacts, setContacts] = useState([]);
@@ -16,6 +22,9 @@ const AnalyticsPage = () => {
   const [leads, setLeads] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [salesAnalytics, setSalesAnalytics] = useState(null);
+  const [effectivenessData, setEffectivenessData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,12 +34,15 @@ const AnalyticsPage = () => {
   const fetchAllData = async () => {
     try {
       setLoading(true);
-      const [contactsRes, dealsRes, leadsRes, companiesRes, campaignsRes] = await Promise.all([
+      const [contactsRes, dealsRes, leadsRes, companiesRes, campaignsRes, activitiesRes, salesRes, effectivenessRes] = await Promise.all([
         contactsAPI.getAll().catch(() => []),
         dealsAPI.getAll().catch(() => []),
         leadsAPI.getAll().catch(() => []),
         companiesAPI.getAll().catch(() => []),
         campaignAPI.getAll().catch(() => []),
+        activitiesAPI.getAll().catch(() => []),
+        salesAPI.getAnalytics().catch(() => null),
+        followupsAPI.getEffectivenessAnalytics().catch(() => []),
       ]);
 
       setContacts(Array.isArray(contactsRes) ? contactsRes : []);
@@ -38,13 +50,11 @@ const AnalyticsPage = () => {
       setLeads(Array.isArray(leadsRes) ? leadsRes : []);
       setCompanies(Array.isArray(companiesRes) ? companiesRes : []);
       setCampaigns(Array.isArray(campaignsRes) ? campaignsRes : []);
+      setActivities(Array.isArray(activitiesRes) ? activitiesRes : []);
+      setSalesAnalytics(salesRes);
+      setEffectivenessData(effectivenessRes);
     } catch (err) {
       console.error('Failed to fetch analytics data:', err);
-      setContacts([]);
-      setDeals([]);
-      setLeads([]);
-      setCompanies([]);
-      setCampaigns([]);
     } finally {
       setLoading(false);
     }
@@ -69,9 +79,9 @@ const AnalyticsPage = () => {
   };
 
   const Card = ({ title, children, right }) => (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+    <div className="bg-white border border-gray-200 rounded  shadow-sm p-2">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[15px] font-semibold text-gray-800">{title}</h2>
+        <h2 className="text-xs   text-gray-800">{title}</h2>
         {right}
       </div>
       {children}
@@ -79,18 +89,18 @@ const AnalyticsPage = () => {
   );
 
   const SmallSelect = () => (
-    <select className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none">
+    <select className="text-xs border border-gray-200 rounded p-1  bg-white focus:outline-none">
       <option>Last 30 Days</option>
     </select>
   );
 
   const DoubleSelect = () => (
     <div className="flex items-center gap-2">
-      <select className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none">
+      <select className="text-xs border border-gray-200 rounded p-1  bg-white focus:outline-none">
         <option>Sales Pipeline</option>
         <option>Marketing Pipeline</option>
       </select>
-      <select className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none">
+      <select className="text-xs border border-gray-200 rounded p-1  bg-white focus:outline-none">
         <option>Last 30 Days</option>
       </select>
     </div>
@@ -109,7 +119,7 @@ const AnalyticsPage = () => {
     };
   });
 
-  const dealsByStageData = deals.reduce((acc, deal) => {
+  const dealsByStageData = salesAnalytics?.dealsByStage || deals.reduce((acc, deal) => {
     const stage = deal.stage || 'Unknown';
     const existing = acc.find(d => d.stage === stage);
     if (existing) {
@@ -120,7 +130,7 @@ const AnalyticsPage = () => {
     return acc;
   }, []).filter(d => d.value > 0);
 
-  const wonDealsData = deals
+  const wonDealsData = salesAnalytics?.wonDealsByMonth || deals
     .filter(d => d.status === 'Won')
     .reduce((acc, deal) => {
       const stage = deal.stage || 'Unknown';
@@ -134,7 +144,7 @@ const AnalyticsPage = () => {
     }, [])
     .slice(0, 3);
 
-  const recentDealsData = deals.slice(0, 5).map(d => ({
+  const recentDealsData = salesAnalytics?.recentDeals || deals.slice(0, 5).map(d => ({
     name: d.deal_name || 'Unnamed Deal',
     stage: d.stage || 'Unknown',
     value: `$${(d.deal_value || 0).toLocaleString()}`,
@@ -156,7 +166,7 @@ const AnalyticsPage = () => {
     }, [])
     .slice(0, 3);
 
-  const leadsByStageData = leads.reduce((acc, lead) => {
+  const leadsByStageData = salesAnalytics?.leadsByStage || leads.reduce((acc, lead) => {
     const status = lead.status || 'New';
     const existing = acc.find(d => d.stage === status);
     if (existing) {
@@ -187,7 +197,7 @@ const AnalyticsPage = () => {
     due: formatDate(c.created_at),
     stats: {
       opened: '0%',
-      closed: '0%',
+      Qualified: '0%',
       unsub: '0%',
       delivered: '0%',
       conv: '0%',
@@ -199,8 +209,8 @@ const AnalyticsPage = () => {
     return (
       <div className="mb-2">
         <div className="flex justify-between items-center mb-1">
-          <div className="text-[13px] text-gray-600">{label}</div>
-          <div className="text-[13px] text-gray-700 font-medium">{value}</div>
+          <div className="text-xs  text-gray-600">{label}</div>
+          <div className="text-xs  text-gray-700  ">{value}</div>
         </div>
         <div className="w-full h-2 bg-gray-200 rounded overflow-hidden">
           <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
@@ -221,43 +231,153 @@ const AnalyticsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 p-6">
+    <div className="min-h-screen bg-gray-50 text-gray-800p-3 p-2">
       <div className="max-w-full">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl text-gray-900">Analytics</h1>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium border border-blue-100">
+              <Zap size={14} className="animate-pulse" /> AI Analysis Enabled
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* AI Meeting Insights Summary Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+              <TrendingUp size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Effectiveness</p>
+              <h3 className="text-xl font-bold text-gray-900">
+                {effectivenessData.length > 0 ? 
+                  Math.round((effectivenessData.reduce((acc, curr) => acc + curr.successful_meetings, 0) / 
+                  effectivenessData.reduce((acc, curr) => acc + curr.total_meetings, 0)) * 100) : 0}%
+              </h3>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center text-green-600">
+              <Users size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Meetings</p>
+              <h3 className="text-xl font-bold text-gray-900">
+                {effectivenessData.reduce((acc, curr) => acc + curr.total_meetings, 0)}
+              </h3>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center text-purple-600">
+              <Clock size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Avg Duration</p>
+              <h3 className="text-xl font-bold text-gray-900">
+                {Math.round(effectivenessData.reduce((acc, curr) => acc + curr.avg_duration, 0) / (effectivenessData.length || 1))}m
+              </h3>
+            </div>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600">
+              <CheckCircle size={24} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Conversion Rate</p>
+              <h3 className="text-xl font-bold text-gray-900">
+                {effectivenessData.length > 0 ? 
+                  Math.round((effectivenessData.reduce((acc, curr) => acc + curr.conversions, 0) / 
+                  effectivenessData.reduce((acc, curr) => acc + curr.total_meetings, 0)) * 100) : 0}%
+              </h3>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          {/* Executive Performance Table */}
+          <div className="col-span-3 mb-6">
+            <Card title="Sales Executive Meeting Effectiveness (AI Classified)" right={<SmallSelect />}>
+              <DataTable
+                columns={[
+                  { 
+                    key: 'executive', 
+                    label: 'Executive', 
+                    sortable: true,
+                    render: (value) => (
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                          {getInitials(value)}
+                        </div>
+                        <span className="text-xs font-medium text-gray-900">{value}</span>
+                      </div>
+                    )
+                  },
+                  { key: 'total_meetings', label: 'Total Meetings', sortable: true },
+                  { 
+                    key: 'successful_meetings', 
+                    label: 'Useful Conversations', 
+                    sortable: true,
+                    render: (val, row) => (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden w-24">
+                          <div 
+                            className="h-full bg-green-500" 
+                            style={{ width: `${(val / row.total_meetings) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-700">{val} ({Math.round((val / row.total_meetings) * 100)}%)</span>
+                      </div>
+                    )
+                  },
+                  { 
+                    key: 'conversions', 
+                    label: 'Deal Conversions', 
+                    sortable: true,
+                    render: (val) => (
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-bold">
+                        {val} Deals
+                      </span>
+                    )
+                  },
+                  { 
+                    key: 'avg_duration', 
+                    label: 'Avg Call Time', 
+                    sortable: true,
+                    render: (val) => <span className="text-xs text-gray-600">{val} mins</span>
+                  }
+                ]}
+                data={effectivenessData}
+                hideSearch={true}
+              />
+            </Card>
+          </div>
           {/* LEFT COLUMN (col-span-2) */}
-          <div className="col-span-2 space-y-6">
+          <div className="col-span-2 space-y-3">
             {/* Recently Created Contacts */}
             <Card title="Recently Created Contacts" right={<SmallSelect />}>
-              <div className="border border-gray-200 rounded">
-                <div className="grid grid-cols-3 gap-0 text-[13px] text-gray-500 border-b border-gray-200 bg-gray-50 p-3">
-                  <div>Contact</div>
-                  <div>Phone</div>
-                  <div>Created At</div>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {recentContactsData.length > 0 ? (
-                    recentContactsData.map((c, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 ${c.bg} rounded-full flex items-center justify-center text-white text-[14px] font-bold`}>{c.initials}</div>
-                          <div>
-                            <div className="text-[13px] font-medium text-gray-800">{c.name}</div>
-                            <div className="text-xs text-gray-400">{c.role}</div>
-                          </div>
+              <DataTable
+                columns={[
+                  { 
+                    key: 'name', 
+                    label: 'Contact', 
+                    sortable: true,
+                    render: (value, row) => (
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 ${row.bg} rounded-full flex items-center justify-center text-white text-[14px] `}>{row.initials}</div>
+                        <div>
+                          <div className="text-xs    text-gray-800">{value}</div>
+                          <div className="text-xs text-[#1F2020]">{row.role}</div>
                         </div>
-                        <div className="text-[13px] text-gray-500">{c.phone}</div>
-                        <div className="text-[13px] text-gray-400">{c.date}</div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-center text-gray-500">No contacts found</div>
-                  )}
-                </div>
-              </div>
+                    )
+                  },
+                  { key: 'phone', label: 'Phone', sortable: true },
+                  { key: 'date', label: 'Created At', sortable: true }
+                ]}
+                data={recentContactsData}
+                hideSearch={true}
+              />
             </Card>
 
             {/* Won Deals Stage */}
@@ -275,40 +395,26 @@ const AnalyticsPage = () => {
 
             {/* Recently Created Deals */}
             <Card title="Recently Created Deals" right={<SmallSelect />}>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-[13px]">
-                  <thead>
-                    <tr className="text-[13px] text-gray-500 border-b border-gray-200">
-                      <th className="text-left py-2">Deal Name</th>
-                      <th className="text-left py-2">Stage</th>
-                      <th className="text-left py-2">Deal Value</th>
-                      <th className="text-left py-2">Probability</th>
-                      <th className="text-left py-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {recentDealsData.length > 0 ? (
-                      recentDealsData.map((r, i) => (
-                        <tr key={i} className="bg-white">
-                          <td className="py-2 text-gray-800">{r.name}</td>
-                          <td className="py-2 text-gray-500">{r.stage}</td>
-                          <td className="py-2 text-gray-500">{r.value}</td>
-                          <td className="py-2 text-gray-500">{r.prob}</td>
-                          <td className="py-2">
-                            <span className={`inline-block px-2 py-[2px] text-[12px] rounded-md ${r.status === 'Lost' ? 'bg-red-100 text-red-600' : r.status === 'Open' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
-                              {r.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="5" className="py-4 text-center text-gray-500">No deals found</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={[
+                  { key: 'name', label: 'Deal Name', sortable: true },
+                  { key: 'stage', label: 'Stage', sortable: true },
+                  { key: 'value', label: 'Deal Value', sortable: true },
+                  { key: 'prob', label: 'Probability', sortable: true },
+                  { 
+                    key: 'status', 
+                    label: 'Status', 
+                    sortable: true,
+                    render: (value) => (
+                      <span className={`inline-block px-2 py-[2px] text-[12px] rounded  ${value === 'Lost' ? 'bg-red-100 text-red ' : value === 'Open' ? 'bg-blue-100 text-white ' : 'bg-green-100 text-green-600'}`}>
+                        {value}
+                      </span>
+                    )
+                  }
+                ]}
+                data={recentDealsData}
+                hideSearch={true}
+              />
             </Card>
 
             {/* Lost Leads Stage */}
@@ -341,29 +447,25 @@ const AnalyticsPage = () => {
 
             {/* Recently Added Companies */}
             <Card title="Recently Added Companies" right={<SmallSelect />}>
-              <div className="border border-gray-200 rounded">
-                <div className="grid grid-cols-3 gap-0 text-[13px] text-gray-500 border-b border-gray-200 bg-gray-50 p-3">
-                  <div>Company Name</div>
-                  <div>Phone</div>
-                  <div>Created at</div>
-                </div>
-                <div className="divide-y divide-gray-100">
-                  {recentCompaniesData.length > 0 ? (
-                    recentCompaniesData.map((c, i) => (
-                      <div key={i} className="flex items-center justify-between p-3">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${getAvatarColor(i)}`}></div>
-                          <div className="text-[13px]">{c.name}</div>
-                        </div>
-                        <div className="text-[13px] text-gray-500">{c.phone}</div>
-                        <div className="text-[13px] text-gray-400">{c.date}</div>
+              <DataTable
+                columns={[
+                  { 
+                    key: 'name', 
+                    label: 'Company Name', 
+                    sortable: true,
+                    render: (value, row, index) => (
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs   ${getAvatarColor(recentCompaniesData.indexOf(row))}`}></div>
+                        <div className="text-xs ">{value}</div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="p-3 text-center text-gray-500">No companies found</div>
-                  )}
-                </div>
-              </div>
+                    )
+                  },
+                  { key: 'phone', label: 'Phone', sortable: true },
+                  { key: 'date', label: 'Created at', sortable: true }
+                ]}
+                data={recentCompaniesData}
+                hideSearch={true}
+              />
             </Card>
           </div>
 
@@ -384,11 +486,35 @@ const AnalyticsPage = () => {
               </div>
             </Card>
 
-            {/* Activities - Empty for now as no activities API */}
+            {/* Activities */}
             <Card title="Activities" right={<SmallSelect />}>
-              <div className="space-y-2 text-center text-gray-500 py-4">
-                <p>No activities data available</p>
-              </div>
+              <DataTable
+                columns={[
+                  { 
+                    key: 'title', 
+                    label: 'Activity', 
+                    sortable: true,
+                    render: (value, row) => (
+                      <div>
+                        <div className="text-xs  text-gray-800">{row.activity_type}: {value}</div>
+                        <div className="text-[10px] text-gray-500">{formatDate(row.created_at)}</div>
+                      </div>
+                    )
+                  },
+                  { 
+                    key: 'status', 
+                    label: 'Status', 
+                    sortable: true,
+                    render: (value) => (
+                      <span className={`text-[10px] px-1.5 rounded-full ${value === 'Completed' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+                        {value}
+                      </span>
+                    )
+                  }
+                ]}
+                data={activities.slice(0, 5)}
+                hideSearch={true}
+              />
             </Card>
 
             {/* Lost Leads Stage (small) */}
@@ -406,63 +532,57 @@ const AnalyticsPage = () => {
 
             {/* Recently Created Leads */}
             <Card title="Recently Created Leads" right={<SmallSelect />}>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-[13px]">
-                  <thead>
-                    <tr className="text-[13px] text-gray-500 border-b border-gray-200">
-                      <th className="text-left py-2">Lead Name</th>
-                      <th className="text-left py-2">Company</th>
-                      <th className="text-left py-2">Phone</th>
-                      <th className="text-left py-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {recentLeadsData.length > 0 ? (
-                      recentLeadsData.map((r, i) => (
-                        <tr key={i} className="bg-white">
-                          <td className="py-2 text-gray-800">{r.name}</td>
-                          <td className="py-2 text-gray-500">{r.company}</td>
-                          <td className="py-2 text-gray-500">{r.phone}</td>
-                          <td className="py-2">
-                            <span className={`inline-block px-2 py-[2px] text-[12px] rounded-md ${r.status === 'Closed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                              {r.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="4" className="py-4 text-center text-gray-500">No leads found</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={[
+                  { key: 'name', label: 'Lead Name', sortable: true },
+                  { key: 'company', label: 'Company', sortable: true },
+                  { key: 'phone', label: 'Phone', sortable: true },
+                  { 
+                    key: 'status', 
+                    label: 'Status', 
+                    sortable: true,
+                    render: (value) => (
+                      <span className={`inline-block px-2 py-[2px] text-[12px] rounded  ${value === 'Qualified' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {value}
+                      </span>
+                    )
+                  }
+                ]}
+                data={recentLeadsData}
+                hideSearch={true}
+              />
             </Card>
 
             {/* Recently Created Campaign */}
             <Card title="Recently Created Campaign" right={<SmallSelect />}>
-              <div className="space-y-3">
-                {recentCampaignsData.length > 0 ? (
-                  recentCampaignsData.map((c, i) => (
-                    <div key={i} className="bg-gray-50 p-2 rounded">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <div className="text-[13px] font-medium">{c.title}</div>
-                          <div className="text-xs text-gray-400">{c.type}</div>
-                        </div>
-                        <span className={`inline-flex items-center px-2 py-[2px] rounded-md text-[12px] font-semibold ${c.status === 'Running' ? 'bg-green-100 text-green-700' : c.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{c.status}</span>
+              <DataTable
+                columns={[
+                  { 
+                    key: 'title', 
+                    label: 'Campaign', 
+                    sortable: true,
+                    render: (value, row) => (
+                      <div>
+                        <div className="text-xs   ">{value}</div>
+                        <div className="text-[10px] text-gray-500">{row.type}</div>
                       </div>
-
-                      <div className="mt-2">
-                        <div className="text-[11px] text-gray-400">Created: {c.due}</div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-500 py-4">No campaigns found</div>
-                )}
-              </div>
+                    )
+                  },
+                  { 
+                    key: 'status', 
+                    label: 'Status', 
+                    sortable: true,
+                    render: (value) => (
+                      <span className={`inline-flex items-center px-2 py-[2px] rounded  text-[12px]  ${value === 'Running' || value === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {value}
+                      </span>
+                    )
+                  },
+                  { key: 'due', label: 'Created', sortable: true }
+                ]}
+                data={recentCampaignsData}
+                hideSearch={true}
+              />
             </Card>
           </div>
         </div>

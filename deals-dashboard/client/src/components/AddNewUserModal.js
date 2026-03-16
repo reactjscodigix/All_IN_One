@@ -213,31 +213,31 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
         className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white">
-          <h2 className="text-lg font-semibold text-gray-900">Add New User</h2>
+        <div className="flex justify-between items-centerp-3  border-b border-[#EAECF0] sticky top-0 bg-white">
+          <h2 className="text-md  text-gray-900">Add New User</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Avatar Upload */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
+            <label className="block text-xs   text-gray-900 mb-2">
               Upload Avatar
             </label>
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+              <div className="w-16 h-16 rounded  bg-gray-100 flex items-center justify-center overflow-hidden">
                 {previewImage ? (
                   <img src={previewImage} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -248,7 +248,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
-                className="block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-red-600 file:text-white hover:file:bg-red-700"
+                className="block text-xs  text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded  file:border-0 file:text-xs  file:  file:bg-red-600 file:text-white hover:file:bg-red-700"
               />
             </div>
           </div>
@@ -256,7 +256,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
           {/* First Name & User Name */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 First Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -265,11 +265,11 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.firstName}
                 onChange={handleInputChange}
                 placeholder="Enter first name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 User Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -278,14 +278,14 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.userName}
                 onChange={handleInputChange}
                 placeholder="Enter username"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               />
             </div>
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Email <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center gap-3">
@@ -295,7 +295,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Enter email"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="flex-1 p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               />
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -305,21 +305,21 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                   onChange={handleInputChange}
                   className="w-4 h-4 rounded border-gray-300"
                 />
-                <span className="text-sm text-gray-600">Email Opt Out</span>
+                <span className="text-xs  text-gray-600">Email Opt Out</span>
               </label>
             </div>
           </div>
 
           {/* Role */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Role <span className="text-red-500">*</span>
             </label>
             <select
               name="role"
               value={formData.role}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
             >
               <option value="">Select a role</option>
               {roles.length > 0 ? (
@@ -335,7 +335,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
           {/* Phone 1 & Phone 2 */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Phone 1 <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
@@ -343,7 +343,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                   name="phone1Country"
                   value={formData.phone1Country}
                   onChange={handleInputChange}
-                  className="w-20 px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                  className="w-20 px-2 py-2 border border-gray-300 rounded  text-xs  bg-white"
                 >
                   {countries.map(c => (
                     <option key={c.code} value={c.code}>{c.name}</option>
@@ -355,12 +355,12 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                   value={formData.phone1}
                   onChange={handleInputChange}
                   placeholder="(201) 555-0123"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                  className="flex-1 p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Phone 2
               </label>
               <div className="flex gap-2">
@@ -368,7 +368,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                   name="phone2Country"
                   value={formData.phone2Country}
                   onChange={handleInputChange}
-                  className="w-20 px-2 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                  className="w-20 px-2 py-2 border border-gray-300 rounded  text-xs  bg-white"
                 >
                   {countries.map(c => (
                     <option key={c.code} value={c.code}>{c.name}</option>
@@ -380,7 +380,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                   value={formData.phone2}
                   onChange={handleInputChange}
                   placeholder="(201) 555-0123"
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                  className="flex-1 p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
                 />
               </div>
             </div>
@@ -389,7 +389,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
           {/* Password & Repeat Password */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Password <span className="text-red-500">*</span>
               </label>
               <input
@@ -398,11 +398,11 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.password}
                 onChange={handleInputChange}
                 placeholder="Enter password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Repeat Password <span className="text-red-500">*</span>
               </label>
               <input
@@ -411,21 +411,21 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.repeatPassword}
                 onChange={handleInputChange}
                 placeholder="Repeat password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               />
             </div>
           </div>
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Location <span className="text-red-500">*</span>
             </label>
             <select
               name="location"
               value={formData.location}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
             >
               <option value="">Choose location</option>
               {locations.map(location => (
@@ -440,14 +440,14 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
               type="button"
               onClick={handleCancel}
               disabled={isLoading}
-              className="px-6 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+              className="p-2  text-gray-700   border border-gray-300 rounded  hover:bg-gray-50 transition disabled:opacity-50 text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+              className="p-2  bg-red-600 text-white   rounded  hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2 text-xs"
             >
               {isLoading ? 'Creating...' : 'Create'}
             </button>

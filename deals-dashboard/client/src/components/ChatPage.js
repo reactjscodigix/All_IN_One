@@ -148,13 +148,13 @@ export default function ChatPage() {
         {/* Header */}
         <div className="p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-gray-900">Chat</h1>
+            <h1 className="text-xl  text-gray-900">Chat</h1>
             <button
               onClick={() => {
                 setShowAllUsers(!showAllUsers);
                 setUserSearchTerm('');
               }}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-red-500"
+              className="p-2 hover:bg-gray-100 rounded  transition-colors text-gray-600 hover:text-red-500"
               title="Start new conversation"
             >
               <UserPlus className="w-5 h-5" />
@@ -163,13 +163,13 @@ export default function ChatPage() {
 
           {/* Search Box */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#1F2020]" />
             <input
               type="text"
               placeholder={showAllUsers ? "Search users..." : "Search conversations..."}
               value={showAllUsers ? userSearchTerm : searchTerm}
               onChange={(e) => showAllUsers ? setUserSearchTerm(e.target.value) : setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:bg-white text-sm text-gray-700 placeholder-gray-400 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:bg-white text-xs  text-gray-700 placeholder-gray-400 transition-all"
             />
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function ChatPage() {
                 <div
                   key={u.id}
                   onClick={() => handleStartConversation(u)}
-                  className="border-b p-4 hover:bg-gray-50 cursor-pointer transition-all"
+                  className="border-b p-2 hover:bg-gray-50 cursor-pointer transition-all"
                 >
                   <div className="flex items-center gap-3">
                     <div className="relative flex-shrink-0">
@@ -194,7 +194,7 @@ export default function ChatPage() {
                       <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-800">{u.name}</h3>
+                      <h3 className="text-xs   text-gray-800">{u.name}</h3>
                       <p className="text-xs text-gray-500 truncate">{u.email}</p>
                     </div>
                     <MessageCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
@@ -202,7 +202,7 @@ export default function ChatPage() {
                 </div>
               ))
             ) : (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-2 text-center text-gray-500">
                 No users found
               </div>
             )
@@ -211,7 +211,7 @@ export default function ChatPage() {
               <div
                 key={chat.id}
                 onClick={() => setSelectedChat(chat)}
-                className={`border-b p-4 hover:bg-gray-50 cursor-pointer transition-all ${
+                className={`border-b p-2 hover:bg-gray-50 cursor-pointer transition-all ${
                   selectedChat?.id === chat.id ? 'bg-red-50' : ''
                 }`}
               >
@@ -229,20 +229,20 @@ export default function ChatPage() {
                   {/* Chat Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="text-sm font-semibold text-gray-800">{chat.name}</h3>
+                      <h3 className="text-xs   text-gray-800">{chat.name}</h3>
                       <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{chat.timestamp}</span>
                     </div>
-                    <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
+                    <p className="text-xs  text-gray-500 truncate">{chat.lastMessage}</p>
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-2 text-center text-gray-500">
               <p className="mb-3">No conversations yet</p>
               <button
                 onClick={() => setShowAllUsers(true)}
-                className="text-red-600 hover:text-red-700 text-sm font-semibold flex items-center justify-center gap-2 mx-auto"
+                className="text-red  hover:text-red-700 text-xs   flex items-center justify-center gap-2 mx-auto"
               >
                 <UserPlus className="w-4 h-4" />
                 Start a conversation
@@ -257,7 +257,7 @@ export default function ChatPage() {
         {selectedChat ? (
           <>
             {/* Header */}
-            <div className="flex items-center justify-between bg-white p-6 shadow-sm border-b border-gray-200">
+            <div className="flex items-center justify-between bg-whitep-3  shadow-sm border-b border-gray-200">
               <div className="flex items-center gap-4">
                 {/* Avatar */}
                 <div className="relative">
@@ -271,41 +271,41 @@ export default function ChatPage() {
 
                 {/* User Info */}
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-900">{currentChat.name}</h2>
+                  <h2 className="text-xs   text-gray-900">{currentChat.name}</h2>
                   <p className="text-xs text-gray-500 capitalize">{currentChat.status}</p>
                 </div>
               </div>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2">
-                <button className="p-2.5 hover:bg-gray-50 rounded-lg transition-colors text-gray-600 hover:text-red-500">
+                <button className="p-2  hover:bg-gray-50 rounded  transition-colors text-gray-600 hover:text-red-500">
                   <Phone className="w-5 h-5" />
                 </button>
-                <button className="p-2.5 hover:bg-gray-50 rounded-lg transition-colors text-gray-600 hover:text-red-500">
+                <button className="p-2  hover:bg-gray-50 rounded  transition-colors text-gray-600 hover:text-red-500">
                   <Video className="w-5 h-5" />
                 </button>
-                <button className="p-2.5 hover:bg-gray-50 rounded-lg transition-colors text-gray-600 hover:text-red-500">
+                <button className="p-2  hover:bg-gray-50 rounded  transition-colors text-gray-600 hover:text-red-500">
                   <MoreVertical className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white">
+            <div className="flex-1 overflow-y-autop-3  space-y-4 bg-white">
               {currentMessages.length > 0 ? (
                 currentMessages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.sender === 'other' ? (
                       <div className="flex items-start gap-3">
                         <img src={currentChat.avatar} className="w-10 h-10 rounded-full" alt="user" />
-                        <div className="p-4 bg-gray-100 rounded-2xl max-w-[70%]">
+                        <div className="p-2 bg-gray-100 rounded-2xl max-w-[70%]">
                           <p className="text-gray-700">{msg.text}</p>
-                          <span className="text-xs text-gray-400 block mt-1">{msg.timestamp}</span>
+                          <span className="text-xs text-[#1F2020] block mt-1">{msg.timestamp}</span>
                         </div>
                       </div>
                     ) : (
                       <div className="flex justify-end">
-                        <div className="p-4 bg-red-500 text-white rounded-2xl max-w-[70%]">
+                        <div className="p-2 bg-red-500 text-white rounded-2xl max-w-[70%]">
                           <p>{msg.text}</p>
                           <div className="text-xs text-red-100 text-right mt-1">{msg.timestamp}</div>
                         </div>
@@ -324,7 +324,7 @@ export default function ChatPage() {
                 <div className="flex justify-start">
                   <div className="flex items-start gap-3">
                     <img src={currentChat?.avatar} className="w-10 h-10 rounded-full" alt="user" />
-                    <div className="p-4 bg-gray-100 rounded-2xl">
+                    <div className="p-2 bg-gray-100 rounded-2xl">
                       <div className="flex gap-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -338,7 +338,7 @@ export default function ChatPage() {
             </div>
 
             {/* Message Input Box */}
-            <div className="border-t p-4 flex items-center gap-4 bg-white">
+            <div className="border-t p-2 flex items-center gap-2 bg-white">
               <input
                 type="text"
                 placeholder="Type Your Message"
@@ -366,10 +366,10 @@ export default function ChatPage() {
           <div className="flex-1 flex items-center justify-center bg-white">
             <div className="text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <X className="w-8 h-8 text-gray-400" />
+                <X className="w-8 h-8 text-[#1F2020]" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">No chat selected</h3>
-              <p className="text-sm text-gray-500">Select a conversation to start messaging</p>
+              <h3 className="text-md  text-gray-900 mb-1">No chat selected</h3>
+              <p className="text-xs  text-gray-500">Select a conversation to start messaging</p>
             </div>
           </div>
         )}

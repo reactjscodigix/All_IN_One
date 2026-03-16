@@ -42,7 +42,7 @@ export const renderLockedButton = (button, title = 'You do not have permission t
   <button
     disabled
     title={title}
-    className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed opacity-50 flex items-center gap-2"
+    className="p-2  bg-gray-100 text-[#1F2020] rounded  cursor-not-allowed opacity-50 flex items-center gap-2"
   >
     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />

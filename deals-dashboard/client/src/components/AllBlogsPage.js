@@ -247,47 +247,47 @@ const AllBlogsPage = () => {
     <div className="bg-gray-50 min-h-screen pb-10">
       <style>{cardAnimationStyles}</style>
       <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="flex items-start justify-between gap-2 mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-800">
+            <h1 className="text-2xl  text-slate-800">
               All Blogs{' '}
-              <span className="ml-2 inline-block bg-red-50 text-red-600 text-sm px-2 py-0.5 rounded">
+              <span className="ml-2 inline-block bg-red-50 text-red  text-xs  p-1  rounded">
                 {blogsData.length}
               </span>
             </h1>
-            <div className="text-sm text-gray-500 mt-1">Home › Blogs › All Blogs</div>
+            <div className="text-xs  text-gray-500 mt-1">Home › Blogs › All Blogs</div>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="relative group">
-              <button className="export-btn bg-white border border-gray-200 text-gray-700 text-sm px-3 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2 transition-colors">
+              <button className="export-btn bg-white border border-gray-200 text-gray-700 text-xs  px-3 py-2 rounded  hover:bg-gray-50 flex items-center gap-2 transition-colors">
                 <Download size={16} />
                 Export
                 <ChevronDown size={14} className="group-hover:rotate-180 transition-transform" />
               </button>
-              <div className="dropdown-menu absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg group-hover:block z-10">
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors">
+              <div className="dropdown-menu absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded  shadow-lg group-hover:block z-10">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 transition-colors">
                   Export as PDF
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 border-t border-gray-200 transition-colors">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 border-t border-gray-200 transition-colors">
                   Export as Excel
                 </button>
               </div>
             </div>
-            <button className="btn-add bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg shadow-sm transition-colors active:bg-red-800">
+            <button className="btn-add bg-red-600 hover:bg-red-700 text-white text-xs  p-2  rounded  shadow-sm transition-colors active:bg-red-800">
               Add Blog
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-100 p-4 mb-6">
+        <div className="bg-white rounded  border border-gray-100 p-2 mb-6">
           <div className="relative w-full md:w-1/3">
-            <Search className="absolute left-3 top-3 text-gray-400 pointer-events-none" size={16} />
+            <Search className="absolute left-3 top-3 text-[#1F2020] pointer-events-none" size={16} />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search"
-              className="search-input w-full pl-10 pr-3 h-10 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+              className="search-input w-full pl-10 pr-3 h-10 rounded  border border-gray-200 text-xs  focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
           </div>
         </div>
@@ -296,7 +296,7 @@ const AllBlogsPage = () => {
           {pageData.map((post, index) => (
             <article
               key={post.id}
-              className="blog-card bg-white border border-gray-100 rounded-lg overflow-hidden flex flex-col"
+              className="blog-card bg-white border border-gray-100 rounded  overflow-hidden flex flex-col"
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="relative blog-image h-44 bg-gray-200">
@@ -306,13 +306,13 @@ const AllBlogsPage = () => {
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
-                <div className="tag-badge absolute top-3 left-3 bg-sky-600 text-white text-xs px-2.5 py-1 rounded-md font-semibold shadow-sm">
+                <div className="tag-badge absolute top-3 left-3 bg-sky-600 text-white text-xs px-2.5 py-1 rounded   shadow-sm">
                   {post.tag}
                 </div>
               </div>
 
-              <div className="p-4 flex-1 flex flex-col">
-                <div className="flex items-center text-xs text-gray-500 gap-4 mb-3">
+              <div className="p-2 flex-1 flex flex-col">
+                <div className="flex items-center text-xs text-gray-500 gap-2 mb-3">
                   <div className="flex items-center gap-1 hover:text-gray-700 transition-colors">
                     <span>💬</span>
                     <span>{post.comments} Comments</span>
@@ -323,28 +323,28 @@ const AllBlogsPage = () => {
                   </div>
                 </div>
 
-                <h3 className="blog-title text-md font-semibold text-slate-800 leading-snug mb-2 line-clamp-2 cursor-pointer">
+                <h3 className="blog-title text-md  text-slate-800 leading-snug mb-2 line-clamp-2 cursor-pointer">
                   {post.title}
                 </h3>
 
-                <p className="text-sm text-gray-500 mb-4 line-clamp-3">
+                <p className="text-xs  text-gray-500 mb-4 line-clamp-3">
                   {post.excerpt}
                 </p>
 
                 <div className="border-t border-gray-100 pt-4 mt-auto" />
 
                 <div className="mt-4 flex items-center justify-between">
-                  <button className="edit-button flex items-center gap-2 text-sm px-3 py-1.5 border border-gray-200 rounded text-gray-700 font-medium hover:text-gray-900">
+                  <button className="edit-button flex items-center gap-2 text-xs  px-3 py-1.5 border border-gray-200 rounded text-gray-700   hover:text-gray-900">
                     ✏️ Edit
                   </button>
 
                   <div>
                     {post.status === 'Active' ? (
-                      <span className="status-badge inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold">
+                      <span className="status-badge inline-block bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs ">
                         Active
                       </span>
                     ) : (
-                      <span className="status-badge inline-block bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-xs font-semibold">
+                      <span className="status-badge inline-block bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-xs ">
                         Inactive
                       </span>
                     )}
@@ -361,7 +361,7 @@ const AllBlogsPage = () => {
           )}
         </div>
 
-        <div className="flex items-center justify-between mt-8 text-sm text-gray-600">
+        <div className="flex items-center justify-between mt-8 text-xs  text-gray-600">
           <div />
           <div className="flex items-center gap-2">
             <button
@@ -371,7 +371,7 @@ const AllBlogsPage = () => {
             >
               Prev
             </button>
-            <button className="bg-red-600 text-white px-3 py-1 rounded font-medium cursor-default">{page}</button>
+            <button className="bg-red-600 text-white px-3 py-1 rounded   cursor-default">{page}</button>
             <button
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
               disabled={page === pages}
@@ -382,8 +382,8 @@ const AllBlogsPage = () => {
           </div>
         </div>
 
-        <div className="mt-10 text-xs text-gray-400 text-center">
-          Copyright © 2025 <span className="text-red-600 font-medium">Preadmin</span>
+        <div className="mt-10 text-xs text-[#1F2020] text-center">
+          Copyright © 2025 <span className="text-red   ">Preadmin</span>
         </div>
       </div>
     </div>

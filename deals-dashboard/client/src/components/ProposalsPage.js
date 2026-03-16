@@ -292,43 +292,43 @@ const ProposalsPage = ({ onViewDetails }) => {
     };
     
     return (
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-200">
-        <div className="p-4 pb-3">
+      <div className="bg-white border border-gray-200 rounded  overflow-hidden hover:shadow-xl transition-all duration-200">
+        <div className="p-2 pb-3">
           <div className="flex items-start justify-between mb-3">
-            <span className="text-sm font-semibold text-blue-600">{proposal.proposal_number}</span>
+            <span className="text-xs   text-white ">{proposal.proposal_number}</span>
             <div className="relative">
               <button 
                 onClick={() => setShowActionMenu(showActionMenu === proposal.id ? null : proposal.id)}
                 className="p-1 hover:bg-gray-100 rounded transition-colors"
               >
-                <MoreVertical size={16} className="text-gray-400" />
+                <MoreVertical size={16} className="text-[#1F2020]" />
               </button>
               {showActionMenu === proposal.id && (
                 <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
                   {proposal.status === 'Approved' && (
                     <button
                       onClick={() => handleSendProposal(proposal.id)}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left p-2  text-xs  hover:bg-gray-100 flex items-center gap-2"
                     >
                       <Send size={14} /> Send
                     </button>
                   )}
                   <button
                     onClick={() => handleStatusChange(proposal.id, 'Approved')}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                    className="w-full text-left p-2  text-xs  hover:bg-gray-100 flex items-center gap-2"
                   >
                     <CheckCircle size={14} /> Approve
                   </button>
                   <button
                     onClick={() => handleStatusChange(proposal.id, 'Rejected')}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
+                    className="w-full text-left p-2  text-xs  hover:bg-gray-100 flex items-center gap-2"
                   >
                     <XCircle size={14} /> Reject
                   </button>
                   {proposal.status === 'Accepted' && (
                     <button
                       onClick={() => handleConvertToInvoice(proposal.id)}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2 border-t"
+                      className="w-full text-left p-2  text-xs  hover:bg-gray-100 flex items-center gap-2 border-t"
                     >
                       <Download size={14} /> Convert to Invoice
                     </button>
@@ -336,14 +336,14 @@ const ProposalsPage = ({ onViewDetails }) => {
                   {proposal.status === 'Sent' && (
                     <button
                       onClick={() => handleConvertToContract(proposal.id)}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-green-700 flex items-center gap-2 border-t"
+                      className="w-full text-left p-2  text-xs  hover:bg-green-50 text-green-700 flex items-center gap-2 border-t"
                     >
                       📋 Convert to Contract
                     </button>
                   )}
                   <button
                     onClick={() => handleDeleteProposal(proposal.id)}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-red-100 text-red-700 flex items-center gap-2 border-t"
+                    className="w-full text-left p-2  text-xs  hover:bg-red-100 text-red-700 flex items-center gap-2 border-t"
                   >
                     <XCircle size={14} /> Delete
                   </button>
@@ -352,7 +352,7 @@ const ProposalsPage = ({ onViewDetails }) => {
             </div>
           </div>
 
-          <h3 className="font-semibold text-gray-900 text-sm mb-2">{proposal.title}</h3>
+          <h3 className=" text-gray-900 text-xs  mb-2">{proposal.title}</h3>
           <p className="text-xs text-gray-500 mb-3">{proposal.description || 'Proposal'}</p>
 
           <div className="space-y-1 mb-4 text-xs text-gray-600">
@@ -367,13 +367,13 @@ const ProposalsPage = ({ onViewDetails }) => {
           </div>
         </div>
 
-        <div className="border-t pt-3 px-4 pb-4">
+        <div className="border-t pt-3 p-2 ">
           <div className="flex items-center gap-3 mb-4">
-            <div className={`w-12 h-12 rounded-full ${getCompanyColor(company?.id)} text-white flex items-center justify-center font-semibold text-sm flex-shrink-0`}>
+            <div className={`w-12 h-12 rounded-full ${getCompanyColor(company?.id)} text-white flex items-center justify-center  text-xs  flex-shrink-0`}>
               {company ? getCompanyInitials(company.company_name) : 'N/A'}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 text-sm truncate">
+              <p className=" text-gray-900 text-xs  truncate">
                 {company?.company_name || 'Unknown Company'}
               </p>
               <p className="text-xs text-gray-500">Client</p>
@@ -381,10 +381,10 @@ const ProposalsPage = ({ onViewDetails }) => {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getStatusColor(proposal.status)}`}>
+            <span className={`text-xs px-2.5 py-1 rounded-full  ${getStatusColor(proposal.status)}`}>
               {proposal.status}
             </span>
-            <span className="text-sm font-semibold text-gray-900">
+            <span className="text-xs   text-gray-900">
               💰 {currency} {(proposal.total_amount || 0).toLocaleString()}
             </span>
           </div>
@@ -399,59 +399,59 @@ const ProposalsPage = ({ onViewDetails }) => {
     
     return (
       <tr className="border-b hover:bg-gray-50">
-        <td className="px-4 py-3 text-sm">
-          <div className="font-medium text-gray-900">{proposal.proposal_number}</div>
+        <td className="p-2 text-xs">
+          <div className="  text-gray-900">{proposal.proposal_number}</div>
           <div className="text-xs text-gray-500">{proposal.title}</div>
         </td>
-        <td className="px-4 py-3 text-sm text-gray-700">{company?.company_name || 'Unknown'}</td>
-        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+        <td className="p-2 text-xs text-gray-700">{company?.company_name || 'Unknown'}</td>
+        <td className="p-2 text-xs   text-gray-900">
           {currency} {proposal.total_amount || 0}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600">
+        <td className="p-2 text-xs text-gray-600">
           {new Date(proposal.proposal_date).toLocaleDateString()}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-600">
+        <td className="p-2 text-xs text-gray-600">
           {proposal.validity_date ? new Date(proposal.validity_date).toLocaleDateString() : 'N/A'}
         </td>
-        <td className="px-4 py-3 text-sm">
-          <span className={`text-xs px-2 py-1 rounded-full font-semibold ${getStatusColor(proposal.status)}`}>
+        <td className="p-2 text-xs">
+          <span className={`text-xs p-1  rounded-full  ${getStatusColor(proposal.status)}`}>
             {proposal.status}
           </span>
         </td>
-        <td className="px-4 py-3 text-sm text-right relative">
+        <td className="p-2 text-xs text-right relative">
           <div className="relative">
             <button 
               onClick={() => setShowActionMenu(showActionMenu === proposal.id ? null : proposal.id)}
               className="p-1 hover:bg-gray-100 rounded transition-colors"
             >
-              <MoreVertical size={18} className="text-gray-400" />
+              <MoreVertical size={18} className="text-[#1F2020]" />
             </button>
             {showActionMenu === proposal.id && (
               <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-300 rounded shadow-lg z-10">
                 {proposal.status === 'Approved' && (
                   <button
                     onClick={() => handleSendProposal(proposal.id)}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    className="w-full text-left p-2  text-xs  hover:bg-gray-100"
                   >
                     Send
                   </button>
                 )}
                 <button
                   onClick={() => handleStatusChange(proposal.id, 'Approved')}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  className="w-full text-left p-2  text-xs  hover:bg-gray-100"
                 >
                   Approve
                 </button>
                 <button
                   onClick={() => handleStatusChange(proposal.id, 'Rejected')}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  className="w-full text-left p-2  text-xs  hover:bg-gray-100"
                 >
                   Reject
                 </button>
                 {proposal.status === 'Accepted' && (
                   <button
                     onClick={() => handleConvertToInvoice(proposal.id)}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 border-t"
+                    className="w-full text-left p-2  text-xs  hover:bg-gray-100 border-t"
                   >
                     Convert to Invoice
                   </button>
@@ -459,14 +459,14 @@ const ProposalsPage = ({ onViewDetails }) => {
                 {proposal.status === 'Sent' && (
                   <button
                     onClick={() => handleConvertToContract(proposal.id)}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-green-50 text-green-700 border-t"
+                    className="w-full text-left p-2  text-xs  hover:bg-green-50 text-green-700 border-t"
                   >
                     Convert to Contract
                   </button>
                 )}
                 <button
                   onClick={() => handleDeleteProposal(proposal.id)}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-red-100 text-red-700 border-t"
+                  className="w-full text-left p-2  text-xs  hover:bg-red-100 text-red-700 border-t"
                 >
                   Delete
                 </button>
@@ -490,21 +490,21 @@ const ProposalsPage = ({ onViewDetails }) => {
       />
 
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex items-center justify-between">
+      <div className="bg-white border-b p-2  flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl  text-gray-900">
             Proposals 
-            <span className="text-red-600 text-sm bg-red-100 px-2 py-1 rounded ml-2">
+            <span className="text-red  text-xs  bg-red-100 p-1  rounded ml-2">
               {proposals.length}
             </span>
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Home / Proposals</p>
+          <p className="text-xs  text-gray-500 mt-1">Home / Proposals</p>
         </div>
         <div className="flex items-center gap-3">
           <select 
             value={filterStatus} 
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-300 px-3 py-2 rounded-md text-sm bg-white hover:bg-gray-50"
+            className="border border-gray-300 px-3 py-2 rounded  text-xs  bg-white hover:bg-gray-50"
           >
             <option value="">All Status</option>
             <option value="Draft">Draft</option>
@@ -516,7 +516,7 @@ const ProposalsPage = ({ onViewDetails }) => {
             <option value="Rejected">Rejected</option>
           </select>
 
-          <div className="flex items-center gap-2 border border-gray-300 rounded-md bg-white p-1">
+          <div className="flex items-center gap-2 border border-gray-300 rounded  bg-white p-1">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}
@@ -533,7 +533,7 @@ const ProposalsPage = ({ onViewDetails }) => {
 
           <button 
             onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors flex items-center gap-2"
+            className="bg-red-600 text-white p-2  rounded  text-xs    hover:bg-blue-700 transition-colors flex items-center gap-2"
           >
             <Plus size={18} />
             Add New Proposal
@@ -542,14 +542,14 @@ const ProposalsPage = ({ onViewDetails }) => {
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white px-6 py-4 border-b">
+      <div className="bg-white p-2  border-b">
         <div className="max-w-md">
           <input
             type="text"
             placeholder="Search proposals..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            className="w-full border border-gray-300 px-4 py-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-300 p-2  rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
       </div>
@@ -557,7 +557,7 @@ const ProposalsPage = ({ onViewDetails }) => {
       {/* Main Content */}
       <div className="p-6">
         {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
           </div>
         )}
@@ -569,7 +569,7 @@ const ProposalsPage = ({ onViewDetails }) => {
         ) : proposals.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">No proposals found</p>
-            <p className="text-gray-400 text-sm mt-2">Create your first proposal to get started</p>
+            <p className="text-[#1F2020] text-xs  mt-2">Create your first proposal to get started</p>
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -578,17 +578,17 @@ const ProposalsPage = ({ onViewDetails }) => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white rounded  shadow overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-900">Proposal</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-900">Client</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-900">Amount</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-900">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-900">Valid Till</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-900">Status</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-900">Actions</th>
+                  <th className="text-left px-4 py-3  text-gray-900">Proposal</th>
+                  <th className="text-left px-4 py-3  text-gray-900">Client</th>
+                  <th className="text-right px-4 py-3  text-gray-900">Amount</th>
+                  <th className="text-left px-4 py-3  text-gray-900">Date</th>
+                  <th className="text-left px-4 py-3  text-gray-900">Valid Till</th>
+                  <th className="text-left px-4 py-3  text-gray-900">Status</th>
+                  <th className="text-center px-4 py-3  text-gray-900">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -602,8 +602,8 @@ const ProposalsPage = ({ onViewDetails }) => {
       </div>
 
       {/* Footer */}
-      <div className="text-center text-sm text-gray-400 py-6 border-t mt-8">
-        Copyright © 2025 <span className="text-blue-600 font-medium">CRM System</span>
+      <div className="text-center text-xs  text-[#1F2020] py-6 border-t mt-8">
+        Copyright © 2025 <span className="text-white   ">CRM System</span>
       </div>
     </div>
   );

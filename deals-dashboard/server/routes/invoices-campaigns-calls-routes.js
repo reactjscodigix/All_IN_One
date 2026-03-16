@@ -1,9 +1,17 @@
 const { requireAuth, requireRole } = require('../middleware/authMiddleware');
+const nodemailer = require('nodemailer');
 
 module.exports = function(app, pool) {
   
   async function getConnection() {
-    return pool.getConnection();
+    try {
+      const connection = await pool.getConnection();
+      if (!connection) throw new Error('Pool returned undefined connection');
+      return connection;
+    } catch (err) {
+      console.error('Database connection pool error:', err.message);
+      throw err;
+    }
   }
 
   const responseError = (res, statusCode, message, error) => {
@@ -868,7 +876,13 @@ module.exports = function(app, pool) {
       const { skip = 0, limit = 50, status, search } = req.query;
       connection = await getConnection();
 
-      let query = 'SELECT e.*, c.company_name as client_name FROM estimations e LEFT JOIN companies c ON e.client_id = c.id WHERE 1=1';
+      let query = `
+        SELECT e.*, c.company_name as client_name, l.lead_name 
+        FROM estimations e 
+        LEFT JOIN companies c ON e.client_id = c.id 
+        LEFT JOIN leads l ON e.lead_id = l.id
+        WHERE 1=1
+      `;
       const params = [];
 
       if (status) {
@@ -877,9 +891,9 @@ module.exports = function(app, pool) {
       }
 
       if (search) {
-        query += ' AND (e.estimation_number LIKE ? OR c.company_name LIKE ?)';
+        query += ' AND (e.estimation_number LIKE ? OR c.company_name LIKE ? OR l.lead_name LIKE ?)';
         const searchTerm = `%${search}%`;
-        params.push(searchTerm, searchTerm);
+        params.push(searchTerm, searchTerm, searchTerm);
       }
 
       query += ' ORDER BY e.created_at DESC LIMIT ?, ?';
@@ -899,22 +913,70 @@ module.exports = function(app, pool) {
   app.post('/api/estimations', async (req, res) => {
     let connection;
     try {
-      const { estimation_number, client_id, contact_id, project_id, amount, currency, estimate_date, expiry_date, status, description } = req.body;
+      const { 
+        estimation_number, client_id, lead_id, deal_id, contact_id, project_id, 
+        parent_id, version, amount, currency, estimate_date, expiry_date, 
+        status, description, bill_to, ship_to, tags, estimate_by, 
+        discount_percentage, discount_amount,
+        tax_percentage, tax_amount, subtotal, total
+      } = req.body;
 
-      if (!estimation_number || !client_id) {
-        return res.status(400).json({ error: 'Estimation number and client ID required' });
+      const finalEstimationNumber = estimation_number || `EST-${Date.now()}`;
+
+      if (!client_id && !lead_id) {
+        return res.status(400).json({ error: 'Client ID or Lead ID required' });
       }
 
       connection = await getConnection();
       const [result] = await connection.query(
-        `INSERT INTO estimations (estimation_number, client_id, contact_id, project_id, amount, currency, estimate_date, expiry_date, status, description)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [estimation_number, client_id, contact_id || null, project_id || null, amount || 0, currency || 'USD', estimate_date || null, expiry_date || null, status || 'Draft', description || null]
+        `INSERT INTO estimations (
+          estimation_number, client_id, lead_id, deal_id, contact_id, project_id, 
+          parent_id, version, amount, currency, estimate_date, expiry_date, 
+          status, description, bill_to, ship_to, tags, estimate_by,
+          discount_percentage, discount_amount,
+          tax_percentage, tax_amount, subtotal, total
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          finalEstimationNumber, client_id || null, lead_id || null, deal_id || null, contact_id || null, 
+          project_id || null, parent_id || null, version || 1, amount || total || 0, currency || 'USD', 
+          estimate_date || null, expiry_date || null, status || 'Draft', description || null,
+          bill_to || null, ship_to || null, 
+          tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : null,
+          estimate_by || null, discount_percentage || 0, discount_amount || 0,
+          tax_percentage || 0, tax_amount || 0, subtotal || 0, total || amount || 0
+        ]
       );
 
+      const estimationId = result.insertId;
+
+      if (status === 'Sent') {
+        const targetStatus = (version > 1) ? 'Revised Quotation' : 'Quotation';
+        const finalAmount = amount || total || 0;
+        
+        // Update linked deal if exists
+        if (deal_id) {
+          await connection.query(
+            'UPDATE deals SET pipeline = ?, deal_stage = ?, deal_value = ?, updated_at = NOW() WHERE id = ?',
+            [targetStatus, targetStatus, finalAmount, deal_id]
+          );
+        }
+        
+        // Update linked lead if exists
+        if (lead_id) {
+          await connection.query(
+            'UPDATE leads SET lead_status = ?, value = ?, updated_at = NOW() WHERE id = ?',
+            [targetStatus, finalAmount, lead_id]
+          );
+        }
+      }
+
       const [estimation] = await connection.query(
-        'SELECT e.*, c.company_name as client_name FROM estimations e LEFT JOIN companies c ON e.client_id = c.id WHERE e.id = ?',
-        [result.insertId]
+        `SELECT e.*, c.company_name as client_name, l.lead_name 
+         FROM estimations e 
+         LEFT JOIN companies c ON e.client_id = c.id 
+         LEFT JOIN leads l ON e.lead_id = l.id
+         WHERE e.id = ?`,
+        [estimationId]
       );
       connection.release();
 
@@ -933,7 +995,11 @@ module.exports = function(app, pool) {
       connection = await getConnection();
 
       const [estimations] = await connection.query(
-        'SELECT e.*, c.company_name as client_name FROM estimations e LEFT JOIN companies c ON e.client_id = c.id WHERE e.id = ?',
+        `SELECT e.*, c.company_name as client_name, l.lead_name 
+         FROM estimations e 
+         LEFT JOIN companies c ON e.client_id = c.id 
+         LEFT JOIN leads l ON e.lead_id = l.id
+         WHERE e.id = ?`,
         [id]
       );
       connection.release();
@@ -954,23 +1020,293 @@ module.exports = function(app, pool) {
     let connection;
     try {
       const { id } = req.params;
-      const { amount, status, description, expiry_date } = req.body;
+      const updates = req.body;
       
       connection = await getConnection();
+      
+      const fields = [];
+      const values = [];
+      
+      // Map frontend field names to DB field names if necessary
+      const fieldMap = {
+        amount: 'amount',
+        status: 'status',
+        description: 'description',
+        expiry_date: 'expiry_date',
+        estimate_date: 'estimate_date',
+        client_id: 'client_id',
+        lead_id: 'lead_id',
+        deal_id: 'deal_id',
+        project_id: 'project_id',
+        parent_id: 'parent_id',
+        version: 'version',
+        bill_to: 'bill_to',
+        ship_to: 'ship_to',
+        currency: 'currency',
+        tags: 'tags',
+        estimate_by: 'estimate_by'
+      };
+
+      for (const [key, value] of Object.entries(updates)) {
+        if (fieldMap[key]) {
+          fields.push(`${fieldMap[key]} = ?`);
+          values.push(key === 'tags' && typeof value !== 'string' ? JSON.stringify(value) : value);
+        }
+      }
+
+      if (fields.length === 0) {
+        return res.status(400).json({ error: 'No valid fields provided for update' });
+      }
+
+      values.push(id);
+      
       await connection.query(
-        'UPDATE estimations SET amount = ?, status = ?, description = ?, expiry_date = ? WHERE id = ?',
-        [amount || null, status || null, description || null, expiry_date || null, id]
+        `UPDATE estimations SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ?`,
+        values
       );
 
+      if (updates.status === 'Sent') {
+        const [estimations] = await connection.query('SELECT * FROM estimations WHERE id = ?', [id]);
+        if (estimations.length > 0) {
+          const est = estimations[0];
+          const targetStatus = (est.version > 1) ? 'Revised Quotation' : 'Quotation';
+          
+          if (est.deal_id) {
+            await connection.query(
+              'UPDATE deals SET pipeline = ?, deal_stage = ?, deal_value = ?, updated_at = NOW() WHERE id = ?',
+              [targetStatus, targetStatus, est.amount, est.deal_id]
+            );
+          }
+          if (est.lead_id) {
+            await connection.query(
+              'UPDATE leads SET lead_status = ?, value = ?, updated_at = NOW() WHERE id = ?',
+              [targetStatus, est.amount, est.lead_id]
+            );
+          }
+        }
+      }
+
       const [estimation] = await connection.query(
-        'SELECT e.*, c.company_name as client_name FROM estimations e LEFT JOIN companies c ON e.client_id = c.id WHERE e.id = ?',
+        `SELECT e.*, c.company_name as client_name, l.lead_name 
+         FROM estimations e 
+         LEFT JOIN companies c ON e.client_id = c.id 
+         LEFT JOIN leads l ON e.lead_id = l.id
+         WHERE e.id = ?`,
         [id]
       );
       connection.release();
 
-      return res.json(estimation[0]);
+      return res.json(estimation[0] || { id, ...updates });
     } catch (err) {
       responseError(res, 500, 'Failed to update estimation', err);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.post('/api/estimations/:id/finalize', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      connection = await getConnection();
+      
+      const [estimations] = await connection.query('SELECT * FROM estimations WHERE id = ?', [id]);
+      if (estimations.length === 0) {
+        return res.status(404).json({ error: 'Estimation not found' });
+      }
+      
+      const est = estimations[0];
+      
+      // Update linked Lead to Qualified/Converted if necessary
+      if (est.lead_id) {
+        await connection.query("UPDATE leads SET lead_status = 'Qualified' WHERE id = ?", [est.lead_id]);
+      }
+      
+      // Update linked Deal stage if exists
+      if (est.project_id) {
+        // Find deal linked to project
+        const [projects] = await connection.query('SELECT deal_id FROM projects WHERE id = ?', [est.project_id]);
+        if (projects.length > 0 && projects[0].deal_id) {
+          await connection.query("UPDATE deals SET deal_stage = 'Won', updated_at = NOW() WHERE id = ?", [projects[0].deal_id]);
+        }
+      }
+
+      await connection.query("UPDATE estimations SET status = 'Finalized' WHERE id = ?", [id]);
+      
+      connection.release();
+      return res.json({ success: true, message: 'Estimation finalized and records updated' });
+    } catch (err) {
+      responseError(res, 500, 'Failed to finalize estimation', err);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.post('/api/estimations/:id/send-email', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      const { email: recipientEmail } = req.body;
+      
+      connection = await getConnection();
+
+      // 1. Fetch Estimation Details
+      const [estimations] = await connection.query(`
+        SELECT e.*, 
+               c.company_name as client_name, c.email as client_email,
+               l.lead_name, l.email as lead_email,
+               u.first_name as creator_name, u.email as creator_email
+        FROM estimations e
+        LEFT JOIN companies c ON e.client_id = c.id
+        LEFT JOIN leads l ON e.lead_id = l.id
+        LEFT JOIN users u ON e.estimate_by = u.id
+        WHERE e.id = ?
+      `, [id]);
+
+      if (estimations.length === 0) {
+        return res.status(404).json({ error: 'Quotation not found' });
+      }
+
+      const est = estimations[0];
+      console.log('📄 Found Estimation:', {
+        id: est.id,
+        number: est.estimation_number,
+        client_email: est.client_email,
+        lead_email: est.lead_email
+      });
+      
+      const targetEmail = recipientEmail || est.client_email || est.lead_email;
+      console.log('🎯 Final Target Email:', targetEmail);
+
+      if (!targetEmail) {
+        return res.status(400).json({ error: 'Recipient email not found. Please provide an email address.' });
+      }
+
+      // 2. Fetch Line Items
+      const [items] = await connection.query(`
+        SELECT * FROM estimation_line_items WHERE estimation_id = ? ORDER BY id ASC
+      `, [id]);
+
+      // 3. Configure Nodemailer
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      });
+
+      // 4. Build Email Content
+      const currencySymbol = est.currency === 'USD' ? '$' : (est.currency === 'INR' ? '₹' : est.currency);
+      const itemsHtml = items.map(item => `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.item_name}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${currencySymbol}${parseFloat(item.rate).toLocaleString()}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${currencySymbol}${parseFloat(item.total).toLocaleString()}</td>
+        </tr>
+      `).join('');
+
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+          <div style="background-color: #f8f9fa; padding: 20px; border-bottom: 1px solid #e0e0e0;">
+            <h2 style="margin: 0; color: #333;">Quotation: ${est.estimation_number}</h2>
+            <p style="margin: 5px 0 0; color: #666;">Date: ${new Date(est.estimate_date).toLocaleDateString()}</p>
+          </div>
+          <div style="padding: 20px;">
+            <p>Dear ${est.client_name || est.lead_name || 'Valued Client'},</p>
+            <p>Please find below the quotation details for your request.</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+              <thead>
+                <tr style="background-color: #f8f9fa;">
+                  <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Item</th>
+                  <th style="padding: 10px; text-align: center; border-bottom: 2px solid #dee2e6;">Qty</th>
+                  <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">Rate</th>
+                  <th style="padding: 10px; text-align: right; border-bottom: 2px solid #dee2e6;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+              <tfoot>
+                ${est.discount_amount > 0 ? `
+                <tr>
+                  <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Discount:</td>
+                  <td style="padding: 10px; text-align: right; color: #dc3545;">-${currencySymbol}${parseFloat(est.discount_amount).toLocaleString()}</td>
+                </tr>` : ''}
+                ${est.tax_amount > 0 ? `
+                <tr>
+                  <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Tax:</td>
+                  <td style="padding: 10px; text-align: right;">${currencySymbol}${parseFloat(est.tax_amount).toLocaleString()}</td>
+                </tr>` : ''}
+                <tr>
+                  <td colspan="3" style="padding: 10px; text-align: right; font-size: 18px; font-weight: bold;">Total:</td>
+                  <td style="padding: 10px; text-align: right; font-size: 18px; font-weight: bold; color: #28a745;">${currencySymbol}${parseFloat(est.total || est.amount).toLocaleString()}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            ${est.description ? `
+            <div style="margin-top: 30px;">
+              <h4 style="margin-bottom: 10px; color: #333;">Description/Notes:</h4>
+              <p style="color: #555; white-space: pre-wrap;">${est.description}</p>
+            </div>` : ''}
+
+            <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 14px; color: #888;">
+              <p>Thank you for your business!</p>
+              <p>Best regards,<br>${est.creator_name || 'Team'}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 5. Send Email
+      console.log(`📧 Attempting to send email to: ${targetEmail}`);
+      const info = await transporter.sendMail({
+        from: `"Quotation System" <${process.env.SMTP_USER}>`,
+        to: targetEmail,
+        subject: `Quotation ${est.estimation_number} - ${est.client_name || est.lead_name || ''}`,
+        html: emailHtml
+      });
+      console.log('✅ Email sent successfully:', info.messageId);
+      console.log('📩 Response:', info.response);
+      console.log('👥 Accepted:', info.accepted);
+      console.log('👥 Rejected:', info.rejected);
+
+      // 6. Log Activity
+      try {
+        await connection.query(`
+          INSERT INTO activities (
+            activity_type, title, description, status, priority, 
+            deal_id, lead_id, company_id, contact_id, 
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `, [
+          'Email', 
+          `Email Sent: ${est.estimation_number}`,
+          `Quotation ${est.estimation_number} was sent to ${targetEmail}. (MsgID: ${info.messageId})`,
+          'Completed',
+          'Medium',
+          est.deal_id || null,
+          est.lead_id || null,
+          est.client_id || null,
+          est.contact_id || null
+        ]);
+      } catch (activityErr) {
+        console.error('Failed to log email activity:', activityErr);
+      }
+
+      return res.json({ 
+        success: true, 
+        message: `Quotation sent to ${targetEmail}`,
+        messageId: info.messageId,
+        accepted: info.accepted,
+        rejected: info.rejected
+      });
+    } catch (err) {
+      console.error('Email sending error:', err);
+      responseError(res, 500, 'Failed to send email', err);
     } finally {
       if (connection) connection.release();
     }
@@ -982,15 +1318,61 @@ module.exports = function(app, pool) {
       const { id } = req.params;
       connection = await getConnection();
       
+      // Start transaction
+      await connection.beginTransaction();
+
       await connection.query('UPDATE estimations SET status = ? WHERE id = ?', ['Sent', id]);
-      const [estimation] = await connection.query('SELECT * FROM estimations WHERE id = ?', [id]);
+      const [estimations] = await connection.query('SELECT * FROM estimations WHERE id = ?', [id]);
       
+      if (estimations.length > 0) {
+        const est = estimations[0];
+        const targetStatus = (est.version > 1) ? 'Revised Quotation' : 'Quotation';
+        
+        // Update linked deal if exists
+        if (est.deal_id) {
+          await connection.query(
+            'UPDATE deals SET pipeline = ?, deal_stage = ?, deal_value = ?, updated_at = NOW() WHERE id = ?',
+            [targetStatus, targetStatus, est.amount, est.deal_id]
+          );
+        }
+        
+        // Update linked lead if exists
+        if (est.lead_id) {
+          await connection.query(
+            'UPDATE leads SET lead_status = ?, value = ?, updated_at = NOW() WHERE id = ?',
+            [targetStatus, est.amount, est.lead_id]
+          );
+        }
+
+        // Log activity for sending quotation
+        await connection.query(`
+          INSERT INTO activities (
+            activity_type, title, description, status, priority, 
+            deal_id, lead_id, company_id, contact_id, 
+            created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `, [
+          'Email', 
+          `${targetStatus} Sent: ${est.estimation_number}`,
+          `Quotation ${est.estimation_number} (v${est.version}) for ${est.currency} ${est.amount} has been sent to the client.`,
+          'Completed',
+          'Medium',
+          est.deal_id || null,
+          est.lead_id || null,
+          est.client_id || null,
+          est.contact_id || null
+        ]);
+      }
+
+      await connection.commit();
       connection.release();
-      return res.json({ message: 'Estimation sent successfully', data: estimation[0] });
+      return res.json({ message: 'Estimation sent successfully', data: estimations[0] });
     } catch (err) {
+      if (connection) {
+        await connection.rollback();
+        connection.release();
+      }
       responseError(res, 500, 'Failed to send estimation', err);
-    } finally {
-      if (connection) connection.release();
     }
   });
 

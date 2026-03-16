@@ -145,8 +145,8 @@ const CrmCompaniesPage = () => {
   const renderStars = (rating) => {
     return (
       <div className="flex items-center gap-1">
-        <span className="text-[#FFA200] text-sm">★</span>
-        <span className="text-[13px] font-medium text-gray-900">{rating}</span>
+        <span className="text-[#FFA200] text-xs ">★</span>
+        <span className="text-xs    text-gray-900">{rating}</span>
       </div>
     );
   };
@@ -157,23 +157,23 @@ const CrmCompaniesPage = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-[28px] font-bold text-gray-900">Companies</h1>
-              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] font-bold">{companies.length}</span>
+              <h1 className="text-[28px]  text-gray-900">Companies</h1>
+              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] ">{companies.length}</span>
             </div>
-            <div className="flex items-center gap-1 text-[13px] mt-1">
-              <button className="text-[#F97316] hover:text-[#EA580C] font-medium bg-transparent border-none cursor-pointer p-0">Home</button>
+            <div className="flex items-center gap-1 text-xs  mt-1">
+              <button className="text-[#F97316] hover:text-[#EA580C]   bg-transparent border-none cursor-pointer p-0">Home</button>
               <span className="text-[#D1D5DB]">&gt;</span>
               <span className="text-[#6B7280]">Companies</span>
             </div>
           </div>
           <div className="flex gap-2 items-center">
-            <button onClick={() => navigate('/add-company')} className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]">
+            <button onClick={() => navigate('/add-company')} className="bg-[#F62416] text-white p-2  rounded    flex items-center gap-2 hover:opacity-90 transition text-xs ">
               <Plus size={18} />
               Add Company
             </button>
             <button 
               onClick={seedMockCompanies}
-              className="bg-gray-400 text-white px-4 py-2 rounded-lg font-medium text-[13px] hover:opacity-90 transition"
+              className="bg-gray-400 text-white p-2  rounded    text-xs  hover:opacity-90 transition"
               title="Add mock companies for testing"
             >
               Seed Data
@@ -183,16 +183,16 @@ const CrmCompaniesPage = () => {
 
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-xs">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
             <input
               type="text"
               placeholder="Search"
               value={searchTerm}
               onChange={handleSearch}
-              className="w-full pl-9 pr-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-gray-400 text-[13px] bg-white"
+              className="w-full pl-9 pr-4 py-2 border border-[#E5E7EB] rounded  focus:outline-none focus:border-gray-400 text-xs  bg-white"
             />
           </div>
-          <button className="px-4 py-2 border border-[#E5E7EB] rounded-lg hover:bg-gray-50 text-[13px] font-medium text-gray-700 transition bg-white flex items-center gap-2">
+          <button className="p-2  border border-[#E5E7EB] rounded  hover:bg-gray-50 text-xs    text-gray-700 transition bg-white flex items-center gap-2">
             Filter <ChevronDown size={16} />
           </button>
         </div>
@@ -206,7 +206,7 @@ const CrmCompaniesPage = () => {
               className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
             >
               <div className="flex justify-between items-start mb-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg overflow-hidden flex-shrink-0 ${company.logo && company.logo.startsWith('data:') ? 'bg-white' : 'bg-gradient-to-br from-blue-400 to-blue-600'} shadow-sm`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white  text-lg overflow-hidden flex-shrink-0 ${company.logo && company.logo.startsWith('data:') ? 'bg-white' : 'bg-gradient-to-br from-blue-400 to-blue-600'} shadow-sm`}>
                   {company.logo && company.logo.startsWith('data:') ? (
                     <img 
                       src={company.logo} 
@@ -227,27 +227,27 @@ const CrmCompaniesPage = () => {
                       e.stopPropagation();
                       setOpenMenuId(openMenuId === company.id ? null : company.id);
                     }}
-                    className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded-md transition"
+                    className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded  transition"
                   >
                     <MoreVertical size={16} strokeWidth={2} />
                   </button>
                   {openMenuId === company.id && (
-                    <div className="absolute right-0 top-full mt-1 bg-white border border-[#E5E7EB] rounded-lg shadow-lg z-10 min-w-[120px]">
+                    <div className="absolute right-0 top-full mt-1 bg-white border border-[#E5E7EB] rounded  shadow-lg z-10 min-w-[120px]">
                       <button
                         onClick={(e) => handlePreview(e, company)}
-                        className="w-full text-left px-4 py-2 text-[13px] text-[#1F2937] hover:bg-gray-50 flex items-center gap-2 transition"
+                        className="w-full text-left p-2  text-xs  text-[#1F2937] hover:bg-gray-50 flex items-center gap-2 transition"
                       >
                         👁️ Preview
                       </button>
                       <button
                         onClick={(e) => handleEdit(e, company)}
-                        className="w-full text-left px-4 py-2 text-[13px] text-[#1F2937] hover:bg-gray-50 border-t border-[#E5E7EB] flex items-center gap-2 transition"
+                        className="w-full text-left p-2  text-xs  text-[#1F2937] hover:bg-gray-50 border-t border-[#E5E7EB] flex items-center gap-2 transition"
                       >
                         ✏️ Edit
                       </button>
                       <button
                         onClick={(e) => handleDelete(e, company.id)}
-                        className="w-full text-left px-4 py-2 text-[13px] text-[#DC2626] hover:bg-red-50 border-t border-[#E5E7EB] flex items-center gap-2 transition"
+                        className="w-full text-left p-2  text-xs  text-[#DC2626] hover:bg-red-50 border-t border-[#E5E7EB] flex items-center gap-2 transition"
                       >
                         🗑️ {deleteConfirm === company.id ? 'Confirm Delete?' : 'Delete'}
                       </button>
@@ -256,10 +256,10 @@ const CrmCompaniesPage = () => {
                 </div>
               </div>
 
-              <h3 className="text-[15px] font-semibold text-gray-900 truncate mb-1">{company.name}</h3>
+              <h3 className="text-xs   text-gray-900 truncate mb-1">{company.name}</h3>
               <div className="mb-3">{renderStars(company.rating)}</div>
 
-              <div className="space-y-1.5 mb-3 text-[13px] text-[#6B7280]">
+              <div className="space-y-1.5 mb-3 text-xs  text-[#6B7280]">
                 <div className="flex items-center gap-2"><Mail size={15} strokeWidth={1.5} />{company.email}</div>
                 <div className="flex items-center gap-2"><Phone size={15} strokeWidth={1.5} />{company.phone}</div>
                 <div className="flex items-center gap-2"><MapPin size={15} strokeWidth={1.5} />{company.country}</div>
@@ -267,21 +267,21 @@ const CrmCompaniesPage = () => {
 
               <div className="flex gap-2 mb-3 flex-wrap">
                 {company.tags.map((tag, idx) => (
-                  <span key={idx} className={`text-[12px] px-3 py-1 rounded-md font-medium ${tag === 'Collab' ? 'bg-[#E4F8ED] text-[#28C76F]' : 'bg-[#FFF4DE] text-[#FFA200]'}`}>
+                  <span key={idx} className={`text-[12px] px-3 py-1 rounded    ${tag === 'Collab' ? 'bg-[#E4F8ED] text-[#28C76F]' : 'bg-[#FFF4DE] text-[#FFA200]'}`}>
                     {tag}
                   </span>
                 ))}
               </div>
 
               <div className="pt-3 border-t border-[#F3F4F6] flex items-center justify-between">
-                <div className="flex gap-4 text-[#6B7280]">
+                <div className="flex gap-2 text-[#6B7280]">
                   <button className="hover:text-gray-900 transition p-0.5" title="Email"><Mail size={15} strokeWidth={1.5} /></button>
                   <button className="hover:text-gray-900 transition p-0.5" title="Phone"><Phone size={15} strokeWidth={1.5} /></button>
                   <button className="hover:text-gray-900 transition p-0.5" title="Chat"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></button>
                   <button className="hover:text-gray-900 transition p-0.5" title="Call"><Phone size={15} strokeWidth={1.5} /></button>
                 </div>
                 <div className="flex gap-1">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold border border-white ${company.icon}`}>C</div>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs   border border-white ${company.icon}`}>C</div>
                 </div>
               </div>
             </div>
@@ -289,31 +289,31 @@ const CrmCompaniesPage = () => {
         </div>
 
         <div className="mt-8 text-center">
-          <button className="bg-[#F62416] text-white rounded-[8px] px-8 py-3 font-medium hover:opacity-90 transition text-[14px]">Load More</button>
+          <button className="bg-[#F62416] text-white rounded-[8px] px-8 py-3   hover:opacity-90 transition text-[14px]">Load More</button>
         </div>
       </div>
 
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-sm mx-4">
+          <div className="bg-white rounded  shadow-lg p-8 max-w-sm mx-4">
             <div className="flex items-center justify-center mb-4">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
                 <span className="text-2xl">🗑️</span>
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Delete Confirmation</h3>
-            <p className="text-sm text-gray-600 text-center mb-6">Are you sure you want to remove company you selected?</p>
+            <h3 className="text-md  text-gray-900 text-center mb-2">Delete Confirmation</h3>
+            <p className="text-xs  text-gray-600 text-center mb-6">Are you sure you want to remove company you selected?</p>
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="px-6 py-2 border border-[#E5E7EB] rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition"
+                className="p-2  border border-[#E5E7EB] rounded  text-gray-700   hover:bg-gray-50 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={(e) => handleDelete(e, deleteConfirm)}
                 disabled={isDeleting}
-                className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition disabled:opacity-50"
+                className="p-2  bg-red-500 text-white rounded    hover:bg-red-600 transition disabled:opacity-50"
               >
                 {isDeleting ? 'Deleting...' : 'Yes, Delete'}
               </button>

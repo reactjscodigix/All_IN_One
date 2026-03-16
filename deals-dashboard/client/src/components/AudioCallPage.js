@@ -89,7 +89,7 @@ export default function AudioCallPage() {
   return (
     <div className="w-full h-[calc(100vh-80px)] bg-gradient-to-b from-blue-50 to-white flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between p-2 border-b border-gray-200 bg-white shadow-sm">
         <div className="flex items-center gap-3">
           <img
             src={caller.avatar}
@@ -97,14 +97,14 @@ export default function AudioCallPage() {
             alt={caller.name}
           />
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">{caller.name}</h2>
+            <h2 className="text-xs   text-gray-900">{caller.name}</h2>
             <p className="text-xs text-gray-500">{callStarted ? 'Ongoing' : caller.status}</p>
           </div>
         </div>
         {!callStarted && !isRinging && (
           <button 
             onClick={openPhoneModal}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold text-sm flex items-center gap-2 transition-colors shadow-md">
+            className="p-2  bg-red-600 hover:bg-red-700 text-white rounded   text-xs  flex items-center gap-2 transition-colors shadow-md">
             <Phone className="w-4 h-4" />
             Call
           </button>
@@ -112,7 +112,7 @@ export default function AudioCallPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-blue-50 to-white">
+      <div className="flex-1 flex flex-col items-center justify-centerp-3  bg-gradient-to-b from-blue-50 to-white">
         {/* Caller Avatar with animation */}
         <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center mb-6 shadow-lg transition-all ${
           isRinging ? 'animate-pulse ring-4 ring-cyan-300' : callStarted ? 'ring-2 ring-green-400' : ''
@@ -125,21 +125,21 @@ export default function AudioCallPage() {
         </div>
 
         {/* Caller Info */}
-        <h3 className="text-3xl font-bold text-gray-900 mb-2">{caller.name}</h3>
+        <h3 className="text-xl  text-gray-900 mb-2">{caller.name}</h3>
         
         {/* Phone Number Display */}
         {callerPhone && (
-          <p className="text-lg text-blue-600 font-semibold mb-2">{callerPhone}</p>
+          <p className="text-lg text-white   mb-2">{callerPhone}</p>
         )}
 
         {/* Call Status */}
         {isRinging ? (
           <div className="text-center mb-12">
-            <p className="text-lg text-gray-600 font-medium animate-pulse">Calling...</p>
+            <p className="text-lg text-gray-600   animate-pulse">Calling...</p>
           </div>
         ) : callStarted ? (
           <div className="text-center mb-12">
-            <p className="text-2xl text-green-600 font-bold mb-2">{formatDuration(callDuration)}</p>
+            <p className="text-2xl text-green-600  mb-2">{formatDuration(callDuration)}</p>
             <p className="text-gray-600">Voice Call in progress</p>
           </div>
         ) : (
@@ -151,12 +151,12 @@ export default function AudioCallPage() {
 
       {/* Bottom Controls */}
       {(callStarted || isRinging) && (
-        <div className="border-t p-6 flex items-center justify-center gap-6 bg-white shadow-lg">
+        <div className="border-tp-3  flex items-center justify-center gap-6 bg-white shadow-lg">
           {callStarted && (
             <button
               onClick={() => setIsMuted(!isMuted)}
               className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-md ${
-                isMuted ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                isMuted ? 'bg-red-100 text-red ' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               {isMuted ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
@@ -180,10 +180,10 @@ export default function AudioCallPage() {
       {/* Phone Number Modal */}
       {showPhoneModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 border border-gray-200">
+          <div className="bg-white rounded-xl shadow-2xlp-3  max-w-md w-full mx-4 border border-gray-200">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Start Audio Call</h3>
+                <h3 className="text-xl  text-gray-900">Start Audio Call</h3>
                 <p className="text-xs text-gray-500 mt-1">Enter phone number to call</p>
               </div>
               <button 
@@ -199,9 +199,9 @@ export default function AudioCallPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Mobile Number *</label>
-                <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-cyan-500 focus-within:border-transparent">
-                  <Phone className="w-5 h-5 text-gray-400" />
+                <label className="block text-xs   text-gray-700 mb-2">Mobile Number *</label>
+                <div className="flex items-center gap-2 p-2  border border-gray-300 rounded  focus-within:ring-2 focus-within:ring-cyan-500 focus-within:border-transparent">
+                  <Phone className="w-5 h-5 text-[#1F2020]" />
                   <input 
                     type="tel"
                     value={phoneNumber}
@@ -213,7 +213,7 @@ export default function AudioCallPage() {
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+              <p className="text-xs text-gray-500 bg-blue-50 p-3 rounded ">
                 Enter the mobile number of the contact you want to call. The call will be recorded in your call history.
               </p>
 
@@ -223,14 +223,14 @@ export default function AudioCallPage() {
                     setShowPhoneModal(false);
                     setPhoneNumber('');
                   }}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-semibold"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded  text-gray-700 hover:bg-gray-50 transition-colors "
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleStartCall}
                   disabled={!phoneNumber.trim()}
-                  className="flex-1 px-4 py-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-3 bg-cyan-600 text-white rounded  hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors  flex items-center justify-center gap-2"
                 >
                   <Phone className="w-4 h-4" />
                   Call Now

@@ -303,7 +303,7 @@ const fetchDeals = async () => {
 
 // In JSX:
 {error && (
-  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
+  <div className="bg-red-50 border border-red-200 text-red-700 p-2 rounded ">
     Error: {error}
   </div>
 )}

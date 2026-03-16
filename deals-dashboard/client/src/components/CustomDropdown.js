@@ -7,7 +7,7 @@ const CustomDropdown = ({ options, value, onChange }) => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`px-3 py-1.5 rounded-md text-xs  transition-colors flex items-center gap-2 border-1 ${
+        className={`p-2 rounded text-xs  transition-colors flex items-center gap-2 border-1 ${
           isOpen
             ? 'bg-red-500 text-white border-red-500'
             : 'bg-white text-gray-700 border border-gray-200 hover:bg-red-500 hover:text-white hover:border-red-500'
@@ -17,7 +17,7 @@ const CustomDropdown = ({ options, value, onChange }) => {
         
       </button>
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10 animate-fadeIn">
+        <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded  shadow-lg z-10 animate-fadeIn">
           {options.map((option) => (
             <button
               key={option}
@@ -25,8 +25,8 @@ const CustomDropdown = ({ options, value, onChange }) => {
                 onChange(option);
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-100 transition-colors ${
-                value === option ? 'text-red-500 font-medium bg-red-50' : 'text-gray-700'
+              className={`w-full text-left p-2 text-xs hover:bg-gray-100 transition-colors ${
+                value === option ? 'text-red-500   bg-red-50' : 'text-gray-700'
               } first:rounded-t-lg last:rounded-b-lg`}
             >
               {option}

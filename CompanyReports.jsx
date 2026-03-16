@@ -129,7 +129,7 @@ const companyReportData = {
 };
 
 const CompanyLogo = ({ name, color }) => (
-  <div className="w-8 h-8 rounded flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: color }}>
+  <div className="w-8 h-8 rounded flex items-center justify-center text-white text-xs " style={{ backgroundColor: color }}>
     {name.charAt(0)}
   </div>
 );
@@ -141,7 +141,7 @@ const Tag = ({ text }) => {
     VIP: "bg-purple-50 text-purple-700 border-purple-200",
   };
   const classes = tagColors[text] || "bg-gray-50 text-gray-700 border-gray-200";
-  return <span className={`text-xs font-semibold px-2 py-1 rounded border ${classes}`}>{text}</span>;
+  return <span className={`text-xs  p-1  rounded border ${classes}`}>{text}</span>;
 };
 
 const StatusPill = ({ status }) => {
@@ -149,7 +149,7 @@ const StatusPill = ({ status }) => {
     Active: "bg-green-500 text-white",
     Inactive: "bg-red-500 text-white",
   };
-  return <span className={`text-xs font-semibold px-2 py-1 rounded ${map[status] || "bg-gray-500 text-white"}`}>{status}</span>;
+  return <span className={`text-xs  p-1  rounded ${map[status] || "bg-gray-500 text-white"}`}>{status}</span>;
 };
 
 const ContactIcon = ({ type, title }) => {
@@ -160,7 +160,7 @@ const ContactIcon = ({ type, title }) => {
     notes: "📝",
   };
   return (
-    <span title={title} className="inline-flex items-center justify-center w-6 h-6 hover:bg-gray-100 rounded cursor-pointer text-gray-600 text-sm">
+    <span title={title} className="inline-flex items-center justify-center w-6 h-6 hover:bg-gray-100 rounded cursor-pointer text-gray-600 text-xs ">
       {icons[type] || "○"}
     </span>
   );
@@ -217,18 +217,18 @@ function CompaniesTable({ rows }) {
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs ">
           <thead>
             <tr className="text-xs text-gray-600 bg-gray-50 border-b border-gray-200">
               <th className="py-3 px-4 text-left w-8">
                 <input type="checkbox" className="cursor-pointer" />
               </th>
-              <th className="py-3 px-4 text-left font-semibold">Name</th>
-              <th className="py-3 px-4 text-left font-semibold">Email</th>
-              <th className="py-3 px-4 text-left font-semibold">Tags</th>
-              <th className="py-3 px-4 text-left font-semibold">Owner</th>
-              <th className="py-3 px-4 text-left font-semibold">Contact</th>
-              <th className="py-3 px-4 text-left font-semibold">Status</th>
+              <th className="py-3 px-4 text-left ">Name</th>
+              <th className="py-3 px-4 text-left ">Email</th>
+              <th className="py-3 px-4 text-left ">Tags</th>
+              <th className="py-3 px-4 text-left ">Owner</th>
+              <th className="py-3 px-4 text-left ">Contact</th>
+              <th className="py-3 px-4 text-left ">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -240,7 +240,7 @@ function CompaniesTable({ rows }) {
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <CompanyLogo name={r.name} color={r.color} />
-                    <span className="text-gray-800 font-medium">{r.name}</span>
+                    <span className="text-gray-800  ">{r.name}</span>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-gray-600">{r.email}</td>
@@ -270,9 +270,9 @@ function CompaniesTable({ rows }) {
         </table>
       </div>
 
-      <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+      <div className="flex items-center justify-between mt-4 text-xs  text-gray-600">
         <div>
-          Show <select className="border border-gray-300 rounded px-2 py-1 text-sm inline-block" defaultValue="10">
+          Show <select className="border border-gray-300 rounded p-1  text-xs  inline-block" defaultValue="10">
             <option value="10">10</option>
             <option value="25">25</option>
             <option value="50">50</option>
@@ -309,17 +309,17 @@ export default function CompanyReports() {
         <aside className="w-56 bg-white border-r border-gray-200 overflow-y-auto">
           <div className="p-4">
             <div className="flex items-center gap-2 mb-8">
-              <div className="text-2xl font-bold text-teal-600">Preadmin</div>
+              <div className="text-2xl  text-teal-600">Preadmin</div>
             </div>
 
-            <nav className="space-y-0.5 text-sm">
-              <div className="px-3 py-2 text-xs font-semibold uppercase text-gray-400 tracking-wide">Main Menu</div>
+            <nav className="space-y-0.5 text-xs ">
+              <div className="px-3 py-2 text-xs   text-[#1F2020] tracking-wide">Main Menu</div>
               <div className="px-3 py-2 rounded text-gray-700 hover:bg-gray-100 cursor-pointer">Dashboard</div>
               <div className="px-3 py-2 rounded text-gray-700 hover:bg-gray-100 cursor-pointer">Applications</div>
               <div className="px-3 py-2 rounded text-gray-700 hover:bg-gray-100 cursor-pointer">Super Admin</div>
               <div className="px-3 py-2 rounded text-gray-700 hover:bg-gray-100 cursor-pointer">Layouts</div>
 
-              <div className="px-3 py-3 text-xs font-semibold uppercase text-gray-400 tracking-wide">CRM</div>
+              <div className="px-3 py-3 text-xs   text-[#1F2020] tracking-wide">CRM</div>
               <div className="px-3 py-2 rounded text-gray-700 hover:bg-gray-100 cursor-pointer">Contacts</div>
               <div className="px-3 py-2 rounded text-gray-700 hover:bg-gray-100 cursor-pointer">Companies</div>
               <div className="px-3 py-2 rounded text-gray-700 hover:bg-gray-100 cursor-pointer">Deals</div>
@@ -331,10 +331,10 @@ export default function CompanyReports() {
         </aside>
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between p-2  bg-white border-b border-gray-200">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-800">
-                Company Reports <span className="ml-3 inline-block bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded">125</span>
+              <h1 className="text-2xl  text-gray-800">
+                Company Reports <span className="ml-3 inline-block bg-red-100 text-red-700 text-xs  px-3 py-1 rounded">125</span>
               </h1>
               <p className="text-xs text-gray-500 mt-1">
                 <span className="hover:text-gray-700 cursor-pointer">Home</span> &gt; <span>Company Reports</span>
@@ -347,13 +347,13 @@ export default function CompanyReports() {
           </div>
 
           <div className="flex-1 overflow-auto px-6 py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
               <div className="lg:col-span-2">
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="bg-white border border-gray-200 rounded  p-2">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-gray-800">Companies By Year</h3>
+                    <h3 className="text-xs   text-gray-800">Companies By Year</h3>
                     <div className="flex items-center gap-2">
-                      <select className="border border-gray-300 rounded px-2 py-1 text-sm bg-white">
+                      <select className="border border-gray-300 rounded p-1  text-xs  bg-white">
                         <option>2025</option>
                       </select>
                       <button className="p-1 text-gray-600 hover:bg-gray-100 rounded">⋯</button>
@@ -364,10 +364,10 @@ export default function CompanyReports() {
               </div>
 
               <div>
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="bg-white border border-gray-200 rounded  p-2">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-gray-800">Contacts By Source</h3>
-                    <select className="border border-gray-300 rounded px-2 py-1 text-sm bg-white">
+                    <h3 className="text-xs   text-gray-800">Contacts By Source</h3>
+                    <select className="border border-gray-300 rounded p-1  text-xs  bg-white">
                       <option>2025</option>
                     </select>
                   </div>
@@ -376,23 +376,23 @@ export default function CompanyReports() {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div className="bg-white border border-gray-200 rounded  p-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div className="flex items-center gap-3">
-                  <input placeholder="Search" className="border border-gray-300 rounded px-3 py-2 text-sm w-64" />
-                  <button className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">Filter</button>
+                  <input placeholder="Search" className="border border-gray-300 rounded px-3 py-2 text-xs  w-64" />
+                  <button className="px-3 py-2 border border-gray-300 rounded text-xs  text-gray-700 hover:bg-gray-50">Filter</button>
                   <span className="text-xs text-gray-500">1 Dec 25 - 1 Dec 25</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">Sort By</button>
-                  <button className="px-3 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:bg-gray-50">Manage Columns</button>
+                  <button className="px-3 py-2 border border-gray-300 rounded text-xs  text-gray-700 hover:bg-gray-50">Sort By</button>
+                  <button className="px-3 py-2 border border-gray-300 rounded text-xs  text-gray-700 hover:bg-gray-50">Manage Columns</button>
                 </div>
               </div>
 
               <CompaniesTable rows={companyReportData.companies} />
             </div>
 
-            <footer className="mt-8 text-xs text-gray-400">
+            <footer className="mt-8 text-xs text-[#1F2020]">
               Copyright © 2025 <span className="text-teal-600">Preadmin</span>
             </footer>
           </div>

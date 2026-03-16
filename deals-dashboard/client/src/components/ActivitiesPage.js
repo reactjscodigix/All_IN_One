@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MoreVertical, Download, Search, Phone, Mail, CheckSquare, Calendar, Video, FileUp, Receipt, Calculator, Star, TrendingUp, Building2, User, Edit2, FileText } from 'lucide-react';
 import { activitiesAPI } from '../services/api';
 
 const ActivitiesPage = () => {
+  const navigate = useNavigate();
   const [selectedActivities, setSelectedActivities] = useState([]);
   const [sortBy, setSortBy] = useState('newest');
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -134,7 +136,9 @@ const ActivitiesPage = () => {
           title: activity.title || 'Activity',
           type: activity.type || activity.activity_source || 'Task',
           activitySource: activity.activity_source || 'Activity',
-          dueDate: activity.scheduled_date ? new Date(activity.scheduled_date).toLocaleString() : 'No date',
+          dueDate: activity.scheduled_date 
+            ? `${new Date(activity.scheduled_date).toLocaleDateString()} ${activity.scheduled_time || ''}`.trim()
+            : 'No date',
           owner: activity.assigned_to_name || activity.created_by_name || 'System',
           ownerInitial: (activity.assigned_to_name || activity.created_by_name || 'S')[0].toUpperCase(),
           ownerBg: ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500', 'bg-red-500', 'bg-yellow-500'][index % 7],
@@ -240,7 +244,7 @@ const ActivitiesPage = () => {
 
   if (loading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="p-2 bg-[#F7F8F9] min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading activities...</p>
@@ -250,10 +254,10 @@ const ActivitiesPage = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       {error && (
         <div className="mb-6 max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-red-50 border border-red-200 rounded p-2  ">
             <p className="text-red-700 text-sm">❌ {error}</p>
           </div>
         </div>
@@ -264,25 +268,25 @@ const ActivitiesPage = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <h1 className="text-5xl font-bold text-gray-900">Activities</h1>
-              <span className="bg-red-100 text-red-600 text-xs font-bold px-3 py-1 rounded-full">
+              <h1 className="text-xl  text-gray-900">Activities</h1>
+              <span className="bg-red-100 text-red  text-xs  px-3 py-1 rounded-full">
                 {activities.length}
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <button className="hover:text-gray-900 font-medium">Home</button>
-              <span className="text-gray-400">›</span>
+              <button className="hover:text-gray-900  ">Home</button>
+              <span className="text-[#1F2020]">›</span>
               <span className="text-gray-600">Activities</span>
             </div>
           </div>
 
           {/* Top Right Buttons */}
           <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium">
+            <button className="flex items-center gap-2 p-2  text-gray-700 hover:bg-gray-100 rounded  text-sm  ">
               <Download size={16} />
               Export
             </button>
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700">
+            <button className="flex items-center gap-2 p-2  bg-red-600 text-white rounded  text-xs  hover:bg-red-700">
               + Add New Activity
             </button>
           </div>
@@ -291,7 +295,7 @@ const ActivitiesPage = () => {
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+            <Search className="absolute left-3 top-3 text-[#1F2020]" size={18} />
             <input
               type="text"
               placeholder="Search"
@@ -300,104 +304,104 @@ const ActivitiesPage = () => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded  focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
         </div>
 
         {/* Action Bar */}
-        <div className="mb-6 bg-white p-4 rounded-lg shadow-sm">
+        <div className="mb-6 bg-white p-2 rounded  shadow-sm">
           <div className="flex items-center gap-2 mb-4 flex-wrap">
-            <span className="text-sm font-bold text-gray-700 mr-2">Filter by:</span>
+            <span className="text-sm  text-gray-700 mr-2">Filter by:</span>
             <button
               onClick={() => setActiveFilter('all')}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition ${activeFilter === 'all' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   transition ${activeFilter === 'all' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               All Activities
             </button>
             <button
               onClick={() => setActiveFilter('Call')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Call' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Call' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <Phone size={14} /> Calls
             </button>
             <button
               onClick={() => setActiveFilter('Note')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Note' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Note' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <Edit2 size={14} /> Notes
             </button>
             <button
               onClick={() => setActiveFilter('Message Sent')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Message Sent' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Message Sent' ? 'bg-yellow-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <Mail size={14} /> Messages
             </button>
             <button
               onClick={() => setActiveFilter('File Uploaded')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'File Uploaded' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'File Uploaded' ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <FileUp size={14} /> Files
             </button>
             <button
               onClick={() => setActiveFilter('Invoice Created')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Invoice Created' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Invoice Created' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <Receipt size={14} /> Invoices
             </button>
             <button
               onClick={() => setActiveFilter('Contact Created')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Contact Created' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Contact Created' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <User size={14} /> Contacts
             </button>
             <button
               onClick={() => setActiveFilter('Company Created')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Company Created' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Company Created' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <Building2 size={14} /> Companies
             </button>
             <button
               onClick={() => setActiveFilter('Deal Created')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Deal Created' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Deal Created' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <TrendingUp size={14} /> Deals
             </button>
             <button
               onClick={() => setActiveFilter('Lead Created')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Lead Created' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Lead Created' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <Star size={14} /> Leads
             </button>
             <button
               onClick={() => setActiveFilter('Estimation Created')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Estimation Created' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Estimation Created' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <Calculator size={14} /> Estimations
             </button>
             <button
               onClick={() => setActiveFilter('Proposal Sent')}
-              className={`px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1 transition ${activeFilter === 'Proposal Sent' ? 'bg-cyan-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded text-xs   flex items-center gap-1 transition ${activeFilter === 'Proposal Sent' ? 'bg-cyan-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
             >
               <FileText size={14} /> Proposals
             </button>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-2 border-t border-gray-200">
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
             <div className="relative">
-              <button className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-sm font-medium">
+              <button className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded  text-sm  ">
                 Sort By ▼
               </button>
             </div>
 
-            <button className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm font-medium">
+            <button className="px-3 py-2 text-white  hover:bg-blue-50 rounded  text-sm  ">
               Manage Columns
             </button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white rounded  shadow-sm overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
@@ -409,13 +413,13 @@ const ActivitiesPage = () => {
                     className="rounded cursor-pointer"
                   />
                 </th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Title</th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Type</th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Source</th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Due Date</th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Owner</th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Created At</th>
-                <th className="px-6 py-5 text-left text-xs font-bold text-gray-900 uppercase">Action</th>
+                <th className="px-6 py-5 text-left text-xs  text-gray-900 ">Title</th>
+                <th className="px-6 py-5 text-left text-xs  text-gray-900 ">Type</th>
+                <th className="px-6 py-5 text-left text-xs  text-gray-900 ">Source</th>
+                <th className="px-6 py-5 text-left text-xs  text-gray-900 ">Due Date</th>
+                <th className="px-6 py-5 text-left text-xs  text-gray-900 ">Owner</th>
+                <th className="px-6 py-5 text-left text-xs  text-gray-900 ">Created At</th>
+                <th className="px-6 py-5 text-left text-xs  text-gray-900 ">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -432,29 +436,54 @@ const ActivitiesPage = () => {
                           className="rounded cursor-pointer"
                         />
                       </td>
-                      <td className="px-6 py-5 text-sm text-gray-600 max-w-xs truncate">{activity.title}</td>
+                      <td className="px-6 py-5 text-sm text-gray-600 max-w-xs truncate">
+                        <div className="flex flex-col">
+                          <span>{activity.title}</span>
+                          {activity.meeting_link && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Always use internal video call page for recording and AI analysis
+                                let code = activity.meeting_link;
+                                if (activity.meeting_link?.includes('meet.google.com/')) {
+                                  code = activity.meeting_link.split('meet.google.com/').pop().split('?')[0];
+                                } else if (activity.meeting_link?.includes('zoom.us/')) {
+                                  code = activity.meeting_link.split('/').pop().split('?')[0];
+                                } else if (activity.meeting_link?.includes('/')) {
+                                  code = activity.meeting_link.split('/').pop();
+                                }
+                                navigate(`/video-call/${code || activity.id}`);
+                              }}
+                              className="text-[10px] text-blue-600 hover:underline flex items-center gap-1 w-fit"
+                              title="Join Meeting"
+                            >
+                              Join Meeting
+                            </button>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-5">
                         <span
-                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold ${activityColor.bg} ${activityColor.text}`}
+                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs  ${activityColor.bg} ${activityColor.text}`}
                         >
                           {activity.type}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-xs text-gray-500 font-medium">
+                      <td className="px-6 py-5 text-xs text-gray-500  ">
                         {activity.activitySource || activity.type}
                       </td>
                       <td className="px-6 py-5 text-sm text-gray-600">{activity.dueDate}</td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 ${activity.ownerBg} rounded-full flex items-center justify-center text-white text-xs font-bold`}>
+                          <div className={`w-8 h-8 ${activity.ownerBg} rounded-full flex items-center justify-center text-white text-xs `}>
                             {activity.ownerInitial.substring(0, 1)}
                           </div>
-                          <span className="text-sm text-gray-900 font-medium">{activity.owner}</span>
+                          <span className="text-sm text-gray-900  ">{activity.owner}</span>
                         </div>
                       </td>
                       <td className="px-6 py-5 text-sm text-gray-600">{activity.createdAt}</td>
                       <td className="px-6 py-5 text-center">
-                        <button className="text-gray-400 hover:text-gray-600 p-1">
+                        <button className="text-[#1F2020] hover:text-gray-600 p-1">
                           <MoreVertical size={16} />
                         </button>
                       </td>
@@ -482,7 +511,7 @@ const ActivitiesPage = () => {
                 setItemsPerPage(Number(e.target.value));
                 setCurrentPage(1);
               }}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-1.5 border border-gray-300 rounded  text-sm   focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -495,7 +524,7 @@ const ActivitiesPage = () => {
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              className="px-3 py-2 border border-gray-300 rounded  text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50"
             >
               ‹
             </button>
@@ -503,7 +532,7 @@ const ActivitiesPage = () => {
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                className={`px-3 py-2 rounded  text-sm   ${
                   currentPage === page
                     ? 'bg-red-600 text-white'
                     : 'border border-gray-300 text-gray-600 hover:bg-gray-100'
@@ -515,7 +544,7 @@ const ActivitiesPage = () => {
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              className="px-3 py-2 border border-gray-300 rounded  text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50"
             >
               ›
             </button>

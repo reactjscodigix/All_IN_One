@@ -56,12 +56,12 @@ const MembershipPlansPage = () => {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">Membership Plans</h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <h1 className="text-2xl  text-gray-900">Membership Plans</h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs   bg-red-100 text-red-800">
                 152
               </span>
             </div>
@@ -69,17 +69,17 @@ const MembershipPlansPage = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="relative group">
-              <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2 transition-colors">
+              <button className="bg-white border border-gray-300 text-gray-700 p-2  rounded  text-xs    hover:bg-gray-50 flex items-center gap-2 transition-colors">
                 <Download size={16} />
                 Export
                 <ChevronDown size={16} />
               </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-10">
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">Export as PDF</button>
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-t border-gray-200">Export as Excel</button>
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded  shadow-lg hidden group-hover:block z-10">
+                <button className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700">Export as PDF</button>
+                <button className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 border-t border-gray-200">Export as Excel</button>
               </div>
             </div>
-            <button className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2">
+            <button className="bg-red-600 text-white p-2  rounded  text-xs    hover:bg-red-700 transition-colors flex items-center gap-2">
               + Add Membership
             </button>
           </div>
@@ -87,23 +87,23 @@ const MembershipPlansPage = () => {
       </div>
 
       {/* Search & Billing Toggle */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between mb-4">
           <div className="relative flex-1 max-w-xs">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
             <input
               type="text"
               placeholder="Search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 text-sm bg-white w-full max-w-xs"
+              className="pl-9 pr-4 py-2 border border-gray-300 rounded  focus:outline-none focus:border-gray-400 text-xs  bg-white w-full max-w-xs"
             />
           </div>
         </div>
         
         {/* Billing Toggle */}
         <div className="flex items-center gap-4">
-          <span className="text-sm font-medium text-gray-700">Yearly</span>
+          <span className="text-xs    text-gray-700">Yearly</span>
           <button
             onClick={() => setBillingMode(billingMode === 'yearly' ? 'monthly' : 'yearly')}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -116,7 +116,7 @@ const MembershipPlansPage = () => {
               }`}
             />
           </button>
-          <span className="text-sm font-medium text-gray-700">Monthly</span>
+          <span className="text-xs    text-gray-700">Monthly</span>
         </div>
       </div>
 
@@ -124,13 +124,13 @@ const MembershipPlansPage = () => {
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((plan) => (
-            <div key={plan.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+            <div key={plan.id} className="bg-white rounded  border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
               {/* Plan Header */}
               <div className="p-6 border-b border-gray-200">
-                <h3 className="text-center text-gray-600 text-sm font-medium mb-2">{plan.name}</h3>
-                <p className="text-center text-3xl font-bold text-gray-900">
+                <h3 className="text-center text-gray-600 text-xs    mb-2">{plan.name}</h3>
+                <p className="text-center text-xl  text-gray-900">
                   ${plan.price}
-                  <span className="text-sm font-normal text-gray-600 ml-1">/ month</span>
+                  <span className="text-xs  font-normal text-gray-600 ml-1">/ month</span>
                 </p>
               </div>
 
@@ -140,14 +140,14 @@ const MembershipPlansPage = () => {
                   <div key={idx} className="flex items-center gap-3">
                     {feature.included ? (
                       <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-                        <span className="text-green-700 text-xs font-bold">✓</span>
+                        <span className="text-green-700 text-xs ">✓</span>
                       </div>
                     ) : (
                       <div className="flex-shrink-0 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">−</span>
+                        <span className="text-[#1F2020] text-xs">−</span>
                       </div>
                     )}
-                    <span className={`text-sm ${feature.included ? 'text-gray-700' : 'text-gray-400'}`}>
+                    <span className={`text-xs  ${feature.included ? 'text-gray-700' : 'text-[#1F2020]'}`}>
                       {feature.name}
                     </span>
                   </div>
@@ -156,7 +156,7 @@ const MembershipPlansPage = () => {
 
               {/* Choose Button */}
               <div className="p-6 border-t border-gray-200">
-                <button className="w-full bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">
+                <button className="w-full bg-red-600 text-white py-2 rounded    hover:bg-red-700 transition-colors">
                   Choose
                 </button>
               </div>
@@ -169,9 +169,9 @@ const MembershipPlansPage = () => {
       <div className="text-center text-xs text-gray-500 py-6 border-t border-gray-200 bg-white">
         <span>
           Copyright © 2025{' '}
-          <span className="text-red-600 font-medium">Preadmin</span>
+          <span className="text-red   ">Preadmin</span>
         </span>
-        <div className="flex gap-4 justify-center mt-2">
+        <div className="flex gap-2 justify-center mt-2">
           <span className="cursor-pointer hover:text-gray-700">About</span>
           <span className="cursor-pointer hover:text-gray-700">Terms</span>
           <span className="cursor-pointer hover:text-gray-700">Contact Us</span>

@@ -50,7 +50,7 @@ const ProjectIcon = ({ name, index }) => {
   const colors = ['#6366f1', '#0ea5e9', '#22c55e', '#ff9800', '#f43f5e', '#8b5cf6', '#ec4899', '#14b8a6'];
   const firstLetter = name ? name.charAt(0).toUpperCase() : 'P';
   return (
-    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold" style={{ backgroundColor: colors[index % colors.length] }}>
+    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs " style={{ backgroundColor: colors[index % colors.length] }}>
       {firstLetter}
     </div>
   );
@@ -58,12 +58,12 @@ const ProjectIcon = ({ name, index }) => {
 
 const PriorityBadge = ({ priority }) => {
   const map = {
-    High: 'bg-red-100 text-red-600',
+    High: 'bg-red-100 text-red ',
     Medium: 'bg-yellow-100 text-yellow-600',
     Low: 'bg-green-100 text-green-600',
   };
   return (
-    <span className={`text-xs font-semibold px-2 py-1 rounded ${map[priority] || 'bg-gray-100 text-gray-600'}`}>
+    <span className={`text-xs  p-1  rounded ${map[priority] || 'bg-gray-100 text-gray-600'}`}>
       {priority}
     </span>
   );
@@ -75,7 +75,7 @@ const StatusPill = ({ status }) => {
     Inactive: 'bg-red-500 text-white',
   };
   return (
-    <span className={`text-xs font-semibold px-2 py-1 rounded ${map[status] || 'bg-gray-500 text-white'}`}>
+    <span className={`text-xs  p-1  rounded ${map[status] || 'bg-gray-500 text-white'}`}>
       {status}
     </span>
   );
@@ -134,7 +134,7 @@ function ProjectsTable({ rows }) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
             <input
               type="text"
               placeholder="Search"
@@ -143,40 +143,40 @@ function ProjectsTable({ rows }) {
                 setQuery(e.target.value);
                 setPage(1);
               }}
-              className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 text-sm bg-white"
+              className="pl-9 pr-4 py-2 border border-gray-300 rounded  focus:outline-none focus:border-gray-400 text-xs  bg-white"
             />
           </div>
-          <button className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+          <button className="px-3 py-2 border border-gray-300 rounded  text-gray-600 text-xs    hover:bg-gray-50 flex items-center gap-2">
             <Filter size={16} /> Filter
           </button>
-          <div className="text-sm text-gray-600">
+          <div className="text-xs  text-gray-600">
             <span>1 Dec 25 - 1 Dec 25</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+          <button className="px-3 py-2 border border-gray-300 rounded  text-gray-600 text-xs    hover:bg-gray-50 flex items-center gap-2">
             Sort By <ChevronDown size={14} />
           </button>
-          <button className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50">
+          <button className="px-3 py-2 border border-gray-300 rounded  text-gray-600 text-xs    hover:bg-gray-50">
             Manage Columns
           </button>
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs ">
           <thead>
             <tr className="text-xs text-gray-600 bg-gray-50 border-b border-gray-200">
               <th className="py-3 px-4 text-left w-8">
                 <input type="checkbox" className="cursor-pointer" />
               </th>
-              <th className="py-3 px-4 text-left font-semibold">Name</th>
-              <th className="py-3 px-4 text-left font-semibold">Client</th>
-              <th className="py-3 px-4 text-left font-semibold">Priority</th>
-              <th className="py-3 px-4 text-left font-semibold">Start Date</th>
-              <th className="py-3 px-4 text-left font-semibold">End Date</th>
-              <th className="py-3 px-4 text-left font-semibold">Pipeline Stage</th>
-              <th className="py-3 px-4 text-left font-semibold">Status</th>
+              <th className="py-3 px-4 text-left ">Name</th>
+              <th className="py-3 px-4 text-left ">Client</th>
+              <th className="py-3 px-4 text-left ">Priority</th>
+              <th className="py-3 px-4 text-left ">Start Date</th>
+              <th className="py-3 px-4 text-left ">End Date</th>
+              <th className="py-3 px-4 text-left ">Pipeline Stage</th>
+              <th className="py-3 px-4 text-left ">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -188,7 +188,7 @@ function ProjectsTable({ rows }) {
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <ProjectIcon name={r.name} index={i} />
-                    <span className="text-gray-800 font-medium">{r.name}</span>
+                    <span className="text-gray-800  ">{r.name}</span>
                   </div>
                 </td>
                 <td className="py-3 px-4">
@@ -217,10 +217,10 @@ function ProjectsTable({ rows }) {
         </table>
       </div>
 
-      <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+      <div className="flex items-center justify-between mt-4 text-xs  text-gray-600">
         <div>
           Show{' '}
-          <select className="border border-gray-300 rounded px-2 py-1 text-sm inline-block" defaultValue="10">
+          <select className="border border-gray-300 rounded p-1  text-xs  inline-block" defaultValue="10">
             <option value="10">10</option>
             <option value="25">25</option>
             <option value="50">50</option>
@@ -235,7 +235,7 @@ function ProjectsTable({ rows }) {
           >
             <ChevronLeft size={16} />
           </button>
-          <button className="px-3 py-1 bg-red-600 text-white rounded font-medium text-sm">{page}</button>
+          <button className="px-3 py-1 bg-red-600 text-white rounded   text-xs ">{page}</button>
           <button
             onClick={() => setPage(Math.min(pages, page + 1))}
             disabled={page === pages}
@@ -305,18 +305,18 @@ export default function ProjectReportsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-3xl font-bold text-gray-900">Project Reports</h1>
-              <span className="bg-red-100 text-red-600 px-3 py-1 rounded text-sm font-bold">{projects.length}</span>
+              <h1 className="text-xl  text-gray-900">Project Reports</h1>
+              <span className="bg-red-100 text-red  px-3 py-1 rounded text-xs  ">{projects.length}</span>
             </div>
-            <div className="flex items-center gap-1 text-sm mt-1">
-              <button className="text-orange-500 hover:text-orange-600 font-medium bg-transparent border-none cursor-pointer p-0">
+            <div className="flex items-center gap-1 text-xs  mt-1">
+              <button className="text-orange-500 hover:text-orange-600   bg-transparent border-none cursor-pointer p-0">
                 Home
               </button>
               <span className="text-gray-300">/</span>
               <span className="text-gray-600">Project Reports</span>
             </div>
           </div>
-          <button className="bg-red-600 text-white px-4 py-2 rounded font-medium flex items-center gap-2 hover:bg-red-700 transition text-sm">
+          <button className="bg-red-600 text-white p-2  rounded   flex items-center gap-2 hover:bg-red-700 transition text-xs ">
             <Download size={16} /> Download Report
           </button>
         </div>
@@ -324,17 +324,17 @@ export default function ProjectReportsPage() {
 
       <div className="px-6 py-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded  border border-gray-200 shadow-smp-3 ">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Projects By Year</h2>
-              <button className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
+              <h2 className="text-md  text-gray-900">Projects By Year</h2>
+              <button className="text-[#1F2020] hover:text-gray-600 p-1 rounded hover:bg-gray-100">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
                 </svg>
               </button>
             </div>
             <div className="mb-4">
-              <select className="px-3 py-1 border border-gray-300 rounded text-sm bg-white">
+              <select className="px-3 py-1 border border-gray-300 rounded text-xs  bg-white">
                 <option>2025</option>
                 <option>2024</option>
                 <option>2023</option>
@@ -343,11 +343,11 @@ export default function ProjectReportsPage() {
             <ProjectsByYearChart data={projectReportData.yearLine} />
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+          <div className="bg-white rounded  border border-gray-200 shadow-smp-3 ">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Projects By Stage</h2>
+              <h2 className="text-xs  text-gray-900">Projects By Stage</h2>
               <div className="relative">
-                <button className="text-red-600 bg-red-50 p-2 rounded-full hover:bg-red-100">
+                <button className="text-red  bg-red-50 p-2 rounded-full hover:bg-red-100">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="2" />
                     <circle cx="19" cy="12" r="2" />
@@ -357,7 +357,7 @@ export default function ProjectReportsPage() {
               </div>
             </div>
             <div className="mb-4">
-              <select className="px-3 py-1 border border-gray-300 rounded text-sm bg-white">
+              <select className="px-3 py-1 border border-gray-300 rounded text-xs  bg-white">
                 <option>2025</option>
                 <option>2024</option>
                 <option>2023</option>
@@ -367,7 +367,7 @@ export default function ProjectReportsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="bg-white rounded  border border-gray-200 shadow-smp-3 ">
           {loading ? (
             <div className="text-center py-8 text-gray-500">Loading projects...</div>
           ) : error ? (
@@ -380,9 +380,9 @@ export default function ProjectReportsPage() {
         </div>
       </div>
 
-      <footer className="px-6 py-4 text-xs text-gray-500 text-center border-t border-gray-200 bg-white mt-6">
+      <footer className="p-2  text-xs text-gray-500 text-center border-t border-gray-200 bg-white mt-6">
         <p>
-          Copyright © 2025 <span className="text-red-600 font-semibold">Preadmin</span>
+          Copyright © 2025 <span className="text-red  ">Preadmin</span>
         </p>
       </footer>
     </div>

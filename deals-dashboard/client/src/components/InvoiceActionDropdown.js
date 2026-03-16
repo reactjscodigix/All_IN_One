@@ -55,54 +55,54 @@ const InvoiceActionDropdown = ({ invoice, onEdit, onDelete, onPreview, onStatusC
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-md transition flex-shrink-0 text-lg leading-none"
+        className="text-[#1F2020] hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded  transition flex-shrink-0 text-lg leading-none"
       >
         ⋮
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-48 bg-white border border-[#E5E7EB] rounded-lg shadow-lg z-20">
+        <div className="absolute right-0 mt-1 w-48 bg-white border border-[#E5E7EB] rounded  shadow-lg z-20">
           <button
             onClick={handlePreview}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
           >
             <Eye size={14} strokeWidth={2} />
             View Invoices
           </button>
           <button
             onClick={handleEdit}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
           >
             <Edit2 size={14} strokeWidth={2} />
             Edit
           </button>
           <button
             onClick={handlePrint}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
           >
             <Printer size={14} strokeWidth={2} />
             Print
           </button>
 
           <div className="border-t border-[#E5E7EB] py-1">
-            <div className="px-4 py-1.5 text-xs font-semibold text-gray-600">Mark as</div>
+            <div className="px-4 py-1.5 text-xs  text-gray-600">Mark as</div>
             <button
               onClick={() => handleStatusChange('Paid')}
-              className="w-full flex items-center gap-2 px-4 py-2 text-[13px] text-gray-700 hover:bg-green-50 transition"
+              className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-green-50 transition"
             >
               <CheckCircle size={14} strokeWidth={2} className="text-green-600" />
               Mark as Paid
             </button>
             <button
               onClick={() => handleStatusChange('Partially Paid')}
-              className="w-full flex items-center gap-2 px-4 py-2 text-[13px] text-gray-700 hover:bg-yellow-50 transition"
+              className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-yellow-50 transition"
             >
               <AlertCircle size={14} strokeWidth={2} className="text-yellow-600" />
               Mark as Partially Paid
             </button>
             <button
               onClick={() => handleStatusChange('Unpaid')}
-              className="w-full flex items-center gap-2 px-4 py-2 text-[13px] text-gray-700 hover:bg-orange-50 transition border-b border-[#E5E7EB]"
+              className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-orange-50 transition border-b border-[#E5E7EB]"
             >
               <XCircle size={14} strokeWidth={2} className="text-orange-600" />
               Mark as Unpaid
@@ -111,7 +111,7 @@ const InvoiceActionDropdown = ({ invoice, onEdit, onDelete, onPreview, onStatusC
 
           <button
             onClick={handleSend}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
           >
             <Send size={14} strokeWidth={2} />
             Send to
@@ -119,7 +119,7 @@ const InvoiceActionDropdown = ({ invoice, onEdit, onDelete, onPreview, onStatusC
 
           <button
             onClick={handleDelete}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 transition"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-red  hover:bg-red-50 transition"
           >
             <Trash2 size={14} strokeWidth={2} />
             Delete

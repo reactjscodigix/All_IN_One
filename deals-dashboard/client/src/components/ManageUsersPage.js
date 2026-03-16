@@ -12,6 +12,7 @@ import {
   X,
   CheckCircle,
   AlertCircle,
+  Trash2,
 } from 'lucide-react';
 import AddNewUserModal from './AddNewUserModal';
 import EditUserModal from './EditUserModal';
@@ -168,6 +169,7 @@ const ManageUsersPage = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [appliedFilters, setAppliedFilters] = useState({
@@ -339,34 +341,57 @@ const ManageUsersPage = () => {
     setIsEditModalOpen(true);
   };
 
+  const handleBulkDelete = () => {
+    if (selectedUsers.size === 0) return;
+    setIsBulkDelete(true);
+    setUserToDelete(null);
+    setIsDeleteModalOpen(true);
+  };
+
   const handleDeleteUser = (user) => {
+    setIsBulkDelete(false);
     setUserToDelete(user);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
-    if (!userToDelete) return;
+    if (!isBulkDelete && !userToDelete) return;
+    if (isBulkDelete && selectedUsers.size === 0) return;
     
     setIsDeleting(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${userToDelete.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
+      if (isBulkDelete) {
+        const userIds = Array.from(selectedUsers);
+        // Assuming the API supports multiple delete or we loop
+        for (const userId of userIds) {
+          const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          if (!response.ok) throw new Error(`Failed to delete user ${userId}`);
         }
-      });
+        setUsers(prev => prev.filter(u => !selectedUsers.has(u.id)));
+        showMessage('success', `${selectedUsers.size} users deleted successfully!`);
+        setSelectedUsers(new Set());
+      } else {
+        const response = await fetch(`http://localhost:5000/api/users/${userToDelete.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete user');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete user');
+        }
+
+        setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+        showMessage('success', `User "${userToDelete.name}" deleted successfully!`);
       }
-
-      setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
-      showMessage('success', `User "${userToDelete.name}" deleted successfully!`);
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
+      setIsBulkDelete(false);
     } catch (err) {
-      showMessage('error', err.message || 'Failed to delete user');
+      showMessage('error', err.message || 'Failed to delete user(s)');
       console.error('Delete error:', err);
     } finally {
       setIsDeleting(false);
@@ -376,6 +401,7 @@ const ManageUsersPage = () => {
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
     setUserToDelete(null);
+    setIsBulkDelete(false);
   };
 
   const handleEditSuccess = (updatedUser) => {
@@ -458,22 +484,22 @@ const ManageUsersPage = () => {
     <div className="bg-gray-50 min-h-screen">
       {/* Message Toast */}
       {message.text && (
-        <div className={`fixed top-4 right-4 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg z-40 ${
+        <div className={`fixed top-2 right-4 flex items-center gap-3 px-4 py-3 rounded  shadow-lg z-40 ${
           message.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'
         }`}>
           {message.type === 'success' ? (
             <CheckCircle size={20} className="text-green-600" />
           ) : (
-            <AlertCircle size={20} className="text-red-600" />
+            <AlertCircle size={20} className="text-red " />
           )}
-          <span className={`text-sm font-medium ${
+          <span className={`text-xs    ${
             message.type === 'success' ? 'text-green-700' : 'text-red-700'
           }`}>
             {message.text}
           </span>
           <button
             onClick={() => setMessage({ type: '', text: '' })}
-            className={`ml-2 ${message.type === 'success' ? 'text-green-600 hover:text-green-800' : 'text-red-600 hover:text-red-800'}`}
+            className={`ml-2 ${message.type === 'success' ? 'text-green-600 hover:text-green-800' : 'text-red  hover:text-red-800'}`}
           >
             <X size={16} />
           </button>
@@ -481,12 +507,12 @@ const ManageUsersPage = () => {
       )}
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">Manage Users</h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <h1 className="text-2xl  text-gray-900">Manage Users</h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs   bg-red-100 text-red-800">
                 152
               </span>
             </div>
@@ -494,7 +520,7 @@ const ManageUsersPage = () => {
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+            className="bg-red-600 text-white p-2  rounded  text-xs    hover:bg-red-700 transition-colors flex items-center gap-2"
           >
             <span className="text-lg">⊕</span>
             Add User
@@ -506,11 +532,11 @@ const ManageUsersPage = () => {
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Filter Bar */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="bg-white rounded  shadow-sm border border-gray-200 p-2 mb-6">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3 flex-wrap relative">
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
                   <input
                     type="text"
                     placeholder="Search"
@@ -519,13 +545,13 @@ const ManageUsersPage = () => {
                       setSearchQuery(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 text-sm bg-white w-64"
+                    className="pl-9 pr-4 py-2 border border-gray-300 rounded  focus:outline-none focus:border-gray-400 text-xs  bg-white w-64"
                   />
                 </div>
                 <div className="relative">
                   <button 
                     onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
+                    className={`px-3 py-2 rounded  text-xs    flex items-center gap-2 transition-colors ${
                       Object.values(appliedFilters).some(arr => arr.length > 0)
                         ? 'bg-red-600 text-white hover:bg-red-700 border border-red-600'
                         : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -546,7 +572,7 @@ const ManageUsersPage = () => {
                 <div className="relative">
                   <button
                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                    className="flex items-center gap-2 text-sm text-gray-600 hover:bg-gray-50 px-2 py-1 rounded transition-colors"
+                    className="flex items-center gap-2 text-xs  text-gray-600 hover:bg-gray-50 p-1  rounded transition-colors"
                   >
                     <span>📅</span>
                     <span>{selectedDateRange.label}</span>
@@ -561,24 +587,32 @@ const ManageUsersPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {selectedUsers.size > 0 && (
+                  <button 
+                    onClick={handleBulkDelete}
+                    className="px-3 py-2 bg-red-50 text-red  border border-red-200 rounded  text-xs    hover:bg-red-100 flex items-center gap-2"
+                  >
+                    <Trash2 size={16} /> Delete Selected ({selectedUsers.size})
+                  </button>
+                )}
                 <div className="relative">
                   <button 
                     onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
+                    className="px-3 py-2 border border-gray-300 rounded  text-gray-600 text-xs    hover:bg-gray-50 flex items-center gap-2"
                   >
                     Sort By <ChevronDown size={14} />
                   </button>
                   {isSortDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded  shadow-lg z-20">
                       <button 
                         onClick={() => { setSortBy('newest'); setIsSortDropdownOpen(false); }}
-                        className={`w-full text-left px-4 py-2 text-sm ${sortBy === 'newest' ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`w-full text-left p-2  text-xs  ${sortBy === 'newest' ? 'bg-red-50 text-red   ' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         Newest
                       </button>
                       <button 
                         onClick={() => { setSortBy('oldest'); setIsSortDropdownOpen(false); }}
-                        className={`w-full text-left px-4 py-2 text-sm border-t border-gray-100 ${sortBy === 'oldest' ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`w-full text-left p-2  text-xs  border-t border-gray-100 ${sortBy === 'oldest' ? 'bg-red-50 text-red   ' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         Oldest
                       </button>
@@ -588,21 +622,21 @@ const ManageUsersPage = () => {
                 <div className="relative">
                   <button 
                     onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
+                    className="px-3 py-2 border border-gray-300 rounded  text-gray-600 text-xs    hover:bg-gray-50 flex items-center gap-2"
                   >
                     <Download size={16} /> Export <ChevronDown size={14} />
                   </button>
                   {isExportDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded  shadow-lg z-20">
                       <button 
                         onClick={handleExportPDF}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-100"
+                        className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 border-b border-gray-100"
                       >
                         Export as PDF
                       </button>
                       <button 
                         onClick={handleExportExcel}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
+                        className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700"
                       >
                         Export as Excel
                       </button>
@@ -611,20 +645,20 @@ const ManageUsersPage = () => {
                 </div>
                 <button 
                   onClick={handleRefresh}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50"
+                  className="px-3 py-2 border border-gray-300 rounded  text-gray-600 text-xs    hover:bg-gray-50"
                 >
                   ↻
                 </button>
                 <div className="relative">
                   <button 
                     onClick={() => setIsColumnsDropdownOpen(!isColumnsDropdownOpen)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50"
+                    className="px-3 py-2 border border-gray-300 rounded  text-gray-600 text-xs    hover:bg-gray-50"
                   >
                     ≡
                   </button>
                   {isColumnsDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3">
-                      <div className="text-sm font-semibold text-gray-900 mb-3 px-2">Manage Columns</div>
+                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded  shadow-lg z-20 p-3">
+                      <div className="text-xs   text-gray-900 mb-3 px-2">Manage Columns</div>
                       <div className="space-y-2">
                         {Object.entries(visibleColumns).map(([column, visible]) => (
                           <label key={column} className="flex items-center gap-2 cursor-pointer px-2 hover:bg-gray-50 py-1 rounded">
@@ -634,7 +668,7 @@ const ManageUsersPage = () => {
                               onChange={() => toggleColumnVisibility(column)}
                               className="w-4 h-4 cursor-pointer"
                             />
-                            <span className="text-sm text-gray-700 capitalize">{column === 'lastActivity' ? 'Last Activity' : column}</span>
+                            <span className="text-xs  text-gray-700 capitalize">{column === 'lastActivity' ? 'Last Activity' : column}</span>
                           </label>
                         ))}
                       </div>
@@ -646,9 +680,9 @@ const ManageUsersPage = () => {
           </div>
 
           {/* Users Table */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded  shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs ">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-6 py-3 text-left">
@@ -660,21 +694,21 @@ const ManageUsersPage = () => {
                       />
                     </th>
                     <th className="px-6 py-3 text-left">
-                      <Star size={16} className="text-gray-400" />
+                      <Star size={16} className="text-[#1F2020]" />
                     </th>
-                    {visibleColumns.name && <th className="px-6 py-3 text-left font-semibold text-gray-700">Name</th>}
-                    {visibleColumns.phone && <th className="px-6 py-3 text-left font-semibold text-gray-700">Phone</th>}
-                    {visibleColumns.email && <th className="px-6 py-3 text-left font-semibold text-gray-700">Email</th>}
-                    {visibleColumns.created && <th className="px-6 py-3 text-left font-semibold text-gray-700">Created</th>}
-                    {visibleColumns.lastActivity && <th className="px-6 py-3 text-left font-semibold text-gray-700">Last Activity</th>}
-                    {visibleColumns.status && <th className="px-6 py-3 text-left font-semibold text-gray-700">Status</th>}
-                    {visibleColumns.action && <th className="px-6 py-3 text-left font-semibold text-gray-700">Action</th>}
+                    {visibleColumns.name && <th className="px-6 py-3 text-left  text-gray-700">Name</th>}
+                    {visibleColumns.phone && <th className="px-6 py-3 text-left  text-gray-700">Phone</th>}
+                    {visibleColumns.email && <th className="px-6 py-3 text-left  text-gray-700">Email</th>}
+                    {visibleColumns.created && <th className="px-6 py-3 text-left  text-gray-700">Created</th>}
+                    {visibleColumns.lastActivity && <th className="px-6 py-3 text-left  text-gray-700">Last Activity</th>}
+                    {visibleColumns.status && <th className="px-6 py-3 text-left  text-gray-700">Status</th>}
+                    {visibleColumns.action && <th className="px-6 py-3 text-left  text-gray-700">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedUsers.map((user) => (
                     <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4">
+                      <td className="p-2 ">
                         <input
                           type="checkbox"
                           checked={selectedUsers.has(user.id)}
@@ -682,36 +716,36 @@ const ManageUsersPage = () => {
                           className="cursor-pointer w-4 h-4"
                         />
                       </td>
-                      <td className="px-6 py-4">
-                        <button className="text-gray-400 hover:text-yellow-500 transition-colors">
+                      <td className="p-2 ">
+                        <button className="text-[#1F2020] hover:text-yellow-500 transition-colors">
                           <Star size={16} />
                         </button>
                       </td>
                       {visibleColumns.name && (
-                        <td className="px-6 py-4">
+                        <td className="p-2 ">
                           <div className="flex items-center gap-3">
                             <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full" />
                             <div>
-                              <p className="font-medium text-gray-900">{user.name}</p>
+                              <p className="  text-gray-900">{user.name}</p>
                               <p className="text-xs text-gray-500">{user.role}</p>
                             </div>
                           </div>
                         </td>
                       )}
-                      {visibleColumns.phone && <td className="px-6 py-4 text-gray-700">{user.phone}</td>}
-                      {visibleColumns.email && <td className="px-6 py-4 text-gray-700">{user.email}</td>}
-                      {visibleColumns.created && <td className="px-6 py-4 text-gray-700 text-sm">{user.created}</td>}
-                      {visibleColumns.lastActivity && <td className="px-6 py-4 text-gray-700 text-sm">{user.lastActivity}</td>}
+                      {visibleColumns.phone && <td className="p-2  text-gray-700">{user.phone}</td>}
+                      {visibleColumns.email && <td className="p-2  text-gray-700">{user.email}</td>}
+                      {visibleColumns.created && <td className="p-2  text-gray-700 text-xs ">{user.created}</td>}
+                      {visibleColumns.lastActivity && <td className="p-2  text-gray-700 text-xs ">{user.lastActivity}</td>}
                       {visibleColumns.status && (
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${
+                        <td className="p-2 ">
+                          <span className={`px-3 py-1 rounded-full text-xs  text-white ${
                             user.status === 'Active' ? 'bg-green-500' : 'bg-red-500'
                           }`}>
                             {user.status}
                           </span>
                         </td>
                       )}
-                      {visibleColumns.action && (<td className="px-6 py-4">
+                      {visibleColumns.action && (<td className="p-2 ">
                         <div className="relative">
                           <button 
                             onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
@@ -720,13 +754,13 @@ const ManageUsersPage = () => {
                             <MoreVertical size={16} className="text-gray-600" />
                           </button>
                           {openMenuId === user.id && (
-                            <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                            <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded  shadow-lg z-20">
                               <button 
                                 onClick={() => {
                                   handleEditUser(user);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-100"
+                                className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 border-b border-gray-100"
                               >
                                 Edit
                               </button>
@@ -735,7 +769,7 @@ const ManageUsersPage = () => {
                                   handleManagePermissions(user);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-100"
+                                className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 border-b border-gray-100"
                               >
                                 Manage Permissions
                               </button>
@@ -744,7 +778,7 @@ const ManageUsersPage = () => {
                                   handleDeleteUser(user);
                                   setOpenMenuId(null);
                                 }}
-                                className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-red-600"
+                                className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-red "
                               >
                                 Delete
                               </button>
@@ -760,8 +794,8 @@ const ManageUsersPage = () => {
             </div>
 
             {/* Pagination */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="p-2  border-t border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs  text-gray-600">
                 <span>Show</span>
                 <select
                   value={pageSize}
@@ -769,7 +803,7 @@ const ManageUsersPage = () => {
                     setPageSize(parseInt(e.target.value));
                     setCurrentPage(1);
                   }}
-                  className="border border-gray-300 rounded px-2 py-1 bg-white"
+                  className="border border-gray-300 rounded p-1  bg-white"
                 >
                   <option value={10}>10</option>
                   <option value={25}>25</option>
@@ -781,7 +815,7 @@ const ManageUsersPage = () => {
                 <button
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                  className="p-2 border border-gray-300 rounded  text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -789,7 +823,7 @@ const ManageUsersPage = () => {
                   <button
                     key={i + 1}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-3 py-2 rounded  text-xs    transition-colors ${
                       currentPage === i + 1
                         ? 'bg-red-600 text-white'
                         : 'border border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -801,7 +835,7 @@ const ManageUsersPage = () => {
                 <button
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                  className="p-2 border border-gray-300 rounded  text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -813,8 +847,8 @@ const ManageUsersPage = () => {
 
       {/* Footer */}
       <div className="text-center text-xs text-gray-500 py-6 border-t border-gray-200 bg-white mt-6">
-        <span>Copyright © 2025 <span className="text-red-600 font-medium">Preadmin</span></span>
-        <div className="flex gap-4 justify-center mt-2 text-xs">
+        <span>Copyright © 2025 <span className="text-red   ">Preadmin</span></span>
+        <div className="flex gap-2 justify-center mt-2 text-xs">
           <span className="cursor-pointer hover:text-gray-700">About</span>
           <span className="cursor-pointer hover:text-gray-700">Terms</span>
           <span className="cursor-pointer hover:text-gray-700">Contact Us</span>
@@ -841,6 +875,7 @@ const ManageUsersPage = () => {
         onCancel={handleCancelDelete}
         userName={userToDelete?.name}
         isDeleting={isDeleting}
+        count={isBulkDelete ? selectedUsers.size : (userToDelete ? 1 : 0)}
       />
     </div>
   );

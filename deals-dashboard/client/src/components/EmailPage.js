@@ -297,11 +297,11 @@ const EmailPage = () => {
   const filteredActivities = getFilteredActivities();
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-3 sm:p-3 lg:p-3 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Inbox & Activities</h1>
-          <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+          <h1 className="text-xl  text-gray-900">Inbox & Activities</h1>
+          <div className="flex items-center gap-2 text-xs  text-gray-600 mt-2">
             <button className="text-gray-600 hover:text-gray-900">Home</button>
             <span>›</span>
             <button className="text-gray-600 hover:text-gray-900">Applications</button>
@@ -312,24 +312,24 @@ const EmailPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <div className="lg:col-span-1 space-y-4">
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-border-light">
+            <div className="bg-white rounded  shadow-sm p-2 border border-border-light">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white text-sm font-bold">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white text-xs  ">
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">{user?.name || 'User'}</p>
+                  <p className=" text-gray-900 text-xs ">{user?.name || 'User'}</p>
                   <p className="text-xs text-gray-600">{user?.email || 'user@example.com'}</p>
                 </div>
               </div>
-              <button className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium text-sm flex items-center justify-center gap-2">
+              <button className="w-full p-2  bg-red-600 text-white rounded  hover:bg-red-700 transition-smooth   text-xs  flex items-center justify-center gap-2">
                 <Mail size={16} />
                 Compose
               </button>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-border-light">
-              <h3 className="font-semibold text-gray-900 mb-3 text-sm">Filter by Type</h3>
+            <div className="bg-white rounded  shadow-sm p-2 border border-border-light">
+              <h3 className=" text-gray-900 mb-3 text-xs ">Filter by Type</h3>
               <div className="space-y-2">
                 {[
                   { label: 'All Activities', value: 'all', count: activities.length },
@@ -342,14 +342,14 @@ const EmailPage = () => {
                   <button 
                     key={filter.value}
                     onClick={() => setActiveFilter(filter.value)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-smooth ${
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded  text-xs  transition-smooth ${
                       activeFilter === filter.value 
-                        ? 'bg-red-50 text-red-600 font-semibold' 
+                        ? 'bg-red-50 text-red  ' 
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
                     <span>{filter.label}</span>
-                    <span className={`text-xs font-bold ${activeFilter === filter.value ? 'bg-red-200' : 'bg-gray-200'} px-2 py-1 rounded-full`}>
+                    <span className={`text-xs  ${activeFilter === filter.value ? 'bg-red-200' : 'bg-gray-200'} p-1  rounded-full`}>
                       {filter.count}
                     </span>
                   </button>
@@ -357,8 +357,8 @@ const EmailPage = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-border-light">
-              <h3 className="font-semibold text-gray-900 mb-3 text-sm">Activity Types</h3>
+            <div className="bg-white rounded  shadow-sm p-2 border border-border-light">
+              <h3 className=" text-gray-900 mb-3 text-xs ">Activity Types</h3>
               <div className="space-y-2 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">✉️</span>
@@ -386,22 +386,22 @@ const EmailPage = () => {
 
           <div className="lg:col-span-4">
             {selectedEmail ? (
-              <div className="bg-white rounded-lg shadow-sm border border-border-light p-6">
+              <div className="bg-white rounded  border border-border-lightp-3 ">
                 <button 
                   onClick={() => setSelectedEmail(null)}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-4"
+                  className="text-white  hover:text-blue-700 text-xs    mb-4"
                 >
                   ← Back to Inbox
                 </button>
                 <div className="border-b border-gray-200 pb-4 mb-4">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">{selectedEmail.subject}</h2>
+                  <h2 className="text-2xl  text-gray-900 mb-4">{selectedEmail.subject}</h2>
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${selectedEmail.avatarColor} flex items-center justify-center text-white text-sm font-bold`}>
+                    <div className={`w-10 h-10 rounded-full ${selectedEmail.avatarColor} flex items-center justify-center text-white text-xs  `}>
                       {selectedEmail.type === 'email' ? selectedEmail.avatar : selectedEmail.icon}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{selectedEmail.name}</p>
-                      <p className="text-sm text-gray-600">{selectedEmail.time}</p>
+                      <p className=" text-gray-900">{selectedEmail.name}</p>
+                      <p className="text-xs  text-gray-600">{selectedEmail.time}</p>
                     </div>
                   </div>
                 </div>
@@ -410,33 +410,33 @@ const EmailPage = () => {
                 </div>
                 {selectedEmail.type === 'email' && (
                   <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-smooth text-sm">
+                    <button className="flex items-center gap-2 p-2  text-gray-600 hover:bg-gray-100 rounded  transition-smooth text-xs ">
                       <MessageCircle size={16} />
                       Reply
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-smooth text-sm">
+                    <button className="flex items-center gap-2 p-2  text-gray-600 hover:bg-gray-100 rounded  transition-smooth text-xs ">
                       <MessageCircle size={16} />
                       Reply All
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-smooth text-sm">
+                    <button className="flex items-center gap-2 p-2  text-gray-600 hover:bg-gray-100 rounded  transition-smooth text-xs ">
                       <Send size={16} />
                       Forward
                     </button>
                   </div>
                 )}
                 {selectedEmail.type !== 'email' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                  <div className="bg-blue-50 border border-blue-200 rounded  p-3 text-xs  text-blue-700">
                     <strong>Activity Details:</strong> This is a {selectedEmail.type}. View full details in the {selectedEmail.type}s section for more information.
                   </div>
                 )}
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-border-light overflow-hidden">
+              <div className="bg-white rounded  border border-border-light overflow-hidden">
                 <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-lg font-bold text-gray-900 mb-1">
+                  <h2 className="text-lg  text-gray-900 mb-1">
                     {activeFilter === 'all' ? 'All Activities' : activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1) + 's'}
                   </h2>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs  text-gray-600">
                     {loading ? 'Loading activities...' : `${filteredActivities.length} items • ${filteredActivities.filter(a => !a.read).length} Unread`}
                   </p>
                 </div>
@@ -456,35 +456,35 @@ const EmailPage = () => {
                       <div 
                         key={activity.id}
                         onClick={() => setSelectedEmail(activity)}
-                        className="p-4 hover:bg-gray-50 cursor-pointer transition-smooth border-l-4 border-transparent hover:border-l-4 hover:border-red-500"
+                        className="p-2 hover:bg-gray-50 cursor-pointer transition-smooth border-l-4 border-transparent hover:border-l-4 hover:border-red-500"
                       >
                         <div className="flex items-start gap-4">
                           <input type="checkbox" className="mt-1" />
-                          <div className={`w-10 h-10 rounded-full ${activity.avatarColor} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                          <div className={`w-10 h-10 rounded-full ${activity.avatarColor} flex items-center justify-center text-white text-xs  flex-shrink-0`}>
                             {activity.icon}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className={`font-semibold ${activity.read ? 'text-gray-700' : 'text-gray-900'}`}>
+                              <p className={` ${activity.read ? 'text-gray-700' : 'text-gray-900'}`}>
                                 {activity.name}
                               </p>
                               <span className="text-xs text-gray-600 flex-shrink-0">{activity.time}</span>
                             </div>
-                            <p className={`text-sm ${activity.read ? 'text-gray-600' : 'text-gray-900 font-medium'} truncate`}>
+                            <p className={`text-xs  ${activity.read ? 'text-gray-600' : 'text-gray-900  '} truncate`}>
                               {activity.subject}
                             </p>
                             <p className="text-xs text-gray-600 line-clamp-1 mt-1">{activity.preview}</p>
                             <div className="flex items-center gap-2 mt-2 flex-wrap">
-                              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded font-medium capitalize">
+                              <span className="text-xs bg-gray-100 text-gray-700 p-1  rounded   capitalize">
                                 {activity.type}
                               </span>
                               {activity.status && (
-                                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                <span className="text-xs bg-gray-100 text-gray-700 p-1  rounded">
                                   {activity.status}
                                 </span>
                               )}
                               {activity.tags && activity.tags.map((tag, idx) => (
-                                <span key={idx} className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded">
+                                <span key={idx} className="text-xs bg-red-50 text-red-700 p-1  rounded">
                                   {tag}
                                 </span>
                               ))}

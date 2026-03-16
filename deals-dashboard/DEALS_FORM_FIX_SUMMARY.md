@@ -17,14 +17,14 @@
 ```jsx
 // ADDED: Company Selection Field
 <div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
+  <label className="block text-xs    text-gray-700 mb-2">
     Company <span className="text-red-500">*</span>
   </label>
   <select
     name="company_id"
     value={formData.company_id}
     onChange={handleInputChange}
-    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+    className="w-full px-3 py-2.5 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
   >
     <option value="">Select Company</option>
     {companies.map((company) => (
@@ -48,12 +48,12 @@
 **Fix Applied**:
 ```jsx
 // BEFORE:
-<label className="block text-sm font-medium text-gray-700 mb-2">
+<label className="block text-xs    text-gray-700 mb-2">
   Project <span className="text-red-500">*</span>
 </label>
 
 // AFTER:
-<label className="block text-sm font-medium text-gray-700 mb-2">
+<label className="block text-xs    text-gray-700 mb-2">
   Project
 </label>
 ```

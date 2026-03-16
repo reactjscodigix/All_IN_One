@@ -1,18 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Mail, Phone, MapPin, Plus, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Phone, MapPin, Plus, ChevronDown, MoreVertical, RotateCcw, Layout, User, Filter, MessageSquare, FileText } from 'lucide-react';
 import { leadsAPI } from '../services/api';
+import ExportDropdown from './ExportDropdown';
 
 const LeadsKanban = () => {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusDropdown, setStatusDropdown] = useState({});
+  const [draggedLead, setDraggedLead] = useState(null);
+  const draggedItemRef = useRef(null);
+  const [dragOverStatus, setDragOverStatus] = useState(null);
+  const lastUpdateRef = useRef(0);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const statusConfig = {
-    'New': { color: '#3B82F6', title: 'New' },
     'Contacted': { color: '#F59E0B', title: 'Contacted' },
+    'Not Contacted': { color: '#3B82F6', title: 'Not Contacted' },
     'Qualified': { color: '#10B981', title: 'Qualified' },
-    'Unqualified': { color: '#EF4444', title: 'Unqualified' }
+    'Lost': { color: '#EF4444', title: 'Lost' }
   };
 
   useEffect(() => {
@@ -23,7 +31,7 @@ const LeadsKanban = () => {
     try {
       setLoading(true);
       const leadsRes = await leadsAPI.getAll();
-      
+
       if (Array.isArray(leadsRes)) {
         setLeads(leadsRes);
       }
@@ -39,35 +47,115 @@ const LeadsKanban = () => {
 
   const handleStatusChange = async (leadId, newStatus) => {
     try {
-      await leadsAPI.update(leadId, { status: newStatus, lead_status: newStatus });
-      setLeads(prev => 
-        prev.map(lead => 
-          lead.id === leadId 
+      setIsUpdating(true);
+      lastUpdateRef.current = Date.now();
+
+      // Optimistic update
+      setLeads(prev =>
+        prev.map(lead =>
+          lead.id === leadId
             ? { ...lead, status: newStatus, lead_status: newStatus }
             : lead
         )
       );
+
+      await leadsAPI.update(leadId, { status: newStatus, lead_status: newStatus });
       setStatusDropdown(prev => ({ ...prev, [leadId]: false }));
     } catch (err) {
       console.error('Error updating status:', err);
+      // Revert on error
+      fetchData();
       alert('Failed to update lead status');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  const groupedLeads = {
-    'New': leads.filter(l => (l.status || l.lead_status) === 'New'),
-    'Contacted': leads.filter(l => (l.status || l.lead_status) === 'Contacted'),
-    'Qualified': leads.filter(l => (l.status || l.lead_status) === 'Qualified'),
-    'Unqualified': leads.filter(l => (l.status || l.lead_status) === 'Unqualified')
+  const handleDragStart = (e, lead) => {
+    setDraggedLead(lead);
+    draggedItemRef.current = lead;
+    e.dataTransfer.setData('application/json', JSON.stringify(lead));
+    e.dataTransfer.effectAllowed = 'move';
+
+    // Use a small timeout to not hide the element immediately while dragging starts
+    setTimeout(() => {
+      const el = e.target;
+      if (el) el.style.opacity = '0.5';
+    }, 0);
   };
 
-  const columns = Object.entries(groupedLeads).map(([status, leads]) => ({
-    id: status,
-    title: status,
-    color: statusConfig[status]?.color || '#6B7280',
-    count: leads.length,
-    leads: leads
-  }));
+  const handleDragEnd = (e) => {
+    const el = e.target;
+    if (el) el.style.opacity = '1';
+
+    // Note: Don't clear state immediately to allow handleDrop to process it
+    // The state will be cleared by handleDrop or after a short delay
+    setTimeout(() => {
+      setDraggedLead(null);
+      draggedItemRef.current = null;
+      setDragOverStatus(null);
+    }, 100);
+  };
+
+  const handleDragOver = (e, status) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverStatus !== status) {
+      setDragOverStatus(status);
+    }
+  };
+
+  const handleDrop = async (e, newStatus) => {
+    e.preventDefault();
+    setDragOverStatus(null);
+
+    // Get lead data from multiple possible sources for robustness
+    let leadData = draggedLead || draggedItemRef.current;
+
+    if (!leadData) {
+      try {
+        const json = e.dataTransfer.getData('application/json');
+        if (json) leadData = JSON.parse(json);
+      } catch (err) {
+        console.error('Error parsing drag data:', err);
+      }
+    }
+
+    if (!leadData) return;
+
+    const currentStatus = leadData.status || leadData.lead_status;
+    if (currentStatus === newStatus) return;
+
+    await handleStatusChange(leadData.id, newStatus);
+
+    setDraggedLead(null);
+    draggedItemRef.current = null;
+  };
+
+  const groupedLeads = {
+    'Contacted': leads.filter(l => (l.status || l.lead_status) === 'Contacted'),
+    'Not Contacted': leads.filter(l => (l.status || l.lead_status) === 'Not Contacted' || (l.status || l.lead_status) === 'New'),
+    'Qualified': leads.filter(l => (l.status || l.lead_status) === 'Qualified' || (l.status || l.lead_status) === 'Qualified'),
+    'Lost': leads.filter(l => (l.status || l.lead_status) === 'Lost' || (l.status || l.lead_status) === 'Unqualified')
+  };
+
+  const columns = Object.entries(groupedLeads).map(([status, leads]) => {
+    const totalValue = leads.reduce((sum, lead) => sum + (parseFloat(lead.value) || 0), 0);
+    const formattedValue = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(totalValue);
+
+    return {
+      id: status,
+      title: status,
+      color: statusConfig[status]?.color || '#6B7280',
+      count: leads.length,
+      totalValue: formattedValue,
+      leads: leads
+    };
+  });
 
   const getInitials = (firstName, lastName) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
@@ -87,117 +175,122 @@ const LeadsKanban = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-[28px] font-bold text-gray-900">Leads</h1>
-              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] font-bold">{leads.length}</span>
+              <h1 className="text-[28px]  text-gray-900">Leads</h1>
+              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] ">{leads.length}</span>
             </div>
-            <div className="flex items-center gap-1 text-[13px] mt-1">
-              <button className="text-[#F97316] hover:text-[#EA580C] font-medium bg-transparent border-none cursor-pointer p-0">Home</button>
+            <div className="flex items-center gap-1 text-xs  mt-1">
+              <button className="text-[#F97316] hover:text-[#EA580C]   bg-transparent border-none cursor-pointer p-0">Home</button>
               <span className="text-[#D1D5DB]">&gt;</span>
               <span className="text-[#6B7280]">Leads</span>
             </div>
           </div>
-          <button className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]">
-            <Plus size={18} />
-            Add Lead
-          </button>
+          <div className="flex items-center gap-3">
+            <ExportDropdown />
+            <button onClick={fetchData} className="p-2 bg-white border border-gray-200 rounded text-gray-400 hover:text-gray-600 transition-colors shadow-sm">
+              <RotateCcw size={16} />
+            </button>
+            <button className="p-2 bg-white border border-gray-200 rounded text-gray-400 hover:text-gray-600 transition-colors shadow-sm">
+              <Layout size={16} />
+            </button>
+            <button className="bg-[#F62416] text-white p-2  rounded    flex items-center gap-2 hover:opacity-90 transition text-xs shadow-sm">
+              <Plus size={18} />
+              Add Lead
+            </button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <input type="text" placeholder="Search" className="w-full max-w-xs px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none text-[13px] bg-white" />
-          <button className="px-4 py-2 border border-[#E5E7EB] rounded-lg hover:bg-gray-50 text-[13px] font-medium text-gray-700 transition bg-white">Filter</button>
+          <input type="text" placeholder="Search" className="w-full max-w-xs p-2  border border-[#E5E7EB] rounded  focus:outline-none text-xs  bg-white" />
+          <button className="p-2  border border-[#E5E7EB] rounded  hover:bg-gray-50 text-xs    text-gray-700 transition bg-white">Filter</button>
         </div>
       </div>
 
       <div className="px-6 pb-8">
         <div className="grid grid-cols-4 gap-4">
           {columns.map((column) => (
-            <div key={column.id}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: column.color }}></div>
-                    <h2 className="text-[15px] font-semibold text-gray-900">{column.title}</h2>
+            <div
+              key={column.id}
+              onDragOver={(e) => handleDragOver(e, column.id)}
+              onDrop={(e) => handleDrop(e, column.id)}
+              className={`flex flex-col h-full min-h-[500px] transition-all duration-200 rounded-xl ${dragOverStatus === column.id ? 'bg-gray-200/50 scale-[1.01]' : ''
+                }`}
+            >
+              <div className="bg-white border border-gray-200 rounded p-2 mb-4 ">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: column.color }}></div>
+                      <h2 className="text-[14px] font-[500] text-gray-900">{column.title}</h2>
+                    </div>
+                    <p className="text-[12px] text-[#6B7280] ">{column.count} Leads - {column.totalValue}</p>
                   </div>
-                  <p className="text-[12px] text-[#6B7280]">{column.count} Leads</p>
+                  <div className="flex items-center gap-1">
+                    <button className=" hover:bg-blue-50 p-1 rounded transition-colors"><Plus size={15} /></button>
+                    <button className="text-gray-400 hover:bg-gray-100 p-1 border border-gray-200 rounded transition-colors"><MoreVertical size={16} /></button>
+                  </div>
                 </div>
-                <button className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded"><Plus size={16} /></button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 flex-1 px-1">
                 {column.leads.map((lead) => {
                   return (
-                    <div key={lead.id} className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-4">
-                      <div className="w-full h-1 rounded-full" style={{ backgroundColor: column.color }} className="mb-3"></div>
-                      
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded font-bold text-white text-[11px] flex items-center justify-center bg-red-500">
-                          {getInitials(lead.first_name || '', lead.last_name || '')}
+                    <div
+                      key={lead.id}
+                      className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-4 cursor-move hover:shadow-md transition-shadow"
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, lead)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <h3 
+                            className="text-[16px]  text-gray-900 cursor-pointer hover:text-red-600 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/lead/${lead.id}`);
+                            }}
+                          >
+                            {lead.project_name || 'No Project Name'}
+                          </h3>
+                          <p className="text-[14px] text-gray-500 mt-0.5">{lead.name || lead.lead_name}</p>
                         </div>
-                        <h3 className="text-[14px] font-semibold text-gray-900">{lead.name || lead.lead_name}</h3>
+                        <button className="text-gray-400 hover:text-gray-600"><MoreVertical size={18} /></button>
                       </div>
 
-                      {lead.value && (
-                        <p className="text-[13px] font-semibold text-gray-900 mb-2">💰${lead.value}</p>
-                      )}
-
-                      <div className="space-y-1 mb-3 text-[12px] text-[#6B7280]">
-                        {lead.email && (
-                          <div className="flex items-center gap-2">
-                            <Mail size={13} />
-                            <span className="truncate">{lead.email}</span>
-                          </div>
-                        )}
-                        {lead.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone size={13} />
-                            {lead.phone}
-                          </div>
-                        )}
-                        {lead.company_name && (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">🏢</span>
-                              <span>{lead.company_name}</span>
-                            </div>
-                            {lead.address && (
-                              <div className="flex items-center gap-2">
-                                <MapPin size={13} />
-                                <span className="truncate">{lead.address}</span>
-                              </div>
-                            )}
-                          </>
-                        )}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center gap-3 text-gray-500">
+                          <Layout size={16} className="text-gray-400" />
+                          <span className="text-[13px]">{lead.business_type || lead.industry || 'Software Services'}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-gray-500">
+                          <User size={16} className="text-gray-400" />
+                          <span className="text-[13px]">{lead.owner_name || 'sales executive'}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Filter size={16} className="text-gray-400" />
+                          <span className="px-3 py-0.5 bg-pink-50 text-pink-600 rounded-full text-[12px] ">
+                            {lead.source || lead.lead_source || 'Referral'}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="relative">
-                        <button
-                          onClick={() => setStatusDropdown(prev => ({ ...prev, [lead.id]: !prev[lead.id] }))}
-                          className="w-full flex items-center justify-between px-2 py-1.5 text-[12px] font-medium rounded border border-gray-200 hover:bg-gray-50 transition"
-                          style={{ color: column.color, borderColor: column.color }}
-                        >
-                          <span>{lead.status || lead.lead_status || 'New'}</span>
-                          <ChevronDown size={14} />
-                        </button>
-
-                        {statusDropdown[lead.id] && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-                            {Object.entries(statusConfig).map(([status, config]) => (
-                              <button
-                                key={status}
-                                onClick={() => handleStatusChange(lead.id, status)}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
-                              >
-                                <span style={{ color: config.color }} className="font-medium">●</span> {status}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                      <div className="border-t border-gray-100 pt-3 space-y-2">
+                        <div className="flex justify-between text-[13px]">
+                          <span className="text-gray-400">Generate Date:</span>
+                          <span className="text-gray-600 ">
+                            {lead.created_at ? new Date(lead.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Mar 4, 2026'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-[13px]">
+                          <span className="text-gray-400">Next Followup:</span>
+                          <span className="text-red-500">-</span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-4 pt-2 mt-2 text-[#6B7280]">
-                        <button className="hover:text-gray-900 p-0.5" title="Email"><Mail size={13} strokeWidth={1.5} /></button>
-                        <button className="hover:text-gray-900 p-0.5" title="Call"><Phone size={13} strokeWidth={1.5} /></button>
-                        <button className="hover:text-gray-900 p-0.5" title="More"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01" /></svg></button>
+                      <div className="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-50 text-gray-400">
+                        <button className="hover:text-blue-500" title="Call"><Phone size={18} /></button>
+                        <button className="hover:text-blue-500" title="Message"><MessageSquare size={18} /></button>
+                        <button className="hover:text-blue-500" title="Documents"><FileText size={18} /></button>
                       </div>
                     </div>
                   );

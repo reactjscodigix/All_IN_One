@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate, useParams } from 'react-router-dom';
 import './App.css';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
@@ -43,8 +43,10 @@ import Subscriptions from './components/Subscriptions';
 import Packages from './components/Packages';
 import Domain from './components/Domain';
 import PurchaseTransaction from './components/PurchaseTransaction';
+import SalesDashboard from './components/SalesDashboard';
 import EstimationsPage from './components/EstimationsPage';
 import ActivitiesPage from './components/ActivitiesPage';
+import FollowupsPage from './components/FollowupsPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import LeadReport from './components/LeadReport';
 import DealReport from './components/DealReport';
@@ -65,34 +67,82 @@ import BlogCommentsPage from './components/BlogCommentsPage';
 import BlogTagsPage from './components/BlogTagsPage';
 import ManageUsersPage from './components/ManageUsersPage';
 import RolePermissionsDetailPage from './components/RolePermissionsDetailPage';
+import TaskDetailsPage from './components/TaskDetailsPage';
 import LeadDetailsPage from './components/LeadDetailsPage';
+import LeadDistributionPage from './components/LeadDistributionPage';
 import DealsKanbanBoard from './components/DealsKanbanBoard';
 import DealDetailsPage from './components/DealDetailsPage';
+import QuotationsPage from './components/QuotationsPage';
+import CustomersPage from './components/CustomersPage';
+import SalesTargetsPage from './components/SalesTargetsPage';
+import PerformancePage from './components/PerformancePage';
+import CommissionPage from './components/CommissionPage';
+import ApprovalsPage from './components/ApprovalsPage';
+import SalesReportsPage from './components/SalesReportsPage';
+import NotificationsPage from './components/NotificationsPage';
+import ProfileSettingsPage from './components/ProfileSettingsPage';
+import DepartmentsPage from './components/DepartmentsPage';
+import AutomationRulesPage from './components/AutomationRulesPage';
+
+// Shared modules across departments
+const SHARED_MODULES = [
+  'calendar', 'tasks', 'followups', 'analytics', 'reports', 
+  'dashboard', 'list', 'details', 'kanban', 'quotations', 
+  'customers', 'targets', 'performance', 'commission', 'distribution',
+  'contacts', 'companies', 'campaign', 'proposals', 'contracts', 
+  'estimations', 'invoices', 'payments', 'activities', 'chat',
+  'video-call', 'audio-call', 'call-history', 'email', 'todo', 
+  'notes', 'file-manager', 'social-feed'
+];
+
+const DEPARTMENTS = ['deals', 'leads', 'projects', 'sales', 'super-admin'];
 
 const routeMap = {
-  '/': 'deals',
-  '/deals': 'deals',
-  '/deals-kanban': 'deals-kanban',
-  '/deal/:id': 'deal-details',
-  '/leads-dashboard': 'leads-dashboard',
-  '/projects-dashboard': 'projects-dashboard',
-  '/project-details': 'project-details',
-  '/deals-list': 'deals-list',
+  '/': 'dashboard-router',
+  ...DEPARTMENTS.reduce((acc, dept) => {
+    SHARED_MODULES.forEach(module => {
+      acc[`/${dept}/${module}`] = module === 'dashboard' ? `${dept}-dashboard` : module;
+    });
+    return acc;
+  }, {}),
+  
+  // Custom overrides for mapping
+  '/deals/dashboard': 'deals-dashboard',
+  '/leads/dashboard': 'leads-dashboard',
+  '/sales/dashboard': 'sales-dashboard',
+  '/projects/dashboard': 'projects-dashboard',
+  '/deals/list': 'deals-list',
+  '/leads/list': 'leads',
+  '/projects/list': 'projects',
+  '/projects/details': 'project-details',
+  '/deals/kanban': 'deals-kanban',
+  '/sales/targets': 'sales-targets',
+  '/sales/reports': 'sales-reports',
+  
+  // Specific routes
+  '/deals/deal/:id': 'deal-details',
+  '/leads/lead/:id': 'lead-details',
+  '/lead/:id': 'lead-details',
+  '/task/:taskId': 'task-details',
+  '/payment/:invoiceId': 'payment-details',
+  
+  // Global / Shared
+  '/notifications': 'notifications',
+  '/profile-settings': 'profile-settings',
+  '/departments': 'departments',
+  '/automation-rules': 'automation-rules',
   '/contacts': 'contacts',
   '/contact-details': 'contact-details',
   '/companies': 'companies',
   '/add-company': 'add-company',
   '/company-details': 'company-details',
-  '/leads': 'leads',
   '/pipeline': 'pipeline',
   '/campaign': 'campaign',
-  '/projects': 'projects',
   '/estimations': 'estimations',
   '/chat': 'chat',
   '/video-call': 'video-call',
   '/audio-call': 'audio-call',
   '/call-history': 'call-history',
-  '/calendar': 'calendar',
   '/email': 'email',
   '/todo': 'todo',
   '/tasks': 'tasks',
@@ -104,8 +154,8 @@ const routeMap = {
   '/kanban': 'kanban',
   '/invoices': 'invoices',
   '/payments': 'payments',
-  '/payment/:invoiceId': 'payment-details',
   '/activities': 'activities',
+  '/followups': 'followups',
   '/analytics': 'analytics',
   '/lead-report': 'lead-report',
   '/deal-report': 'deal-report',
@@ -130,12 +180,14 @@ const routeMap = {
   '/location': 'location',
   '/testimonials': 'testimonials',
   '/faq': 'faq',
+  
+  // Super Admin
   '/super-admin': 'super-admin',
-  '/super-admin-companies': 'super-admin-companies',
-  '/super-admin-subscriptions': 'super-admin-subscriptions',
-  '/super-admin-packages': 'super-admin-packages',
-  '/super-admin-domain': 'super-admin-domain',
-  '/super-admin-purchase-transaction': 'super-admin-purchase-transaction',
+  '/super-admin/companies': 'super-admin-companies',
+  '/super-admin/subscriptions': 'super-admin-subscriptions',
+  '/super-admin/packages': 'super-admin-packages',
+  '/super-admin/domain': 'super-admin-domain',
+  '/super-admin/purchase-transaction': 'super-admin-purchase-transaction',
 };
 
 const DashboardRouter = () => {
@@ -150,16 +202,27 @@ const DashboardRouter = () => {
 
     if (user.role === 'Super Admin') {
       navigate('/super-admin');
-    } else if (user.role === 'Project Manager') {
-      navigate('/projects-dashboard');
-    } else if (user.role === 'Employee') {
-      navigate('/projects-dashboard');
+    } else if (user.role === 'Admin' || user.department === 'Leads Management') {
+      navigate('/leads/dashboard');
+    } else if (user.department === 'Deals Management') {
+      navigate('/deals/dashboard');
+    } else if (user.role === 'Sales Manager' || user.role === 'Sales Executive' || user.department === 'Sales Department') {
+      navigate('/sales/dashboard');
+    } else if (user.department === 'Marketing Department' || user.department === 'IT Department') {
+      navigate('/projects/dashboard');
+    } else if (user.department === 'Accounting Department') {
+      navigate('/invoices');
     } else {
-      navigate('/deals');
+      navigate('/deals/dashboard');
     }
   }, [user, navigate]);
 
   return null;
+};
+
+const NavigateToLead = () => {
+  const { id } = useParams();
+  return <Navigate to={`/leads/lead/${id}`} replace />;
 };
 
 function AppContent() {
@@ -169,7 +232,23 @@ function AppContent() {
   const [selectedDealId, setSelectedDealId] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const currentPage = routeMap[location.pathname] || 'deals';
+  
+  // Resolve current page for sidebar highlighting
+  const getPageFromPath = (pathname) => {
+    // Handle dynamic routes by stripping IDs
+    const cleanPath = pathname.split('/').map(part => {
+      // If it looks like an ID (numeric or UUID-ish), replace with :id
+      if (/^\d+$/.test(part) || (part.length > 20 && part.includes('-'))) {
+        return ':id';
+      }
+      return part;
+    }).join('/');
+    
+    return routeMap[cleanPath] || routeMap[pathname] || 'deals-dashboard';
+  };
+
+  const currentPage = getPageFromPath(location.pathname);
+  const isVideoCall = location.pathname.includes('/video-call');
 
   useEffect(() => {
     if (location.state?.company) {
@@ -179,12 +258,12 @@ function AppContent() {
 
   const handleViewProjectDetails = (projectId) => {
     setSelectedProjectId(projectId);
-    navigate('/project-details');
+    navigate('/projects/details');
   };
 
   const handleBackFromProjectDetails = () => {
     setSelectedProjectId(null);
-    navigate('/projects-dashboard');
+    navigate('/projects/dashboard');
   };
 
   const handleViewCompanyDetails = (company) => {
@@ -204,46 +283,141 @@ function AppContent() {
 
   const handleViewDealDetails = (deal) => {
     setSelectedDealId(deal.id);
-    navigate(`/deal/${deal.id}`);
+    navigate(`/deals/deal/${deal.id}`);
   };
 
   const handleBackFromDealDetails = () => {
     setSelectedDealId(null);
-    navigate('/deals-kanban');
+    navigate('/deals/kanban');
   };
 
   const handleNavigate = (page) => {
+    // If it's already a path, use it directly
+    if (page.startsWith('/')) {
+      navigate(page);
+      return;
+    }
     const routePath = Object.keys(routeMap).find(path => routeMap[path] === page) || '/';
     navigate(routePath);
   };
 
   return (
-    <Layout currentPage={currentPage} onNavigate={handleNavigate}>
+    <Layout 
+      currentPage={currentPage} 
+      onNavigate={handleNavigate}
+      hideSidebar={isVideoCall}
+      hideHeader={isVideoCall}
+    >
       <Routes>
         <Route path="/" element={<DashboardRouter />} />
-        <Route path="/deals" element={<DealsDashboard />} />
-        <Route path="/deals-kanban" element={<DealsKanbanBoard onDealClick={handleViewDealDetails} />} />
-        <Route path="/deal/:id" element={<DealDetailsPage dealId={selectedDealId} onBack={handleBackFromDealDetails} />} />
-        <Route path="/leads-dashboard" element={<LeadsDashboard />} />
-        <Route path="/projects-dashboard" element={<ProjectsDashboard onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
-        <Route path="/project-details" element={<ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />} />
-        <Route path="/deals-list" element={<CrmDealsPage />} />
+        <Route path="/deals/dashboard" element={<DealsDashboard />} />
+        <Route path="/deals/kanban" element={<DealsKanbanBoard onDealClick={handleViewDealDetails} />} />
+        <Route path="/deals/deal/:id" element={<LeadDetailsPage />} />
+        <Route path="/sales/dashboard" element={<SalesDashboard />} />
+        <Route path="/sales/quotations" element={<QuotationsPage />} />
+        <Route path="/sales/customers" element={<CustomersPage />} />
+        <Route path="/sales/targets" element={<SalesTargetsPage />} />
+        <Route path="/sales/performance" element={<PerformancePage />} />
+        <Route path="/sales/commission" element={<CommissionPage />} />
+        <Route path="/sales/approvals" element={<ApprovalsPage />} />
+        <Route path="/sales/reports" element={<SalesReportsPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/profile-settings" element={<ProfileSettingsPage />} />
+        <Route path="/departments" element={<DepartmentsPage />} />
+        <Route path="/automation-rules" element={<AutomationRulesPage />} />
+        <Route path="/leads/dashboard" element={<LeadsDashboard />} />
+        <Route path="/projects/dashboard" element={<ProjectsDashboard onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
+        <Route path="/projects/details" element={<ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />} />
+        <Route path="/deals/list" element={<CrmDealsPage />} />
         <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/contact-details" element={<ContactDetailsPage contactId={selectedContactId} onBack={handleBackFromContactDetails} />} />
         <Route path="/companies" element={<CrmCompaniesPage />} />
         <Route path="/add-company" element={<AddCompanyPage />} />
         <Route path="/company-details" element={<CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />} />
-        <Route path="/leads" element={<CrmLeadsPage />} />
-        <Route path="/lead/:id" element={<LeadDetailsPage />} />
+        <Route path="/leads/list" element={<CrmLeadsPage />} />
+        <Route path="/leads/distribution" element={<LeadDistributionPage />} />
+        <Route path="/leads/lead/:id" element={<LeadDetailsPage />} />
+        <Route path="/lead/:id" element={<NavigateToLead />} />
+        <Route path="/task/:taskId" element={<TaskDetailsPage />} />
         <Route path="/pipeline" element={<CrmPipelinePage />} />
         <Route path="/campaign" element={<CrmCampaignPage />} />
-        <Route path="/projects" element={<CrmProjectsPage />} />
+        <Route path="/projects/list" element={<CrmProjectsPage />} />
         <Route path="/estimations" element={<EstimationsPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/video-call" element={<VideoCallPage />} />
+        <Route path="/video-call/:code" element={<VideoCallPage />} />
         <Route path="/audio-call" element={<AudioCallPage />} />
         <Route path="/call-history" element={<CallHistoryPage />} />
+        
+        {/* Dynamic calendar routes based on department */}
+        <Route path="/deals/calendar" element={<CalendarPage />} />
+        <Route path="/leads/calendar" element={<CalendarPage />} />
+        <Route path="/projects/calendar" element={<CalendarPage />} />
+        <Route path="/sales/calendar" element={<CalendarPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
+        
+        {/* Dynamic tasks routes based on department */}
+        <Route path="/deals/tasks" element={<TasksPage />} />
+        <Route path="/leads/tasks" element={<TasksPage />} />
+        <Route path="/projects/tasks" element={<TasksPage />} />
+        <Route path="/sales/tasks" element={<TasksPage />} />
+        <Route path="/tasks" element={<TasksPage />} />
+        
+        {/* Dynamic followups routes based on department */}
+        <Route path="/deals/followups" element={<FollowupsPage />} />
+        <Route path="/leads/followups" element={<FollowupsPage />} />
+        <Route path="/projects/followups" element={<FollowupsPage />} />
+        <Route path="/sales/followups" element={<FollowupsPage />} />
+        <Route path="/followups" element={<FollowupsPage />} />
+        
+        {/* Dynamic analytics/reports routes based on department */}
+        <Route path="/deals/analytics" element={<AnalyticsPage />} />
+        <Route path="/leads/analytics" element={<AnalyticsPage />} />
+        <Route path="/projects/analytics" element={<AnalyticsPage />} />
+        <Route path="/sales/analytics" element={<AnalyticsPage />} />
+        <Route path="/deals/reports" element={<AnalyticsPage />} />
+        <Route path="/leads/reports" element={<AnalyticsPage />} />
+        <Route path="/projects/reports" element={<AnalyticsPage />} />
+        <Route path="/sales/reports" element={<SalesReportsPage />} />
+        <Route path="/analytics" element={<AnalyticsPage />} />
+        
+        {/* Dynamic routes for shared modules across departments */}
+        {['deals', 'leads', 'projects', 'sales', 'super-admin'].map(dept => (
+          <React.Fragment key={dept}>
+            <Route path={`/${dept}/contacts`} element={<ContactsPage />} />
+            <Route path={`/${dept}/companies`} element={<CrmCompaniesPage />} />
+            <Route path={`/${dept}/campaign`} element={<CrmCampaignPage />} />
+            <Route path={`/${dept}/proposals`} element={<ProposalsPage />} />
+            <Route path={`/${dept}/contracts`} element={<ContractsPage />} />
+            <Route path={`/${dept}/estimations`} element={<EstimationsPage />} />
+            <Route path={`/${dept}/invoices`} element={<InvoicesPage />} />
+            <Route path={`/${dept}/payments`} element={<PaymentsPage />} />
+            <Route path={`/${dept}/activities`} element={<ActivitiesPage />} />
+            <Route path={`/${dept}/chat`} element={<ChatPage />} />
+            <Route path={`/${dept}/video-call`} element={<VideoCallPage />} />
+            <Route path={`/${dept}/audio-call`} element={<AudioCallPage />} />
+            <Route path={`/${dept}/call-history`} element={<CallHistoryPage />} />
+            <Route path={`/${dept}/email`} element={<EmailPage />} />
+            <Route path={`/${dept}/todo`} element={<TodoPage />} />
+            <Route path={`/${dept}/notes`} element={<NotesPage />} />
+            <Route path={`/${dept}/file-manager`} element={<FileManagerPage />} />
+            <Route path={`/${dept}/social-feed`} element={<SocialFeedPage />} />
+            <Route path={`/${dept}/kanban`} element={<KanbanPage />} />
+            <Route path={`/${dept}/list`} element={
+              dept === 'leads' ? <CrmLeadsPage /> : 
+              dept === 'projects' ? <CrmProjectsPage /> : 
+              <CrmDealsPage />
+            } />
+            <Route path={`/${dept}/details`} element={<ProjectDetailsPage />} />
+            <Route path={`/${dept}/customers`} element={<CustomersPage />} />
+            <Route path={`/${dept}/quotations`} element={<QuotationsPage />} />
+            <Route path={`/${dept}/targets`} element={<SalesTargetsPage />} />
+            <Route path={`/${dept}/performance`} element={<PerformancePage />} />
+            <Route path={`/${dept}/commission`} element={<CommissionPage />} />
+            <Route path={`/${dept}/distribution`} element={<LeadDistributionPage />} />
+          </React.Fragment>
+        ))}
+        
         <Route path="/email" element={<EmailPage />} />
         <Route path="/todo" element={<TodoPage />} />
         <Route path="/tasks" element={<TasksPage />} />
@@ -257,6 +431,7 @@ function AppContent() {
         <Route path="/payments" element={<PaymentsPage />} />
         <Route path="/payment/:invoiceId" element={<PaymentDetailsPage />} />
         <Route path="/activities" element={<ActivitiesPage />} />
+        <Route path="/followups" element={<FollowupsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/lead-report" element={<LeadReport />} />
         <Route path="/deal-report" element={<DealReport />} />
@@ -278,15 +453,17 @@ function AppContent() {
         <Route path="/blog-comments" element={<BlogCommentsPage />} />
         <Route path="/blog-tags" element={<BlogTagsPage />} />
         <Route path="/blog" element={<AllBlogsPage />} />
-        <Route path="/location" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Location</h1><p className="text-gray-600">Location page coming soon...</p></div></div>} />
-        <Route path="/testimonials" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">Testimonials</h1><p className="text-gray-600">Testimonials page coming soon...</p></div></div>} />
-        <Route path="/faq" element={<div className="p-6 bg-gray-50 min-h-screen"><div className="bg-white rounded-lg p-6"><h1 className="text-2xl font-bold mb-4">FAQ</h1><p className="text-gray-600">FAQ page coming soon...</p></div></div>} />
+        <Route path="/location" element={<div className="p-2 bg-[#F7F8F9] min-h-screen"><div className="bg-white rounded p-3 "><h1 className="text-2xl  mb-4">Location</h1><p className="text-gray-600">Location page coming soon...</p></div></div>} />
+        <Route path="/testimonials" element={<div className="p-2 bg-[#F7F8F9] min-h-screen"><div className="bg-white rounded p-3 "><h1 className="text-2xl  mb-4">Testimonials</h1><p className="text-gray-600">Testimonials page coming soon...</p></div></div>} />
+        <Route path="/faq" element={<div className="p-2 bg-[#F7F8F9] min-h-screen"><div className="bg-white rounded p-3 "><h1 className="text-2xl  mb-4">FAQ</h1><p className="text-gray-600">FAQ page coming soon...</p></div></div>} />
+        
+        {/* Super Admin routes with new paths */}
         <Route path="/super-admin" element={<ProtectedRoute requiredRoles="Super Admin"><SuperAdminDashboard /></ProtectedRoute>} />
-        <Route path="/super-admin-companies" element={<ProtectedRoute requiredRoles="Super Admin"><Companies /></ProtectedRoute>} />
-        <Route path="/super-admin-subscriptions" element={<ProtectedRoute requiredRoles="Super Admin"><Subscriptions /></ProtectedRoute>} />
-        <Route path="/super-admin-packages" element={<ProtectedRoute requiredRoles="Super Admin"><Packages /></ProtectedRoute>} />
-        <Route path="/super-admin-domain" element={<ProtectedRoute requiredRoles="Super Admin"><Domain /></ProtectedRoute>} />
-        <Route path="/super-admin-purchase-transaction" element={<ProtectedRoute requiredRoles="Super Admin"><PurchaseTransaction /></ProtectedRoute>} />
+        <Route path="/super-admin/companies" element={<ProtectedRoute requiredRoles="Super Admin"><Companies /></ProtectedRoute>} />
+        <Route path="/super-admin/subscriptions" element={<ProtectedRoute requiredRoles="Super Admin"><Subscriptions /></ProtectedRoute>} />
+        <Route path="/super-admin/packages" element={<ProtectedRoute requiredRoles="Super Admin"><Packages /></ProtectedRoute>} />
+        <Route path="/super-admin/domain" element={<ProtectedRoute requiredRoles="Super Admin"><Domain /></ProtectedRoute>} />
+        <Route path="/super-admin/purchase-transaction" element={<ProtectedRoute requiredRoles="Super Admin"><PurchaseTransaction /></ProtectedRoute>} />
       </Routes>
     </Layout>
   );

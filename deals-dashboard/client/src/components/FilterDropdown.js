@@ -34,7 +34,7 @@ const FilterDropdown = ({ filterOptions, onFilterChange, selectedFilters }) => {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${
+        className={`flex items-center gap-2 px-3 py-2 border rounded  text-xs    transition-colors ${
           isOpen
             ? 'bg-blue-500 text-white border-blue-500'
             : 'bg-white text-gray-700 border border-gray-300 hover:bg-blue-50 hover:border-blue-300'
@@ -43,7 +43,7 @@ const FilterDropdown = ({ filterOptions, onFilterChange, selectedFilters }) => {
         <Filter size={16} />
         Filter
         {activeFilterCount > 0 && (
-          <span className="ml-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded-full font-semibold">
+          <span className="ml-1 p-1  bg-red-600  text-white text-xs rounded-full ">
             {activeFilterCount}
           </span>
         )}
@@ -51,17 +51,17 @@ const FilterDropdown = ({ filterOptions, onFilterChange, selectedFilters }) => {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+        <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded  shadow-xl z-50">
           <div className="p-3 border-b border-gray-200 bg-blue-50">
-            <h4 className="text-xs font-semibold text-blue-900">Filter Options</h4>
+            <h4 className="text-xs  text-blue-900">Filter Options</h4>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {filterOptions.map((option) => (
               <div key={option.category} className="border-b border-gray-100 last:border-b-0">
-                <div className="px-4 py-2 bg-gray-50">
-                  <h5 className="text-xs font-semibold text-gray-700">{option.category}</h5>
+                <div className="p-2  bg-gray-50">
+                  <h5 className="text-xs  text-gray-700">{option.category}</h5>
                 </div>
-                <div className="px-4 py-2">
+                <div className="p-2 ">
                   {option.items.map((item) => (
                     <label
                       key={item.value}
@@ -74,7 +74,7 @@ const FilterDropdown = ({ filterOptions, onFilterChange, selectedFilters }) => {
                         onChange={() => toggleFilter(option.key, item.value)}
                         className="w-4 h-4 accent-blue-500 cursor-pointer"
                       />
-                      <span className="ml-2 text-sm text-gray-700">{item.label}</span>
+                      <span className="ml-2 text-xs  text-gray-700">{item.label}</span>
                     </label>
                   ))}
                 </div>
@@ -87,13 +87,13 @@ const FilterDropdown = ({ filterOptions, onFilterChange, selectedFilters }) => {
                 onFilterChange({});
                 setIsOpen(false);
               }}
-              className="flex-1 px-3 py-2 text-xs font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+              className="flex-1 px-3 py-2 text-xs   text-gray-700 border border-gray-300 rounded hover:bg-gray-100 transition-colors"
             >
               Clear All
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-500 rounded hover:bg-blue-600 transition-colors"
+              className="flex-1 px-3 py-2 text-xs   text-white bg-blue-500 rounded hover:bg-red-600 transition-colors"
             >
               Apply
             </button>

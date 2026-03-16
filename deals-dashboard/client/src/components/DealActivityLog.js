@@ -73,14 +73,14 @@ const DealActivityLog = ({ dealId }) => {
 
   return (
     <div className="space-y-6">
-      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-        <label className="block text-sm font-medium text-gray-700 mb-3">Activity Type</label>
+      <div className="border border-gray-200 rounded  p-2 bg-gray-50">
+        <label className="block text-xs    text-gray-700 mb-3">Activity Type</label>
         <div className="flex gap-2 mb-4">
           {['note', 'call', 'email', 'meeting', 'task'].map(type => (
             <button
               key={type}
               onClick={() => setActivityType(type)}
-              className={`px-3 py-2 rounded text-sm font-medium transition ${
+              className={`px-3 py-2 rounded text-xs    transition ${
                 activityType === type
                   ? 'bg-red-600 text-white'
                   : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -97,13 +97,13 @@ const DealActivityLog = ({ dealId }) => {
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
               placeholder={`Add a ${activityType}...`}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-20 resize-none focus:outline-none focus:border-red-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  min-h-20 resize-none focus:outline-none focus:border-red-500"
             />
             <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={!newNote.trim()}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition"
+                className="p-2  bg-red-600 text-white rounded    text-xs  hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition"
               >
                 <Send size={16} /> Add Activity
               </button>
@@ -113,22 +113,22 @@ const DealActivityLog = ({ dealId }) => {
       </div>
 
       <div className="space-y-3">
-        <h3 className="font-semibold text-gray-900 text-sm">Activity History</h3>
+        <h3 className=" text-gray-900 text-xs ">Activity History</h3>
         {activities.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p className="text-sm">No activities yet. Add one to get started!</p>
+            <p className="text-xs ">No activities yet. Add one to get started!</p>
           </div>
         ) : (
           activities.map((activity) => (
             <div
               key={activity.id}
-              className={`border rounded-lg p-4 ${getActivityColor(activity.type)}`}
+              className={`border rounded  p-2 ${getActivityColor(activity.type)}`}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{getActivityIcon(activity.type)}</span>
                   <div>
-                    <p className="font-semibold text-sm text-gray-900 capitalize">{activity.type}</p>
+                    <p className=" text-xs  text-gray-900 capitalize">{activity.type}</p>
                     <p className="text-xs text-gray-600">
                       {new Date(activity.createdAt).toLocaleDateString()} at {new Date(activity.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -136,12 +136,12 @@ const DealActivityLog = ({ dealId }) => {
                 </div>
                 <button
                   onClick={() => deleteActivity(activity.id)}
-                  className="p-1 hover:bg-red-100 rounded transition text-gray-400 hover:text-red-600"
+                  className="p-1 hover:bg-red-100 rounded transition text-[#1F2020] hover:text-red "
                 >
                   <Trash2 size={16} />
                 </button>
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{activity.content}</p>
+              <p className="text-xs  text-gray-700 whitespace-pre-wrap">{activity.content}</p>
             </div>
           ))
         )}

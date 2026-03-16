@@ -4,8 +4,8 @@ const pool = require('./config/database');
   try {
     const conn = await pool.getConnection();
     
-    console.log('=== INVOICE_ITEMS TABLE SCHEMA ===');
-    const [columns] = await conn.query('DESCRIBE invoice_items');
+    console.log('=== USERS TABLE SCHEMA ===');
+    const [columns] = await conn.query('DESCRIBE users');
     console.log(columns);
     
     console.log('\n=== INVOICES TABLE SCHEMA ===');

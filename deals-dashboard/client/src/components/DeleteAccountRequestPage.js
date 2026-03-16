@@ -6,12 +6,12 @@ import DeleteRequestFilterPanel from './DeleteRequestFilterPanel';
 
 const StatusBadge = ({ status }) => {
   if (status === 'Rejected') {
-    return <span className="inline-flex items-center px-3 py-1 rounded text-xs font-semibold bg-red-100 text-red-800">Rejected</span>;
+    return <span className="inline-flex items-center px-3 py-1 rounded text-xs  bg-red-100 text-red-800">Rejected</span>;
   }
   if (status === 'Approved') {
-    return <span className="inline-flex items-center px-3 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">Approved</span>;
+    return <span className="inline-flex items-center px-3 py-1 rounded text-xs  bg-green-100 text-green-800">Approved</span>;
   }
-  return <span className="inline-flex items-center px-3 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">Pending</span>;
+  return <span className="inline-flex items-center px-3 py-1 rounded text-xs  bg-yellow-100 text-yellow-800">Pending</span>;
 };
 
 const ApprovalModal = ({ isOpen, request, onApprove, onReject, onClose, loading }) => {
@@ -19,41 +19,41 @@ const ApprovalModal = ({ isOpen, request, onApprove, onReject, onClose, loading 
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+      <div className="bg-white rounded  shadow-xlp-3  w-96">
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-shrink-0">
             <Check className="h-6 w-6 text-yellow-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Review Delete Request</h3>
+          <h3 className="text-md  text-gray-900">Review Delete Request</h3>
         </div>
         
         <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-xs  text-gray-600 mb-4">
             <strong>{request.first_name}</strong> ({request.email}) has requested account deletion.
           </p>
-          <p className="text-sm text-gray-600 mb-2"><strong>Reason:</strong></p>
-          <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">{request.reason}</p>
+          <p className="text-xs  text-gray-600 mb-2"><strong>Reason:</strong></p>
+          <p className="text-xs  text-gray-700 bg-gray-50 p-3 rounded">{request.reason}</p>
         </div>
         
         <div className="flex gap-3">
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 p-2  text-xs    text-gray-700 bg-gray-100 hover:bg-gray-200 rounded  transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={() => onReject(request.id)}
             disabled={loading}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 p-2  text-xs    text-white bg-red-600 hover:bg-red-700 rounded  transition-colors disabled:opacity-50"
           >
             Reject
           </button>
           <button
             onClick={() => onApprove(request.id)}
             disabled={loading}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 p-2  text-xs    text-white bg-green-600 hover:bg-green-700 rounded  transition-colors disabled:opacity-50"
           >
             Approve
           </button>
@@ -258,7 +258,7 @@ const DeleteAccountRequestPage = () => {
   return (
     <div className="bg-gray-50 min-h-screen">
       {successMessage && (
-        <div className="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-40 animate-fadeIn">
+        <div className="fixed top-2 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-40 animate-fadeIn">
           {successMessage}
         </div>
       )}
@@ -275,8 +275,8 @@ const DeleteAccountRequestPage = () => {
                 onError={(e) => {e.target.src = `https://i.pravatar.cc/100?u=${currentUser.email}`}}
               />
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">{currentUser.first_name}</h2>
-                <p className="text-sm text-gray-600">{currentUser.email}</p>
+                <h2 className="text-md  text-gray-900">{currentUser.first_name}</h2>
+                <p className="text-xs  text-gray-600">{currentUser.email}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   Member since {new Date(currentUser.created_at).toLocaleDateString('en-GB')}
                 </p>
@@ -284,13 +284,13 @@ const DeleteAccountRequestPage = () => {
             </div>
             {userDeleteRequest ? (
               <div className="text-right">
-                <p className="text-sm text-gray-600 mb-2">Your Delete Request Status:</p>
+                <p className="text-xs  text-gray-600 mb-2">Your Delete Request Status:</p>
                 <StatusBadge status={userDeleteRequest.status} />
               </div>
             ) : (
               <button
                 onClick={() => setShowDeleteRequestModal(true)}
-                className="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                className="p-2  bg-red-600 text-white   rounded  hover:bg-red-700 transition-colors"
               >
                 Request Account Deletion
               </button>
@@ -300,12 +300,12 @@ const DeleteAccountRequestPage = () => {
       )}
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">Delete Account Requests</h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <h1 className="text-2xl  text-gray-900">Delete Account Requests</h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs   bg-red-100 text-red-800">
                 {requests.length}
               </span>
             </div>
@@ -313,14 +313,14 @@ const DeleteAccountRequestPage = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="relative group">
-              <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2 transition-colors">
+              <button className="bg-white border border-gray-300 text-gray-700 p-2  rounded  text-xs    hover:bg-gray-50 flex items-center gap-2 transition-colors">
                 <Download size={16} />
                 Export
                 <ChevronDown size={16} />
               </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-10">
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">Export as PDF</button>
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-t border-gray-200">Export as Excel</button>
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded  shadow-lg hidden group-hover:block z-10">
+                <button className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700">Export as PDF</button>
+                <button className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 border-t border-gray-200">Export as Excel</button>
               </div>
             </div>
           </div>
@@ -328,31 +328,31 @@ const DeleteAccountRequestPage = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="relative flex-1 max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
           <input
             type="text"
             placeholder="Search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 text-sm bg-white w-full max-w-xs"
+            className="pl-9 pr-4 py-2 border border-gray-300 rounded  focus:outline-none focus:border-gray-400 text-xs  bg-white w-full max-w-xs"
           />
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 relative">
             <button
               onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white hover:bg-blue-50 hover:border-blue-300 transition-colors font-medium"
+              className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded  text-xs  text-gray-700 bg-white hover:bg-blue-50 hover:border-blue-300 transition-colors  "
             >
               <Filter size={16} />
               Filter
               {(appliedFilters.statuses.length > 0 || appliedFilters.users.length > 0) && (
-                <span className="ml-1 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full font-semibold">
+                <span className="ml-1 p-1  bg-blue-500 text-white text-xs rounded-full ">
                   {appliedFilters.statuses.length + appliedFilters.users.length}
                 </span>
               )}
@@ -364,7 +364,7 @@ const DeleteAccountRequestPage = () => {
               onFilter={handleFilterPanelApply}
               onReset={handleFilterReset}
             />
-            <div className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700">
+            <div className="px-3 py-2 border border-gray-300 rounded  text-xs  bg-white text-gray-700">
               {new Date().toLocaleDateString('en-GB')}
             </div>
             <ColumnFilterDropdown
@@ -378,39 +378,39 @@ const DeleteAccountRequestPage = () => {
 
       {/* Table */}
       <div className="p-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded  shadow-sm border border-gray-200 overflow-hidden">
           {requests.length === 0 ? (
             <div className="p-12 text-center">
-              <AlertCircle size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Delete Requests</h3>
+              <AlertCircle size={48} className="mx-auto text-[#1F2020] mb-4" />
+              <h3 className="text-md  text-gray-900 mb-2">No Delete Requests</h3>
               <p className="text-gray-600">No account deletion requests at the moment.</p>
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-xs ">
                   <thead>
                     <tr className="bg-blue-50 border-b border-gray-200">
                       <th className="py-3 px-4 text-left w-8">
                         <input type="checkbox" className="cursor-pointer" />
                       </th>
                       {visibleColumns.includes('user') && (
-                        <th className="py-3 px-4 text-left font-semibold text-gray-700">User</th>
+                        <th className="py-3 px-4 text-left  text-gray-700">User</th>
                       )}
                       {visibleColumns.includes('email') && (
-                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Email</th>
+                        <th className="py-3 px-4 text-left  text-gray-700">Email</th>
                       )}
                       {visibleColumns.includes('requested_date') && (
-                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Requested Date</th>
+                        <th className="py-3 px-4 text-left  text-gray-700">Requested Date</th>
                       )}
                       {visibleColumns.includes('reason') && (
-                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Reason</th>
+                        <th className="py-3 px-4 text-left  text-gray-700">Reason</th>
                       )}
                       {visibleColumns.includes('status') && (
-                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Status</th>
+                        <th className="py-3 px-4 text-left  text-gray-700">Status</th>
                       )}
                       {visibleColumns.includes('action') && (
-                        <th className="py-3 px-4 text-left font-semibold text-gray-700">Action</th>
+                        <th className="py-3 px-4 text-left  text-gray-700">Action</th>
                       )}
                     </tr>
                   </thead>
@@ -430,7 +430,7 @@ const DeleteAccountRequestPage = () => {
                                 onError={(e) => {e.target.src = `https://i.pravatar.cc/100?u=${request.email}`}}
                               />
                               <div>
-                                <p className="font-medium text-gray-900">{request.first_name || 'N/A'}</p>
+                                <p className="  text-gray-900">{request.first_name || 'N/A'}</p>
                               </div>
                             </div>
                           </td>
@@ -466,10 +466,10 @@ const DeleteAccountRequestPage = () => {
                                 onClick={() => setOpenMenuId(openMenuId === request.id ? null : request.id)}
                                 className="p-1 hover:bg-gray-200 rounded transition-colors"
                               >
-                                <MoreVertical size={16} className="text-gray-400" />
+                                <MoreVertical size={16} className="text-[#1F2020]" />
                               </button>
                               {openMenuId === request.id && (
-                                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                                <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded  shadow-lg z-20">
                                   {request.status === 'Pending' && (
                                     <>
                                       <button
@@ -478,7 +478,7 @@ const DeleteAccountRequestPage = () => {
                                           setShowApprovalModal(true);
                                           setOpenMenuId(null);
                                         }}
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
+                                        className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700"
                                       >
                                         Review Request
                                       </button>
@@ -489,7 +489,7 @@ const DeleteAccountRequestPage = () => {
                                     onClick={() => {
                                       setOpenMenuId(null);
                                     }}
-                                    className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700"
+                                    className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700"
                                   >
                                     View Details
                                   </button>
@@ -505,22 +505,22 @@ const DeleteAccountRequestPage = () => {
               </div>
 
               {pageData.length > 0 && (
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-                  <div className="text-sm text-gray-600">
+                <div className="flex items-center justify-between p-2  border-t border-gray-200 bg-gray-50">
+                  <div className="text-xs  text-gray-600">
                     Showing {pageData.length} of {filtered.length} entries
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setPage((s) => Math.max(1, s - 1))}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
+                      className="px-3 py-1 border border-gray-300 rounded text-xs  hover:bg-gray-100 transition-colors disabled:opacity-50"
                       disabled={page === 1}
                     >
                       &lt;
                     </button>
-                    <button className="px-3 py-1 bg-red-600 text-white rounded text-sm">{page}</button>
+                    <button className="px-3 py-1 bg-red-600 text-white rounded text-xs ">{page}</button>
                     <button
                       onClick={() => setPage((s) => Math.min(pages, s + 1))}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
+                      className="px-3 py-1 border border-gray-300 rounded text-xs  hover:bg-gray-100 transition-colors disabled:opacity-50"
                       disabled={page === pages}
                     >
                       &gt;
@@ -557,9 +557,9 @@ const DeleteAccountRequestPage = () => {
       <div className="text-center text-xs text-gray-500 py-6 border-t border-gray-200 bg-white">
         <span>
           Copyright © 2025{' '}
-          <span className="text-red-600 font-medium">Preadmin</span>
+          <span className="text-red   ">Preadmin</span>
         </span>
-        <div className="flex gap-4 justify-center mt-2">
+        <div className="flex gap-2 justify-center mt-2">
           <span className="cursor-pointer hover:text-gray-700">About</span>
           <span className="cursor-pointer hover:text-gray-700">Terms</span>
           <span className="cursor-pointer hover:text-gray-700">Contact Us</span>

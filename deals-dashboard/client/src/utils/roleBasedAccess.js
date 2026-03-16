@@ -42,7 +42,9 @@ const ROLE_UI_VISIBILITY = {
       reports: 'view',
     },
     modules: {
-      Dashboard: true,
+      DealsDashboard: true,
+      LeadsDashboard: true,
+      ProjectsDashboard: true,
       Contacts: true,
       Companies: true,
       Leads: true,
@@ -58,6 +60,7 @@ const ROLE_UI_VISIBILITY = {
       Payments: true,
       Activities: true,
       Analytics: true,
+      Kanban: true,
       UserManagement: true,
       Roles: true,
       Reports: true,
@@ -107,6 +110,9 @@ const ROLE_UI_VISIBILITY = {
     },
     modules: {
       Dashboard: true,
+      DealsDashboard: true,
+      LeadsDashboard: true,
+      ProjectsDashboard: true,
       Contacts: true,
       Companies: true,
       Leads: true,
@@ -122,6 +128,7 @@ const ROLE_UI_VISIBILITY = {
       Payments: true,
       Activities: true,
       Analytics: true,
+      Kanban: true,
       UserManagement: true,
       Roles: false,
       Reports: true,
@@ -170,7 +177,9 @@ const ROLE_UI_VISIBILITY = {
       reports: 'view',
     },
     modules: {
-      Dashboard: true,
+      DealsDashboard: true,
+      LeadsDashboard: true,
+      ProjectsDashboard: false,
       Contacts: true,
       Companies: true,
       Leads: true,
@@ -179,13 +188,14 @@ const ROLE_UI_VISIBILITY = {
       Campaign: true,
       Projects: false,
       Tasks: false,
-      Proposals: false,
-      Contracts: false,
-      Estimations: false,
-      Invoices: false,
-      Payments: false,
+      Proposals: true,
+      Contracts: true,
+      Estimations: true,
+      Invoices: true,
+      Payments: true,
       Activities: true,
       Analytics: true,
+      Kanban: true,
       UserManagement: false,
       Roles: false,
       Reports: true,
@@ -234,7 +244,9 @@ const ROLE_UI_VISIBILITY = {
       reports: 'view_only',
     },
     modules: {
-      Dashboard: true,
+      DealsDashboard: false,
+      LeadsDashboard: false,
+      ProjectsDashboard: true,
       Contacts: false,
       Companies: false,
       Leads: false,
@@ -250,6 +262,7 @@ const ROLE_UI_VISIBILITY = {
       Payments: false,
       Activities: true,
       Analytics: false,
+      Kanban: true,
       UserManagement: false,
       Roles: false,
       Reports: true,
@@ -298,44 +311,150 @@ const ROLE_UI_VISIBILITY = {
       reports: 'view_only',
     },
     modules: {
-      Dashboard: true,
-      Contacts: true,
-      Companies: true,
+      DealsDashboard: false,
+      LeadsDashboard: false,
+      ProjectsDashboard: true,
+      Contacts: false,
+      Companies: false,
       Leads: false,
-      Deals: true,
+      Deals: false,
       Pipelines: false,
       Campaign: false,
+      Projects: true,
+      Tasks: true,
+      Proposals: false,
+      Contracts: false,
+      Estimations: false,
+      Invoices: false,
+      Payments: false,
+      Activities: true,
+      Analytics: false,
+      Kanban: true,
+      UserManagement: false,
+      Roles: false,
+      Reports: true,
+    }
+  },
+  'Sales': {
+    sidebar: {
+      dashboard: true,
+      crm: true,
+      applications: true,
+      reports: true,
+      userManagement: false,
+      crmSettings: false,
+      membership: false,
+      content: false,
+      blog: false,
+      settings: false,
+      superAdmin: false,
+    },
+    components: {
+      createButton: true,
+      editButton: true,
+      deleteButton: false,
+      bulkActions: true,
+      exportButton: true,
+      importButton: true,
+      settingsButton: false,
+      assignButton: true,
+      transferButton: false,
+    },
+    menuItems: {
+      dealsDashboard: 'view',
+      leadsDashboard: 'view',
+      projectDashboard: 'view',
+      applications: 'view',
+      chatCallEmailCalendar: 'view',
+      crmContacts: 'view',
+      crmCompanies: 'view',
+      crmDeals: 'view',
+      crmLeads: 'view',
+      crmPipeline: 'view',
+      projectsAndTasks: 'assigned_tasks_only',
+      proposalsAndEstimations: 'view',
+      invoicesAndPayments: false,
+      analytics: 'view',
+      reports: 'view',
+    },
+    modules: {
+      SalesDashboard: true,
+      DealsDashboard: true,
+      LeadsDashboard: true,
+      ProjectsDashboard: true,
+      Contacts: true,
+      Companies: true,
+      Leads: true,
+      Deals: true,
+      Pipelines: true,
+      Campaign: true,
       Projects: true,
       Tasks: true,
       Proposals: true,
       Contracts: true,
       Estimations: true,
       Invoices: true,
-      Payments: true,
+      Payments: false,
       Activities: true,
-      Analytics: false,
+      Analytics: true,
+      Kanban: true,
       UserManagement: false,
       Roles: false,
-      Reports: false,
+      Reports: true,
     }
   },
+  'Leads Manager': {
+    sidebar: { dashboard: true, crm: true, applications: true, reports: true },
+    modules: { LeadsDashboard: true, Leads: true, Contacts: true, Activities: true, Reports: true }
+  },
+  'Deals Manager': {
+    sidebar: { dashboard: true, crm: true, applications: true, reports: true },
+    modules: { DealsDashboard: true, Deals: true, Pipelines: true, Proposals: true, Reports: true }
+  },
+  'Sales Manager': {
+    sidebar: { dashboard: true, crm: true, applications: true, reports: true },
+    modules: { SalesDashboard: true, Leads: true, Deals: true, Proposals: true, Reports: true }
+  },
+  'Marketing Manager': {
+    sidebar: { dashboard: true, crm: true, applications: true, reports: true },
+    modules: { ProjectsDashboard: true, Campaign: true, Projects: true, Tasks: true, Reports: true }
+  },
+  'IT Manager': {
+    sidebar: { dashboard: true, crm: true, applications: true, reports: true },
+    modules: { ProjectsDashboard: true, Projects: true, Tasks: true, Kanban: true, Reports: true }
+  },
+  'Accounting Manager': {
+    sidebar: { dashboard: true, crm: true, applications: true, reports: true },
+    modules: { Invoices: true, Payments: true, Reports: true }
+  },
+  'Sales Executive': {
+    sidebar: { dashboard: true, crm: true, applications: true },
+    modules: { SalesDashboard: true, Leads: true, Deals: true, Activities: true }
+  },
+  'Marketing Executive': {
+    sidebar: { dashboard: true, crm: true },
+    modules: { ProjectsDashboard: true, Projects: true, Tasks: true }
+  },
+  'IT Specialist': {
+    sidebar: { dashboard: true, crm: true },
+    modules: { ProjectsDashboard: true, Projects: true, Tasks: true, Kanban: true }
+  },
+  'Accountant': {
+    sidebar: { dashboard: true, crm: true },
+    modules: { Invoices: true, Payments: true }
+  }
 };
 
 export const getVisibility = (role, category, key) => {
+  if (!role || !category || !key) return false;
+  
   const roleVisibility = ROLE_UI_VISIBILITY[role];
   if (!roleVisibility) return false;
   
-  if (category === 'sidebar') {
-    return roleVisibility.sidebar[key] || false;
-  } else if (category === 'components') {
-    return roleVisibility.components[key] || false;
-  } else if (category === 'modules') {
-    return roleVisibility.modules[key] || false;
-  } else if (category === 'menuItems') {
-    return roleVisibility.menuItems[key] || false;
-  }
+  const categoryData = roleVisibility[category];
+  if (!categoryData) return false;
   
-  return false;
+  return categoryData[key] || false;
 };
 
 export const isSidebarItemVisible = (role, item) => {
@@ -376,7 +495,7 @@ export const isViewOnly = (role, menuItem) => {
 
 export const getVisibleModules = (role) => {
   const roleVisibility = ROLE_UI_VISIBILITY[role];
-  if (!roleVisibility) return [];
+  if (!roleVisibility || !roleVisibility.modules) return [];
   
   return Object.keys(roleVisibility.modules).filter(
     module => roleVisibility.modules[module]
@@ -385,7 +504,7 @@ export const getVisibleModules = (role) => {
 
 export const getVisibleSidebarSections = (role) => {
   const roleVisibility = ROLE_UI_VISIBILITY[role];
-  if (!roleVisibility) return [];
+  if (!roleVisibility || !roleVisibility.sidebar) return [];
   
   return Object.keys(roleVisibility.sidebar).filter(
     section => roleVisibility.sidebar[section]

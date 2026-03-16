@@ -101,10 +101,10 @@ const ProjectByStageChart = ({ projects, onDateRangeChange }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-border-light">
+    <div className="bg-white rounded  border border-border-light">
       <div className="p-2 border-b border-border-light">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Project By Stage</h2>
+          <h2 className="text-md  text-gray-900">Project By Stage</h2>
           <DateRangeDropdown
             value={selectedPeriod}
             onChange={setSelectedPeriod}

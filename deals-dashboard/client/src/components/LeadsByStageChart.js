@@ -114,10 +114,10 @@ const LeadsByStageChart = ({ leads, onDateRangeChange }) => {
 
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-[#E5E7EB]">
-      <div className="p-6 border-b border-[#E5E7EB]">
+    <div className="bg-white rounded  shadow-sm border border-[#E5E7EB]">
+      <div className="p-2 border-b border-[#E5E7EB]">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Leads By Stage</h2>
+          <h2 className="text-md  text-gray-900">Leads By Stage</h2>
           <div className="flex gap-2">
             <CustomDropdown
               options={['Marketing Pipeline', 'Sales Pipeline', 'Email', 'Chats', 'Operational']}

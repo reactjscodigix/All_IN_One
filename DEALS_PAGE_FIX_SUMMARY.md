@@ -46,7 +46,7 @@ const formatCurrency = (value) => {
   <div className="flex items-center justify-center h-full">
     <div className="text-center">
       <p className="text-gray-500 text-lg mb-2">No deals found</p>
-      <p className="text-gray-400 text-sm">Try adjusting your filters or add a new deal</p>
+      <p className="text-[#1F2020] text-xs ">Try adjusting your filters or add a new deal</p>
     </div>
   </div>
 ) : (

@@ -12,7 +12,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
     billTo: '',
     shipTo: '',
     project: '',
-    currency: 'USD',
+    currency: 'INR',
     date: new Date().toISOString().split('T')[0],
     openTill: '',
     paymentMethod: '',
@@ -184,7 +184,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
       billTo: '',
       shipTo: '',
       project: '',
-      currency: 'USD',
+      currency: 'INR',
       date: new Date().toISOString().split('T')[0],
       openTill: '',
       paymentMethod: '',
@@ -211,20 +211,20 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">Edit Invoice</h2>
+        <div className="flex justify-between items-center p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <h2 className="text-xl  text-gray-900">Edit Invoice</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading || isLoadingData}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
@@ -232,7 +232,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-              <p className="mt-4 text-gray-600 font-medium">Loading invoice...</p>
+              <p className="mt-4 text-gray-600  ">Loading invoice...</p>
             </div>
           </div>
         ) : (
@@ -240,13 +240,13 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
             
             {/* Client Section */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">Client</label>
+              <label className="block text-xs   text-gray-900 mb-3">Client</label>
               <div className="relative">
                 <select
                   name="client"
                   value={formData.client}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition appearance-none"
                 >
                   <option value="">Select</option>
                   {companies.map((company) => (
@@ -255,9 +255,9 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                     </option>
                   ))}
                 </select>
-                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
               </div>
-              <button type="button" className="text-red-500 text-sm font-medium hover:text-red-700 mt-2 flex items-center gap-1">
+              <button type="button" className="text-red-500 text-xs    hover:text-red-700 mt-2 flex items-center gap-1">
                 <Plus size={16} /> Add New
               </button>
             </div>
@@ -265,7 +265,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
             {/* Bill To & Ship To */}
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                <label className="block text-xs   text-gray-900 mb-3">
                   Bill To <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -274,11 +274,11 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                   value={formData.billTo}
                   onChange={handleInputChange}
                   placeholder="Enter billing address"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                <label className="block text-xs   text-gray-900 mb-3">
                   Ship To <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -287,20 +287,20 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                   value={formData.shipTo}
                   onChange={handleInputChange}
                   placeholder="Enter shipping address"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                 />
               </div>
             </div>
 
             {/* Project Section */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">Project</label>
+              <label className="block text-xs   text-gray-900 mb-3">Project</label>
               <div className="relative">
                 <select
                   name="project"
                   value={formData.project}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition appearance-none"
                 >
                   <option value="">Select Project</option>
                   {projects.length > 0 ? (
@@ -313,9 +313,9 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                     <option value="" disabled>No projects available</option>
                   )}
                 </select>
-                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+                <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
               </div>
-              <button type="button" className="text-red-500 text-sm font-medium hover:text-red-700 mt-2 flex items-center gap-1">
+              <button type="button" className="text-red-500 text-xs    hover:text-red-700 mt-2 flex items-center gap-1">
                 <Plus size={16} /> Add New
               </button>
             </div>
@@ -323,7 +323,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
             {/* Amount & Currency */}
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                <label className="block text-xs   text-gray-900 mb-3">
                   Amount <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -332,11 +332,11 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                   value={formData.amount}
                   onChange={handleInputChange}
                   placeholder="0.00"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                <label className="block text-xs   text-gray-900 mb-3">
                   Currency <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -344,15 +344,15 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                     name="currency"
                     value={formData.currency}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition appearance-none"
                   >
                     <option value="">Select</option>
+                    <option value="INR">INR</option>
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
                     <option value="GBP">GBP</option>
-                    <option value="INR">INR</option>
                   </select>
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
                 </div>
               </div>
             </div>
@@ -360,17 +360,17 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
             {/* Date & Open Till */}
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">Date</label>
+                <label className="block text-xs   text-gray-900 mb-3">Date</label>
                 <input
                   type="date"
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                <label className="block text-xs   text-gray-900 mb-3">
                   Open Till <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -378,7 +378,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                   name="openTill"
                   value={formData.openTill}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                 />
               </div>
             </div>
@@ -386,13 +386,13 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
             {/* Payment Method & Status */}
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">Payment Method</label>
+                <label className="block text-xs   text-gray-900 mb-3">Payment Method</label>
                 <div className="relative">
                   <select
                     name="paymentMethod"
                     value={formData.paymentMethod}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition appearance-none"
                   >
                     <option value="">Select</option>
                     <option value="Credit Card">Credit Card</option>
@@ -400,17 +400,17 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                     <option value="Cash">Cash</option>
                     <option value="Check">Check</option>
                   </select>
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">Status</label>
+                <label className="block text-xs   text-gray-900 mb-3">Status</label>
                 <div className="relative">
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition appearance-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition appearance-none"
                   >
                     <option value="">Select</option>
                     <option value="Draft">Draft</option>
@@ -420,27 +420,27 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                     <option value="Unpaid">Unpaid</option>
                     <option value="Overdue">Overdue</option>
                   </select>
-                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+                  <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
                 </div>
               </div>
             </div>
 
             {/* Line Items Section */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">
+              <label className="block text-xs   text-gray-900 mb-3">
                 Line Items <span className="text-red-500">*</span>
               </label>
-              <div className="border border-gray-300 rounded-lg overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="border border-gray-300 rounded  overflow-x-auto">
+                <table className="w-full text-xs ">
                   <thead className="bg-gray-50 border-b border-gray-300">
                     <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Item/Service</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Qty</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Rate</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Discount %</th>
-                      <th className="px-3 py-2 text-left font-semibold text-gray-700">Tax %</th>
-                      <th className="px-3 py-2 text-right font-semibold text-gray-700">Total</th>
-                      <th className="px-3 py-2 text-center font-semibold text-gray-700">Action</th>
+                      <th className="px-3 py-2 text-left  text-gray-700">Item/Service</th>
+                      <th className="px-3 py-2 text-left  text-gray-700">Qty</th>
+                      <th className="px-3 py-2 text-left  text-gray-700">Rate</th>
+                      <th className="px-3 py-2 text-left  text-gray-700">Discount %</th>
+                      <th className="px-3 py-2 text-left  text-gray-700">Tax %</th>
+                      <th className="px-3 py-2 text-right  text-gray-700">Total</th>
+                      <th className="px-3 py-2 text-center  text-gray-700">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -454,7 +454,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                               value={item.item_name}
                               onChange={(e) => handleLineItemChange(item.id, 'item_name', e.target.value)}
                               placeholder="Item/Service name"
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                              className="w-full p-1  border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -463,7 +463,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                               value={item.quantity}
                               onChange={(e) => handleLineItemChange(item.id, 'quantity', e.target.value)}
                               min="1"
-                              className="w-16 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                              className="w-16 p-1  border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -473,7 +473,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                               onChange={(e) => handleLineItemChange(item.id, 'rate', e.target.value)}
                               min="0"
                               step="0.01"
-                              className="w-20 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                              className="w-20 p-1  border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -483,7 +483,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                               onChange={(e) => handleLineItemChange(item.id, 'discount_percent', e.target.value)}
                               min="0"
                               max="100"
-                              className="w-16 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                              className="w-16 p-1  border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
                             />
                           </td>
                           <td className="px-3 py-2">
@@ -493,10 +493,10 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                               onChange={(e) => handleLineItemChange(item.id, 'tax_percent', e.target.value)}
                               min="0"
                               max="100"
-                              className="w-16 px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
+                              className="w-16 p-1  border border-gray-300 rounded text-xs focus:outline-none focus:border-red-500"
                             />
                           </td>
-                          <td className="px-3 py-2 text-right font-semibold text-gray-900">
+                          <td className="px-3 py-2 text-right  text-gray-900">
                             {itemTotal.toFixed(2)}
                           </td>
                           <td className="px-3 py-2 text-center">
@@ -518,7 +518,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
               <button
                 type="button"
                 onClick={addLineItem}
-                className="mt-3 text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                className="mt-3 text-red  hover:text-red-700 text-xs    flex items-center gap-1"
               >
                 <Plus size={16} /> Add Line Item
               </button>
@@ -528,20 +528,20 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
             <div className="border-t border-gray-200 pt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-right">
-                  <p className="text-sm text-gray-600">Subtotal:</p>
-                  <p className="text-lg font-semibold text-gray-900">{subtotal.toFixed(2)}</p>
+                  <p className="text-xs  text-gray-600">Subtotal:</p>
+                  <p className="text-md  text-gray-900">₹{subtotal.toFixed(2)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-600">Discount:</p>
-                  <p className="text-lg font-semibold text-red-600">-{totalDiscount.toFixed(2)}</p>
+                  <p className="text-xs  text-gray-600">Discount:</p>
+                  <p className="text-lg  text-red ">-₹{totalDiscount.toFixed(2)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-600">Tax:</p>
-                  <p className="text-lg font-semibold text-gray-900">+{totalTax.toFixed(2)}</p>
+                  <p className="text-xs  text-gray-600">Tax:</p>
+                  <p className="text-md  text-gray-900">+₹{totalTax.toFixed(2)}</p>
                 </div>
-                <div className="text-right bg-red-50 p-3 rounded-lg">
-                  <p className="text-sm text-gray-600">Total:</p>
-                  <p className="text-2xl font-bold text-red-600">{total.toFixed(2)}</p>
+                <div className="text-right bg-red-50 p-3 rounded ">
+                  <p className="text-xs  text-gray-600">Total:</p>
+                  <p className="text-2xl  text-red ">₹{total.toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -549,52 +549,52 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
             {/* Company Details & Bank Details */}
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">Company Details</label>
+                <label className="block text-xs   text-gray-900 mb-3">Company Details</label>
                 <textarea
                   name="companyDetails"
                   value={formData.companyDetails}
                   onChange={handleInputChange}
                   placeholder="Your company name, address, etc."
                   rows="3"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition resize-none"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">Bank/Payment Details</label>
+                <label className="block text-xs   text-gray-900 mb-3">Bank/Payment Details</label>
                 <textarea
                   name="bankDetails"
                   value={formData.bankDetails}
                   onChange={handleInputChange}
                   placeholder="Bank name, account number, SWIFT code, etc."
                   rows="3"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition resize-none"
                 />
               </div>
             </div>
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">Notes</label>
+              <label className="block text-xs   text-gray-900 mb-3">Notes</label>
               <textarea
                 name="notes"
                 value={formData.notes}
                 onChange={handleInputChange}
                 placeholder="Enter any additional notes"
                 rows="3"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition resize-none"
               />
             </div>
 
             {/* Terms & Conditions */}
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">Terms & Conditions</label>
+              <label className="block text-xs   text-gray-900 mb-3">Terms & Conditions</label>
               <textarea
                 name="termsConditions"
                 value={formData.termsConditions}
                 onChange={handleInputChange}
                 placeholder="Enter terms and conditions"
                 rows="3"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition resize-none"
               />
             </div>
 
@@ -604,14 +604,14 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
                 type="button"
                 onClick={handleCancel}
                 disabled={isLoading}
-                className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="p-2  border border-gray-300 rounded  text-xs    text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-semibold text-white transition-colors disabled:opacity-50"
+                className="p-2  bg-red-600 hover:bg-red-700 rounded  text-xs   text-white transition-colors disabled:opacity-50"
               >
                 {isLoading ? 'Updating...' : 'Update Invoice'}
               </button>

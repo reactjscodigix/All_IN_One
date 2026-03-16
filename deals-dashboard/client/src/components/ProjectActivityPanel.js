@@ -57,9 +57,9 @@ const ProjectActivityPanel = ({ projectId, currentUserId = 1 }) => {
       <div className="flex gap-2 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('comments')}
-          className={`px-4 py-3 font-medium text-sm flex items-center gap-2 border-b-2 ${
+          className={`px-4 py-3   text-xs  flex items-center gap-2 border-b-2 ${
             activeTab === 'comments'
-              ? 'border-red-600 text-red-600'
+              ? 'border-red-600 text-red '
               : 'border-transparent text-gray-600 hover:text-gray-900'
           }`}
         >
@@ -67,9 +67,9 @@ const ProjectActivityPanel = ({ projectId, currentUserId = 1 }) => {
         </button>
         <button
           onClick={() => setActiveTab('activity')}
-          className={`px-4 py-3 font-medium text-sm border-b-2 ${
+          className={`px-4 py-3   text-xs  border-b-2 ${
             activeTab === 'activity'
-              ? 'border-red-600 text-red-600'
+              ? 'border-red-600 text-red '
               : 'border-transparent text-gray-600 hover:text-gray-900'
           }`}
         >
@@ -85,12 +85,12 @@ const ProjectActivityPanel = ({ projectId, currentUserId = 1 }) => {
               placeholder="Add a comment..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              className="flex-grow px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+              className="flex-grow px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
             />
             <button
               type="submit"
               disabled={submitting || !newComment.trim()}
-              className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition"
+              className="px-3 py-2 bg-red-600 text-white rounded  hover:bg-red-700 disabled:opacity-50 transition"
             >
               <Send size={16} />
             </button>
@@ -98,13 +98,13 @@ const ProjectActivityPanel = ({ projectId, currentUserId = 1 }) => {
 
           <div className="space-y-3">
             {comments.length === 0 ? (
-              <div className="text-center py-6 text-gray-500 text-sm">No comments yet. Start the conversation!</div>
+              <div className="text-center py-6 text-gray-500 text-xs ">No comments yet. Start the conversation!</div>
             ) : (
               comments.map(comment => (
-                <div key={comment.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <div key={comment.id} className="bg-gray-50 rounded  p-3 border border-gray-200">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-medium text-sm text-gray-900">
+                      <p className="  text-xs  text-gray-900">
                         {comment.first_name} {comment.last_name}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
@@ -112,7 +112,7 @@ const ProjectActivityPanel = ({ projectId, currentUserId = 1 }) => {
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-700 mt-2">{comment.comment_text}</p>
+                  <p className="text-xs  text-gray-700 mt-2">{comment.comment_text}</p>
                 </div>
               ))
             )}
@@ -123,18 +123,18 @@ const ProjectActivityPanel = ({ projectId, currentUserId = 1 }) => {
       {activeTab === 'activity' && (
         <div className="space-y-3">
           {activity.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 text-sm">No activity yet</div>
+            <div className="text-center py-6 text-gray-500 text-xs ">No activity yet</div>
           ) : (
             activity.map(act => (
               <div key={act.id} className="flex gap-3 pb-3 border-b border-gray-200 last:border-b-0">
                 <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-medium text-gray-600">
+                  <span className="text-xs   text-gray-600">
                     {act.first_name?.[0]}{act.last_name?.[0]}
                   </span>
                 </div>
                 <div className="flex-grow min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{act.first_name} {act.last_name}</p>
-                  <p className="text-sm text-gray-600 mt-1">{act.description}</p>
+                  <p className="text-xs    text-gray-900">{act.first_name} {act.last_name}</p>
+                  <p className="text-xs  text-gray-600 mt-1">{act.description}</p>
                   <p className="text-xs text-gray-500 mt-1">
                     {new Date(act.created_at).toLocaleString()}
                   </p>

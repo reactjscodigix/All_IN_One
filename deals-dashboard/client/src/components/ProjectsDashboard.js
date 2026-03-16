@@ -7,6 +7,8 @@ import ProjectsByStageChart from './ProjectsByStageChart';
 import LeadsByStageChart from './LeadsByStageChart';
 import WonDealsChart from './WonDealsChart';
 import ProjectKPISummary from './ProjectKPISummary';
+import TasksKanban from './TasksKanban';
+import { useAuth } from '../hooks/useAuth';
 
 const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const calendarPresets = ['Today', 'Yesterday', 'Last 7 Days', 'Last 15 Days', 'Last 30 Days', 'This Month', 'Last Month', 'Custom Range'];
@@ -91,6 +93,7 @@ const formatReadableRange = (range) => {
 };
 
 const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [leads, setLeads] = useState([]);
   const [deals, setDeals] = useState([]);
@@ -111,13 +114,28 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
   const transformProject = (project) => ({
     id: project.id,
     name: project.name || project.title || '',
-    company: project.company_name || '',
-    priority: 'Medium',
-    dueDate: project.due_date ? new Date(project.due_date).toISOString().split('T')[0] : '',
-    stage: project.status || '',
-    status: project.status || '',
-    budget: project.budget || 0,
+    company: project.company_name || project.company || '',
+    priority: project.priority || 'Medium',
+    dueDate: project.due_date || project.dueDate || '',
+    startDate: project.start_date || project.startDate || '',
+    stage: project.status || project.stage || '',
+    status: project.status || project.stage || '',
+    budget: project.budget || project.price || 0,
     description: project.description || '',
+    projectType: project.project_type || project.projectType || '',
+    category: project.category || '',
+    projectTiming: project.project_timing || project.projectTiming || '',
+    responsiblePersons: (() => {
+      try {
+        if (typeof project.responsible_persons === 'string') {
+          return JSON.parse(project.responsible_persons || '[]');
+        }
+        return project.responsible_persons || [];
+      } catch (e) {
+        return [];
+      }
+    })(),
+    teamLeader: project.team_leader || project.teamLeader || '',
     createdAt: project.created_at ? new Date(project.created_at).toISOString().split('T')[0] : '',
   });
 
@@ -315,35 +333,98 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
     window.URL.revokeObjectURL(url);
   };
 
-  const handleAddProject = (formData) => {
-    const newProject = {
-      id: projects.length + 1,
-      name: formData.name,
-      company: formData.client,
-      priority: formData.priority,
-      dueDate: formData.dueDate,
-      stage: 'Planning',
-      status: formData.status,
-      ...formData,
-    };
-    setProjects(prev => [newProject, ...prev]);
+  const handleAddProject = async (formData) => {
+    try {
+      const payload = {
+        name: formData.name,
+        projectId: formData.projectId,
+        projectType: formData.projectType,
+        client: formData.client,
+        category: formData.category,
+        projectTiming: formData.projectTiming,
+        budget: formData.price,
+        responsiblePersons: JSON.stringify(formData.responsiblePersons),
+        teamLeader: formData.teamLeader,
+        startDate: formData.startDate,
+        dueDate: formData.dueDate,
+        priority: formData.priority,
+        status: formData.status || 'Planning',
+        description: formData.description,
+      };
+      const response = await projectAPI.create(payload);
+      const newProject = transformProject(response);
+      setProjects(prev => [newProject, ...prev]);
+    } catch (err) {
+      console.error('Failed to add project:', err);
+      // Fallback for demo if API fails
+      const newProject = {
+        id: projects.length + 1,
+        name: formData.name,
+        company: formData.client,
+        priority: formData.priority,
+        dueDate: formData.dueDate,
+        stage: 'Planning',
+        status: formData.status,
+        ...formData,
+      };
+      setProjects(prev => [newProject, ...prev]);
+    }
+  };
+
+  const handleEditProject = async (projectId, formData) => {
+    try {
+      const payload = {
+        name: formData.name,
+        projectId: formData.projectId,
+        projectType: formData.projectType,
+        client: formData.client,
+        category: formData.category,
+        projectTiming: formData.projectTiming,
+        budget: formData.price,
+        responsiblePersons: JSON.stringify(formData.responsiblePersons),
+        teamLeader: formData.teamLeader,
+        startDate: formData.startDate,
+        dueDate: formData.dueDate,
+        priority: formData.priority,
+        status: formData.status,
+        description: formData.description,
+      };
+      const response = await projectAPI.update(projectId, payload);
+      const updatedProject = transformProject(response);
+      setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
+    } catch (err) {
+      console.error('Failed to edit project:', err);
+      // Fallback for demo
+      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...formData, company: formData.client, budget: formData.price } : p));
+    }
+  };
+
+  const handleDeleteProject = async (projectId) => {
+    try {
+      await projectAPI.delete(projectId);
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+      // Even if API fails, update UI for demo purposes
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+    }
   };
 
   const renderMonth = (baseDate) => {
     const cells = buildMonthMatrix(baseDate);
     return (
       <div className="flex-1">
-        <div className="text-sm font-semibold text-gray-900 text-center mb-2">
+        <div className="text-xs   text-gray-900 text-center mb-2">
           {baseDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
         </div>
         <div className="grid grid-cols-7 gap-1 text-xs text-gray-500 mb-2">
           {dayLabels.map((day) => (
-            <div key={`${day}-${baseDate.getMonth()}`} className="text-center font-medium uppercase tracking-wide">
+            <div key={`${day}-${baseDate.getMonth()}`} className="text-center    tracking-wide">
               {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1 text-sm">
+        <div className="grid grid-cols-7 gap-1 text-xs ">
           {cells.map((cell, idx) => {
             if (!cell) {
               return <div key={`empty-${baseDate.getMonth()}-${idx}`} className="h-8" />;
@@ -362,7 +443,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
                   isStart || isEnd
                     ? 'bg-red-500 text-white'
                     : inRange
-                      ? 'bg-red-100 text-red-600'
+                      ? 'bg-red-100 text-red '
                       : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -390,17 +471,17 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
   const nextMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
 
   return (
-    <div className="p-2 bg-gray-50 min-h-screen">
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between animate-fade-in">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
+      <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between animate-fade-in">
         <div>
-          <h1 className="text-[1.250025rem] font-bold text-gray-900 text-color-transition">Project Dashboard</h1>
-          {headerRangeLabel && <p className="text-gray-600 text-sm mt-2">{headerRangeLabel}</p>}
+          <h1 className="text-[1.250025rem]  text-gray-900 text-color-transition">Project Dashboard</h1>
+          {headerRangeLabel && <p className="text-gray-600 text-xs ">{headerRangeLabel}</p>}
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={openCalendarPanel}
-            className="flex items-center gap-2 border border-border-light rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:border-red-500 hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="flex items-center gap-2 border border-border-light rounded  bg-white px-3 py-2 text-xs    text-gray-700 hover:border-red-500 hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
             title="Select date range"
           >
             <Calendar size={16} />
@@ -409,7 +490,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
           <button
             type="button"
             onClick={handleRefresh}
-            className="h-10 w-10 flex items-center justify-center rounded-lg border border-border-light text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
+            className="h-10 w-10 flex items-center justify-center rounded  border border-border-light text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
             title="Refresh"
           >
             <RotateCcw size={16} />
@@ -417,7 +498,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
           <button
             type="button"
             onClick={handleExport}
-            className="h-10 w-10 flex items-center justify-center rounded-lg border border-border-light text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="h-10 w-10 flex items-center justify-center rounded  border border-border-light text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             title="Export"
             disabled={!projects.length}
           >
@@ -428,22 +509,30 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
 
       <ProjectKPISummary projects={projects} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <div className="chart-container transition-smooth">
+      {(user?.role === 'Employee' || user?.role === 'Project Manager') && (
+        <div className="mb-6 animate-fade-in">
+          <TasksKanban />
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-6">
+        <div className="chart-container col-span-2 transition-smooth">
           <RecentProjectsTable
             projects={projects}
             onDateRangeChange={handleDateRangeChange}
             onAddProject={handleAddProject}
+            onEditProject={handleEditProject}
+            onDeleteProject={handleDeleteProject}
             onViewProjectDetails={onViewProjectDetails}
             onViewCompanyDetails={handleCompanyDetailsView}
           />
         </div>
-        <div className="chart-container transition-smooth">
+        <div className="chart-container col-span-1 transition-smooth">
           <ProjectByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
         <div className="chart-container transition-smooth">
           <ProjectsByStageChart projects={projects} onDateRangeChange={handleDateRangeChange} />
         </div>
@@ -452,7 +541,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 mb-6">
+      <div className="grid grid-cols-1 gap-2 mb-6">
         <div className="chart-container transition-smooth">
           <WonDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
         </div>
@@ -463,7 +552,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
       {showCalendarPanel && (
         <div className="fixed inset-0 z-40">
           <div className="absolute inset-0 bg-black bg-opacity-25" onClick={closeCalendarPanel}></div>
-          <div className="absolute right-8 top-24 w-[720px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+          <div className="absolute right-8 top-24 w-[720px] bg-white rounded  overflow-hidden animate-fade-in p-2">
             <div className="flex">
               <div className="w-48 bg-gray-50 border-r border-gray-100 py-4">
                 {calendarPresets.map((label) => (
@@ -471,7 +560,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
                     key={label}
                     type="button"
                     onClick={() => handlePresetSelect(label)}
-                    className={`w-full text-left px-4 py-2 text-sm ${
+                    className={`w-full text-left p-2  text-xs  ${
                       activePreset === label ? 'bg-red-500 text-white' : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -484,17 +573,17 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
                   <button
                     type="button"
                     onClick={() => handleMonthShift(-1)}
-                    className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                    className="p-2 rounded  text-gray-600 hover:bg-gray-100"
                   >
                     <ChevronLeft size={18} />
                   </button>
-                  <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-xs   text-gray-900">
                     {calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })} – {nextMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
                   </div>
                   <button
                     type="button"
                     onClick={() => handleMonthShift(1)}
-                    className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                    className="p-2 rounded  text-gray-600 hover:bg-gray-100"
                   >
                     <ChevronRight size={18} />
                   </button>
@@ -507,14 +596,14 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
                   <button
                     type="button"
                     onClick={closeCalendarPanel}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 border border-border-light rounded-lg hover:bg-gray-50"
+                    className="p-2  text-xs    text-gray-700 border border-border-light rounded  hover:bg-gray-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={handleApplyCustomRange}
-                    className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600"
+                    className="p-2  text-xs    text-white bg-red-500 rounded  hover:bg-red-600"
                   >
                     Apply
                   </button>

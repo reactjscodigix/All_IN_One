@@ -79,7 +79,7 @@ async function addPipelineAndCampaignData() {
     for (const campaign of campaigns) {
       const [result] = await connection.query(
         'INSERT INTO campaigns (name, description, budget, status, start_date, end_date, currency) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [campaign.name, campaign.description, campaign.budget, campaign.status, campaign.start_date, campaign.end_date, 'USD']
+        [campaign.name, campaign.description, campaign.budget, campaign.status, campaign.start_date, campaign.end_date, 'INR']
       );
       insertedCampaigns.push({ id: result.insertId, ...campaign });
       console.log(`✅ Created Campaign: ${campaign.name} (ID: ${result.insertId})`);
@@ -158,9 +158,9 @@ async function addPipelineAndCampaignData() {
         `INSERT INTO deals 
          (deal_name, company_id, contact_id, deal_value, currency, deal_stage, pipeline, status, probability, expected_close_date)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [deal.deal_name, deal.company_id, deal.contact_id, deal.deal_value, 'USD', deal.deal_stage, deal.pipeline, deal.status, deal.probability, deal.expected_close_date]
+        [deal.deal_name, deal.company_id, deal.contact_id, deal.deal_value, 'INR', deal.deal_stage, deal.pipeline, deal.status, deal.probability, deal.expected_close_date]
       );
-      console.log(`✅ Created Deal: ${deal.deal_name} ($${deal.deal_value.toLocaleString()}, ${deal.probability}% probability)`);
+      console.log(`✅ Created Deal: ${deal.deal_name} (₹${deal.deal_value.toLocaleString()}, ${deal.probability}% probability)`);
     }
 
     await connection.commit();

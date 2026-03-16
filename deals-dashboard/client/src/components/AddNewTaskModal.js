@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 
-const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [], users = [] }) => {
+const AddNewTaskModal = ({ isOpen, onClose, onSubmit, initialData = null, deals = [], projects = [], users = [] }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [allUsers, setAllUsers] = useState(users);
   const [allDeals, setAllDeals] = useState(deals);
   const [allProjects, setAllProjects] = useState(projects);
+  const [allLeads, setAllLeads] = useState([]);
+  const [allQuotations, setAllQuotations] = useState([]);
   const [error, setError] = useState('');
 
   const [formData, setFormData] = useState({
@@ -16,35 +18,83 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
     status: 'Open',
     assigned_to: [],
     due_date: '',
+    due_time: '',
     linked_type: 'General',
     linked_id: '',
     tags: [],
+    task_type: 'General',
+    next_followup_date: '',
   });
 
   const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     if (isOpen) {
+      if (initialData) {
+        let assigned = [];
+        try {
+          assigned = typeof initialData.assigned_to === 'string' 
+            ? JSON.parse(initialData.assigned_to) 
+            : (Array.isArray(initialData.assigned_to) ? initialData.assigned_to : [initialData.assigned_to]);
+          assigned = assigned.map(id => parseInt(id)).filter(Boolean);
+        } catch (e) {
+          assigned = initialData.assigned_to ? [parseInt(initialData.assigned_to)] : [];
+        }
+
+        setFormData({
+          title: initialData.title || '',
+          description: initialData.description || '',
+          priority: initialData.priority || 'Medium',
+          status: initialData.status || 'Open',
+          assigned_to: assigned,
+          due_date: initialData.due_date ? initialData.due_date.substring(0, 10) : '',
+          due_time: initialData.due_time || '',
+          linked_type: initialData.linked_type || 'General',
+          linked_id: initialData.linked_id || '',
+          tags: Array.isArray(initialData.tags) ? initialData.tags : [],
+          task_type: initialData.task_type || 'General',
+          next_followup_date: initialData.next_followup_date ? initialData.next_followup_date.substring(0, 10) : '',
+        });
+      } else {
+        setFormData({
+          title: '',
+          description: '',
+          priority: 'Medium',
+          status: 'Open',
+          assigned_to: [],
+          due_date: '',
+          due_time: '',
+          linked_type: 'General',
+          linked_id: '',
+          tags: [],
+          task_type: 'General',
+          next_followup_date: '',
+        });
+      }
       fetchData();
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   const fetchData = async () => {
     setLoadingData(true);
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const [usersRes, dealsRes, projectsRes] = await Promise.all([
+      const [usersRes, dealsRes, projectsRes, leadsRes, estimationsRes] = await Promise.all([
         fetch(`${apiUrl}/contacts`).then(r => r.json()),
         fetch(`${apiUrl}/deals`).then(r => r.json()),
         fetch(`${apiUrl}/projects`).then(r => r.json()),
+        fetch(`${apiUrl}/leads`).then(r => r.json()),
+        fetch(`${apiUrl}/estimations`).then(r => r.json()),
       ]).catch(err => {
         console.error('Error fetching data:', err);
-        return [[], [], []];
+        return [[], [], [], [], []];
       });
 
       setAllUsers(Array.isArray(usersRes) ? usersRes : []);
       setAllDeals(Array.isArray(dealsRes) ? dealsRes : []);
       setAllProjects(Array.isArray(projectsRes) ? projectsRes : []);
+      setAllLeads(Array.isArray(leadsRes) ? leadsRes : []);
+      setAllQuotations(Array.isArray(estimationsRes) ? estimationsRes : []);
     } catch (err) {
       console.error('Error:', err);
     } finally {
@@ -96,7 +146,7 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
     }
 
     if (formData.linked_type !== 'General' && !formData.linked_id) {
-      setError('Please select a Deal or Project to link');
+      setError(`Please select a ${formData.linked_type} to link`);
       return;
     }
 
@@ -121,9 +171,12 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
       status: 'Open',
       assigned_to: [],
       due_date: '',
+      due_time: '',
       linked_type: 'General',
       linked_id: '',
       tags: [],
+      task_type: 'General',
+      next_followup_date: '',
     });
     setError('');
     setTagInput('');
@@ -143,6 +196,12 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
     } else if (formData.linked_type === 'Project' && formData.linked_id) {
       const project = allProjects.find(p => p.id === parseInt(formData.linked_id));
       return project ? project.name || project.title : '';
+    } else if (formData.linked_type === 'Lead' && formData.linked_id) {
+      const lead = allLeads.find(l => l.id === parseInt(formData.linked_id));
+      return lead ? lead.lead_name || lead.name : '';
+    } else if (formData.linked_type === 'Quotation' && formData.linked_id) {
+      const quotation = allQuotations.find(q => q.id === parseInt(formData.linked_id));
+      return quotation ? quotation.quotation_number || quotation.title : '';
     }
     return '';
   };
@@ -152,20 +211,20 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/20">
       <div className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200">
-        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-semibold text-gray-900">Create New Task</h2>
+        <div className="flex justify-between items-center p-3  border-b border-[#EAECF0] sticky top-0 bg-white z-10">
+          <h2 className="text-md  text-gray-900">{initialData ? 'Edit Task' : 'Create New Task'}</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
@@ -174,9 +233,9 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
         )}
 
         {!loadingData && (
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <form onSubmit={handleSubmit} className="p-3 space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Task Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -185,12 +244,12 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="Enter task title"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Description
               </label>
               <textarea
@@ -199,20 +258,20 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                 onChange={handleInputChange}
                 placeholder="Enter task description"
                 rows="3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition resize-none"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Priority
                 </label>
                 <select
                   name="priority"
                   value={formData.priority}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -221,38 +280,72 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Status
                 </label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
                 >
                   <option value="Open">Open</option>
                   <option value="In Progress">In Progress</option>
                   <option value="Completed">Completed</option>
                   <option value="On Hold">On Hold</option>
+                  <option value="Converted to Deal">Converted to Deal</option>
                 </select>
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs    text-gray-700 mb-2">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  name="due_date"
+                  value={formData.due_date}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
+                />
+              </div>
+              <div>
+                <label className="block text-xs    text-gray-700 mb-2">
+                  Next Followup Date
+                </label>
+                <input
+                  type="date"
+                  name="next_followup_date"
+                  value={formData.next_followup_date}
+                  onChange={handleInputChange}
+                  className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Due Date
+              <label className="block text-xs    text-gray-700 mb-2">
+                Task Type
               </label>
-              <input
-                type="date"
-                name="due_date"
-                value={formData.due_date}
+              <select
+                name="task_type"
+                value={formData.task_type}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
-              />
+                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
+              >
+                <option value="General">General</option>
+                <option value="Call">Call</option>
+                <option value="Message">Message</option>
+                <option value="Google Meet">Google Meet</option>
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Email">Email</option>
+              </select>
             </div>
 
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-xs    text-gray-700">
                 Link to
               </label>
               <div className="space-y-2">
@@ -265,7 +358,7 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                     onChange={handleInputChange}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm text-gray-700">General Task</span>
+                  <span className="text-xs  text-gray-700">General Task</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -276,7 +369,7 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                     onChange={handleInputChange}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm text-gray-700">Link to Deal</span>
+                  <span className="text-xs  text-gray-700">Link to Deal</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -287,7 +380,29 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                     onChange={handleInputChange}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm text-gray-700">Link to Project</span>
+                  <span className="text-xs  text-gray-700">Link to Project</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="linked_type"
+                    value="Lead"
+                    checked={formData.linked_type === 'Lead'}
+                    onChange={handleInputChange}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-xs  text-gray-700">Link to Lead</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="linked_type"
+                    value="Quotation"
+                    checked={formData.linked_type === 'Quotation'}
+                    onChange={handleInputChange}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-xs  text-gray-700">Link to Quotation</span>
                 </label>
               </div>
 
@@ -296,14 +411,17 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                   name="linked_id"
                   value={formData.linked_id}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
                 >
                   <option value="">
                     Select {formData.linked_type}
                   </option>
-                  {(formData.linked_type === 'Deal' ? allDeals : allProjects).map(item => (
+                  {(formData.linked_type === 'Deal' ? allDeals : 
+                    formData.linked_type === 'Project' ? allProjects : 
+                    formData.linked_type === 'Lead' ? allLeads : 
+                    allQuotations).map(item => (
                     <option key={item.id} value={item.id}>
-                      {item.name || item.title}
+                      {item.quotation_number || item.lead_name || item.name || item.title}
                     </option>
                   ))}
                 </select>
@@ -311,12 +429,12 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Assign to
               </label>
               <div className="space-y-2">
                 {allUsers.length > 0 ? (
-                  <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                  <div className="border border-gray-300 rounded  p-3 max-h-48 overflow-y-auto space-y-2">
                     {allUsers.map(user => (
                       <label key={user.id} className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -325,28 +443,28 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                           onChange={() => handleAssigneeToggle(user.id)}
                           className="w-4 h-4 rounded border-gray-300"
                         />
-                        <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-semibold">
+                        <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs ">
                           {`${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`}
                         </div>
-                        <span className="text-sm text-gray-700">
+                        <span className="text-xs  text-gray-700">
                           {user.first_name} {user.last_name}
                         </span>
                       </label>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">No users available</p>
+                  <p className="text-xs  text-gray-500">No users available</p>
                 )}
 
                 {getAssignedUsers().length > 0 && (
-                  <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg">
+                  <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded ">
                     {getAssignedUsers().map(user => (
-                      <div key={user.id} className="bg-red-50 text-red-700 px-2 py-1 rounded-full text-xs flex items-center gap-1 border border-red-200">
+                      <div key={user.id} className="bg-red-50 text-red-700 p-1  rounded-full text-xs flex items-center gap-1 border border-red-200">
                         {user.first_name} {user.last_name}
                         <button
                           type="button"
                           onClick={() => handleAssigneeToggle(user.id)}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red  hover:text-red-800"
                         >
                           ×
                         </button>
@@ -358,7 +476,7 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Tags
               </label>
               <div className="flex gap-2 mb-2">
@@ -368,12 +486,12 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                   placeholder="Add tag and press Enter"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                 />
                 <button
                   type="button"
                   onClick={addTag}
-                  className="px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm font-medium"
+                  className="px-3 py-2 bg-red-50 text-red  rounded  hover:bg-red-100 transition text-xs   "
                 >
                   <Plus size={16} />
                 </button>
@@ -386,7 +504,7 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                       <button
                         type="button"
                         onClick={() => removeTag(tag)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-white  hover:text-blue-800"
                       >
                         ×
                       </button>
@@ -401,16 +519,16 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, deals = [], projects = [],
                 type="button"
                 onClick={handleCancel}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+                className="flex-1 p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition disabled:opacity-50"
+                className="flex-1 p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700 transition disabled:opacity-50"
               >
-                {isLoading ? 'Creating...' : 'Create Task'}
+                {isLoading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Task' : 'Create Task')}
               </button>
             </div>
           </form>

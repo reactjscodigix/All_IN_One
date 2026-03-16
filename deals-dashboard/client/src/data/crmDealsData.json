@@ -2,7 +2,9 @@
   "deals": [
     {
       "id": 1,
-      "stage": "Qualify To Buy",
+      "company_id": 1,
+      "contact_id": 1,
+      "stage": "Converted Lead",
       "company": "Howell, Tremblay and Rath",
       "value": 350000,
       "email": "darleeo@example.com",
@@ -16,7 +18,9 @@
     },
     {
       "id": 2,
-      "stage": "Qualify To Buy",
+      "company_id": 2,
+      "contact_id": 2,
+      "stage": "Converted Lead",
       "company": "Robert, John and Carlos",
       "value": 210000,
       "email": "sheron@example.com",
@@ -30,7 +34,9 @@
     },
     {
       "id": 3,
-      "stage": "Qualify To Buy",
+      "company_id": 3,
+      "contact_id": 3,
+      "stage": "Converted Lead",
       "company": "Wendy, Star and David",
       "value": 422000,
       "email": "vau@example.com",
@@ -44,7 +50,9 @@
     },
     {
       "id": 4,
-      "stage": "Contact Made",
+      "company_id": 4,
+      "contact_id": 4,
+      "stage": "Quotation",
       "company": "Byron, Roman and Bailey",
       "value": 245000,
       "email": "jessica13@example.com",
@@ -58,7 +66,9 @@
     },
     {
       "id": 5,
-      "stage": "Contact Made",
+      "company_id": 2,
+      "contact_id": 5,
+      "stage": "Quotation",
       "company": "Robert, John and Carlos",
       "value": 117000,
       "email": "caroltho3@example.com",
@@ -72,7 +82,9 @@
     },
     {
       "id": 6,
-      "stage": "Contact Made",
+      "company_id": 5,
+      "contact_id": 6,
+      "stage": "Quotation",
       "company": "Irene, Charles and Wilston",
       "value": 212000,
       "email": "dawnmercha@example.com",
@@ -86,7 +98,9 @@
     },
     {
       "id": 7,
-      "stage": "Presentation",
+      "company_id": 6,
+      "contact_id": 7,
+      "stage": "Revised Quotation",
       "company": "Jody, Powell and Cecil",
       "value": 184043,
       "email": "rachel@example.com",
@@ -100,7 +114,9 @@
     },
     {
       "id": 8,
-      "stage": "Presentation",
+      "company_id": 7,
+      "contact_id": 8,
+      "stage": "Revised Quotation",
       "company": "Bonnie, Linda and Mullin",
       "value": 935189,
       "email": "jonelle@example.com",
@@ -114,7 +130,9 @@
     },
     {
       "id": 9,
-      "stage": "Proposal Made",
+      "company_id": 8,
+      "contact_id": 9,
+      "stage": "Negotiation",
       "company": "Freda, Jennfier and Thompson",
       "value": 417593,
       "email": "sidney@example.com",
@@ -128,7 +146,9 @@
     },
     {
       "id": 10,
-      "stage": "Proposal Made",
+      "company_id": 9,
+      "contact_id": 10,
+      "stage": "Negotiation",
       "company": "Bruce, Faulkner and Lela",
       "value": 881389,
       "email": "brook@example.com",
@@ -146,10 +166,10 @@
     { "stage": "Marketing Pipeline", "leads": 0, "value": 0 },
     { "stage": "Email Pipeline", "leads": 0, "value": 0 },
     { "stage": "Partnership Pipeline", "leads": 0, "value": 0 },
-    { "stage": "Qualify To Buy", "leads": 45, "value": 1544540 },
-    { "stage": "Contact Made", "leads": 30, "value": 1994938 },
-    { "stage": "Presentation", "leads": 25, "value": 1036390 },
-    { "stage": "Proposal Made", "leads": 50, "value": 1883013 },
-    { "stage": "Appointment", "leads": 45, "value": 1544540 }
+    { "stage": "Converted Lead", "leads": 45, "value": 1544540 },
+    { "stage": "Quotation", "leads": 30, "value": 1994938 },
+    { "stage": "Revised Quotation", "leads": 25, "value": 1036390 },
+    { "stage": "Negotiation", "leads": 50, "value": 1883013 },
+    { "stage": "Finalized Deal", "leads": 45, "value": 1544540 }
   ]
 }

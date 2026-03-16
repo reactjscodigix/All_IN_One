@@ -97,8 +97,8 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
   const currentStage = getCurrentStage();
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Proposal Workflow</h3>
+    <div className="bg-white rounded  border border-gray-200p-3 ">
+      <h3 className="text-md  text-gray-900 mb-6">Proposal Workflow</h3>
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
@@ -112,17 +112,17 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
               <div key={stage.id} className="flex items-center flex-1">
                 <div className="flex flex-col items-center flex-1">
                   <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                    className={`w-12 h-12 rounded-full flex items-center justify-center  text-xs  transition-all ${
                       isActive
                         ? getStageColor(stage.color)
                         : isCompleted
                         ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-gray-100 text-gray-400'
+                        : 'bg-gray-100 text-[#1F2020]'
                     }`}
                   >
                     <Icon size={20} />
                   </div>
-                  <p className="text-xs font-medium text-gray-600 mt-2 text-center">{stage.name}</p>
+                  <p className="text-xs   text-gray-600 mt-2 text-center">{stage.name}</p>
                 </div>
 
                 {index < workflowStages.length - 1 && (
@@ -137,47 +137,47 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
           })}
         </div>
 
-        <div className={`p-4 rounded-lg border ${getStageColor(currentStage.color)}`}>
+        <div className={`p-2 rounded  border ${getStageColor(currentStage.color)}`}>
           <div className="flex items-start justify-between">
             <div>
-              <h4 className="font-semibold text-lg mb-1">{currentStage.name}</h4>
-              <p className="text-sm">{currentStage.description}</p>
+              <h4 className=" text-lg mb-1">{currentStage.name}</h4>
+              <p className="text-xs ">{currentStage.description}</p>
             </div>
-            <span className="text-sm font-medium px-3 py-1 bg-white rounded border">
+            <span className="text-xs    px-3 py-1 bg-white rounded border">
               {proposal.status}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Proposal Details</h4>
-          <div className="space-y-2 text-sm">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-6">
+        <div className="bg-gray-50 p-2 rounded ">
+          <h4 className="text-xs   text-gray-700 mb-2">Proposal Details</h4>
+          <div className="space-y-2 text-xs ">
             <div className="flex justify-between">
               <span className="text-gray-600">Total Amount:</span>
-              <span className="font-medium">{proposal.currency} {proposal.total_amount || 0}</span>
+              <span className=" ">{proposal.currency} {proposal.total_amount || 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Created:</span>
-              <span className="font-medium">{new Date(proposal.proposal_date).toLocaleDateString()}</span>
+              <span className=" ">{new Date(proposal.proposal_date).toLocaleDateString()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Valid Till:</span>
-              <span className="font-medium">
+              <span className=" ">
                 {proposal.validity_date ? new Date(proposal.validity_date).toLocaleDateString() : 'N/A'}
               </span>
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Quick Actions</h4>
+        <div className="bg-gray-50 p-2 rounded ">
+          <h4 className="text-xs   text-gray-700 mb-2">Quick Actions</h4>
           <div className="space-y-2">
             {proposal.status === 'Draft' && (
               <button
                 onClick={() => onStatusChange('Submitted')}
-                className="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                className="w-full px-3 py-2 bg-purple-600 text-white text-xs  rounded hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
               >
                 Submit for Approval
               </button>
@@ -186,13 +186,13 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
               <>
                 <button
                   onClick={() => onApprove && onApprove()}
-                  className="w-full px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                  className="w-full px-3 py-2 bg-green-600 text-white text-xs  rounded hover:bg-green-700 transition-colors"
                 >
                   Approve
                 </button>
                 <button
                   onClick={() => onReject && onReject()}
-                  className="w-full px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors"
+                  className="w-full px-3 py-2 bg-red-600 text-white text-xs  rounded hover:bg-red-700 transition-colors"
                 >
                   Reject
                 </button>
@@ -201,7 +201,7 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
             {proposal.status === 'Approved' && (
               <button
                 onClick={() => onSend && onSend()}
-                className="w-full px-3 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                className="w-full px-3 py-2 bg-indigo-600 text-white text-xs  rounded hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
               >
                 <Send size={16} /> Send to Client
               </button>
@@ -209,7 +209,7 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
             {proposal.status === 'Accepted' && (
               <button
                 onClick={() => onConvertToInvoice && onConvertToInvoice()}
-                className="w-full px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+                className="w-full px-3 py-2 bg-emerald-600 text-white text-xs  rounded hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
               >
                 <Download size={16} /> Convert to Invoice
               </button>
@@ -220,7 +220,7 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
 
       <button
         onClick={() => setShowComments(!showComments)}
-        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+        className="flex items-center gap-2 text-xs  text-white  hover:text-blue-700  "
       >
         <MessageSquare size={16} />
         {showComments ? 'Hide' : 'Show'} Comments
@@ -233,7 +233,7 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Add a comment..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows="3"
             />
             <button
@@ -243,7 +243,7 @@ const ProposalWorkflow = ({ proposal, onStatusChange, onApprove, onReject, onSen
                   setComment('');
                 }
               }}
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+              className="p-2  bg-red-600  text-white text-xs  rounded hover:bg-blue-700 transition-colors"
             >
               Add Comment
             </button>

@@ -8,11 +8,12 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
 
 const pool = require('./config/database');
 const { testConnection } = require('./database/init');
 const { hashPassword, checkPermission } = require('./middleware/helpers');
+const automationService = require('./services/automationService');
 
 const corsOptions = {
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
@@ -21,10 +22,16 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(express.json({ limit: '50mb' }));
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.set('etag', false);
 app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
@@ -35,7 +42,17 @@ console.log(`Server running in ${NODE_ENV} mode`);
 console.log(`Database: ${process.env.DB_HOST}/${process.env.DB_NAME}`);
 console.log(`Port: ${PORT}`);
 
-app.post('/api/auth/login', async (req, res) => {
+// Auth Routes Router
+const authRouter = express.Router();
+
+authRouter.get('/login', (req, res) => {
+  console.log('GET /api/auth/login hit');
+  res.json({ message: 'Login GET endpoint is working' });
+});
+
+authRouter.post('/login', async (req, res) => {
+  console.log('POST /api/auth/login hit:', req.body.email);
+  console.log('Headers:', req.headers);
   let connection;
   try {
     const { email, password } = req.body;
@@ -52,7 +69,6 @@ app.post('/api/auth/login', async (req, res) => {
     );
 
     if (users.length === 0) {
-      connection.release();
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
@@ -60,11 +76,8 @@ app.post('/api/auth/login', async (req, res) => {
     const hashedPassword = hashPassword(password);
 
     if (hashedPassword !== user.password) {
-      connection.release();
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-
-    connection.release();
 
     const { password: _, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
@@ -77,13 +90,18 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-app.post('/api/auth/signup', async (req, res) => {
+authRouter.post('/signup', async (req, res) => {
   let connection;
   try {
-    const { first_name, last_name, email, username, password, phone1, location } = req.body;
+    const { first_name, last_name, email, password, phone, company, department } = req.body;
+    let { username } = req.body;
 
-    if (!email || !password || !username) {
-      return res.status(400).json({ error: 'Email, username and password required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    if (!username) {
+      username = email.split('@')[0];
     }
 
     connection = await pool.getConnection();
@@ -94,23 +112,28 @@ app.post('/api/auth/signup', async (req, res) => {
     );
 
     if (existingUser.length > 0) {
-      connection.release();
       return res.status(409).json({ error: 'User already exists' });
     }
 
     const hashedPassword = hashPassword(password);
 
+    let role_id = 5; // Default to Employee
+    if (req.body.role_name) {
+      const [roles] = await connection.query('SELECT id FROM roles WHERE name = ?', [req.body.role_name]);
+      if (roles.length > 0) {
+        role_id = roles[0].id;
+      }
+    }
+
     const [result] = await connection.query(
-      'INSERT INTO users (first_name, last_name, email, username, password, phone1, location, role_id, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [first_name || 'User', last_name || '', email, username, hashedPassword, phone1 || '', location || '', 5, 'Active']
+      'INSERT INTO users (first_name, last_name, email, username, password, phone1, location, role_id, status, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [first_name || 'User', last_name || '', email, username, hashedPassword, phone || '', company || '', role_id, 'Active', department || null]
     );
 
     const [newUser] = await connection.query(
       'SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?',
       [result.insertId]
     );
-
-    connection.release();
 
     const { password: _, ...userWithoutPassword } = newUser[0];
     res.status(201).json(userWithoutPassword);
@@ -122,6 +145,46 @@ app.post('/api/auth/signup', async (req, res) => {
     if (connection) connection.release();
   }
 });
+
+authRouter.post('/update-role', async (req, res) => {
+  let connection;
+  try {
+    const { email, role_name } = req.body;
+    if (!email || !role_name) {
+      return res.status(400).json({ error: 'Email and role_name required' });
+    }
+
+    connection = await pool.getConnection();
+    const [roles] = await connection.query('SELECT id FROM roles WHERE name = ?', [role_name]);
+    if (roles.length === 0) {
+      return res.status(404).json({ error: 'Role not found' });
+    }
+
+    const role_id = roles[0].id;
+    await connection.query('UPDATE users SET role_id = ? WHERE email = ?', [role_id, email]);
+    
+    res.json({ success: true, message: `User ${email} role updated to ${role_name}` });
+  } catch (error) {
+    console.error('Update role error:', error.message);
+    res.status(500).json({ error: 'Failed to update role', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+authRouter.post('/check-permission', async (req, res) => {
+  try {
+    const { userId, module, action } = req.body;
+    const hasPermission = await checkPermission(userId, module, action);
+    res.json({ success: true, hasPermission });
+  } catch (error) {
+    console.error('Permission check error:', error.message);
+    res.status(500).json({ error: 'Failed to check permission', details: error.message });
+  }
+});
+
+// Register Auth Router
+app.use('/api/auth', authRouter);
 
 app.get('/api/roles', async (req, res) => {
   let connection;
@@ -201,6 +264,15 @@ const setupEstimationsPipelineFilesRoutes = require('./routes/estimations-pipeli
 const setupLeadsDealsRolesRoutes = require('./routes/leads-deals-roles-routes');
 const setupInvoicesCampaignsCallsRoutes = require('./routes/invoices-campaigns-calls-routes');
 const setupFilesConversationsRoutes = require('./routes/files-conversations-routes');
+const setupAutomationRoutes = require('./routes/automation-routes');
+const setupApprovalRoutes = require('./routes/approval-routes');
+const setupPerformanceRoutes = require('./routes/performance-routes');
+const setupReminderRoutes = require('./routes/reminder-routes');
+const setupRBACRoutes = require('./routes/rbac-routes');
+const setupReportingRoutes = require('./routes/reporting-routes');
+const setupDepartmentDashboardRoutes = require('./routes/department-dashboard-routes');
+const setupMarketingITWorkflowRoutes = require('./routes/marketing-it-workflow-routes');
+const setupFollowupsRoutes = require('./routes/followups-routes');
 
 setupEntitiesRoutes(app, pool);
 setupActivitiesNotesRoutes(app, pool);
@@ -209,6 +281,24 @@ setupEstimationsPipelineFilesRoutes(app, pool);
 setupLeadsDealsRolesRoutes(app, pool);
 setupInvoicesCampaignsCallsRoutes(app, pool);
 setupFilesConversationsRoutes(app, pool);
+setupAutomationRoutes(app, pool);
+setupApprovalRoutes(app, pool);
+setupPerformanceRoutes(app, pool);
+setupReminderRoutes(app, pool);
+setupRBACRoutes(app, pool);
+setupReportingRoutes(app, pool);
+setupDepartmentDashboardRoutes(app, pool);
+setupMarketingITWorkflowRoutes(app, pool);
+setupFollowupsRoutes(app, pool);
+
+app.get('/', (req, res) => {
+  res.send('CRM Backend API is running!');
+});
+
+app.use((req, res) => {
+  console.log(`404 at ${req.method} ${req.url}`);
+  res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
+});
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
@@ -218,10 +308,22 @@ app.use((err, req, res, next) => {
 });
 
 const server = app.listen(PORT, async () => {
-  console.log(`✓ Server running on port ${PORT}`);
-  console.log(`✓ Environment: ${NODE_ENV}`);
-  console.log(`✓ CORS origin: ${process.env.CORS_ORIGIN}`);
+  console.log('================================================');
+  console.log(`🚀 CRM Backend Server is now LIVE!`);
+  console.log(`📡 Port: ${PORT}`);
+  console.log(`🌍 Environment: ${NODE_ENV}`);
+  console.log(`🔗 API Base: http://localhost:${PORT}/api`);
+  console.log(`🔐 CORS allowed for: ${process.env.CORS_ORIGIN}`);
+  console.log('================================================');
   await testConnection();
+  
+  // Schedule automation checks every hour
+  setInterval(async () => {
+    console.log('\n⏰ Running scheduled automation checks...');
+    await automationService.runAllChecks();
+  }, 60 * 60 * 1000);
+  
+  console.log('✓ Automation checks scheduled (runs hourly)');
 });
 
 process.on('SIGTERM', () => {

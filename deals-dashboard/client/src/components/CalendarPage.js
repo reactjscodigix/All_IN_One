@@ -1,52 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Video, Phone, MessageSquare, Link as LinkIcon, ExternalLink, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { followupsAPI } from '../services/api';
+import { useAuth } from '../hooks/useAuth';
+import UpcomingEvents from './UpcomingEvents';
 
 const CalendarPage = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 10));
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [callEvents, setCallEvents] = useState([]);
+  const [followupEvents, setFollowupEvents] = useState([]);
   const [customEvents, setCustomEvents] = useState([]);
-  const [staticEvents] = useState([
-    {
-      id: 1,
-      title: 'Meeting with Team Dev',
-      date: new Date(2025, 10, 15),
-      category: 'Team Events',
-      color: 'bg-green-100 border-l-4 border-green-500'
-    },
-    {
-      id: 2,
-      title: 'Design System With Client',
-      date: new Date(2025, 10, 24),
-      category: 'Work',
-      color: 'bg-yellow-100 border-l-4 border-yellow-500'
-    },
-    {
-      id: 3,
-      title: 'UI/UX Team Call',
-      date: new Date(2025, 10, 28),
-      category: 'Desgin',
-      color: 'bg-blue-100 border-l-4 border-blue-500'
-    },
-  ]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     date: '',
-    category: 'Team Events'
+    category: 'Client Call'
   });
 
   const categoryColorMap = {
-    'Team Events': 'bg-green-100 border-l-4 border-green-500',
-    'Work': 'bg-yellow-100 border-l-4 border-yellow-500',
-    'External': 'bg-pink-100 border-l-4 border-pink-500',
-    'Projects': 'bg-yellow-50 border-l-4 border-yellow-300',
-    'Applications': 'bg-pink-100 border-l-4 border-pink-500',
-    'Desgin': 'bg-blue-100 border-l-4 border-blue-500',
+    'Client Call': 'bg-teal-100 border-l-4 border-teal-500',
+    'Client Meeting': 'bg-blue-100 border-l-4 border-blue-500',
+    'Proposal Discussion': 'bg-indigo-100 border-l-4 border-indigo-500',
+    'Deal Negotiation': 'bg-orange-100 border-l-4 border-orange-500',
+    'Payment Follow-Up': 'bg-green-100 border-l-4 border-green-500',
+    'Internal Task': 'bg-pink-100 border-l-4 border-pink-500',
+    'Team Meeting': 'bg-purple-100 border-l-4 border-purple-500',
+    'Target Review': 'bg-yellow-100 border-l-4 border-yellow-500',
   };
 
   useEffect(() => {
     fetchCallHistory();
+    fetchFollowups();
   }, []);
+
+  const fetchFollowups = async () => {
+    try {
+      const filters = {};
+      
+      // If user is Sales Executive, only show their follow-ups
+      if (user && (user.role === 'Sales Executive' || user.role === 'Sales' || user.department === 'Sales Department')) {
+        const userName = user.first_name && user.last_name 
+          ? `${user.first_name} ${user.last_name}` 
+          : (user.username || user.first_name || '');
+        if (userName) filters.assigned_to = userName;
+      }
+
+      const data = await followupsAPI.getAll(filters);
+      const events = data.map((f) => ({
+        id: `followup-${f.id}`,
+        title: f.subject,
+        date: new Date(f.scheduled_date),
+        category: 'Follow-up',
+        type: f.type,
+        meetingLink: f.meeting_link,
+        relatedName: f.related_name,
+        color: f.type === 'Call' ? 'bg-teal-100 border-l-4 border-teal-500' : 
+               f.type === 'Email' ? 'bg-indigo-100 border-l-4 border-indigo-500' :
+               f.type.includes('Meeting') ? 'bg-blue-100 border-l-4 border-blue-500' :
+               'bg-orange-100 border-l-4 border-orange-500'
+      }));
+      setFollowupEvents(events);
+    } catch (error) {
+      console.error('Error fetching follow-ups:', error);
+    }
+  };
 
   const fetchCallHistory = async () => {
     try {
@@ -68,7 +87,7 @@ const CalendarPage = () => {
     }
   };
 
-  const events = [...staticEvents, ...callEvents, ...customEvents];
+  const events = [...callEvents, ...followupEvents, ...customEvents];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -93,7 +112,7 @@ const CalendarPage = () => {
     };
 
     setCustomEvents(prev => [...prev, newEvent]);
-    setFormData({ title: '', date: '', category: 'Team Events' });
+    setFormData({ title: '', date: '', category: 'Client Call' });
     setShowModal(false);
   };
 
@@ -140,13 +159,23 @@ const CalendarPage = () => {
     calendarDays.push(i);
   }
 
+  const getEventIcon = (type) => {
+    if (!type) return null;
+    const t = type.toLowerCase();
+    if (t.includes('call')) return <Phone size={10} className="inline mr-1" />;
+    if (t.includes('meeting') || t.includes('video')) return <Video size={10} className="inline mr-1" />;
+    if (t.includes('whatsapp') || t.includes('message')) return <MessageSquare size={10} className="inline mr-1" />;
+    if (t.includes('email')) return <Mail size={10} className="inline mr-1" />;
+    return null;
+  };
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="p-3 sm:p-3 lg:p-3">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+            <h1 className="text-xl  text-gray-900">Calendar</h1>
+            <div className="flex items-center gap-2 text-xs  text-gray-600 mt-2">
               <button className="text-gray-600 hover:text-gray-900">Home</button>
               <span>›</span>
               <button className="text-gray-600 hover:text-gray-900">Applications</button>
@@ -156,72 +185,54 @@ const CalendarPage = () => {
           </div>
           <button 
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium"
+            className="flex items-center gap-2 p-2  bg-red-600 text-white rounded  hover:bg-red-700 transition-smooth   text-xs"
           >
             <Plus size={18} />
             New Event
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-border-light">
-              <h3 className="font-semibold text-gray-900 mb-4">Event</h3>
+            <div className="bg-white rounded  shadow-sm p-2 border border-border-light">
+              <h3 className=" text-gray-900 mb-4">Event</h3>
               <p className="text-xs text-gray-600 mb-4">Drag and drop your event or click in the calendar to add event</p>
               
               <div className="space-y-2">
                 {[
-                  { name: 'Team Events', color: 'bg-green-100' },
-                  { name: 'Work', color: 'bg-yellow-100' },
-                  { name: 'External', color: 'bg-pink-100' },
-                  { name: 'Projects', color: 'bg-yellow-50' },
-                  { name: 'Applications', color: 'bg-pink-100' },
-                  { name: 'Desgin', color: 'bg-blue-100' },
+                  { name: 'Client Call', color: 'bg-teal-100' },
+                  { name: 'Client Meeting', color: 'bg-blue-100' },
+                  { name: 'Proposal Discussion', color: 'bg-indigo-100' },
+                  { name: 'Deal Negotiation', color: 'bg-orange-100' },
+                  { name: 'Payment Follow-Up', color: 'bg-green-100' },
+                  { name: 'Internal Task', color: 'bg-pink-100' },
+                  { name: 'Team Meeting', color: 'bg-purple-100' },
+                  { name: 'Target Review', color: 'bg-yellow-100' },
                 ].map((cat) => (
-                  <div key={cat.name} className={`${cat.color} p-2 rounded text-xs font-medium text-gray-700`}>
+                  <div key={cat.name} className={`${cat.color} p-2 rounded text-xs   text-gray-700`}>
                     {cat.name}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-4 border border-border-light">
-              <h3 className="font-semibold text-gray-900 mb-4">Upcoming Event</h3>
-              <div className="space-y-3">
-                {events.slice(0, 3).map((event) => (
-                  <div key={event.id} className="pb-3 border-b border-gray-200 last:border-0">
-                    <p className="font-medium text-sm text-gray-900">{event.title}</p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {event.date.getDate()} {months[event.date.getMonth()]} {event.date.getFullYear()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <UpcomingEvents />
 
-            <div className="bg-black rounded-lg p-4 text-center text-white">
-              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              </div>
-              <p className="font-semibold mb-2">Enjoy Unlimited Access on a small price monthly.</p>
-              <button className="text-sm font-medium hover:underline">Upgrade Now</button>
-            </div>
+            
           </div>
 
-          <div className="lg:col-span-3 bg-white rounded-lg shadow-sm border border-border-light overflow-hidden">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
+          <div className="lg:col-span-3 bg-white rounded  border border-border-light overflow-hidden">
+            <div className="p-2">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={handleToday}
-                    className="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded transition-smooth"
+                    className="p-1 text-xs   text-gray-600 hover:bg-gray-100 rounded transition-smooth"
                   >
                     today
                   </button>
                 </div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl  text-gray-900">
                   {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
                 </h2>
                 <div className="flex items-center gap-2">
@@ -242,27 +253,62 @@ const CalendarPage = () => {
 
               <div className="grid grid-cols-7 gap-0">
                 {days.map(day => (
-                  <div key={day} className="p-3 text-center font-semibold text-gray-900 text-sm bg-gray-50 border-r border-b border-gray-200">
+                  <div key={day} className="p-2 text-center  text-gray-900 text-xs  bg-gray-50 border-r border-b border-gray-200">
                     {day}
                   </div>
                 ))}
                 {calendarDays.map((day, idx) => (
                   <div 
                     key={idx}
-                    className={`min-h-24 p-2 border-r border-b border-gray-200 text-sm ${
+                    className={`min-h-24 p-2 border-r border-b border-gray-200 text-xs  ${
                       day ? 'bg-white hover:bg-gray-50 transition-smooth' : 'bg-gray-50'
                     }`}
                   >
                     {day && (
                       <>
-                        <div className="font-semibold text-gray-900 mb-1">{day}</div>
+                        <div className=" text-gray-900 mb-1">{day}</div>
                         <div className="space-y-1">
                           {getEventsForDate(day).map(event => (
                             <div 
                               key={event.id}
-                              className={`text-xs p-1 rounded truncate ${event.color}`}
+                              className={`text-[10px] p-1 rounded group flex flex-col ${event.color}`}
+                              title={`${event.relatedName ? `${event.relatedName}: ` : ''}${event.title}${event.type ? ` (${event.type})` : ''}`}
                             >
-                              {event.title}
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center truncate flex-1">
+                                  {getEventIcon(event.type)}
+                                  <span className="truncate  text-gray-900">
+                                    {event.relatedName || 'Event'}
+                                  </span>
+                                </div>
+                                {event.meetingLink && (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Always use internal video call page for recording and AI analysis
+                                      let code = event.meetingLink;
+                                      if (event.meetingLink?.includes('meet.google.com/')) {
+                                        code = event.meetingLink.split('meet.google.com/').pop().split('?')[0];
+                                      } else if (event.meetingLink?.includes('zoom.us/')) {
+                                        code = event.meetingLink.split('/').pop().split('?')[0];
+                                      } else if (event.meetingLink?.includes('/')) {
+                                        code = event.meetingLink.split('/').pop();
+                                      }
+                                      navigate(`/video-call/${code || event.id}`);
+                                    }}
+                                    className="ml-1 text-blue-600 hover:text-blue-800 transition-colors"
+                                    title="Join Meeting"
+                                  >
+                                    <Video size={10} />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="truncate text-gray-700 mt-0.5">
+                                {event.title}
+                              </div>
+                              <div className="text-[9px] text-gray-500 ">
+                                {event.type}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -272,10 +318,10 @@ const CalendarPage = () => {
                 ))}
               </div>
 
-              <div className="grid grid-cols-4 gap-4 mt-4 p-4 bg-gray-50 rounded">
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-smooth">month</button>
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-smooth">week</button>
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-smooth">day</button>
+              <div className="grid grid-cols-4 gap-2 mt-4 p-2 bg-gray-50 rounded">
+                <button className="p-2  text-xs    text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-smooth">month</button>
+                <button className="p-2  text-xs    text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-smooth">week</button>
+                <button className="p-2  text-xs    text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-smooth">day</button>
                 <div></div>
               </div>
             </div>
@@ -285,55 +331,57 @@ const CalendarPage = () => {
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded   p-3  max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">Add New Event</h3>
+              <h3 className="text-md text-gray-900">Add New Event</h3>
               <button 
                 onClick={() => {
                   setShowModal(false);
-                  setFormData({ title: '', date: '', category: 'Team Events' });
+                  setFormData({ title: '', date: '', category: 'Client Call' });
                 }}
                 className="p-1 hover:bg-gray-100 rounded"
               >
-                <X size={20} />
+                <X size={15} />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Event Name *</label>
+                <label className="block text-xs    text-gray-700 mb-1">Event Name *</label>
                 <input 
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
                   placeholder="Enter event name"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                <label className="block text-xs    text-gray-700 mb-1">Date *</label>
                 <input 
                   type="date"
                   name="date"
                   value={formData.date}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <label className="block text-xs    text-gray-700 mb-1">Category *</label>
                 <select 
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
-                  <option value="Team Events">Team Events</option>
-                  <option value="Work">Work</option>
-                  <option value="External">External</option>
-                  <option value="Projects">Projects</option>
-                  <option value="Applications">Applications</option>
-                  <option value="Desgin">Design</option>
+                  <option value="Client Call">Client Call</option>
+                  <option value="Client Meeting">Client Meeting</option>
+                  <option value="Proposal Discussion">Proposal Discussion</option>
+                  <option value="Deal Negotiation">Deal Negotiation</option>
+                  <option value="Payment Follow-Up">Payment Follow-Up</option>
+                  <option value="Internal Task">Internal Task</option>
+                  <option value="Team Meeting">Team Meeting</option>
+                  <option value="Target Review">Target Review</option>
                 </select>
               </div>
               <div className="flex gap-3 pt-2">
@@ -342,13 +390,13 @@ const CalendarPage = () => {
                     setShowModal(false);
                     setFormData({ title: '', date: '', category: 'Team Events' });
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-smooth font-medium"
+                  className="flex-1 p-2 text-xs border border-gray-300 rounded  text-gray-700 hover:bg-gray-50 transition-smooth  "
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleAddEvent}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium"
+                  className="flex-1 p-2 text-xs bg-red-600 text-white rounded  hover:bg-red-700 transition-smooth  "
                 >
                   Add Event
                 </button>

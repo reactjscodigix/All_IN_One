@@ -17,39 +17,39 @@ const BlogTagsPage = () => {
 
   const statusClasses = (status) =>
     status === "Active"
-      ? "bg-green-100 text-green-600 px-2 py-1 rounded text-xs font-medium"
-      : "bg-red-100 text-red-600 px-2 py-1 rounded text-xs font-medium";
+      ? "bg-green-100 text-green-600 p-1  rounded text-xs  "
+      : "bg-red-100 text-red  p-1  rounded text-xs  ";
 
   return (
     <div className="p-6 bg-[#F8F9FA] min-h-screen">
-      <h2 className="text-xl font-semibold mb-1">Blog Tags</h2>
-      <p className="text-sm text-gray-500 mb-6">Home / Blogs / Blog Tags</p>
+      <h2 className="text-xl  mb-1">Blog Tags</h2>
+      <p className="text-xs  text-gray-500 mb-6">Home / Blogs / Blog Tags</p>
 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-2  text-[#1F2020] w-4 h-4" />
             <input
-              className="border rounded-lg pl-10 pr-3 py-2 text-sm w-60"
+              className="border rounded  pl-10 pr-3 py-2 text-xs  w-60"
               placeholder="Search"
             />
           </div>
 
-          <button className="flex items-center gap-2 text-sm border rounded-lg px-3 py-2 bg-white">
+          <button className="flex items-center gap-2 text-xs  border rounded  px-3 py-2 bg-white">
             <Calendar className="w-4 h-4" />
             1 Dec 25 - 1 Dec 25
           </button>
         </div>
 
-        <button className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm">
+        <button className="bg-red-500 text-white p-2  rounded  text-xs ">
           + Add Blog Tag
         </button>
       </div>
 
       <div className="bg-white rounded-xl border">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs ">
           <thead>
-            <tr className="border-b bg-gray-100 text-gray-600 text-sm">
+            <tr className="border-b bg-gray-100 text-gray-600 text-xs ">
               <th className="p-3 text-left w-8">
                 <input type="checkbox" />
               </th>
@@ -86,9 +86,9 @@ const BlogTagsPage = () => {
       </div>
 
       <div className="flex justify-between items-center mt-4">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-xs ">
           Show
-          <select className="border rounded px-2 py-1 text-sm">
+          <select className="border rounded p-1  text-xs ">
             <option>10</option>
             <option>20</option>
           </select>
@@ -102,7 +102,7 @@ const BlogTagsPage = () => {
         </div>
       </div>
 
-      <footer className="mt-6 text-sm text-gray-500">
+      <footer className="mt-6 text-xs  text-gray-500">
         Copyright © 2025 <span className="text-red-500">Preadmin</span>
       </footer>
     </div>

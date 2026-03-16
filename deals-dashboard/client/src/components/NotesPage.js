@@ -224,7 +224,7 @@ const NotesPage = () => {
 
   const getCategoryColor = (category) => {
     const colors = {
-      'Personal': { bg: 'bg-blue-100', text: 'text-blue-600', dot: 'bg-blue-500' },
+      'Personal': { bg: 'bg-blue-100', text: 'text-white ', dot: 'bg-blue-500' },
       'Work': { bg: 'bg-green-100', text: 'text-green-600', dot: 'bg-green-500' },
       'Social': { bg: 'bg-yellow-100', text: 'text-yellow-600', dot: 'bg-yellow-500' }
     };
@@ -233,7 +233,7 @@ const NotesPage = () => {
 
   const getPriorityBadge = (priority) => {
     const colors = {
-      'High': 'bg-red-100 text-red-600 border-red-300',
+      'High': 'bg-red-100 text-red  border-red-300',
       'Medium': 'bg-yellow-100 text-yellow-600 border-yellow-300',
       'Low': 'bg-green-100 text-green-600 border-green-300'
     };
@@ -284,25 +284,25 @@ const NotesPage = () => {
   const NoteCard = ({ note }) => {
     const categoryColor = getCategoryColor(note.category);
     return (
-      <div key={note.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div key={note.id} className="bg-white border border-gray-200 rounded  p-2 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-3">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getPriorityBadge(note.priority)}`}>
+          <span className={`px-3 py-1 rounded-full text-xs  border ${getPriorityBadge(note.priority)}`}>
             {note.priority}
           </span>
           <div className="relative group">
-            <button className="text-gray-400 hover:text-gray-600">
+            <button className="text-[#1F2020] hover:text-gray-600">
               <MoreVertical size={18} />
             </button>
-            <div className="hidden group-hover:block absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+            <div className="hidden group-hover:block absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded  shadow-lg z-10">
               <button 
                 onClick={() => handleEditNote(note)}
-                className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 flex items-center gap-2"
+                className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 flex items-center gap-2"
               >
                 <Edit2 size={14} /> Edit
               </button>
               <button 
                 onClick={() => handleDeleteNote(note.id)}
-                className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-700"
+                className="w-full text-left p-2  hover:bg-red-50 text-xs  text-red-700"
               >
                 Delete
               </button>
@@ -310,17 +310,17 @@ const NotesPage = () => {
           </div>
         </div>
 
-        <h3 className="text-sm font-bold text-gray-900 mb-2">{note.title}</h3>
+        <h3 className="text-xs   text-gray-900 mb-2">{note.title}</h3>
 
         <div className="flex items-center gap-1 text-xs text-gray-600 mb-2">
           <Calendar size={14} />
           {formatDate(note.created_at)}
         </div>
 
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{note.description}</p>
+        <p className="text-xs  text-gray-600 mb-3 line-clamp-2">{note.description}</p>
 
         <div className="mb-2">
-          <span className={`inline-block text-xs text-white px-2 py-1 rounded ${getTagColor(note.tag || 'Pending')}`}>
+          <span className={`inline-block text-xs text-white p-1  rounded ${getTagColor(note.tag || 'Pending')}`}>
             {note.tag || 'Pending'}
           </span>
         </div>
@@ -328,20 +328,20 @@ const NotesPage = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src={`https://i.pravatar.cc/150?u=${user?.email || 'user'}`} alt={note.category} className="w-6 h-6 rounded-full" />
-            <span className={`px-2 py-1 rounded text-xs font-medium ${categoryColor.text} ${categoryColor.bg}`}>
+            <span className={`p-1  rounded text-xs   ${categoryColor.text} ${categoryColor.bg}`}>
               {note.category}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => toggleImportant(note)}
-              className={`${note.is_important ? 'text-yellow-400' : 'text-gray-400'} hover:text-yellow-500`}
+              className={`${note.is_important ? 'text-yellow-400' : 'text-[#1F2020]'} hover:text-yellow-500`}
             >
               <Star size={16} fill={note.is_important ? 'currentColor' : 'none'} />
             </button>
             <button 
               onClick={() => handleDeleteNote(note.id)}
-              className="text-gray-400 hover:text-red-500"
+              className="text-[#1F2020] hover:text-red-500"
             >
               <Trash2 size={16} />
             </button>
@@ -361,7 +361,7 @@ const NotesPage = () => {
 
   if (loading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-white min-h-screen flex items-center justify-center">
+      <div className="p-3 sm:p-3 lg:p-3 bg-white min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading notes...</p>
@@ -371,17 +371,17 @@ const NotesPage = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-white min-h-screen">
+    <div className="p-3 sm:p-3 lg:p-3 bg-white min-h-screen">
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        <div className="mb-4 p-2 bg-red-50 border border-red-200 rounded  text-red-700">
           {error}
         </div>
       )}
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Notes</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+            <h1 className="text-xl  text-gray-900">Notes</h1>
+            <div className="flex items-center gap-2 text-xs  text-gray-600 mt-2">
               <button className="text-gray-600 hover:text-gray-900">Home</button>
               <span>›</span>
               <button className="text-gray-600 hover:text-gray-900">Applications</button>
@@ -391,18 +391,18 @@ const NotesPage = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="relative group">
-              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-smooth font-medium text-sm">
+              <button className="flex items-center gap-2 p-2  border border-gray-300 text-gray-700 rounded  hover:bg-gray-50 transition-smooth   text-xs ">
                 <Download size={16} />
                 Export
               </button>
-              <div className="hidden group-hover:block absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">Export as PDF</button>
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">Export as Excel</button>
+              <div className="hidden group-hover:block absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded  shadow-lg z-10">
+                <button className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700">Export as PDF</button>
+                <button className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700">Export as Excel</button>
               </div>
             </div>
             <button 
               onClick={handleAddNote}
-              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium text-sm"
+              className="flex items-center gap-2 p-2  bg-red-600 text-white rounded  hover:bg-red-700 transition-smooth   text-xs text-xs "
             >
               <Plus size={16} />
               Add Notes
@@ -412,8 +412,8 @@ const NotesPage = () => {
 
         <div className="flex gap-6">
           <div className="w-56 flex-shrink-0">
-            <div className="bg-white border border-gray-200 rounded-lg p-4 sticky top-20">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">Notes List</h3>
+            <div className="bg-white border border-gray-200 rounded  p-2 sticky top-20">
+              <h3 className="text-xs   text-gray-900 mb-3">Notes List</h3>
               
               <button 
                 onClick={() => {
@@ -421,7 +421,7 @@ const NotesPage = () => {
                   setSelectedTag(null);
                   setSelectedPriority(null);
                 }}
-                className={`w-full px-4 py-2 rounded text-sm font-medium mb-3 transition-smooth ${
+                className={`w-full p-2  rounded text-xs    mb-3 transition-smooth ${
                   activeFilter === 'all' && !selectedTag && !selectedPriority
                     ? 'bg-red-600 text-white hover:bg-red-700'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -436,9 +436,9 @@ const NotesPage = () => {
                   setSelectedTag(null);
                   setSelectedPriority(null);
                 }}
-                className={`w-full text-left px-4 py-2 text-sm rounded flex items-center gap-2 mb-2 transition-smooth ${
+                className={`w-full text-left p-2  text-xs  rounded flex items-center gap-2 mb-2 transition-smooth ${
                   activeFilter === 'important'
-                    ? 'bg-red-50 text-red-600 font-medium'
+                    ? 'bg-red-50 text-red   '
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -452,9 +452,9 @@ const NotesPage = () => {
                   setSelectedTag(null);
                   setSelectedPriority(null);
                 }}
-                className={`w-full text-left px-4 py-2 text-sm rounded flex items-center gap-2 transition-smooth ${
+                className={`w-full text-left p-2  text-xs  rounded flex items-center gap-2 transition-smooth ${
                   activeFilter === 'trash'
-                    ? 'bg-red-50 text-red-600 font-medium'
+                    ? 'bg-red-50 text-red   '
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -463,7 +463,7 @@ const NotesPage = () => {
               </button>
 
               <div className="border-t border-gray-200 mt-4 pt-4">
-                <h4 className="text-xs font-bold text-gray-900 mb-3">Tags</h4>
+                <h4 className="text-xs  text-gray-900 mb-3">Tags</h4>
                 <div className="space-y-2">
                   {['Pending', 'Onhold', 'Inprogress', 'Done'].map((tag) => (
                     <button 
@@ -473,9 +473,9 @@ const NotesPage = () => {
                         setActiveFilter('all');
                         setSelectedPriority(null);
                       }}
-                      className={`flex items-center gap-2 text-sm w-full px-2 py-1 rounded transition-smooth ${
+                      className={`flex items-center gap-2 text-xs  w-full p-1  rounded transition-smooth ${
                         selectedTag === tag
-                          ? 'bg-blue-50 text-blue-700 font-medium'
+                          ? 'bg-blue-50 text-blue-700  '
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
@@ -487,7 +487,7 @@ const NotesPage = () => {
               </div>
 
               <div className="border-t border-gray-200 mt-4 pt-4">
-                <h4 className="text-xs font-bold text-gray-900 mb-3">Priority</h4>
+                <h4 className="text-xs  text-gray-900 mb-3">Priority</h4>
                 <div className="space-y-2">
                   {['High', 'Medium', 'Low'].map((priority) => (
                     <button 
@@ -497,7 +497,7 @@ const NotesPage = () => {
                         setActiveFilter('all');
                         setSelectedTag(null);
                       }}
-                      className={`px-3 py-1 rounded text-xs font-medium w-full transition-smooth ${
+                      className={`px-3 py-1 rounded text-xs   w-full transition-smooth ${
                         selectedPriority === priority
                           ? `${getPriorityBadge(priority)} border-2`
                           : getPriorityBadge(priority)
@@ -515,14 +515,14 @@ const NotesPage = () => {
             {(activeFilter === 'important' || selectedTag || selectedPriority) && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-900">{getFilterLabel()}</h2>
+                  <h2 className="text-xl  text-gray-900">{getFilterLabel()}</h2>
                   <button 
                     onClick={() => {
                       setActiveFilter('all');
                       setSelectedTag(null);
                       setSelectedPriority(null);
                     }}
-                    className="text-sm text-red-600 hover:text-red-700 font-medium"
+                    className="text-xs  text-red  hover:text-red-700  "
                   >
                     Clear Filter
                   </button>
@@ -545,7 +545,7 @@ const NotesPage = () => {
                 {importantNotes.length > 0 && (
                   <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-bold text-gray-900">
+                      <h2 className="text-xl  text-gray-900">
                         <Star size={20} className="inline text-yellow-400 mr-2" />
                         Important Notes ({importantNotes.length})
                       </h2>
@@ -559,7 +559,7 @@ const NotesPage = () => {
 
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">All Notes ({notes.length})</h2>
+                    <h2 className="text-xl  text-gray-900">All Notes ({notes.length})</h2>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -570,7 +570,7 @@ const NotesPage = () => {
                         <p className="text-gray-600 mb-4">No notes yet</p>
                         <button 
                           onClick={handleAddNote}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                          className="p-2  bg-red-600 text-white rounded  hover:bg-red-700"
                         >
                           Create Your First Note
                         </button>
@@ -586,9 +586,9 @@ const NotesPage = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
+          <div className="bg-white rounded  shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-betweenp-3  border-b border-gray-200">
+              <h2 className="text-xl  text-gray-900">
                 {editingNote ? 'Edit Note' : 'Add New Note'}
               </h2>
               <button 
@@ -596,7 +596,7 @@ const NotesPage = () => {
                   setIsModalOpen(false);
                   setEditingNote(null);
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-[#1F2020] hover:text-gray-600"
               >
                 <X size={24} />
               </button>
@@ -604,34 +604,34 @@ const NotesPage = () => {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <label className="block text-xs    text-gray-700 mb-2">Title</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="Enter note title"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-xs    text-gray-700 mb-2">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Enter note description"
                   rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <label className="block text-xs    text-gray-700 mb-2">Priority</label>
                   <select
                     value={formData.priority}
                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -640,11 +640,11 @@ const NotesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                  <label className="block text-xs    text-gray-700 mb-2">Category</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     <option value="Personal">Personal</option>
                     <option value="Work">Work</option>
@@ -654,11 +654,11 @@ const NotesPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tag</label>
+                <label className="block text-xs    text-gray-700 mb-2">Tag</label>
                 <select
                   value={formData.tag}
                   onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="Pending">Pending</option>
                   <option value="Onhold">Onhold</option>
@@ -668,19 +668,19 @@ const NotesPage = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+            <div className="flex items-center justify-end gap-3p-3  border-t border-gray-200">
               <button
                 onClick={() => {
                   setIsModalOpen(false);
                   setEditingNote(null);
                 }}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="p-2  border border-gray-300 text-gray-700 rounded  hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveNote}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="p-2  bg-red-600 text-white rounded  hover:bg-red-700"
               >
                 {editingNote ? 'Update Note' : 'Add Note'}
               </button>

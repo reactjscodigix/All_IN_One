@@ -12,7 +12,7 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
   app.get('/api/files', async (req, res) => {
     let connection;
     try {
-      const { userId, skip = 0, limit = 50 } = req.query;
+      const { userId, lead_id, contact_id, company_id, deal_id, project_id, task_id, skip = 0, limit = 50 } = req.query;
       connection = await getConnection();
 
       let query = 'SELECT f.* FROM files f WHERE 1=1';
@@ -21,6 +21,30 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
       if (userId) {
         query += ' AND f.user_id = ?';
         params.push(userId);
+      }
+      if (lead_id) {
+        query += ' AND f.lead_id = ?';
+        params.push(lead_id);
+      }
+      if (contact_id) {
+        query += ' AND f.contact_id = ?';
+        params.push(contact_id);
+      }
+      if (company_id) {
+        query += ' AND f.company_id = ?';
+        params.push(company_id);
+      }
+      if (deal_id) {
+        query += ' AND f.deal_id = ?';
+        params.push(deal_id);
+      }
+      if (project_id) {
+        query += ' AND f.project_id = ?';
+        params.push(project_id);
+      }
+      if (task_id) {
+        query += ' AND f.task_id = ?';
+        params.push(task_id);
       }
 
       query += ' ORDER BY f.created_at DESC LIMIT ?, ?';
@@ -38,7 +62,10 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
   app.post('/api/files', async (req, res) => {
     let connection;
     try {
-      const { userId, name, fileType, sizeBytes, mimeType, storageType, folderId } = req.body;
+      const { 
+        userId, name, fileType, sizeBytes, mimeType, storageType, folderId,
+        lead_id, contact_id, company_id, deal_id, project_id, task_id
+      } = req.body;
 
       if (!userId || !name) {
         return res.status(400).json({ error: 'User ID and file name required' });
@@ -46,9 +73,15 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
 
       connection = await getConnection();
       const [result] = await connection.query(`
-        INSERT INTO files (user_id, folder_id, name, file_type, size_bytes, mime_type, storage_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, [userId, folderId || null, name, fileType || null, sizeBytes || 0, mimeType || null, storageType || 'Internal']);
+        INSERT INTO files (
+          user_id, folder_id, name, file_type, size_bytes, mime_type, storage_type,
+          lead_id, contact_id, company_id, deal_id, project_id, task_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        userId, folderId || null, name, fileType || null, sizeBytes || 0, mimeType || null, storageType || 'Internal',
+        lead_id || null, contact_id || null, company_id || null, deal_id || null, project_id || null, task_id || null
+      ]);
 
       const [file] = await connection.query('SELECT * FROM files WHERE id = ?', [result.insertId]);
       res.status(201).json(file[0]);

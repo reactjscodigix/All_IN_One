@@ -6,7 +6,7 @@
       "description": "Main sales pipeline for B2B customers",
       "deals": 15,
       "value": 25000000,
-      "stages": ["Inpipeline", "Follow Up", "Conversation", "Appointment", "Proposal Made", "Won"],
+      "stages": ["Converted Lead", "Quotation", "Revised Quotation", "Negotiation", "Finalized Deal", "Won"],
       "color": "#14b8a6"
     },
     {

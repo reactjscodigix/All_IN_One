@@ -5,6 +5,7 @@ import EditInvoiceModal from './EditInvoiceModal';
 import InvoiceDetailPage from './InvoiceDetailPage';
 import InvoiceActionDropdown from './InvoiceActionDropdown';
 import { invoicesAPI, companiesAPI, projectAPI } from '../services/api';
+import { formatINR } from '../utils/currencyUtils';
 
 const InvoicesPage = () => {
   const [showAddInvoiceModal, setShowAddInvoiceModal] = useState(false);
@@ -106,15 +107,6 @@ const InvoicesPage = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  const formatCurrency = (value, currency = 'USD') => {
-    if (value === null || value === undefined || isNaN(value)) return '$0.00';
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency,
-    }).format(num);
-  };
 
   const handleAddInvoice = async (formData) => {
     try {
@@ -229,29 +221,29 @@ const InvoicesPage = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-8 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <h1 className="text-5xl font-bold text-gray-900">Invoices</h1>
-              <span className="bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold">
+              <h1 className="text-xl  text-gray-900">Invoices</h1>
+              <span className="bg-red-100 text-red  px-3 py-1.5 rounded-full text-xs ">
                 {filteredInvoices.length}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+            <div className="flex items-center gap-2 text-xs  text-gray-600  ">
               <button className="hover:text-gray-900">Home</button>
-              <span className="text-gray-400">›</span>
+              <span className="text-[#1F2020]">›</span>
               <span className="text-gray-600">Invoices</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="border border-gray-300 px-5 py-2.5 rounded-lg bg-white text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-gray-50 transition">
+            <button className="border border-gray-300 p-2  rounded  bg-white text-xs    flex items-center gap-2 shadow-sm hover:bg-gray-50 transition">
               <Download size={18} />
               Export
             </button>
-            <div className="flex items-center gap-1 border border-gray-300 rounded-lg p-1 bg-white shadow-sm">
+            <div className="flex items-center gap-1 border border-gray-300 rounded  p-1 bg-white shadow-sm">
               <button className="p-2 hover:bg-gray-100 rounded transition">
                 <LayoutIcon size={18} className="text-gray-600" />
               </button>
@@ -261,7 +253,7 @@ const InvoicesPage = () => {
             </div>
             <button 
               onClick={() => setShowAddInvoiceModal(true)}
-              className="bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-red-700 transition">
+              className="bg-red-600 text-white p-2  rounded  text-xs   shadow-sm hover:bg-red-700 transition">
               + Add New Invoice
             </button>
           </div>
@@ -269,8 +261,8 @@ const InvoicesPage = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="mb-6 p-2 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
@@ -283,7 +275,7 @@ const InvoicesPage = () => {
                 setFilterStatus(e.target.value);
                 setCurrentPage(1);
               }}
-              className="border border-gray-300 px-4 py-2.5 rounded-lg bg-white text-sm font-medium hover:bg-gray-50 transition shadow-sm appearance-none pr-8"
+              className="border border-gray-300 p-2  rounded  bg-white text-xs    hover:bg-gray-50 transition shadow-sm appearance-none pr-8"
             >
               <option value="All">All Status</option>
               <option value="Draft">Draft</option>
@@ -293,7 +285,7 @@ const InvoicesPage = () => {
               <option value="Unpaid">Unpaid</option>
               <option value="Overdue">Overdue</option>
             </select>
-            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+            <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
           </div>
           <div className="relative flex-1 max-w-md">
             <input
@@ -304,7 +296,7 @@ const InvoicesPage = () => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full border border-gray-300 px-4 py-2.5 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="w-full border border-gray-300 p-2  rounded  text-xs    focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
             {searchQuery && (
               <button 
@@ -312,7 +304,7 @@ const InvoicesPage = () => {
                   setSearchQuery('');
                   setCurrentPage(1);
                 }}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] hover:text-gray-600 text-lg"
               >
                 ✕
               </button>
@@ -325,21 +317,21 @@ const InvoicesPage = () => {
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-              <p className="mt-4 text-gray-600 font-medium">Loading invoices...</p>
+              <p className="mt-4 text-gray-600  ">Loading invoices...</p>
             </div>
           </div>
         ) : invoices.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <p className="text-gray-600 font-medium text-lg">No invoices yet</p>
-              <p className="text-gray-500 text-sm mt-2">Click "Add New Invoice" to create your first invoice</p>
+              <p className="text-gray-600   text-lg">No invoices yet</p>
+              <p className="text-gray-500 text-xs  mt-2">Click "Add New Invoice" to create your first invoice</p>
             </div>
           </div>
         ) : filteredInvoices.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <p className="text-gray-600 font-medium text-lg">No invoices match your search</p>
-              <p className="text-gray-500 text-sm mt-2">Try adjusting your filters or search criteria</p>
+              <p className="text-gray-600   text-lg">No invoices match your search</p>
+              <p className="text-gray-500 text-xs  mt-2">Try adjusting your filters or search criteria</p>
             </div>
           </div>
         ) : (
@@ -360,7 +352,7 @@ const InvoicesPage = () => {
                   >
                     {/* Card Header */}
                     <div className="flex justify-between items-start mb-3">
-                      <span className="text-xs font-bold text-blue-600 hover:text-blue-700">
+                      <span className="text-xs  text-white  hover:text-blue-700">
                         {invoice.invoice_number || `#${invoice.id}`}
                       </span>
                       <div onClick={(e) => e.stopPropagation()}>
@@ -378,43 +370,43 @@ const InvoicesPage = () => {
 
                     {/* Company Info */}
                     <div className="flex items-center gap-3 mb-5">
-                      <div className={`w-14 h-14 ${avatarBg} rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-sm`}>
+                      <div className={`w-14 h-14 ${avatarBg} rounded-full flex items-center justify-center  text-xl  text-white shadow-sm`}>
                         {companyLogo}
                       </div>
                       <div>
-                        <h4 className="font-bold text-base text-gray-900">{companyName}</h4>
-                        <p className="text-xs text-gray-600 font-medium">Invoice</p>
+                        <h4 className=" text-base text-gray-900">{companyName}</h4>
+                        <p className="text-xs text-gray-600  ">Invoice</p>
                       </div>
                     </div>
 
                     {/* Invoice Details */}
-                    <div className="space-y-3 mb-5 text-xs text-gray-700 flex-grow bg-gray-50 rounded-lg p-4">
+                    <div className="space-y-3 mb-5 text-xs text-gray-700 flex-grow bg-gray-50 rounded  p-2">
                       <div className="flex items-center gap-2">
                         <span>📄</span>
-                        <span className="text-gray-600 font-medium">Total Value :</span>
-                        <span className="font-bold text-gray-900 text-sm">
-                          {formatCurrency(invoice.total !== null && invoice.total !== undefined ? invoice.total : invoice.amount, invoice.currency)}
+                        <span className="text-gray-600  ">Total Value :</span>
+                        <span className=" text-gray-900 text-xs ">
+                          {formatINR(invoice.total !== null && invoice.total !== undefined ? invoice.total : invoice.amount)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span>📅</span>
-                        <span className="text-gray-600 font-medium">Due Date :</span>
-                        <span className="font-bold text-gray-900">
+                        <span className="text-gray-600  ">Due Date :</span>
+                        <span className=" text-gray-900">
                           {invoice.open_till ? new Date(invoice.open_till).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span>💰</span>
-                        <span className="text-gray-600 font-medium">Amount :</span>
-                        <span className="font-bold text-gray-900">
-                          {formatCurrency(invoice.amount || 0, invoice.currency)}
+                        <span className="text-gray-600  ">Amount :</span>
+                        <span className=" text-gray-900">
+                          {formatINR(invoice.amount || 0)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span>💵</span>
-                        <span className="text-gray-600 font-medium">Balance :</span>
-                        <span className="font-bold text-gray-900">
-                          {formatCurrency((invoice.total !== null && invoice.total !== undefined ? invoice.total : invoice.amount || 0) - (invoice.amount_paid || 0), invoice.currency)}
+                        <span className="text-gray-600  ">Balance :</span>
+                        <span className=" text-gray-900">
+                          {formatINR((invoice.total !== null && invoice.total !== undefined ? invoice.total : invoice.amount || 0) - (invoice.amount_paid || 0))}
                         </span>
                       </div>
                     </div>
@@ -422,13 +414,13 @@ const InvoicesPage = () => {
                     {/* Status Badge */}
                     <div className="pt-3 border-t border-gray-200">
                       <div className="flex items-center justify-between mb-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusStyles.bg} ${statusStyles.text}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs  ${statusStyles.bg} ${statusStyles.text}`}>
                           {invoice.status}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xl">{invoice.payment_method ? '💳' : '📋'}</span>
-                        <p className="text-xs text-gray-600 font-medium">
+                        <p className="text-xs text-gray-600  ">
                           {invoice.payment_method || invoice.bill_to || 'No details'}
                         </p>
                       </div>
@@ -444,7 +436,7 @@ const InvoicesPage = () => {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  className="p-2  border border-gray-300 rounded  hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs   "
                 >
                   ← Previous
                 </button>
@@ -464,7 +456,7 @@ const InvoicesPage = () => {
                       <button
                         key={pageNumber}
                         onClick={() => setCurrentPage(pageNumber)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                        className={`px-3 py-2 rounded  text-xs    ${
                           currentPage === pageNumber
                             ? 'bg-red-600 text-white'
                             : 'border border-gray-300 hover:bg-gray-50'
@@ -478,11 +470,11 @@ const InvoicesPage = () => {
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  className="p-2  border border-gray-300 rounded  hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs   "
                 >
                   Next →
                 </button>
-                <span className="text-sm text-gray-600 ml-4">
+                <span className="text-xs  text-gray-600 ml-4">
                   Page {currentPage} of {totalPages}
                 </span>
               </div>
@@ -491,8 +483,8 @@ const InvoicesPage = () => {
         )}
 
         {/* Footer */}
-        <div className="text-center text-gray-500 text-sm border-t border-gray-200 pt-8 pb-6 font-medium">
-          Copyright © 2025 <span className="text-red-600 font-bold">Preadmin</span>
+        <div className="text-center text-gray-500 text-xs  border-t border-gray-200 pt-8 pb-6  ">
+          Copyright © 2025 <span className="text-red  ">Preadmin</span>
         </div>
       </div>
 

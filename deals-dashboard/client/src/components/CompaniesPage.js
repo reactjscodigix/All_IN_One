@@ -34,7 +34,7 @@ const CompaniesPage = ({ onViewCompanyDetails }) => {
             event.stopPropagation();
             onViewCompanyDetails?.(company);
           }}
-          className="text-red-600 font-semibold hover:text-red-700 focus:outline-none"
+          className="text-red   hover:text-red-700 focus:outline-none"
         >
           {value}
         </button>
@@ -49,7 +49,7 @@ const CompaniesPage = ({ onViewCompanyDetails }) => {
       key: 'email',
       label: 'Email',
       sortable: false,
-      render: (value) => <a href={`mailto:${value}`} className="text-red-600 hover:text-red-700 text-sm">{value}</a>
+      render: (value) => <a href={`mailto:${value}`} className="text-red  hover:text-red-700 text-xs ">{value}</a>
     },
     {
       key: 'phone',
@@ -72,7 +72,7 @@ const CompaniesPage = ({ onViewCompanyDetails }) => {
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(value)}`}>
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs   ${getStatusBadge(value)}`}>
           {value}
         </span>
       )
@@ -80,10 +80,10 @@ const CompaniesPage = ({ onViewCompanyDetails }) => {
   ];
 
   return (
-    <div className="p-2 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       <div className="mb-8">
-        <h1 className="text-[1.250025rem] font-bold text-gray-900">Companies</h1>
-        <p className="text-gray-600 text-sm mt-2">Manage all your company accounts</p>
+        <h1 className="text-[1.250025rem]  text-gray-900">Companies</h1>
+        <p className="text-gray-600 text-xs ">Manage all your company accounts</p>
       </div>
 
       <DataTable

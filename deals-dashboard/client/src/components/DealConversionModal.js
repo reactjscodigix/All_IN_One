@@ -118,14 +118,14 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20" onClick={onClose}>
       <div
-        className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200"
+        className="bg-white rounded  shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-semibold text-gray-900">Convert Deal</h2>
+        <div className="flex items-center justify-betweenp-3  border-b border-gray-200 sticky top-0 bg-white z-10">
+          <h2 className="text-xl  text-gray-900">Convert Deal</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition text-2xl"
+            className="text-[#1F2020] hover:text-gray-600 transition text-2xl"
           >
             ×
           </button>
@@ -134,9 +134,9 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
         <div className="p-6">
           {!conversionType ? (
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-blue-800">
-                  Convert <span className="font-semibold">{deal?.deal_name}</span> to a new {conversionType} in your system.
+              <div className="bg-blue-50 border border-blue-200 rounded  p-2 mb-6">
+                <p className="text-xs  text-blue-800">
+                  Convert <span className="">{deal?.deal_name}</span> to a new {conversionType} in your system.
                 </p>
               </div>
 
@@ -145,17 +145,17 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                   <button
                     key={option.type}
                     onClick={() => setConversionType(option.type)}
-                    className={`p-6 border-2 rounded-lg text-left transition hover:shadow-md ${option.color} border-current`}
+                    className={`p-6 border-2 rounded  text-left transition hover:shadow-md ${option.color} border-current`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
                         <span className="text-3xl">{option.icon}</span>
                         <div>
-                          <h3 className="font-semibold text-gray-900 text-lg">{option.title}</h3>
-                          <p className="text-sm text-gray-600 mt-1">{option.description}</p>
+                          <h3 className=" text-gray-900 text-lg">{option.title}</h3>
+                          <p className="text-xs  text-gray-600 mt-1">{option.description}</p>
                         </div>
                       </div>
-                      <ArrowRight size={20} className="text-gray-400" />
+                      <ArrowRight size={20} className="text-[#1F2020]" />
                     </div>
                   </button>
                 ))}
@@ -166,25 +166,25 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
               <div className="flex items-center gap-2 mb-6">
                 <button
                   onClick={resetForm}
-                  className="text-gray-600 hover:text-gray-900 font-medium text-sm"
+                  className="text-gray-600 hover:text-gray-900   text-xs "
                 >
                   ← Back
                 </button>
-                <span className="text-gray-400">/</span>
-                <span className="font-semibold text-gray-900">
+                <span className="text-[#1F2020]">/</span>
+                <span className=" text-gray-900">
                   {CONVERSION_OPTIONS.find(o => o.type === conversionType)?.title}
                 </span>
               </div>
 
               {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="p-2 bg-red-50 border border-red-200 rounded ">
+                  <p className="text-xs  text-red-700">{error}</p>
                 </div>
               )}
 
-              <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="space-y-4 bg-gray-50 p-2 rounded  border border-gray-200">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs    text-gray-700 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -193,12 +193,12 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                     value={formData.name}
                     onChange={handleInputChange}
                     placeholder="Enter name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-xs    text-gray-700 mb-1">
                     Description
                   </label>
                   <textarea
@@ -207,7 +207,7 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                     onChange={handleInputChange}
                     placeholder="Enter description"
                     rows="3"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500 resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500 resize-none"
                   />
                 </div>
 
@@ -215,7 +215,7 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs    text-gray-700 mb-1">
                           Start Date
                         </label>
                         <input
@@ -223,11 +223,11 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                           name="startDate"
                           value={formData.startDate}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-xs    text-gray-700 mb-1">
                           Due Date
                         </label>
                         <input
@@ -235,13 +235,13 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                           name="dueDate"
                           value={formData.dueDate}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs    text-gray-700 mb-1">
                         Budget
                       </label>
                       <input
@@ -250,19 +250,19 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                         value={formData.budget}
                         onChange={handleInputChange}
                         placeholder="0.00"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs    text-gray-700 mb-1">
                         Status
                       </label>
                       <select
                         name="status"
                         value={formData.status}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                       >
                         <option value="Active">Active</option>
                         <option value="On Hold">On Hold</option>
@@ -276,7 +276,7 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                 {conversionType === 'invoice' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs    text-gray-700 mb-1">
                         Amount
                       </label>
                       <input
@@ -285,12 +285,12 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                         value={formData.budget}
                         onChange={handleInputChange}
                         placeholder="0.00"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs    text-gray-700 mb-1">
                         Invoice Date
                       </label>
                       <input
@@ -298,12 +298,12 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                         name="startDate"
                         value={formData.startDate}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-xs    text-gray-700 mb-1">
                         Due Date
                       </label>
                       <input
@@ -311,7 +311,7 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
                         name="dueDate"
                         value={formData.dueDate}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                       />
                     </div>
                   </>
@@ -321,14 +321,14 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={resetForm}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition bg-white"
+                  className="p-2  border border-gray-300 rounded  hover:bg-gray-50 text-xs    text-gray-700 transition bg-white"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConvert}
                   disabled={isLoading || !formData.name}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="p-2  bg-red-600 text-white rounded    text-xs  hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {isLoading ? 'Converting...' : 'Convert Deal'}
                 </button>

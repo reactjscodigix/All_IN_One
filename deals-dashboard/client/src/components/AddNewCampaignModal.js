@@ -195,27 +195,27 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
         className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white">
-          <h2 className="text-lg font-semibold text-gray-900">Add New Campaign</h2>
+        <div className="flex justify-between items-centerp-3  border-b border-[#EAECF0] sticky top-0 bg-white">
+          <h2 className="text-md  text-gray-900">Add New Campaign</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -224,20 +224,20 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
               value={formData.name}
               onChange={handleInputChange}
               placeholder="Enter campaign name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
             />
           </div>
 
           {/* Campaign Type */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Campaign Type <span className="text-red-500">*</span>
             </label>
             <select
               name="campaign_type"
               value={formData.campaign_type}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
             >
               <option value="">Choose</option>
               {campaignTypes.map(type => (
@@ -249,7 +249,7 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
           {/* Deal Value & Currency */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Deal Value <span className="text-red-500">*</span>
               </label>
               <input
@@ -258,18 +258,18 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.deal_value}
                 onChange={handleInputChange}
                 placeholder="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Currency <span className="text-red-500">*</span>
               </label>
               <select
                 name="currency"
                 value={formData.currency}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               >
                 {currencies.map(curr => (
                   <option key={curr} value={curr}>{curr}</option>
@@ -281,14 +281,14 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
           {/* Period & Period Value */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Period <span className="text-red-500">*</span>
               </label>
               <select
                 name="period"
                 value={formData.period}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               >
                 <option value="">Choose</option>
                 {periods.map(p => (
@@ -297,7 +297,7 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Period Value <span className="text-red-500">*</span>
               </label>
               <input
@@ -306,14 +306,14 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.period_value}
                 onChange={handleInputChange}
                 placeholder="Enter value"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition"
               />
             </div>
           </div>
 
           {/* Target Audience */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Target Audience
             </label>
             <div className="flex gap-2 mb-3">
@@ -322,12 +322,12 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
                 value={newAudience}
                 onChange={(e) => setNewAudience(e.target.value)}
                 placeholder="Enter audience segment"
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                className="flex-1 p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
               />
               <button
                 type="button"
                 onClick={handleAddAudience}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition"
+                className="p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700 transition"
               >
                 Add
               </button>
@@ -335,12 +335,12 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
             {formData.target_audience.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {formData.target_audience.map((audience, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-900 rounded-full text-sm">
+                  <span key={idx} className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-900 rounded-full text-xs ">
                     {audience}
                     <button
                       type="button"
                       onClick={() => handleRemoveAudience(audience)}
-                      className="text-gray-500 hover:text-red-600"
+                      className="text-gray-500 hover:text-red "
                     >
                       ×
                     </button>
@@ -352,7 +352,7 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -361,17 +361,17 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
               onChange={handleInputChange}
               placeholder="Description"
               rows="4"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-none"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-none"
             />
           </div>
 
           {/* Attachment */}
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Attachment
             </label>
             <div
-              className={`border-2 border-dashed rounded-lg p-6 text-center transition ${
+              className={`border-2 border-dashed rounded p-3  text-center transition ${
                 dragActive ? 'border-red-500 bg-red-50' : 'border-gray-300'
               }`}
               onDragEnter={handleDrag}
@@ -384,7 +384,7 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
                   <div className="flex items-center gap-3">
                     <Download size={24} className="text-green-600" />
                     <div className="text-left">
-                      <p className="text-sm font-medium text-gray-900">{formData.attachment_name}</p>
+                      <p className="text-xs    text-gray-900">{formData.attachment_name}</p>
                       <p className="text-xs text-gray-500">{(formData.attachment_size / 1024).toFixed(1)} KB</p>
                     </div>
                   </div>
@@ -398,20 +398,20 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
                         attachment_size: 0
                       }));
                     }}
-                    className="text-gray-400 hover:text-red-600"
+                    className="text-[#1F2020] hover:text-red "
                   >
                     ×
                   </button>
                 </div>
               ) : (
                 <>
-                  <Upload size={32} className="mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600 mb-1">
+                  <Upload size={32} className="mx-auto text-[#1F2020] mb-2" />
+                  <p className="text-xs  text-gray-600 mb-1">
                     Drop your files here or{' '}
                     <button
                       type="button"
                       onClick={handleBrowseClick}
-                      className="text-red-600 font-medium hover:text-red-700"
+                      className="text-red    hover:text-red-700"
                     >
                       browse
                     </button>
@@ -434,14 +434,14 @@ const AddNewCampaignModal = ({ isOpen, onClose, onSuccess }) => {
               type="button"
               onClick={handleCancel}
               disabled={isLoading}
-              className="px-6 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+              className="p-2  text-gray-700   border border-gray-300 rounded  hover:bg-gray-50 transition disabled:opacity-50 text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+              className="p-2  bg-red-600 text-white   rounded  hover:bg-red-700 transition disabled:opacity-50"
             >
               {isLoading ? 'Creating...' : 'Create'}
             </button>

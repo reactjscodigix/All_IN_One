@@ -24,15 +24,15 @@ const ProtectedRoute = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2M7.08 6.47A9.002 9.002 0 1112 2a9 9 0 00-4.92 4.47z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <h1 className="text-xl  text-gray-900 mb-2">Access Denied</h1>
           <p className="text-gray-600 mb-4">{reason}</p>
           {requiredRoles && (
-            <p className="text-sm text-gray-500">
+            <p className="text-xs  text-gray-500">
               Required role: {Array.isArray(requiredRoles) ? requiredRoles.join(', ') : requiredRoles}
             </p>
           )}
           {user && (
-            <p className="text-xs text-gray-400 mt-4">
+            <p className="text-xs text-[#1F2020] mt-4">
               Your role: {user.role || 'Not set'}
             </p>
           )}

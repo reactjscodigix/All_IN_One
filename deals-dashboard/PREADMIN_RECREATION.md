@@ -154,10 +154,10 @@ client/src/
 ## 🎨 Design Features
 
 ### **Typography & Fonts**
-- Headings: `text-[1.250025rem] font-bold text-gray-900`
-- Subheadings: `text-lg font-semibold text-gray-900`
-- Labels: `text-sm font-medium text-gray-900`
-- Body: `text-sm text-gray-600`
+- Headings: `text-[1.250025rem]  text-gray-900`
+- Subheadings: `text-md  text-gray-900`
+- Labels: `text-xs    text-gray-900`
+- Body: `text-xs  text-gray-600`
 
 ### **Colors & Styling**
 - **Primary**: Red (#dc2626) - for accents
@@ -169,7 +169,7 @@ client/src/
 
 ### **Card Styling**
 ```
-bg-white rounded-md border border-border-200
+bg-white rounded  border border-border-200
 p-2 (padding)
 ```
 
@@ -177,11 +177,11 @@ p-2 (padding)
 - Header: `bg-gray-50 border-b border-gray-100`
 - Rows: `hover:bg-gray-50 transition-colors`
 - Dividers: `border-gray-100` (light)
-- Padding: `px-6 py-4`
+- Padding: `p-2 `
 
 ### **Buttons & Controls**
-- Rounded: `rounded-md`
-- Padding: `px-3 py-1.5` (small), `px-4 py-2` (medium)
+- Rounded: `rounded `
+- Padding: `px-3 py-1.5` (small), `p-2 ` (medium)
 - Border: `border border-border-light`
 - Hover: `hover:bg-gray-50`
 
@@ -309,7 +309,7 @@ Each page uses DataTable with:
 
 ### **Change Colors**
 Update Tailwind classes:
-- Primary red: `text-red-600` → `text-blue-600`
+- Primary red: `text-red ` → `text-white `
 - Status colors in `getStatusBadge()` function
 - Card shadows: `shadow-sm` → `shadow` (if darker)
 

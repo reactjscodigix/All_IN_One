@@ -2,56 +2,25 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, ChevronDown, MoreVertical, X, Calendar, Star, GripVertical, AlertCircle } from 'lucide-react';
 import { taskAPI } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import SetReminderModal from './SetReminderModal';
 
 const TodoPage = () => {
   const { user, isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState('All Reminders');
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [expandedPriority, setExpandedPriority] = useState({
-    High: true,
-    Medium: true,
-    Low: true
-  });
-  const [showModal, setShowModal] = useState(false);
+  const tabs = ['All Reminders', "Today's", 'Overdue', 'Upcoming'];
 
   const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
       const allTasks = await taskAPI.getAllGeneral();
-      
-      const userTasks = allTasks.filter(task => {
-        const assignedTo = task.assigned_to || [];
-        return assignedTo.includes(user.id);
-      });
-
-      const processedTasks = userTasks.map(task => {
-        let tags = [];
-        if (task.tags) {
-          try {
-            tags = typeof task.tags === 'string' ? JSON.parse(task.tags) : task.tags;
-          } catch (e) {
-            tags = [];
-          }
-        }
-        return {
-          id: task.id,
-          title: task.title,
-          priority: task.priority,
-          date: task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          }) : 'No due date',
-          tags: Array.isArray(tags) ? tags : [],
-          status: task.status,
-          assignees: (task.assigned_to || []).length,
-          description: task.description
-        };
-      });
-
-      setTodos(processedTasks);
+      const userTasks = allTasks.filter(task => (task.assigned_to || []).includes(user.id));
+      setTodos(userTasks);
       setError(null);
     } catch (err) {
       console.error('Error fetching tasks:', err);
@@ -69,330 +38,162 @@ const TodoPage = () => {
     }
   }, [isAuthenticated, user, fetchTasks]);
 
-  const todosByPriority = {
-    High: todos.filter(t => t.priority === 'High'),
-    Medium: todos.filter(t => t.priority === 'Medium'),
-    Low: todos.filter(t => t.priority === 'Low'),
+  const getStatusBadgeColor = (status, date) => {
+    if (status === 'Completed') return 'bg-green-100 text-green-700';
+    const isOverdue = date && new Date(date) < new Date();
+    if (isOverdue) return 'bg-red-100 text-red-700';
+    return 'bg-blue-100 text-blue-700';
   };
 
-  const stats = {
-    total: todos.length,
-    pending: todos.filter(t => t.status === 'Open').length,
-    inProgress: todos.filter(t => t.status === 'In Progress').length,
-    completed: todos.filter(t => t.status === 'Completed').length,
-    onHold: todos.filter(t => t.status === 'On Hold').length,
-    high: todos.filter(t => t.priority === 'High').length,
-    medium: todos.filter(t => t.priority === 'Medium').length,
-    low: todos.filter(t => t.priority === 'Low').length,
+  const getStatusText = (status, date) => {
+    if (status === 'Completed') return 'Completed';
+    const isToday = date && new Date(date).toDateString() === new Date().toDateString();
+    if (isToday) return 'Today';
+    const isOverdue = date && new Date(date) < new Date();
+    if (isOverdue) return 'Overdue';
+    return 'Scheduled';
   };
 
-  const getPriorityColor = (priority) => {
-    switch(priority) {
-      case 'High': return 'text-red-600';
-      case 'Medium': return 'text-yellow-600';
-      case 'Low': return 'text-green-600';
-      default: return 'text-gray-600';
+  const filteredTodos = todos.filter(todo => {
+    if (activeTab === "Today's") {
+      const isToday = todo.due_date && new Date(todo.due_date).toDateString() === new Date().toDateString();
+      return isToday;
     }
-  };
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      'Completed': 'bg-green-100 text-green-700',
-      'Open': 'bg-blue-100 text-blue-700',
-      'In Progress': 'bg-yellow-100 text-yellow-700',
-      'On Hold': 'bg-red-100 text-red-700',
-    };
-    return styles[status] || 'bg-gray-100 text-gray-700';
-  };
-
-  const getTagStyle = (tag) => {
-    const styles = {
-      'Projects': 'bg-green-100 text-green-700',
-      'Internal': 'bg-red-100 text-red-700',
-      'Reminder': 'bg-blue-100 text-blue-700',
-      'Social': 'bg-purple-100 text-purple-700',
-      'Research': 'bg-indigo-100 text-indigo-700',
-      'Meetings': 'bg-pink-100 text-pink-700',
-    };
-    return styles[tag] || 'bg-gray-100 text-gray-700';
-  };
+    if (activeTab === 'Overdue') {
+      const isOverdue = todo.due_date && new Date(todo.due_date) < new Date() && todo.status !== 'Completed';
+      return isOverdue;
+    }
+    if (activeTab === 'Upcoming') {
+      const isUpcoming = todo.due_date && new Date(todo.due_date) > new Date() && todo.status !== 'Completed';
+      return isUpcoming;
+    }
+    return true;
+  });
 
   if (!isAuthenticated) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
-            <AlertCircle size={24} className="text-red-600" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Authentication Required</h2>
-          <p className="text-gray-600 text-center mb-6">Please log in to access tasks and todos</p>
-          <a href="/login" className="block w-full text-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
-            Go to Login
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading tasks...</p>
+      <div className="p-2 bg-[#F7F8F9] min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded  shadow-lg p-6 text-center">
+          <AlertCircle size={48} className="text-red  mx-auto mb-4" />
+          <h2 className="text-xl  mb-2">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">Please log in to access reminders</p>
+          <a href="/login" className="block w-full py-2 bg-red-600 text-white rounded  hover:bg-red-700 transition">Login</a>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       <div className="max-w-7xl mx-auto">
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Todo</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-              <span className="font-medium">{user?.first_name} {user?.last_name}</span>
-              <span>›</span>
-              <button className="text-gray-600 hover:text-gray-900">Home</button>
-              <span>›</span>
-              <button className="text-gray-600 hover:text-gray-900">Applications</button>
-              <span>›</span>
-              <span>Todo</span>
+        {/* Header & Tabs */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-8">
+            <h1 className="text-2xl  text-gray-900">Reminders</h1>
+            <div className="flex items-center border-b border-gray-200">
+              {tabs.map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 text-xs   transition-colors relative ${
+                    activeTab === tab ? 'text-red ' : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab}
+                  {activeTab === tab && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600" />
+                  )}
+                </button>
+              ))}
             </div>
           </div>
+        </div>
+
+        {/* Filter Bar */}
+        <div className="bg-white p-3 border border-gray-200 rounded  mb-6 flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-[300px]">
+            <select className="p-2 border border-gray-300 rounded text-xs text-gray-600 outline-none focus:border-red-500 min-w-[140px]">
+              <option>Time</option>
+            </select>
+            <select className="p-2 border border-gray-300 rounded text-xs text-gray-600 outline-none focus:border-red-500 min-w-[140px]">
+              <option>Related To</option>
+            </select>
+            <select className="p-2 border border-gray-300 rounded text-xs text-gray-600 outline-none focus:border-red-500 min-w-[140px]">
+              <option>Type</option>
+            </select>
+          </div>
           <button 
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium"
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors flex items-center gap-2"
           >
-            <Plus size={18} />
-            Create New
+            <Plus size={16} /> Add Reminder
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-sm text-gray-600">Total Tasks</div>
-            <div className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-sm text-gray-600">Open/Pending</div>
-            <div className="text-3xl font-bold text-blue-600 mt-1">{stats.pending}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-sm text-gray-600">In Progress</div>
-            <div className="text-3xl font-bold text-yellow-600 mt-1">{stats.inProgress}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-sm text-gray-600">Completed</div>
-            <div className="text-3xl font-bold text-green-600 mt-1">{stats.completed}</div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-sm font-semibold text-red-600 mb-2">High Priority</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.high}</div>
-            <div className="text-xs text-gray-600 mt-1">{stats.high > 0 ? '⚠️ Needs attention' : '✓ None'}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-sm font-semibold text-yellow-600 mb-2">Medium Priority</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.medium}</div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="text-sm font-semibold text-green-600 mb-2">Low Priority</div>
-            <div className="text-2xl font-bold text-gray-900">{stats.low}</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-border-light p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">My Tasks</h2>
-              <div className="flex items-center gap-6 mt-2 text-sm">
-                <span className="text-gray-600">On Hold : <span className="font-semibold text-gray-900">{stats.onHold}</span></span>
-                <span className="text-gray-600">Assigned : <span className="font-semibold text-gray-900">{stats.total}</span></span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <button className="text-sm text-gray-600 hover:text-gray-900">
-                All Tags ▼
-              </button>
-              <button className="text-sm text-gray-600 hover:text-gray-900">
-                Sort By : Recent ▼
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-4 pb-4 border-b border-gray-200">
-            <button className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-2">
-              <Calendar size={16} />
-              Due Date
-            </button>
-          </div>
-
-          {todos.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg mb-2">No tasks assigned</p>
-              <p className="text-gray-400 text-sm">You don't have any tasks assigned yet. Create a new task to get started.</p>
-            </div>
-          ) : (
-          <div className="space-y-6">
-            {Object.entries(todosByPriority).map(([priority, items]) => (
-              <div key={priority}>
-                <button
-                  onClick={() => setExpandedPriority(prev => ({
-                    ...prev,
-                    [priority]: !prev[priority]
-                  }))}
-                  className="flex items-center justify-between w-full mb-4 pb-4 border-b border-gray-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <ChevronDown 
-                      size={18} 
-                      className={`text-gray-600 transition-transform ${expandedPriority[priority] ? '' : '-rotate-90'}`}
-                    />
-                    <span className={`font-bold text-base ${getPriorityColor(priority)}`}>
-                      {priority}
-                    </span>
-                    <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-semibold">
-                      {items.length.toString().padStart(2, '0')}
-                    </span>
-                  </div>
-                  <button className="text-red-600 hover:text-red-700 text-sm font-medium">See All →</button>
-                </button>
-
-                {expandedPriority[priority] && (
-                  <div className="space-y-3 mb-6">
-                    {items.map(todo => (
-                      <div 
-                        key={todo.id}
-                        className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-smooth flex items-center gap-3"
-                      >
-                        <GripVertical size={18} className="text-gray-400 flex-shrink-0" />
-                        <Star size={18} className="text-gray-400 flex-shrink-0 cursor-pointer hover:text-yellow-500" />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <h3 className="font-semibold text-gray-900">{todo.title}</h3>
-                            <button className="p-1 hover:bg-gray-200 rounded transition-smooth flex-shrink-0">
-                              <MoreVertical size={16} className="text-gray-600" />
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-xs text-gray-600 flex items-center gap-1">
-                              <Calendar size={14} />
-                              {todo.date}
-                            </span>
-                            {todo.tags.map(tag => (
-                              <span 
-                                key={tag}
-                                className={`text-xs px-2 py-1 rounded font-medium ${getTagStyle(tag)}`}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                            <span className={`text-xs px-2 py-1 rounded font-semibold ${getStatusBadge(todo.status)}`}>
-                              {todo.status}
-                            </span>
-                            <div className="flex -space-x-2">
-                              {[...Array(Math.min(todo.assignees, 3))].map((_, i) => (
-                                <div 
-                                  key={i}
-                                  className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
-                                >
-                                  U
-                                </div>
-                              ))}
-                              {todo.assignees > 3 && (
-                                <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-gray-700 text-xs font-bold">
-                                  +{todo.assignees - 3}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          )}
-
-          <div className="mt-8 text-center">
-            <button className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium">
-              Load More
-            </button>
-          </div>
+        {/* Table Content */}
+        <div className="bg-white border border-gray-200 rounded  overflow-hidden shadow-sm">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="p-3 text-xs   text-gray-600 w-10">
+                  <input type="checkbox" className="rounded border-gray-300" />
+                </th>
+                <th className="p-3 text-xs   text-gray-600">Related To</th>
+                <th className="p-3 text-xs   text-gray-600">Type</th>
+                <th className="p-3 text-xs   text-gray-600">Related To</th>
+                <th className="p-3 text-xs   text-gray-600">Type</th>
+                <th className="p-3 text-xs   text-gray-600 w-10"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="p-10 text-center text-gray-500 text-xs">Loading reminders...</td>
+                </tr>
+              ) : filteredTodos.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-10 text-center text-gray-500 text-xs">No reminders found</td>
+                </tr>
+              ) : (
+                filteredTodos.map(todo => (
+                  <tr key={todo.id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="p-3">
+                      <input type="checkbox" className="rounded border-gray-300" />
+                    </td>
+                    <td className="p-3 text-xs text-gray-900 ">
+                      {todo.title}
+                    </td>
+                    <td className="p-3 text-xs text-gray-600">
+                      Call
+                    </td>
+                    <td className="p-3 text-xs text-gray-600">
+                      {todo.linked_type}: {todo.linked_id}
+                    </td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded-full text-xs    ${getStatusBadgeColor(todo.status, todo.due_date)}`}>
+                        {getStatusText(todo.status, todo.due_date)}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button className="text-[#1F2020] hover:text-gray-600 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreVertical size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-900">Add New Todo</h3>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <input 
-                type="text"
-                placeholder="Todo Title *"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                <option>Tag *</option>
-                <option>Projects</option>
-                <option>Internal</option>
-                <option>Reminder</option>
-              </select>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                <option>Priority *</option>
-                <option>High</option>
-                <option>Medium</option>
-                <option>Low</option>
-              </select>
-              <textarea 
-                placeholder="Descriptions"
-                rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-              ></textarea>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
-                <option>Status *</option>
-                <option>Pending</option>
-                <option>Inprogress</option>
-                <option>Completed</option>
-              </select>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-smooth font-medium"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium"
-                >
-                  Add Todo
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SetReminderModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={async (data) => {
+          console.log('New Reminder:', data);
+          await fetchTasks();
+        }}
+      />
     </div>
   );
 };

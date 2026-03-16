@@ -392,7 +392,7 @@ function DealsList() {
                   <button>Edit</button>
                 )}
                 {hasPermission('deals', 'delete') && (
-                  <button className="text-red-600">Delete</button>
+                  <button className="text-red ">Delete</button>
                 )}
               </td>
             </tr>

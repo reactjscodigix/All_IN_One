@@ -222,7 +222,7 @@ const BlogCategoriesPage = () => {
     <div className="bg-gray-50 min-h-screen">
       <style>{tableAnimationStyles}</style>
 
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="category-title">Blog Categories</h1>
@@ -235,14 +235,14 @@ const BlogCategoriesPage = () => {
                 Export
                 <ChevronDown size={14} />
               </button>
-              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-10">
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Export as PDF</button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 border-t border-gray-200 hover:bg-gray-50">Export as Excel</button>
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded  shadow-lg hidden group-hover:block z-10">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-50">Export as PDF</button>
+                <button className="w-full text-left p-2  text-xs  text-gray-700 border-t border-gray-200 hover:bg-gray-50">Export as Excel</button>
               </div>
             </div>
             <button 
               onClick={handleAddClick}
-              className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded-lg shadow-sm transition-colors"
+              className="bg-red-600 hover:bg-red-700 text-white text-xs  p-2  rounded  shadow-sm transition-colors"
             >
               Add Blog Category
             </button>
@@ -250,7 +250,7 @@ const BlogCategoriesPage = () => {
         </div>
       </div>
 
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="filter-btn bg-white text-gray-700 flex items-center justify-center">
@@ -263,16 +263,16 @@ const BlogCategoriesPage = () => {
                 Sort By
                 <ChevronDown size={14} />
               </button>
-              <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-10">
+              <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded  shadow-lg hidden group-hover:block z-10">
                 <button 
                   onClick={() => setSortBy('newest')}
-                  className={`w-full text-left px-4 py-2 text-sm ${sortBy === 'newest' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
+                  className={`w-full text-left p-2  text-xs  ${sortBy === 'newest' ? 'bg-blue-50 text-blue-700 ' : 'text-gray-700 hover:bg-gray-50'}`}
                 >
                   Newest
                 </button>
                 <button 
                   onClick={() => setSortBy('oldest')}
-                  className={`w-full text-left px-4 py-2 text-sm border-t border-gray-200 ${sortBy === 'oldest' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
+                  className={`w-full text-left p-2  text-xs  border-t border-gray-200 ${sortBy === 'oldest' ? 'bg-blue-50 text-blue-700 ' : 'text-gray-700 hover:bg-gray-50'}`}
                 >
                   Oldest
                 </button>
@@ -283,9 +283,9 @@ const BlogCategoriesPage = () => {
       </div>
 
       <div className="p-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded  shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs ">
               <thead>
                 <tr className="table-header border-b border-gray-200">
                   <th className="table-row-cell w-8">
@@ -296,10 +296,10 @@ const BlogCategoriesPage = () => {
                       className="cursor-pointer"
                     />
                   </th>
-                  <th className="table-row-cell text-left font-semibold text-gray-700">Category Name</th>
-                  <th className="table-row-cell text-left font-semibold text-gray-700">Created Date</th>
-                  <th className="table-row-cell text-left font-semibold text-gray-700">Status</th>
-                  <th className="table-row-cell text-left font-semibold text-gray-700">Action</th>
+                  <th className="table-row-cell text-left  text-gray-700">Category Name</th>
+                  <th className="table-row-cell text-left  text-gray-700">Created Date</th>
+                  <th className="table-row-cell text-left  text-gray-700">Status</th>
+                  <th className="table-row-cell text-left  text-gray-700">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -313,7 +313,7 @@ const BlogCategoriesPage = () => {
                         className="cursor-pointer"
                       />
                     </td>
-                    <td className="table-row-cell text-gray-700 font-medium">{category.name}</td>
+                    <td className="table-row-cell text-gray-700  ">{category.name}</td>
                     <td className="table-row-cell text-gray-500">{category.date}</td>
                     <td className="table-row-cell">
                       <StatusBadge status={category.status} onClick={() => handleEditClick(category)} />
@@ -322,13 +322,13 @@ const BlogCategoriesPage = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEditClick(category)}
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+                          className="text-white  hover:text-blue-700 text-xs    transition-colors"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteClick(category)}
-                          className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                          className="text-red  hover:text-red-700 text-xs    transition-colors"
                         >
                           Delete
                         </button>
@@ -340,23 +340,23 @@ const BlogCategoriesPage = () => {
             </table>
           </div>
 
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <div className="text-sm text-gray-600">
-              Show <span className="font-medium">{perPage}</span> entries
+          <div className="flex items-center justify-between p-2  border-t border-gray-200 bg-gray-50">
+            <div className="text-xs  text-gray-600">
+              Show <span className=" ">{perPage}</span> entries
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                className="px-3 py-2 border border-gray-300 rounded text-xs  hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
                 Prev
               </button>
-              <button className="pagination-active flex items-center justify-center text-sm font-medium">{page}</button>
+              <button className="pagination-active flex items-center justify-center text-xs   ">{page}</button>
               <button
                 onClick={() => setPage((p) => Math.min(pages, p + 1))}
                 disabled={page === pages}
-                className="px-3 py-2 border border-gray-300 rounded text-sm hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                className="px-3 py-2 border border-gray-300 rounded text-xs  hover:bg-gray-100 disabled:opacity-50 transition-colors"
               >
                 Next
               </button>
@@ -366,8 +366,8 @@ const BlogCategoriesPage = () => {
       </div>
 
       <div className="footer-section bg-white text-center text-xs px-6 py-6">
-        <span className="text-gray-600">Copyright © 2025 <span className="text-red-600 font-medium">Preadmin</span></span>
-        <div className="flex gap-4 justify-center mt-3">
+        <span className="text-gray-600">Copyright © 2025 <span className="text-red   ">Preadmin</span></span>
+        <div className="flex gap-2 justify-center mt-3">
           <span className="cursor-pointer hover:text-gray-900 transition-colors">About</span>
           <span className="cursor-pointer hover:text-gray-900 transition-colors">Terms</span>
           <span className="cursor-pointer hover:text-gray-900 transition-colors">Contact Us</span>
@@ -376,43 +376,43 @@ const BlogCategoriesPage = () => {
 
       {showAddModal && (
         <div className="modal-backdrop fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-          <div className="modal bg-white rounded-lg p-6 w-96 shadow-lg">
+          <div className="modal bg-white rounded p-3  w-96 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Add Blog Category</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-md  text-gray-900">Add Blog Category</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-[#1F2020] hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <label className="block text-xs    text-gray-700 mb-1">Category *</label>
                 <input 
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Category name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Created Date *</label>
+                <label className="block text-xs    text-gray-700 mb-1">Created Date *</label>
                 <input 
                   type="text"
                   value={formData.date}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:ring-1 focus:ring-blue-500"
                   readOnly
                 />
               </div>
               <div className="flex gap-2 pt-4">
                 <button 
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 p-2  border border-gray-300 rounded  text-gray-700   hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  className="flex-1 p-2  bg-red-600 text-white rounded    hover:bg-red-700 transition-colors"
                 >
                   Create New
                 </button>
@@ -424,38 +424,38 @@ const BlogCategoriesPage = () => {
 
       {showEditModal && (
         <div className="modal-backdrop fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-          <div className="modal bg-white rounded-lg p-6 w-96 shadow-lg">
+          <div className="modal bg-white rounded p-3  w-96 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Edit Blog Category</h2>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+              <h2 className="text-md  text-gray-900">Edit Blog Category</h2>
+              <button onClick={() => setShowEditModal(false)} className="text-[#1F2020] hover:text-gray-600">
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <label className="block text-xs    text-gray-700 mb-1">Category *</label>
                 <input 
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Created Date *</label>
+                <label className="block text-xs    text-gray-700 mb-1">Created Date *</label>
                 <input 
                   type="text"
                   value={formData.date}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:ring-1 focus:ring-blue-500"
                   readOnly
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-xs    text-gray-700 mb-1">Status</label>
                 <select 
                   value={formData.status}
                   onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  className="status-select w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
+                  className="status-select w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none"
                 >
                   <option>Active</option>
                   <option>Inactive</option>
@@ -464,13 +464,13 @@ const BlogCategoriesPage = () => {
               <div className="flex gap-2 pt-4">
                 <button 
                   onClick={() => setShowEditModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 p-2  border border-gray-300 rounded  text-gray-700   hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={() => setShowEditModal(false)}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  className="flex-1 p-2  bg-red-600 text-white rounded    hover:bg-red-700 transition-colors"
                 >
                   Save Changes
                 </button>
@@ -482,19 +482,19 @@ const BlogCategoriesPage = () => {
 
       {showDeleteModal && (
         <div className="modal-backdrop fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
-          <div className="modal bg-white rounded-lg p-6 w-80 shadow-lg">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Delete Confirmation</h2>
-            <p className="text-sm text-gray-600 mb-6">Are you sure you want to remove blog category you selected.</p>
+          <div className="modal bg-white rounded p-3  w-80 shadow-lg">
+            <h2 className="text-md  text-gray-900 mb-2">Delete Confirmation</h2>
+            <p className="text-xs  text-gray-600 mb-6">Are you sure you want to remove blog category you selected.</p>
             <div className="flex gap-2">
               <button 
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 p-2  border border-gray-300 rounded  text-gray-700   hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                className="flex-1 p-2  bg-red-600 text-white rounded    hover:bg-red-700 transition-colors"
               >
                 Yes, Delete it
               </button>

@@ -47,7 +47,7 @@ function StatusBadge({ status }) {
     Lost: 'bg-red-100 text-red-700',
   };
   return (
-    <span className={`px-2 py-1 rounded text-xs font-semibold ${map[status] || 'bg-gray-100 text-gray-700'}`}>
+    <span className={`p-1  rounded text-xs  ${map[status] || 'bg-gray-100 text-gray-700'}`}>
       {status}
     </span>
   );
@@ -130,7 +130,7 @@ function LeadsTable({ rows }) {
     <div className="mt-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="relative flex-1 max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
           <input
             value={q}
             onChange={(e) => {
@@ -138,41 +138,41 @@ function LeadsTable({ rows }) {
               setPage(1);
             }}
             placeholder="Search"
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded text-sm bg-white focus:outline-none"
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded text-xs  bg-white focus:outline-none"
           />
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 border border-gray-200 rounded text-sm bg-white hover:bg-gray-50 flex items-center gap-2">
+          <button className="p-2  border border-gray-200 rounded text-xs  bg-white hover:bg-gray-50 flex items-center gap-2">
             <Filter size={14} /> Filter
           </button>
-          <button className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 flex items-center gap-2">
+          <button className="bg-red-600 text-white p-2  rounded text-xs  hover:bg-red-700 flex items-center gap-2">
             <Download size={14} /> Download Report
           </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto border border-gray-200 rounded-lg">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto border border-gray-200 rounded ">
+        <table className="w-full text-xs ">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="py-3 px-4 text-left">
                 <input type="checkbox" className="w-4 h-4" />
               </th>
-              <th className="py-3 px-4 text-left cursor-pointer font-medium text-gray-700" onClick={() => toggleSort('name')}>
+              <th className="py-3 px-4 text-left cursor-pointer   text-gray-700" onClick={() => toggleSort('name')}>
                 Lead Name {sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </th>
-              <th className="py-3 px-4 text-left cursor-pointer font-medium text-gray-700" onClick={() => toggleSort('company')}>
+              <th className="py-3 px-4 text-left cursor-pointer   text-gray-700" onClick={() => toggleSort('company')}>
                 Company Name {sortKey === 'company' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </th>
-              <th className="py-3 px-4 text-left font-medium text-gray-700">Phone</th>
-              <th className="py-3 px-4 text-left cursor-pointer font-medium text-gray-700" onClick={() => toggleSort('status')}>
+              <th className="py-3 px-4 text-left   text-gray-700">Phone</th>
+              <th className="py-3 px-4 text-left cursor-pointer   text-gray-700" onClick={() => toggleSort('status')}>
                 Lead Status {sortKey === 'status' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </th>
-              <th className="py-3 px-4 text-left cursor-pointer font-medium text-gray-700" onClick={() => toggleSort('created')}>
+              <th className="py-3 px-4 text-left cursor-pointer   text-gray-700" onClick={() => toggleSort('created')}>
                 Created Date {sortKey === 'created' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </th>
-              <th className="py-3 px-4 text-left font-medium text-gray-700">Lead Owner</th>
+              <th className="py-3 px-4 text-left   text-gray-700">Lead Owner</th>
             </tr>
           </thead>
           <tbody>
@@ -184,12 +184,12 @@ function LeadsTable({ rows }) {
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-3">
                     <img src={r.avatar} alt={r.name} className="w-8 h-8 rounded-full object-cover" />
-                    <span className="font-medium text-gray-900">{r.name}</span>
+                    <span className="  text-gray-900">{r.name}</span>
                   </div>
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-700">
+                    <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-xs  text-gray-700">
                       {r.company.charAt(0)}
                     </div>
                     <div>
@@ -217,13 +217,13 @@ function LeadsTable({ rows }) {
 
       <div className="flex items-center justify-between mt-4 px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Show</span>
-          <select className="border border-gray-200 rounded px-2 py-1 text-sm">
+          <span className="text-xs  text-gray-600">Show</span>
+          <select className="border border-gray-200 rounded p-1  text-xs ">
             <option>10</option>
             <option>25</option>
             <option>50</option>
           </select>
-          <span className="text-sm text-gray-600">entries</span>
+          <span className="text-xs  text-gray-600">entries</span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -233,7 +233,7 @@ function LeadsTable({ rows }) {
           >
             <ChevronLeft size={16} />
           </button>
-          <div className="text-sm text-gray-600">
+          <div className="text-xs  text-gray-600">
             Page {page} of {pages}
           </div>
           <button
@@ -313,11 +313,11 @@ const LeadReport = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold text-gray-900">Lead Report</h1>
-            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">{leads.length}</span>
+            <h1 className="text-xl  text-gray-900">Lead Report</h1>
+            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs ">{leads.length}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <a href="/" className="text-orange-500 hover:text-orange-600 font-medium">
+          <div className="flex items-center gap-2 text-xs ">
+            <a href="/" className="text-orange-500 hover:text-orange-600  ">
               Home
             </a>
             <span className="text-gray-300">/</span>
@@ -328,12 +328,12 @@ const LeadReport = () => {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Left Column - Bar Chart */}
-          <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+          <div className="lg:col-span-2 bg-white rounded  border border-gray-200p-3  shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Leads By Year</h2>
+              <h2 className="text-md  text-gray-900">Leads By Year</h2>
               <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-gray-400" />
-                <select className="border border-gray-200 rounded px-3 py-1 text-sm bg-white">
+                <Calendar size={16} className="text-[#1F2020]" />
+                <select className="border border-gray-200 rounded px-3 py-1 text-xs  bg-white">
                   <option>2025</option>
                 </select>
               </div>
@@ -342,10 +342,10 @@ const LeadReport = () => {
           </div>
 
           {/* Right Column - Donut Chart */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+          <div className="bg-white rounded  border border-gray-200p-3  shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Leads By Source</h2>
-              <select className="border border-gray-200 rounded px-3 py-1 text-sm bg-white">
+              <h2 className="text-md  text-gray-900">Leads By Source</h2>
+              <select className="border border-gray-200 rounded px-3 py-1 text-xs  bg-white">
                 <option>2025</option>
               </select>
             </div>
@@ -354,7 +354,7 @@ const LeadReport = () => {
         </div>
 
         {/* Table Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white rounded  border border-gray-200p-3  shadow-sm">
           {loading ? (
             <div className="text-center py-8 text-gray-500">Loading leads...</div>
           ) : error ? (
@@ -370,7 +370,7 @@ const LeadReport = () => {
       {/* Footer */}
       <div className="border-t border-gray-200 bg-white py-4 text-center">
         <p className="text-xs text-gray-500">
-          Copyright © 2025 <span className="font-semibold text-red-600">Preadmin</span>
+          Copyright © 2025 <span className=" text-red ">Preadmin</span>
         </p>
       </div>
     </div>

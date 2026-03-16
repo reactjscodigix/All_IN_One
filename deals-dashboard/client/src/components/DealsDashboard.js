@@ -6,6 +6,7 @@ import DealsByStageChart from './DealsByStageChart';
 import LostDealsChart from './LostDealsChart';
 import WonDealsChart from './WonDealsChart';
 import DealsByYearChart from './DealsByYearChart';
+import UpcomingEvents from './UpcomingEvents';
 
 const dayLabels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const calendarPresets = ['Today', 'Yesterday', 'Last 7 Days', 'Last 15 Days', 'Last 30 Days', 'This Month', 'Last Month', 'Custom Range'];
@@ -268,17 +269,17 @@ const DealsDashboard = () => {
     const cells = buildMonthMatrix(baseDate);
     return (
       <div className="flex-1">
-        <div className="text-sm font-semibold text-gray-900 text-center mb-2">
+        <div className="text-xs   text-gray-900 text-center mb-2">
           {baseDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
         </div>
         <div className="grid grid-cols-7 gap-1 text-xs text-gray-500 mb-2">
           {dayLabels.map((day) => (
-            <div key={`${day}-${baseDate.getMonth()}`} className="text-center font-medium uppercase tracking-wide">
+            <div key={`${day}-${baseDate.getMonth()}`} className="text-center    tracking-wide">
               {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1 text-sm">
+        <div className="grid grid-cols-7 gap-1 text-xs ">
           {cells.map((cell, idx) => {
             if (!cell) {
               return <div key={`empty-${baseDate.getMonth()}-${idx}`} className="h-8" />;
@@ -297,7 +298,7 @@ const DealsDashboard = () => {
                   isStart || isEnd
                     ? 'bg-red-500 text-white'
                     : inRange
-                      ? 'bg-red-100 text-red-600'
+                      ? 'bg-red-100 text-red '
                       : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
@@ -325,18 +326,16 @@ const DealsDashboard = () => {
   const nextMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
 
   return (
-    <div className="p-2 bg-gray-50 min-h-screen">
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between animate-fade-in">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
+      <div className="mb-3 flex items-center justify-between animate-fade-in">
         <div>
-          <h1 className="text-[1.250025rem] font-bold text-gray-900 text-color-transition">Deals Dashboard</h1>
-          {headerRangeLabel && <p className="text-gray-600 text-sm mt-2">{headerRangeLabel}</p>}
+          <h1 className="text-xl  text-gray-900 ">Deals Dashboard</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={openCalendarPanel}
-            className="flex items-center gap-2 border border-border-light rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:border-red-500 hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-            title="Select date range"
+            className="flex items-center gap-2 border border-gray-200 rounded  bg-white px-4 py-2 text-xs  text-gray-700 hover:border-red-500 hover:text-red-500 transition-all shadow-sm focus:outline-none"
           >
             <Calendar size={16} />
             <span className="whitespace-nowrap">{headerRangeLabel}</span>
@@ -344,51 +343,38 @@ const DealsDashboard = () => {
           <button
             type="button"
             onClick={handleRefresh}
-            className="h-10 w-10 flex items-center justify-center rounded-lg border border-border-light text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors"
-            title="Refresh"
+            className="h-9 w-9 flex items-center justify-center rounded  border border-gray-200 bg-white text-gray-600 hover:border-red-500 hover:text-red-500 transition-all shadow-sm"
           >
             <RotateCcw size={16} />
           </button>
           <button
             type="button"
-            onClick={handleExport}
-            className="h-10 w-10 flex items-center justify-center rounded-lg border border-border-light text-gray-600 hover:border-red-500 hover:text-red-500 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            title="Export"
-            disabled={!deals.length}
+            className="h-9 w-9 flex items-center justify-center rounded  border border-gray-200 bg-white text-gray-600 hover:border-red-500 hover:text-red-500 transition-all shadow-sm"
           >
             <Download size={16} />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
-        <div className="chart-container transition-smooth">
-          <RecentDealsTable deals={deals} onDateRangeChange={handleDateRangeChange} />
-        </div>
-        <div className="chart-container transition-smooth">
-          <DealsByStageChart deals={deals} onDateRangeChange={handleDateRangeChange} />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mb-3">
+        <RecentDealsTable deals={deals} onDateRangeChange={handleDateRangeChange} />
+        <DealsByStageChart deals={deals} onDateRangeChange={handleDateRangeChange} />
+        <UpcomingEvents />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-6">
-        <div className="chart-container transition-smooth">
-          <LostDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
-        </div>
-        <div className="chart-container transition-smooth">
-          <WonDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <LostDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
+        <WonDealsChart deals={deals} onDateRangeChange={handleDateRangeChange} />
       </div>
 
-      <div className="grid grid-cols-1 gap-2">
-        <div className="chart-container transition-smooth">
-          <DealsByYearChart deals={deals} onDateRangeChange={handleDateRangeChange} />
-        </div>
+      <div className="grid grid-cols-1 gap-6">
+        <DealsByYearChart deals={deals} onDateRangeChange={handleDateRangeChange} />
       </div>
 
       {showCalendarPanel && (
         <div className="fixed inset-0 z-40">
           <div className="absolute inset-0 bg-black bg-opacity-25" onClick={closeCalendarPanel}></div>
-          <div className="absolute right-8 top-24 w-[720px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+          <div className="absolute right-8 top-24 w-[720px] bg-white rounded  overflow-hidden animate-fade-in p-2">
             <div className="flex">
               <div className="w-48 bg-gray-50 border-r border-gray-100 py-4">
                 {calendarPresets.map((label) => (
@@ -396,7 +382,7 @@ const DealsDashboard = () => {
                     key={label}
                     type="button"
                     onClick={() => handlePresetSelect(label)}
-                    className={`w-full text-left px-4 py-2 text-sm ${
+                    className={`w-full text-left p-2  text-xs  ${
                       activePreset === label ? 'bg-red-500 text-white' : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -409,17 +395,17 @@ const DealsDashboard = () => {
                   <button
                     type="button"
                     onClick={() => handleMonthShift(-1)}
-                    className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                    className="p-2 rounded  text-gray-600 hover:bg-gray-100"
                   >
                     <ChevronLeft size={18} />
                   </button>
-                  <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-xs   text-gray-900">
                     {calendarMonth.toLocaleString('default', { month: 'long', year: 'numeric' })} – {nextMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
                   </div>
                   <button
                     type="button"
                     onClick={() => handleMonthShift(1)}
-                    className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+                    className="p-2 rounded  text-gray-600 hover:bg-gray-100"
                   >
                     <ChevronRight size={18} />
                   </button>
@@ -432,7 +418,7 @@ const DealsDashboard = () => {
                   <button
                     type="button"
                     onClick={closeCalendarPanel}
-                    className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="p-2  rounded  border border-gray-200 text-xs    text-gray-700 hover:bg-gray-50"
                   >
                     Cancel
                   </button>
@@ -440,7 +426,7 @@ const DealsDashboard = () => {
                     type="button"
                     onClick={handleApplyCustomRange}
                     disabled={!pendingRange?.startDate || !pendingRange?.endDate}
-                    className="px-4 py-2 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 disabled:bg-gray-300 disabled:text-gray-500"
+                    className="p-2  rounded  bg-red-500 text-xs    text-white hover:bg-red-600 disabled:bg-gray-300 disabled:text-gray-500"
                   >
                     Apply
                   </button>

@@ -130,17 +130,17 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <div className="bg-white border-b p-2  flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <button 
             onClick={onBack}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded  transition-colors"
           >
             <ArrowLeft size={20} className="text-gray-600" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{formData.subject}</h1>
-            <p className="text-sm text-gray-500 mt-1">Contract Details</p>
+            <h1 className="text-2xl  text-gray-900">{formData.subject}</h1>
+            <p className="text-xs  text-gray-500 mt-1">Contract Details</p>
           </div>
         </div>
         
@@ -149,7 +149,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
             <>
               <button 
                 onClick={handleDownloadContract}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <Download size={16} />
                 Download
@@ -157,21 +157,21 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
               <button 
                 onClick={() => setShowSendModal(true)}
                 disabled={formData.status === 'Sent'}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 <Send size={16} />
                 Send
               </button>
               <button 
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <Edit2 size={16} />
                 Edit
               </button>
               <button 
                 onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-2 px-4 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 transition-colors"
+                className="flex items-center gap-2 p-2  border border-red-300 rounded  text-xs    text-red-700 hover:bg-red-50 transition-colors"
               >
                 <Trash2 size={16} />
                 Delete
@@ -196,7 +196,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                   });
                 }}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 <X size={16} />
                 Cancel
@@ -204,7 +204,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
               <button 
                 onClick={handleSaveChanges}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 <Save size={16} />
                 {isLoading ? 'Saving...' : 'Save Changes'}
@@ -216,13 +216,13 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
 
       {/* Content */}
       <div className="p-6 max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded  border border-gray-200p-3 ">
           {/* Status Badge */}
-          <div className="flex items-center gap-4 mb-6 pb-6 border-b border-gray-200">
-            <span className={`text-sm px-3 py-1 rounded-full font-medium ${getStatusColor(formData.status)}`}>
+          <div className="flex items-center gap-2 mb-6 pb-6 border-b border-gray-200">
+            <span className={`text-xs  px-3 py-1 rounded-full   ${getStatusColor(formData.status)}`}>
               {formData.status}
             </span>
-            <span className="text-sm text-gray-600">
+            <span className="text-xs  text-gray-600">
               ID: {contract.id}
             </span>
           </div>
@@ -231,7 +231,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
           <div className="space-y-6">
             {/* Subject */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Subject
               </label>
               {isEditing ? (
@@ -240,7 +240,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                   name="subject"
                   value={formData.subject}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               ) : (
                 <p className="text-gray-900">{formData.subject}</p>
@@ -250,7 +250,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
             {/* Grid for date fields */}
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Start Date
                 </label>
                 {isEditing ? (
@@ -259,14 +259,14 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                     name="start_date"
                     value={formData.start_date}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full p-2  border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 ) : (
                   <p className="text-gray-900">{new Date(formData.start_date).toLocaleDateString()}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   End Date
                 </label>
                 {isEditing ? (
@@ -275,7 +275,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                     name="end_date"
                     value={formData.end_date}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full p-2  border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 ) : (
                   <p className="text-gray-900">{new Date(formData.end_date).toLocaleDateString()}</p>
@@ -285,7 +285,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
 
             {/* Client */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Client / Company
               </label>
               {isEditing ? (
@@ -293,7 +293,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                   name="client_id"
                   value={formData.client_id}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">Select Client</option>
                   {companies.map(c => (
@@ -309,7 +309,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
 
             {/* Contract Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Contract Type
               </label>
               {isEditing ? (
@@ -317,7 +317,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                   name="contract_type"
                   value={formData.contract_type}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full p-2  border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
                 >
                   <option value="">Select Type</option>
                   {contractTypes.map(type => (
@@ -332,7 +332,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
             {/* Grid for value and status */}
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Contract Value
                 </label>
                 {isEditing ? (
@@ -341,14 +341,14 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                     name="contract_value"
                     value={formData.contract_value}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full p-2  border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                 ) : (
-                  <p className="text-gray-900">${formData.contract_value}</p>
+                  <p className="text-gray-900">₹{formData.contract_value}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs    text-gray-700 mb-2">
                   Status
                 </label>
                 {isEditing ? (
@@ -356,7 +356,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    className="w-full p-2  border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
                   >
                     {contractStatuses.map(status => (
                       <option key={status} value={status}>{status}</option>
@@ -370,7 +370,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Description
               </label>
               {isEditing ? (
@@ -379,7 +379,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+                  className="w-full p-2  border border-gray-300 rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
                 />
               ) : (
                 <p className="text-gray-900 whitespace-pre-wrap">{formData.description || 'No description'}</p>
@@ -389,15 +389,15 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
 
           {/* Additional Info */}
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Additional Information</h3>
+            <h3 className="text-xs   text-gray-900 mb-4">Additional Information</h3>
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <p className="text-xs text-gray-600 mb-1">Created</p>
-                <p className="text-sm text-gray-900">{new Date(contract.created_at || new Date()).toLocaleDateString()}</p>
+                <p className="text-xs  text-gray-900">{new Date(contract.created_at || new Date()).toLocaleDateString()}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-600 mb-1">Last Updated</p>
-                <p className="text-sm text-gray-900">{new Date(contract.updated_at || new Date()).toLocaleDateString()}</p>
+                <p className="text-xs  text-gray-900">{new Date(contract.updated_at || new Date()).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
@@ -407,44 +407,44 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
       {/* Send Modal */}
       {showSendModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Send Contract to Client</h3>
+          <div className="bg-white rounded  shadow-xl max-w-md w-full mx-4">
+            <div className="flex items-center justify-betweenp-3  border-b border-gray-200">
+              <h3 className="text-md  text-gray-900">Send Contract to Client</h3>
               <button 
                 onClick={() => {
                   setShowSendModal(false);
                   setSendEmail('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-[#1F2020] hover:text-gray-600"
               >
                 <X size={20} />
               </button>
             </div>
             <div className="p-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Client Email</label>
+              <label className="block text-xs    text-gray-700 mb-2">Client Email</label>
               <input
                 type="email"
                 value={sendEmail}
                 onChange={(e) => setSendEmail(e.target.value)}
                 placeholder="Enter client email"
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full border border-gray-300 p-2  rounded  text-xs  focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
-            <div className="flex gap-3 p-6 border-t border-gray-200">
+            <div className="flex gap-3p-3  border-t border-gray-200">
               <button 
                 onClick={() => {
                   setShowSendModal(false);
                   setSendEmail('');
                 }}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="flex-1 p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSendContract}
                 disabled={isLoading || !sendEmail}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700 disabled:opacity-50"
               >
                 {isLoading ? 'Sending...' : 'Send'}
               </button>
@@ -456,23 +456,23 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-white rounded  shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Contract?</h3>
+              <h3 className="text-md  text-gray-900 mb-4">Delete Contract?</h3>
               <p className="text-gray-600 mb-6">Are you sure you want to delete this contract? This action cannot be undone.</p>
             </div>
-            <div className="flex gap-3 p-6 border-t border-gray-200">
+            <div className="flex gap-3p-3  border-t border-gray-200">
               <button 
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="flex-1 p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleDeleteContract}
                 disabled={isLoading}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700 disabled:opacity-50"
               >
                 {isLoading ? 'Deleting...' : 'Delete'}
               </button>

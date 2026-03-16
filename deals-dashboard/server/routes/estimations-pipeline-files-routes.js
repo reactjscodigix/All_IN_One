@@ -1,7 +1,14 @@
 module.exports = function setupEstimationsPipelineFilesRoutes(app, pool) {
 
   async function getConnection() {
-    return pool.getConnection();
+    try {
+      const connection = await pool.getConnection();
+      if (!connection) throw new Error('Pool returned undefined connection');
+      return connection;
+    } catch (err) {
+      console.error('Database connection pool error:', err.message);
+      throw err;
+    }
   }
 
   const responseError = (res, statusCode, message, error) => {

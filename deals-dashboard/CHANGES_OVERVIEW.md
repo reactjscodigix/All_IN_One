@@ -256,7 +256,7 @@ const { user, logout } = useAuth();
 
 // Display user info
 <div className="flex-1">
-  <p className="font-semibold">{user?.name}</p>
+  <p className="">{user?.name}</p>
   <p className="text-xs">{user?.role}</p>
   <p className="text-xs">{user?.email}</p>
 </div>

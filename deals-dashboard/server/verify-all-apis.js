@@ -1,6 +1,7 @@
 const http = require('http');
 
 const API_ENDPOINTS = [
+  { method: 'GET', path: '/api/auth/login', name: 'GET Login Test' },
   { method: 'GET', path: '/api/contacts', name: 'GET Contacts' },
   { method: 'GET', path: '/api/companies', name: 'GET Companies' },
   { method: 'GET', path: '/api/users', name: 'GET Users' },

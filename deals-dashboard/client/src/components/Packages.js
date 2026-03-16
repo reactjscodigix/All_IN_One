@@ -542,8 +542,8 @@ const Packages = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white">
-              <h2 className="text-xl font-semibold text-gray-900">
+            <div className="flex justify-between items-center p-2 border-b border-gray-200 sticky top-0 bg-white">
+              <h2 className="text-xl  text-gray-900">
                 Edit Plan
               </h2>
               <button
@@ -551,7 +551,7 @@ const Packages = () => {
                   setIsEditModalOpen(false);
                   setEditingPlan(null);
                 }}
-                className="text-gray-400 hover:text-red-600 transition-colors text-2xl"
+                className="text-[#1F2020] hover:text-red  transition-colors text-2xl"
               >
                 ×
               </button>
@@ -579,23 +579,23 @@ const Packages = () => {
               };
               handleEditPlanSubmit(data);
             }} className="p-6">
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-2 gap-2 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
+                  <label className="block text-xs    text-gray-700 mb-1">Plan Name</label>
                   <input
                     type="text"
                     name="planName"
                     defaultValue={editingPlan?.plan_name || ''}
                     placeholder="Enter plan name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
+                  <label className="block text-xs    text-gray-700 mb-1">Plan Type</label>
                   <select
                     name="planType"
                     defaultValue={editingPlan?.plan_type || 'Select'}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
                   >
                     <option>Select</option>
                     <option>Monthly</option>
@@ -605,13 +605,13 @@ const Packages = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-2 gap-2 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan Currency</label>
+                  <label className="block text-xs    text-gray-700 mb-1">Plan Currency</label>
                   <select
                     name="planCurrency"
                     defaultValue={editingPlan?.plan_currency || 'Select'}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
                   >
                     <option>Select</option>
                     <option>USD</option>
@@ -621,11 +621,11 @@ const Packages = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-xs    text-gray-700 mb-1">Status</label>
                   <select
                     name="status"
                     defaultValue={editingPlan?.status || 'Select'}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                    className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
                   >
                     <option>Select</option>
                     <option>Active</option>
@@ -642,13 +642,13 @@ const Packages = () => {
                     setIsEditModalOpen(false);
                     setEditingPlan(null);
                   }}
-                  className="px-5 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="px-5 py-2 border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium"
+                  className="px-5 py-2 rounded  bg-red-500 hover:bg-red-600 text-white text-xs   "
                 >
                   Update Plan
                 </button>

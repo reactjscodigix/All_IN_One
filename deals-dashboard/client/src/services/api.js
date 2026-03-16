@@ -26,6 +26,18 @@ const getAuthHeaders = () => {
 
 const apiService = {
   
+  // Helper to sanitize payload (convert empty strings to null for DB compatibility)
+  sanitize: (data) => {
+    if (!data || typeof data !== 'object') return data;
+    const sanitized = { ...data };
+    Object.keys(sanitized).forEach(key => {
+      if (sanitized[key] === '') {
+        sanitized[key] = null;
+      }
+    });
+    return sanitized;
+  },
+  
   get: async (endpoint) => {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -53,10 +65,11 @@ const apiService = {
 
   post: async (endpoint, data) => {
     try {
+      const sanitizedData = apiService.sanitize(data);
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+        body: JSON.stringify(sanitizedData),
       });
       if (!response.ok) {
         let errorText = await response.text();
@@ -77,10 +90,11 @@ const apiService = {
 
   put: async (endpoint, data) => {
     try {
+      const sanitizedData = apiService.sanitize(data);
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+        body: JSON.stringify(sanitizedData),
       });
       if (!response.ok) {
         let errorText = await response.text();
@@ -133,7 +147,10 @@ export const companiesAPI = {
 };
 
 export const dealsAPI = {
-  getAll: () => apiService.get('/deals'),
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/deals${queryString ? '?' + queryString : ''}`);
+  },
   getById: (id) => apiService.get(`/deals/${id}`),
   create: (data) => apiService.post('/deals', data),
   update: (id, data) => apiService.put(`/deals/${id}`, data),
@@ -141,12 +158,18 @@ export const dealsAPI = {
 };
 
 export const contactsAPI = {
-  getAll: () => apiService.get('/contacts'),
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/contacts${queryString ? '?' + queryString : ''}`);
+  },
   create: (data) => apiService.post('/contacts', data),
 };
 
 export const leadsAPI = {
-  getAll: () => apiService.get('/leads'),
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/leads${queryString ? '?' + queryString : ''}`);
+  },
   getById: (id) => apiService.get(`/leads/${id}`),
   create: (data) => apiService.post('/leads', data),
   update: (id, data) => apiService.put(`/leads/${id}`, data),
@@ -154,6 +177,17 @@ export const leadsAPI = {
   convertToContact: (id, data) => apiService.post(`/leads/${id}/convert-to-contact`, data),
   convertToCompany: (id, data) => apiService.post(`/leads/${id}/convert-to-company`, data),
   convertToDeal: (id, data) => apiService.post(`/leads/${id}/convert-to-deal`, data),
+};
+
+export const usersAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/users${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => apiService.get(`/users/${id}`),
+  create: (data) => apiService.post('/users', data),
+  update: (id, data) => apiService.put(`/users/${id}`, data),
+  delete: (id) => apiService.delete(`/users/${id}`),
 };
 
 export const plansAPI = {
@@ -279,6 +313,9 @@ export const estimationsAPI = {
   delete: (id) => apiService.delete(`/estimations/${id}`),
   send: (id, data) => apiService.post(`/estimations/${id}/send`, data),
   convertToInvoice: (id, data) => apiService.post(`/estimations/${id}/convert-to-invoice`, data),
+  createItem: (estimationId, data) => apiService.post(`/estimations/${estimationId}/items`, data),
+  getItems: (estimationId) => apiService.get(`/estimations/${estimationId}/items`),
+  deleteItem: (itemId) => apiService.delete(`/estimation-items/${itemId}`),
 };
 
 export const paymentsAPI = {
@@ -321,6 +358,15 @@ export const activitiesAPI = {
   },
 };
 
+export const notesAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/notes${queryString ? '?' + queryString : ''}`);
+  },
+  create: (data) => apiService.post('/notes', data),
+  delete: (id) => apiService.delete(`/notes/${id}`),
+};
+
 export const conversationsAPI = {
   getByUserId: (userId) => apiService.get(`/conversations/${userId}`),
   getMessagesByUserId: (userId, conversationWith) => {
@@ -352,6 +398,31 @@ export const foldersAPI = {
   },
   create: (data) => apiService.post('/folders', data),
   delete: (folderId) => apiService.delete(`/folders/${folderId}`),
+};
+
+export const followupsAPI = {
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/followups${queryString ? '?' + queryString : ''}`);
+  },
+  getById: (id) => apiService.get(`/followups/${id}`),
+  create: (data) => apiService.post('/followups', data),
+  update: (id, data) => apiService.put(`/followups/${id}`, data),
+  delete: (id) => apiService.delete(`/followups/${id}`),
+  getMetrics: () => apiService.get('/followups/metrics/summary'),
+  complete: (id, data) => apiService.post(`/followups/${id}/complete`, data),
+  reschedule: (id, data) => apiService.post(`/followups/${id}/reschedule`, data),
+  getByRelated: (related_type, related_id) => apiService.get(`/followups?related_type=${related_type}&related_id=${related_id}`),
+  getEffectivenessAnalytics: () => apiService.get('/followups/analytics/effectiveness'),
+};
+
+export const salesAPI = {
+  getTargets: (userId) => apiService.get(`/sales/targets${userId ? `?userId=${userId}` : ''}`),
+  getReports: (userId) => apiService.get(`/sales/reports${userId ? `?userId=${userId}` : ''}`),
+  getAnalytics: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/sales/analytics${queryString ? '?' + queryString : ''}`);
+  },
 };
 
 export const createContract = (data) => contractsAPI.create(data);

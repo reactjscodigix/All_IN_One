@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import DataTable from './DataTable';
 import AddNewDealModal from './AddNewDealModal';
+import ContactActionDropdown from './ContactActionDropdown';
 import { dealsAPI, contactsAPI, companiesAPI } from '../services/api';
-import dealsDataJson from '../data/dealsData.json';
 
 const DealsListPage = () => {
+  const navigate = useNavigate();
   const [deals, setDeals] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -26,10 +29,11 @@ const DealsListPage = () => {
           companiesAPI.getAll(),
         ]);
       } catch (apiErr) {
-        console.warn('⚠️ API unavailable, using mock data:', apiErr.message);
-        dealsRes = dealsDataJson;
+        console.error('❌ DealsListPage - API Error:', apiErr.message);
+        dealsRes = [];
         contactsRes = [];
         companiesRes = [];
+        setError(`Failed to load deals data from server: ${apiErr.message}`);
       }
       
       console.log('✅ DealsListPage - API Response:', { dealsRes, contactsRes, companiesRes });
@@ -91,7 +95,7 @@ const DealsListPage = () => {
           phone: phone,
           location: deal.location || 'N/A',
           assigned_name: assignedName,
-          stage: deal.pipeline || deal.deal_stage || 'Unclassified',
+          stage: deal.pipeline || deal.deal_stage || 'Converted Lead',
           value: parseFloat(deal.deal_value) || 0,
           status: deal.status || 'Pending',
           deal_name: deal.deal_name,
@@ -103,26 +107,19 @@ const DealsListPage = () => {
       
       console.log('✅ DealsListPage - Transformed Deals:', transformedDeals);
       
-      setDeals(transformedDeals);
+      const sortedDeals = [...transformedDeals].sort((a, b) => {
+        const dateA = new Date(a.updated_at || a.created_at || 0);
+        const dateB = new Date(b.updated_at || b.created_at || 0);
+        return dateB - dateA;
+      });
+      
+      setDeals(sortedDeals);
       setContacts(actualContacts);
       setCompanies(actualCompanies);
     } catch (err) {
       console.error('❌ DealsListPage - Error fetching data:', err);
       setError(`Failed to load deals data from server: ${err.message}`);
-      setDeals((dealsDataJson.deals || []).map(deal => ({
-        id: deal.id,
-        name: deal.name,
-        company: deal.company,
-        contact: deal.contact,
-        email: deal.email,
-        phone: deal.phone,
-        location: deal.location,
-        assigned_name: deal.assigned_name,
-        stage: deal.stage,
-        value: deal.value,
-        status: deal.status,
-        ...deal
-      })));
+      setDeals([]);
     } finally {
       setIsLoading(false);
     }
@@ -145,6 +142,28 @@ const DealsListPage = () => {
     }
   };
 
+  const handleUpdateDeal = async (formData) => {
+    try {
+      if (!selectedDeal?.id) return;
+      await dealsAPI.update(selectedDeal.id, formData);
+      setIsModalOpen(false);
+      setSelectedDeal(null);
+      await fetchData();
+    } catch (err) {
+      throw new Error(err.message || 'Failed to update deal');
+    }
+  };
+
+  const handleDeleteDeal = async (id) => {
+    try {
+      await dealsAPI.delete(id);
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting deal:', err);
+      setError(`Failed to delete deal: ${err.message}`);
+    }
+  };
+
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -157,7 +176,8 @@ const DealsListPage = () => {
     const colors = {
       'Won': 'bg-green-100 text-green-800',
       'Lost': 'bg-red-100 text-red-800',
-      'Pending': 'bg-yellow-100 text-yellow-800'
+      'Pending': 'bg-yellow-100 text-yellow-800',
+      'Quotation': 'bg-blue-100 text-blue-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -167,12 +187,13 @@ const DealsListPage = () => {
       key: 'name',
       label: 'Deal Name',
       sortable: true,
-      render: (value) => <span className="font-medium">{value}</span>
+      render: (value, row) => <span className="cursor-pointer hover:text-red-600 transition-colors " onClick={() => navigate(`/deals/deal/${row.id}`)}>{value}</span>
     },
     {
       key: 'company',
       label: 'Company',
-      sortable: true
+      sortable: true,
+      render: (value, row) => <span className="cursor-pointer hover:text-red-600 transition-colors" onClick={() => navigate(`/deals/deal/${row.id}`)}>{value}</span>
     },
     {
       key: 'contact',
@@ -183,25 +204,25 @@ const DealsListPage = () => {
       key: 'email',
       label: 'Email',
       sortable: true,
-      render: (value) => <span className="text-sm text-gray-600">{value}</span>
+      render: (value) => <span className="text-xs  text-gray-600">{value}</span>
     },
     {
       key: 'phone',
       label: 'Phone',
       sortable: true,
-      render: (value) => <span className="text-sm text-gray-600">{value}</span>
+      render: (value) => <span className="text-xs  text-gray-600">{value}</span>
     },
     {
       key: 'location',
       label: 'Location',
       sortable: true,
-      render: (value) => <span className="text-sm text-gray-600">{value}</span>
+      render: (value) => <span className="text-xs  text-gray-600">{value}</span>
     },
     {
       key: 'assigned_name',
       label: 'Assigned To',
       sortable: true,
-      render: (value) => <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">{value}</span>
+      render: (value) => <span className="inline-flex items-center p-1  bg-blue-100 text-blue-800 rounded text-xs  ">{value}</span>
     },
     {
       key: 'stage',
@@ -212,46 +233,62 @@ const DealsListPage = () => {
       key: 'value',
       label: 'Value',
       sortable: true,
-      render: (value) => <span className="font-medium">{formatCurrency(value)}</span>
+      render: (value) => <span className=" ">{formatCurrency(value)}</span>
     },
     {
       key: 'status',
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(value)}`}>
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs   ${getStatusBadge(value)}`}>
           {value}
         </span>
+      )
+    },
+    {
+      key: 'id',
+      label: 'Action',
+      render: (value, rowData) => (
+        <ContactActionDropdown 
+          contact={{ ...rowData, name: rowData.deal_name || rowData.name }}
+          entityName="deal"
+          onEdit={(deal) => {
+            setSelectedDeal(deal);
+            setIsModalOpen(true);
+          }}
+          onDelete={handleDeleteDeal}
+          onPreview={(deal) => navigate(`/deals/deal/${deal.id}`)}
+        />
       )
     }
   ];
 
   if (isLoading) {
     return (
-      <div className="p-2 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="p-2 bg-[#F7F8F9] min-h-screen flex items-center justify-center">
         <div className="text-gray-600">Loading deals...</div>
       </div>
     );
   }
 
   return (
-    <div className="p-2 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen w-full overflow-hidden">
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-[1.250025rem] font-bold text-gray-900">Deals</h1>
-          <p className="text-gray-600 text-sm mt-2">Manage all your deals in one place</p>
+          <h1 className="text-[1.250025rem]  text-gray-900">Deals</h1>
+          <p className="text-gray-600 text-xs ">Manage all your deals in one place</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition flex items-center gap-2"
+          className="bg-red-600 text-white p-2  rounded    hover:bg-red-700 transition flex items-center gap-2"
         >
           <Plus size={18} /> Add New Deal
         </button>
       </div>
 
       {error && (
-        <div className="p-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-700">{error}</p>
+        <div className="p-2 mb-4 bg-yellow-50 border border-yellow-200 rounded ">
+          <p className="text-xs  text-yellow-700">{error}</p>
         </div>
       )}
 
@@ -264,8 +301,12 @@ const DealsListPage = () => {
 
       <AddNewDealModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateDeal}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedDeal(null);
+        }}
+        onSubmit={selectedDeal ? handleUpdateDeal : handleCreateDeal}
+        dealToEdit={selectedDeal}
         contacts={contacts}
         companies={companies}
       />

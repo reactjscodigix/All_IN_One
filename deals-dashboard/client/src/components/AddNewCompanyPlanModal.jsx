@@ -175,14 +175,14 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <div className="flex justify-between items-center p-2 border-b border-gray-200 sticky top-0 bg-white">
+          <h2 className="text-xl  text-gray-900">
             Add New Company
           </h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
@@ -190,8 +190,8 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
 
         {/* Error Alert */}
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700">{error}</p>
           </div>
         )}
 
@@ -199,7 +199,7 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
           {/* Logo Upload */}
           <div className="mb-6">
             <div className="flex items-start gap-4">
-              <div className="w-20 h-20 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <div className="w-20 h-20 bg-gray-100 rounded  border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden flex-shrink-0">
                 {formData.logoPreview ? (
                   <img
                     src={formData.logoPreview}
@@ -208,7 +208,7 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                   />
                 ) : (
                   <svg
-                    className="w-8 h-8 text-gray-400"
+                    className="w-8 h-8 text-[#1F2020]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -226,7 +226,7 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                 <button
                   type="button"
                   onClick={handleUploadClick}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
+                  className="bg-red-500 hover:bg-red-600 text-white p-2  rounded  text-xs    flex items-center gap-2 transition-colors"
                 >
                   <Upload size={16} />
                   Upload file
@@ -246,9 +246,9 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
 
           {/* Top Row: Plan Name, Plan Type */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Plan Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -257,18 +257,18 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.planName}
                 onChange={handleInputChange}
                 placeholder="Enter plan name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Plan Type <span className="text-red-500">*</span>
               </label>
               <select
                 name="planType"
                 value={formData.planType}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               >
                 <option>Select</option>
                 <option>Monthly</option>
@@ -279,16 +279,16 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
 
           {/* Plan Position, Plan Currency */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Plan Position
               </label>
               <select
                 name="planPosition"
                 value={formData.planPosition}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               >
                 <option>Select</option>
                 <option>Premium</option>
@@ -297,14 +297,14 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Plan Currency <span className="text-red-500">*</span>
               </label>
               <select
                 name="planCurrency"
                 value={formData.planCurrency}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               >
                 <option>Select</option>
                 <option>USD</option>
@@ -316,9 +316,9 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
           </div>
 
           {/* Plan Currency (Free), Discount Type, Discount */}
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-3 gap-2 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Plan Currency
               </label>
               <div className="flex gap-2">
@@ -326,7 +326,7 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                   name="planCurrencyFree"
                   value={formData.planCurrencyFree}
                   onChange={handleInputChange}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
                 >
                   <option>Select</option>
                   <option>USD</option>
@@ -340,14 +340,14 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Discount Type
               </label>
               <select
                 name="discountType"
                 value={formData.discountType}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               >
                 <option>Select</option>
                 <option>Percentage</option>
@@ -355,7 +355,7 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Discount
               </label>
               <input
@@ -364,15 +364,15 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.discount}
                 onChange={handleInputChange}
                 placeholder="Enter discount"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               />
             </div>
           </div>
 
           {/* Limitations Invoices, Max Customers, Product, Supplier */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-2 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Limitations Invoices
               </label>
               <input
@@ -381,11 +381,11 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.limitationsInvoices}
                 onChange={handleInputChange}
                 placeholder="Enter limitation"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Max Customers
               </label>
               <input
@@ -394,11 +394,11 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.maxCustomers}
                 onChange={handleInputChange}
                 placeholder="Enter max customers"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Product
               </label>
               <input
@@ -407,11 +407,11 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.product}
                 onChange={handleInputChange}
                 placeholder="Enter product"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Supplier
               </label>
               <input
@@ -420,7 +420,7 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                 value={formData.supplier}
                 onChange={handleInputChange}
                 placeholder="Enter supplier"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               />
             </div>
           </div>
@@ -428,13 +428,13 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
           {/* Plan Modules */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-semibold text-sm text-gray-900">
+              <h3 className=" text-xs  text-gray-900">
                 Plan Modules
               </h3>
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="text-xs  text-white  hover:text-blue-700"
               >
                 Select All
               </button>
@@ -451,7 +451,7 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
                     onChange={() => handleModuleChange(module)}
                     className="w-4 h-4 cursor-pointer rounded border-gray-300"
                   />
-                  <span className="text-sm">{module}</span>
+                  <span className="text-xs ">{module}</span>
                 </label>
               ))}
             </div>
@@ -466,22 +466,22 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
               onChange={handleInputChange}
               className="w-4 h-4 cursor-pointer rounded border-gray-300"
             />
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-xs    text-gray-700">
               Access Trial
             </label>
           </div>
 
           {/* Trial Days, Status */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-2 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Trial Days
               </label>
               <select
                 name="trialDays"
                 value={formData.trialDays}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               >
                 <option>Select</option>
                 <option>7</option>
@@ -490,14 +490,14 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs    text-gray-700 mb-1">
                 Status <span className="text-red-500">*</span>
               </label>
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-gray-400"
               >
                 <option>Select</option>
                 <option>Active</option>
@@ -513,14 +513,14 @@ const AddNewCompanyPlanModal = ({ isOpen, onClose, onSubmit }) => {
               type="button"
               onClick={handleCancel}
               disabled={isLoading}
-              className="px-5 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="px-5 py-2 border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2 rounded  bg-red-500 hover:bg-red-600 text-white text-xs    disabled:opacity-50 flex items-center gap-2"
             >
               {isLoading ? 'Creating...' : 'Create New'}
             </button>

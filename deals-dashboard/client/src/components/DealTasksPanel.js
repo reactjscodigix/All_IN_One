@@ -83,8 +83,8 @@ const DealTasksPanel = ({ dealId }) => {
 
   return (
     <div className="space-y-6">
-      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-        <h3 className="font-semibold text-gray-900 mb-4">Add New Task</h3>
+      <div className="border border-gray-200 rounded  p-2 bg-gray-50">
+        <h3 className=" text-gray-900 mb-4">Add New Task</h3>
         <form onSubmit={addTask}>
           <div className="space-y-3">
             <input
@@ -92,7 +92,7 @@ const DealTasksPanel = ({ dealId }) => {
               value={newTask}
               onChange={(e) => setNewTask(e.target.value)}
               placeholder="Task title..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
             />
 
             <div className="grid grid-cols-2 gap-3">
@@ -102,7 +102,7 @@ const DealTasksPanel = ({ dealId }) => {
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
 
@@ -111,7 +111,7 @@ const DealTasksPanel = ({ dealId }) => {
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -123,7 +123,7 @@ const DealTasksPanel = ({ dealId }) => {
             <button
               type="submit"
               disabled={!newTask.trim()}
-              className="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-medium text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 justify-center transition"
+              className="w-full p-2  bg-red-600 text-white rounded    text-xs  hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 justify-center transition"
             >
               <Plus size={16} /> Add Task
             </button>
@@ -134,7 +134,7 @@ const DealTasksPanel = ({ dealId }) => {
       <div className="flex gap-2">
         <button
           onClick={() => setFilterStatus('all')}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+          className={`px-3 py-2 rounded  text-xs    transition ${
             filterStatus === 'all'
               ? 'bg-red-600 text-white'
               : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -144,7 +144,7 @@ const DealTasksPanel = ({ dealId }) => {
         </button>
         <button
           onClick={() => setFilterStatus('pending')}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+          className={`px-3 py-2 rounded  text-xs    transition ${
             filterStatus === 'pending'
               ? 'bg-yellow-600 text-white'
               : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -154,7 +154,7 @@ const DealTasksPanel = ({ dealId }) => {
         </button>
         <button
           onClick={() => setFilterStatus('completed')}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+          className={`px-3 py-2 rounded  text-xs    transition ${
             filterStatus === 'completed'
               ? 'bg-green-600 text-white'
               : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -167,7 +167,7 @@ const DealTasksPanel = ({ dealId }) => {
       <div className="space-y-2">
         {filteredTasks.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <p className="text-sm">
+            <p className="text-xs ">
               {filterStatus === 'all' ? 'No tasks yet.' : `No ${filterStatus} tasks.`}
             </p>
           </div>
@@ -175,7 +175,7 @@ const DealTasksPanel = ({ dealId }) => {
           filteredTasks.map((task) => (
             <div
               key={task.id}
-              className={`border rounded-lg p-4 flex items-start gap-3 transition ${
+              className={`border rounded  p-2 flex items-start gap-3 transition ${
                 task.completed
                   ? 'bg-gray-50 border-gray-200'
                   : isOverdue(task.dueDate)
@@ -196,7 +196,7 @@ const DealTasksPanel = ({ dealId }) => {
 
               <div className="flex-1 min-w-0">
                 <p
-                  className={`text-sm font-medium ${
+                  className={`text-xs    ${
                     task.completed
                       ? 'line-through text-gray-500'
                       : 'text-gray-900'
@@ -209,7 +209,7 @@ const DealTasksPanel = ({ dealId }) => {
                   {task.dueDate && (
                     <span className={`inline-flex items-center gap-1 text-xs ${
                       isOverdue(task.dueDate) && !task.completed
-                        ? 'text-red-600 font-semibold'
+                        ? 'text-red  '
                         : 'text-gray-600'
                     }`}>
                       <Calendar size={12} />
@@ -217,7 +217,7 @@ const DealTasksPanel = ({ dealId }) => {
                     </span>
                   )}
                   <span
-                    className={`inline-block px-2 py-0.5 rounded text-xs font-semibold border ${getPriorityColor(task.priority)}`}
+                    className={`inline-block p-1  rounded text-xs  border ${getPriorityColor(task.priority)}`}
                   >
                     {task.priority}
                   </span>
@@ -226,7 +226,7 @@ const DealTasksPanel = ({ dealId }) => {
 
               <button
                 onClick={() => deleteTask(task.id)}
-                className="p-1 hover:bg-red-100 rounded transition text-gray-400 hover:text-red-600 flex-shrink-0"
+                className="p-1 hover:bg-red-100 rounded transition text-[#1F2020] hover:text-red  flex-shrink-0"
               >
                 <Trash2 size={16} />
               </button>

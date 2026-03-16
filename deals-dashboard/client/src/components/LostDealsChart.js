@@ -40,10 +40,10 @@ const LostDealsChart = ({ deals, onDateRangeChange }) => {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-border-light">
-      <div className="p-2 border-b border-border-light">
+    <div className="bg-white rounded  border border-gray-100 ">
+      <div className="p-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Lost Deals Stage</h2>
+          <h2 className="text-sm   text-gray-900">Lost Deals Stage</h2>
           <div className="flex gap-2">
             <CustomDropdown
               options={['Marketing Pipeline', 'Sales Pipeline', 'Email', 'Chats', 'Operational']}
@@ -54,28 +54,38 @@ const LostDealsChart = ({ deals, onDateRangeChange }) => {
               value={selectedPeriod}
               onChange={setSelectedPeriod}
               onDateRangeChange={onDateRangeChange}
-              options={['Last 15 Days', 'Last 30 Days', 'Last 7 Days']}
+              options={['Last 30 Days', 'Last 60 Days']}
             />
           </div>
         </div>
       </div>
 
-      <div className="p-2">
-        <ResponsiveContainer width="100%" height={250}>
+      <div className="p-4">
+        <ResponsiveContainer width="100%" height={220}>
           <BarChart
             data={chartData}
             layout="vertical"
-            margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
-            barCategoryGap="30%"
+            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            barCategoryGap="40%"
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis type="number" tick={{ fontSize: 12 }} />
-            <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={110} />
+            <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis type="number" hide />
+            <YAxis 
+              dataKey="name" 
+              type="category" 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 10, fill: '#6b7280' }} 
+              width={100}
+            />
             <Tooltip 
+              cursor={{ fill: '#f9fafb' }}
               contentStyle={{
                 backgroundColor: '#fff',
-                border: '1px solid #e5e7eb',
-                borderRadius: '0.5rem',
+                border: '1px solid #f3f4f6',
+                borderRadius: '8px',
+                fontSize: '11px',
+                fontWeight: '600'
               }}
               formatter={(value) => value === 0 ? 'No data' : value}
             />

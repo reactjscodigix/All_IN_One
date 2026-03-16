@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const Layout = ({ children, currentPage, onNavigate }) => {
+const Layout = ({ children, currentPage, onNavigate, hideSidebar = false, hideHeader = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
@@ -12,20 +12,22 @@ const Layout = ({ children, currentPage, onNavigate }) => {
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       {/* Sidebar */}
-      <Sidebar 
-        isOpen={sidebarOpen} 
-        toggleSidebar={toggleSidebar}
-        currentPage={currentPage}
-        onNavigate={onNavigate}
-      />
+      {!hideSidebar && (
+        <Sidebar 
+          isOpen={sidebarOpen} 
+          toggleSidebar={toggleSidebar}
+          currentPage={currentPage}
+          onNavigate={onNavigate}
+        />
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <Header toggleSidebar={toggleSidebar} />
+        {!hideHeader && <Header toggleSidebar={toggleSidebar} />}
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden ${hideSidebar && hideHeader ? 'h-full' : ''}`}>
           {children}
         </main>
       </div>

@@ -71,11 +71,11 @@ const SocialFeedPage = () => {
   const displayedPeoples = activeTab === 'general' ? generalPeoples : primaryPeoples;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-3 sm:p-3 lg:p-3 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Social Feed</h1>
-          <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+          <h1 className="text-xl  text-gray-900">Social Feed</h1>
+          <div className="flex items-center gap-2 text-xs  text-gray-600 mt-2">
             <button className="text-gray-600 hover:text-gray-900">Home</button>
             <span>›</span>
             <button className="text-gray-600 hover:text-gray-900">Applications</button>
@@ -86,94 +86,94 @@ const SocialFeedPage = () => {
 
         <div className="flex gap-6">
           <div className="w-64 flex-shrink-0">
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+            <div className="bg-white border border-gray-200 rounded  p-2 mb-4">
               <div className="flex items-center gap-3 mb-4">
                 <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg" alt="James Hong" className="w-12 h-12 rounded-full" />
                 <div>
-                  <p className="text-sm font-bold text-gray-900">James Hong</p>
+                  <p className="text-xs   text-gray-900">James Hong</p>
                   <p className="text-xs text-gray-600">@James Hong324</p>
                 </div>
               </div>
-              <div className="flex gap-4 mb-4 text-center">
+              <div className="flex gap-2 mb-4 text-center">
                 <div>
-                  <p className="text-lg font-bold text-gray-900">89K</p>
+                  <p className="text-lg  text-gray-900">89K</p>
                   <p className="text-xs text-gray-600">Followers</p>
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-gray-900">45</p>
+                  <p className="text-lg  text-gray-900">45</p>
                   <p className="text-xs text-gray-600">Follows</p>
                 </div>
               </div>
-              <button className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium text-sm flex items-center justify-center gap-2">
+              <button className="w-full bg-red-600 text-white p-2  rounded  hover:bg-red-700   text-xs  flex items-center justify-center gap-2">
                 ✎ Create Post
               </button>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+            <div className="bg-white border border-gray-200 rounded  p-2 mb-4">
               <div className="space-y-2">
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <Home size={16} />
                   All Feeds
-                  <span className="ml-auto bg-red-600 text-white px-2 py-1 rounded-full text-xs font-bold">56</span>
+                  <span className="ml-auto bg-red-600 text-white p-1  rounded-full text-xs ">56</span>
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <Compass size={16} />
                   Explore
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <Mail size={16} />
                   Messages
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <FileText size={16} />
                   Lists
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <Bookmark size={16} />
                   Bookmark
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <ShoppingCart size={16} />
                   Marketplace
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <FileText size={16} />
                   Files
-                  <span className="ml-auto bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-bold">14</span>
+                  <span className="ml-auto bg-red-600  text-white p-1  rounded-full text-xs ">14</span>
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <Music size={16} />
                   Media
                 </button>
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+                <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                   <User size={16} />
                   Profile
                 </button>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">Pages You Liked</h3>
+            <div className="bg-white border border-gray-200 rounded  p-2">
+              <h3 className="text-xs   text-gray-900 mb-3">Pages You Liked</h3>
               <div className="space-y-2">
                 {savedFeeds.slice(0, 4).map((feed, idx) => (
-                  <button key={idx} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded flex items-center gap-2">
+                  <button key={idx} className="w-full text-left px-3 py-2 text-xs  text-gray-700 hover:bg-gray-50 rounded flex items-center gap-2">
                     <span className="text-lg">{feed.icon}</span>
                     <span className="flex-1 truncate">{feed.title}</span>
                     <Star size={14} />
                   </button>
                 ))}
               </div>
-              <button className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded">
+              <button className="w-full text-left px-3 py-2 text-xs  text-gray-700 hover:bg-gray-50 rounded">
                 Show More ›
               </button>
             </div>
           </div>
 
           <div className="flex-1 max-w-2xl">
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+            <div className="bg-white border border-gray-200 rounded  p-2 mb-4">
               <div className="flex items-center gap-2 mb-4">
                 <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg" alt="James" className="w-10 h-10 rounded-full" />
-                <input type="text" placeholder="What's on your mind?" className="flex-1 bg-gray-100 border-0 rounded-full px-4 py-2 text-sm" />
+                <input type="text" placeholder="What's on your mind?" className="flex-1 bg-gray-100 border-0 rounded-full p-2  text-xs " />
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -185,19 +185,19 @@ const SocialFeedPage = () => {
                   <button className="p-2 text-gray-600 hover:text-gray-900"><Share2 size={16} /></button>
                   <button className="p-2 text-gray-600 hover:text-gray-900"><MoreVertical size={16} /></button>
                 </div>
-                <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-medium text-sm">
+                <button className="bg-red-600 text-white p-2  rounded  hover:bg-red-700   text-xs ">
                   ♥ Share Post
                 </button>
               </div>
             </div>
 
             {posts.map((post) => (
-              <div key={post.id} className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+              <div key={post.id} className="bg-white border border-gray-200 rounded  p-2 mb-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <img src={`https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-${post.id + 2}.jpg`} alt={post.author} className="w-10 h-10 rounded-full" />
                     <div>
-                      <p className="text-sm font-bold text-gray-900">{post.author}</p>
+                      <p className="text-xs   text-gray-900">{post.author}</p>
                       <p className="text-xs text-gray-600">{post.handle} • {post.location}</p>
                       <p className="text-xs text-gray-600">{post.timestamp}</p>
                     </div>
@@ -207,16 +207,16 @@ const SocialFeedPage = () => {
                   </button>
                 </div>
 
-                <p className="text-sm text-gray-700 mb-3">{post.content}</p>
+                <p className="text-xs  text-gray-700 mb-3">{post.content}</p>
 
                 {post.images && (
                   <div className="mb-3 grid grid-cols-2 gap-2">
-                    <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-lg h-32"></div>
+                    <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded  h-32"></div>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-yellow-400 rounded-lg h-16"></div>
-                      <div className="bg-green-400 rounded-lg h-16"></div>
-                      <div className="bg-purple-500 rounded-lg h-16"></div>
-                      <div className="bg-pink-400 rounded-lg h-16"></div>
+                      <div className="bg-yellow-400 rounded  h-16"></div>
+                      <div className="bg-green-400 rounded  h-16"></div>
+                      <div className="bg-purple-500 rounded  h-16"></div>
+                      <div className="bg-pink-400 rounded  h-16"></div>
                     </div>
                   </div>
                 )}
@@ -228,13 +228,13 @@ const SocialFeedPage = () => {
                 </div>
 
                 <div className="flex items-center gap-2 mb-3">
-                  <button className="flex-1 px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-center gap-1">
+                  <button className="flex-1 px-3 py-1 text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center justify-center gap-1">
                     <Heart size={14} /> Like
                   </button>
-                  <button className="flex-1 px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-center gap-1">
+                  <button className="flex-1 px-3 py-1 text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center justify-center gap-1">
                     <MessageCircle size={14} /> Comment
                   </button>
-                  <button className="flex-1 px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center justify-center gap-1">
+                  <button className="flex-1 px-3 py-1 text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center justify-center gap-1">
                     <Share2 size={14} /> Share
                   </button>
                 </div>
@@ -242,30 +242,30 @@ const SocialFeedPage = () => {
                 <div className="text-xs text-gray-600">
                   <div className="flex items-center gap-2 mb-2">
                     <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg" alt="user" className="w-6 h-6 rounded-full" />
-                    <span className="font-medium text-gray-900">Frank Hoffman</span>
+                    <span className="  text-gray-900">Frank Hoffman</span>
                     <span>12:45 PM</span>
                   </div>
                   <p className="text-gray-700 mb-2">Congratulations on the launch! I've been eagerly waiting for this product, and the special discount makes it even more exciting.</p>
                 </div>
 
-                <input type="text" placeholder="Enter Comments" className="w-full bg-gray-100 border-0 rounded px-3 py-2 text-sm mt-2" />
+                <input type="text" placeholder="Enter Comments" className="w-full bg-gray-100 border-0 rounded px-3 py-2 text-xs  mt-2" />
               </div>
             ))}
           </div>
 
           <div className="w-80 flex-shrink-0">
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 sticky top-4">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">Peoples</h3>
+            <div className="bg-white border border-gray-200 rounded  p-2 mb-4 sticky top-4">
+              <h3 className="text-xs   text-gray-900 mb-3">Peoples</h3>
               <div className="flex gap-2 mb-3">
                 <button 
                   onClick={() => setActiveTab('general')}
-                  className={`px-3 py-1 rounded text-xs font-medium ${activeTab === 'general' ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
+                  className={`px-3 py-1 rounded text-xs   ${activeTab === 'general' ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
                 >
                   General
                 </button>
                 <button 
                   onClick={() => setActiveTab('primary')}
-                  className={`px-3 py-1 rounded text-xs font-medium ${activeTab === 'primary' ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
+                  className={`px-3 py-1 rounded text-xs   ${activeTab === 'primary' ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'}`}
                 >
                   Primary
                 </button>
@@ -276,38 +276,38 @@ const SocialFeedPage = () => {
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <img src={person.avatar} alt={person.name} className="w-8 h-8 rounded-full flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-gray-900 truncate">{person.name}</p>
+                        <p className="text-xs  text-gray-900 truncate">{person.name}</p>
                         <p className="text-xs text-gray-600 truncate">{person.location}</p>
                       </div>
                     </div>
-                    <button className="p-1 text-gray-600 hover:text-gray-900 text-lg font-medium flex-shrink-0">+</button>
+                    <button className="p-1 text-gray-600 hover:text-gray-900 text-lg   flex-shrink-0">+</button>
                   </div>
                 ))}
               </div>
-              <button className="text-sm text-red-600 hover:text-red-700 font-medium mt-3 block w-full text-left">View All ›</button>
+              <button className="text-xs  text-red  hover:text-red-700   mt-3 block w-full text-left">View All ›</button>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4 sticky top-32">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">Saved Feeds</h3>
+            <div className="bg-white border border-gray-200 rounded  p-2 mb-4 sticky top-32">
+              <h3 className="text-xs   text-gray-900 mb-3">Saved Feeds</h3>
               <div className="space-y-2">
                 {savedFeeds.map((feed, idx) => (
                   <div key={idx} className="flex items-start gap-2 p-2 hover:bg-gray-50 rounded">
                     <span className="text-lg">{feed.icon}</span>
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-900">{feed.title}</p>
+                      <p className="text-xs   text-gray-900">{feed.title}</p>
                     </div>
                     <span className="text-yellow-400">⭐</span>
                   </div>
                 ))}
               </div>
-              <button className="text-sm text-red-600 hover:text-red-700 font-medium mt-3 block w-full text-left">View All ›</button>
+              <button className="text-xs  text-red  hover:text-red-700   mt-3 block w-full text-left">View All ›</button>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4 sticky top-64">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">Trending Hashtags</h3>
+            <div className="bg-white border border-gray-200 rounded  p-2 sticky top-64">
+              <h3 className="text-xs   text-gray-900 mb-3">Trending Hashtags</h3>
               <div className="space-y-2 text-xs">
-                <button className="block text-red-600 hover:text-red-700 font-medium w-full text-left">#HealthTips #wellness #Motivation</button>
-                <button className="block text-red-600 hover:text-red-700 font-medium w-full text-left">#integration</button>
+                <button className="block text-red  hover:text-red-700   w-full text-left">#HealthTips #wellness #Motivation</button>
+                <button className="block text-red  hover:text-red-700   w-full text-left">#integration</button>
               </div>
             </div>
           </div>

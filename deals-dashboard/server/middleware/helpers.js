@@ -36,18 +36,72 @@ async function checkPermission(userId, module, action) {
     const ROLE_PERMISSIONS = {
       'Super Admin': { canAll: true },
       'Admin': { canAll: true, except: ['settings'] },
-      'Deal Manager': {
-        Deals: ['view', 'create', 'edit', 'delete'],
-        Leads: ['view', 'create', 'edit'],
-        Pipeline: ['view', 'create', 'edit'],
+      'Leads Manager': {
+        Leads: ['view', 'create', 'edit', 'delete', 'distribute', 'monitor'],
+        Activities: ['view', 'create', 'edit'],
       },
-      'Project Manager': {
-        Projects: ['view', 'create', 'edit', 'delete'],
-        Tasks: ['view', 'create', 'edit', 'delete'],
+      'Deals Manager': {
+        Deals: ['view', 'create', 'edit', 'delete', 'approve_discount', 'allocate'],
+        Pipeline: ['view', 'create', 'edit'],
+        Documents: ['view', 'create', 'edit'],
+      },
+      'Sales Manager': {
+        Leads: ['view', 'create', 'edit'],
+        Deals: ['view', 'create', 'edit'],
+        Quotations: ['view', 'create', 'edit', 'approve'],
+        Targets: ['view', 'assign'],
+        Commissions: ['view', 'approve'],
+        Reports: ['view'],
+      },
+      'Marketing Manager': {
+        Marketing: ['view', 'create', 'edit', 'delete', 'approve'],
+        Campaigns: ['view', 'create', 'edit', 'delete'],
+        Projects: ['view', 'create', 'edit'],
+        Resources: ['allocate'],
+        Budget: ['view', 'manage'],
+      },
+      'IT Manager': {
+        IT: ['view', 'create', 'edit', 'delete', 'approve_deployment'],
+        Projects: ['view', 'create', 'edit'],
+        Sprints: ['view', 'create', 'edit', 'plan'],
+        Bugs: ['view', 'create', 'edit', 'analyze'],
+        DevOps: ['monitor'],
+      },
+      'Accounting Manager': {
+        Invoices: ['view', 'create', 'edit', 'delete', 'approve'],
+        Payments: ['view', 'create', 'edit', 'track'],
+        Expenses: ['view', 'approve'],
+        Commissions: ['view', 'approve'],
+        Reports: ['view', 'finance'],
+      },
+      'Sales Executive': {
+        Leads: ['view', 'create', 'edit'],
+        Deals: ['view', 'create', 'edit'],
+        Quotations: ['view', 'create'],
+        Tasks: ['view', 'edit'],
+      },
+      'Marketing Executive': {
+        Marketing: ['view', 'edit'],
+        Projects: ['view', 'edit'],
+        SEO: ['view', 'edit'],
+        Creative: ['request', 'upload'],
+      },
+      'IT Specialist': {
+        IT: ['view', 'edit'],
+        Projects: ['view', 'edit'],
+        Sprints: ['view'],
+        Bugs: ['view', 'create', 'edit'],
+        Deployment: ['request'],
+      },
+      'Accountant': {
+        Invoices: ['view', 'create', 'edit'],
+        Payments: ['view', 'create'],
+        Expenses: ['view', 'create'],
       },
       'Employee': {
-        Deals: ['view', 'edit'],
         Tasks: ['view', 'edit'],
+        Projects: ['view'],
+        Deals: ['view', 'edit'],
       }
     };
     

@@ -111,12 +111,12 @@ function FilterPanel() {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm mb-6">
+    <div className="bg-white rounded  border border-gray-200 p-2 shadow-sm mb-6">
       <div className="space-y-4">
         <div>
           <button
             onClick={() => toggleExpand('name')}
-            className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 py-2"
+            className="w-full flex items-center justify-between text-xs   text-gray-900 py-2"
           >
             <span>Name</span>
             <ChevronDown
@@ -128,13 +128,13 @@ function FilterPanel() {
             <div className="pl-4 space-y-2 mt-2">
               {['Elizabeth Morgan', 'Katherine Brooks', 'Sophia Lopez', 'John Michael', 'Natalie Brooks'].map(
                 (name) => (
-                  <label key={name} className="flex items-center gap-2 text-sm">
+                  <label key={name} className="flex items-center gap-2 text-xs ">
                     <input type="checkbox" defaultChecked className="w-4 h-4" />
                     <span>{name}</span>
                   </label>
                 )
               )}
-              <button className="text-sm text-blue-600 hover:text-blue-700 mt-2">Load More</button>
+              <button className="text-xs  text-white  hover:text-blue-700 mt-2">Load More</button>
             </div>
           )}
         </div>
@@ -142,7 +142,7 @@ function FilterPanel() {
         <div>
           <button
             onClick={() => toggleExpand('tags')}
-            className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 py-2"
+            className="w-full flex items-center justify-between text-xs   text-gray-900 py-2"
           >
             <span>Tags</span>
             <ChevronDown
@@ -153,7 +153,7 @@ function FilterPanel() {
           {expanded.tags && (
             <div className="pl-4 space-y-2 mt-2">
               {['Collab', 'Promotion', 'VIP'].map((tag) => (
-                <label key={tag} className="flex items-center gap-2 text-sm">
+                <label key={tag} className="flex items-center gap-2 text-xs ">
                   <input type="checkbox" defaultChecked className="w-4 h-4" />
                   <span>{tag}</span>
                 </label>
@@ -165,7 +165,7 @@ function FilterPanel() {
         <div>
           <button
             onClick={() => toggleExpand('location')}
-            className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 py-2"
+            className="w-full flex items-center justify-between text-xs   text-gray-900 py-2"
           >
             <span>Location</span>
             <ChevronDown
@@ -176,7 +176,7 @@ function FilterPanel() {
           {expanded.location && (
             <div className="pl-4 space-y-2 mt-2">
               {['USA', 'UAE', 'Germany', 'France', 'India'].map((loc) => (
-                <label key={loc} className="flex items-center gap-2 text-sm">
+                <label key={loc} className="flex items-center gap-2 text-xs ">
                   <input type="checkbox" defaultChecked className="w-4 h-4" />
                   <span>{loc}</span>
                 </label>
@@ -188,7 +188,7 @@ function FilterPanel() {
         <div>
           <button
             onClick={() => toggleExpand('rating')}
-            className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 py-2"
+            className="w-full flex items-center justify-between text-xs   text-gray-900 py-2"
           >
             <span>Rating</span>
             <ChevronDown
@@ -199,7 +199,7 @@ function FilterPanel() {
           {expanded.rating && (
             <div className="pl-4 space-y-2 mt-2">
               {['5.0', '4.0', '3.0', '2.0', '1.0'].map((rate) => (
-                <label key={rate} className="flex items-center gap-2 text-sm">
+                <label key={rate} className="flex items-center gap-2 text-xs ">
                   <input type="checkbox" defaultChecked className="w-4 h-4" />
                   <span>{rate}</span>
                 </label>
@@ -211,7 +211,7 @@ function FilterPanel() {
         <div>
           <button
             onClick={() => toggleExpand('status')}
-            className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 py-2"
+            className="w-full flex items-center justify-between text-xs   text-gray-900 py-2"
           >
             <span>Status</span>
             <ChevronDown
@@ -222,7 +222,7 @@ function FilterPanel() {
           {expanded.status && (
             <div className="pl-4 space-y-2 mt-2">
               {['Active', 'Inactive'].map((stat) => (
-                <label key={stat} className="flex items-center gap-2 text-sm">
+                <label key={stat} className="flex items-center gap-2 text-xs ">
                   <input type="checkbox" defaultChecked className="w-4 h-4" />
                   <span>{stat}</span>
                 </label>
@@ -232,10 +232,10 @@ function FilterPanel() {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <button className="flex-1 px-3 py-2 border border-gray-200 rounded text-sm hover:bg-gray-50">
+          <button className="flex-1 px-3 py-2 border border-gray-200 rounded text-xs  hover:bg-gray-50">
             Reset
           </button>
-          <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+          <button className="flex-1 px-3 py-2 bg-red-600  text-white rounded text-xs  hover:bg-blue-700">
             Filter
           </button>
         </div>
@@ -311,7 +311,7 @@ function ContactsTable({ rows }) {
     <div className="mt-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="relative flex-1 max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
           <input
             value={q}
             onChange={(e) => {
@@ -319,31 +319,31 @@ function ContactsTable({ rows }) {
               setPage(1);
             }}
             placeholder="Search"
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded text-sm bg-white focus:outline-none"
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded text-xs  bg-white focus:outline-none"
           />
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setShowFilter(!showFilter)}
-            className="px-4 py-2 border border-gray-200 rounded text-sm bg-white hover:bg-gray-50 flex items-center gap-2"
+            className="p-2  border border-gray-200 rounded text-xs  bg-white hover:bg-gray-50 flex items-center gap-2"
           >
             <Filter size={14} /> Filter
           </button>
-          <div className="text-sm text-gray-600 px-3 py-2">1 Dec 25 - 1 Dec 25</div>
+          <div className="text-xs  text-gray-600 px-3 py-2">1 Dec 25 - 1 Dec 25</div>
           <button
             onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
-            className="px-4 py-2 border border-gray-200 rounded text-sm bg-white hover:bg-gray-50 flex items-center gap-2"
+            className="p-2  border border-gray-200 rounded text-xs  bg-white hover:bg-gray-50 flex items-center gap-2"
           >
             <ChevronDown size={14} /> Sort By
           </button>
           <div className="relative group">
-            <button className="px-4 py-2 border border-gray-200 rounded text-sm bg-white hover:bg-gray-50 flex items-center gap-2">
+            <button className="p-2  border border-gray-200 rounded text-xs  bg-white hover:bg-gray-50 flex items-center gap-2">
               <ChevronDown size={14} /> Manage Columns
             </button>
             <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded shadow-lg hidden group-hover:block z-10">
               {Object.keys(visibleColumns).map((col) => (
-                <label key={col} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                <label key={col} className="flex items-center gap-2 p-2  text-xs  hover:bg-gray-50">
                   <input
                     type="checkbox"
                     checked={visibleColumns[col]}
@@ -355,7 +355,7 @@ function ContactsTable({ rows }) {
               ))}
             </div>
           </div>
-          <button className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 flex items-center gap-2">
+          <button className="bg-red-600 text-white p-2  rounded text-xs  hover:bg-red-700 flex items-center gap-2">
             <Download size={14} /> Download Report
           </button>
         </div>
@@ -363,8 +363,8 @@ function ContactsTable({ rows }) {
 
       {showFilter && <FilterPanel />}
 
-      <div className="overflow-x-auto border border-gray-200 rounded-lg">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto border border-gray-200 rounded ">
+        <table className="w-full text-xs ">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="py-3 px-4 text-left">
@@ -372,29 +372,29 @@ function ContactsTable({ rows }) {
               </th>
               {visibleColumns.name && (
                 <th
-                  className="py-3 px-4 text-left cursor-pointer font-medium text-gray-700 hover:bg-gray-100"
+                  className="py-3 px-4 text-left cursor-pointer   text-gray-700 hover:bg-gray-100"
                   onClick={() => toggleSort('name')}
                 >
                   Name {sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
                 </th>
               )}
               {visibleColumns.phone && (
-                <th className="py-3 px-4 text-left font-medium text-gray-700">Phone</th>
+                <th className="py-3 px-4 text-left   text-gray-700">Phone</th>
               )}
               {visibleColumns.tag && (
-                <th className="py-3 px-4 text-left font-medium text-gray-700">Tags</th>
+                <th className="py-3 px-4 text-left   text-gray-700">Tags</th>
               )}
               {visibleColumns.location && (
-                <th className="py-3 px-4 text-left font-medium text-gray-700">Location</th>
+                <th className="py-3 px-4 text-left   text-gray-700">Location</th>
               )}
               {visibleColumns.rating && (
-                <th className="py-3 px-4 text-left font-medium text-gray-700">Rating</th>
+                <th className="py-3 px-4 text-left   text-gray-700">Rating</th>
               )}
               {visibleColumns.contact && (
-                <th className="py-3 px-4 text-left font-medium text-gray-700">Contact</th>
+                <th className="py-3 px-4 text-left   text-gray-700">Contact</th>
               )}
               {visibleColumns.status && (
-                <th className="py-3 px-4 text-left font-medium text-gray-700">Status</th>
+                <th className="py-3 px-4 text-left   text-gray-700">Status</th>
               )}
             </tr>
           </thead>
@@ -409,7 +409,7 @@ function ContactsTable({ rows }) {
                     <div className="flex items-center gap-3">
                       <img src={r.avatar} alt={r.name} className="w-8 h-8 rounded-full object-cover" />
                       <div>
-                        <div className="font-semibold text-gray-900">{r.name}</div>
+                        <div className=" text-gray-900">{r.name}</div>
                         <div className="text-xs text-gray-500">{r.role}</div>
                       </div>
                     </div>
@@ -419,7 +419,7 @@ function ContactsTable({ rows }) {
                 {visibleColumns.tag && (
                   <td className="py-3 px-4">
                     <span
-                      className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                      className={`px-2.5 py-1 rounded text-xs  ${
                         tagColors[r.tag] || 'bg-blue-100 text-blue-700'
                       }`}
                     >
@@ -443,14 +443,14 @@ function ContactsTable({ rows }) {
                 {visibleColumns.contact && (
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <button className="text-gray-400 hover:text-gray-600">
+                      <button className="text-[#1F2020] hover:text-gray-600">
                         <Mail size={16} />
                       </button>
-                      <button className="text-gray-400 hover:text-gray-600">
+                      <button className="text-[#1F2020] hover:text-gray-600">
                         <PhoneIcon size={16} />
                       </button>
-                      <button className="text-gray-400 hover:text-gray-600">💬</button>
-                      <button className="text-gray-400 hover:text-gray-600">
+                      <button className="text-[#1F2020] hover:text-gray-600">💬</button>
+                      <button className="text-[#1F2020] hover:text-gray-600">
                         <Send size={16} />
                       </button>
                     </div>
@@ -459,7 +459,7 @@ function ContactsTable({ rows }) {
                 {visibleColumns.status && (
                   <td className="py-3 px-4">
                     <span
-                      className={`px-3 py-1 rounded text-xs font-semibold ${
+                      className={`px-3 py-1 rounded text-xs  ${
                         statusColors[r.status] || 'bg-gray-100 text-gray-700'
                       }`}
                     >
@@ -473,7 +473,7 @@ function ContactsTable({ rows }) {
         </table>
       </div>
 
-      <div className="flex items-center justify-between mt-4 px-4 py-3 text-sm text-gray-600">
+      <div className="flex items-center justify-between mt-4 p-2 text-xs text-gray-600">
         <div className="flex items-center gap-2">
           <span>Show</span>
           <select
@@ -482,7 +482,7 @@ function ContactsTable({ rows }) {
               setPerPage(Number(e.target.value));
               setPage(1);
             }}
-            className="border border-gray-200 rounded px-2 py-1"
+            className="border border-gray-200 rounded p-1 "
           >
             <option value={10}>10</option>
             <option value={25}>25</option>
@@ -582,11 +582,11 @@ const ContactReportsPage = () => {
       <div className="p-6">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-bold text-gray-900">Contact Reports</h1>
-            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">{contacts.length}</span>
+            <h1 className="text-xl  text-gray-900">Contact Reports</h1>
+            <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs ">{contacts.length}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <a href="/" className="text-orange-500 hover:text-orange-600 font-medium">
+          <div className="flex items-center gap-2 text-xs ">
+            <a href="/" className="text-orange-500 hover:text-orange-600  ">
               Home
             </a>
             <span className="text-gray-300">/</span>
@@ -596,10 +596,10 @@ const ContactReportsPage = () => {
 
         {!loading && !error && contacts.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+          <div className="bg-white rounded  border border-gray-200p-3  shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Contacts By Month</h2>
-              <select className="border border-gray-200 rounded px-3 py-1 text-sm bg-white">
+              <h2 className="text-md  text-gray-900">Contacts By Month</h2>
+              <select className="border border-gray-200 rounded px-3 py-1 text-xs  bg-white">
                 <option>2025</option>
                 <option>2024</option>
                 <option>2023</option>
@@ -608,10 +608,10 @@ const ContactReportsPage = () => {
             <ContactsByYearChart data={monthlyData} />
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+          <div className="bg-white rounded  border border-gray-200p-3  shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Contacts By Source</h2>
-              <select className="border border-gray-200 rounded px-3 py-1 text-sm bg-white">
+              <h2 className="text-md  text-gray-900">Contacts By Source</h2>
+              <select className="border border-gray-200 rounded px-3 py-1 text-xs  bg-white">
                 <option>2025</option>
                 <option>2024</option>
                 <option>2023</option>
@@ -622,7 +622,7 @@ const ContactReportsPage = () => {
         </div>
         )}
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+        <div className="bg-white rounded  border border-gray-200p-3  shadow-sm">
           {loading ? (
             <div className="text-center py-8 text-gray-500">Loading contacts...</div>
           ) : error ? (

@@ -1,8 +1,8 @@
 {
   "stats": [
     { "label": "Campaign", "value": 474, "change": "+5.62%", "icon": "📧", "bgColor": "bg-yellow-100", "textColor": "text-yellow-600" },
-    { "label": "Sent", "value": 454, "change": "+4.12%", "icon": "📮", "bgColor": "bg-blue-100", "textColor": "text-blue-600" },
-    { "label": "Opened", "value": 650, "change": "+3.14%", "icon": "📂", "bgColor": "bg-red-100", "textColor": "text-red-600" },
+    { "label": "Sent", "value": 454, "change": "+4.12%", "icon": "📮", "bgColor": "bg-blue-100", "textColor": "text-white " },
+    { "label": "Opened", "value": 650, "change": "+3.14%", "icon": "📂", "bgColor": "bg-red-100", "textColor": "text-red " },
     { "label": "Completed", "value": 650, "change": "+6.27%", "icon": "✓", "bgColor": "bg-green-100", "textColor": "text-green-600" }
   ],
   "campaigns": [

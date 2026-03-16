@@ -123,7 +123,7 @@ code {
 
 .dropdown-smooth {
   @apply animate-slide-in-down;
-  @apply shadow-lg border border-border-light rounded-lg;
+  @apply shadow-lg border border-border-light rounded ;
 }
 
 .icon-hover {
@@ -251,7 +251,7 @@ tbody tr:hover {
 
 .icon-btn::after {
   content: '';
-  @apply absolute inset-0 rounded-lg;
+  @apply absolute inset-0 rounded ;
   @apply bg-gradient-to-br from-transparent via-white to-transparent;
   @apply opacity-0;
   @apply transition-opacity duration-300;
@@ -274,24 +274,29 @@ tbody tr:hover {
               border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.pipeline-step {
-  position: relative;
-  padding: 12px 32px;
-  font-weight: 500;
-  font-size: 14px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 150px;
-  height: 48px;
-  clip-path: polygon(
-    0% 0%,
-    85% 0%,
-    100% 50%,
-    85% 100%,
-    0% 100%
-  );
-  color: white;
-  transition: all 0.3s ease;
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #d1d1d1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b1b1b1;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

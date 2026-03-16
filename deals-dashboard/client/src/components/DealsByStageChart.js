@@ -30,10 +30,10 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
   chartData.sort((a, b) => b.deals - a.deals);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-border-light">
-      <div className="p-2 border-b border-border-light">
+    <div className="bg-white rounded  border border-gray-100 ">
+      <div className="p-2 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Deals By Stage</h2>
+          <h2 className="text-sm   text-gray-900">Deals By Stage</h2>
           <div className="flex gap-2">
             <CustomDropdown
               options={['Marketing Pipeline', 'Sales Pipeline', 'Email', 'Chats', 'Operational']}
@@ -44,30 +44,40 @@ const DealsByStageChart = ({ deals, onDateRangeChange }) => {
               value={selectedPeriod}
               onChange={setSelectedPeriod}
               onDateRangeChange={onDateRangeChange}
-              options={['Last 15 Days', 'Last 30 Days', 'Last 7 Days']}
+              options={['Last 30 Days', 'Last 60 Days']}
             />
           </div>
         </div>
       </div>
 
-      <div className="p-2">
+      <div className="p-4">
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 60 }} barCategoryGap="10%">
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }} barCategoryGap="25%">
+              <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
               />
-              <YAxis tick={{ fontSize: 12 }} />
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#9ca3af' }} 
+              />
               <Tooltip 
+                cursor={{ fill: '#f9fafb' }}
                 contentStyle={{
                   backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '0.5rem',
+                  border: '1px solid #f3f4f6',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                  fontSize: '11px',
+                  fontWeight: '600'
                 }}
               />
-              <Bar dataKey="deals" fill="#14b8a6" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="deals" fill="#38a189" radius={[0, 0, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (

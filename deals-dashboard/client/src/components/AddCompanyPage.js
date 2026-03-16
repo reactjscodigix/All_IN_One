@@ -454,20 +454,20 @@ const AddCompanyPage = () => {
       <div 
         className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
       >
-        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-semibold text-gray-900">{isEditMode ? 'Edit Company' : 'Add New Company'}</h2>
+        <div className="flex justify-between items-center p-3  border-b border-[#EAECF0] sticky top-0 bg-white z-10">
+          <h2 className="text-md  text-gray-900">{isEditMode ? 'Edit Company' : 'Add New Company'}</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
@@ -478,13 +478,13 @@ const AddCompanyPage = () => {
             <button
               type="button"
               onClick={() => togglePanel('basic')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+              className="w-full text-left p-2  flex items-center justify-between hover:bg-gray-50 transition"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
+                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white  text-base">
                   🏢
                 </div>
-                <span className="font-semibold text-gray-900 text-sm">Basic Info</span>
+                <span className=" text-gray-900 text-xs ">Basic Info</span>
               </div>
               <ChevronDown 
                 size={18} 
@@ -513,7 +513,7 @@ const AddCompanyPage = () => {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                      className="w-full bg-red-500 hover:bg-red-600 text-white p-2  rounded  text-xs    flex items-center gap-2 transition-colors"
                     >
                       <Upload size={16} />
                       Upload file
@@ -531,7 +531,7 @@ const AddCompanyPage = () => {
 
                 {/* Company Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Company Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -540,14 +540,14 @@ const AddCompanyPage = () => {
                     value={formData.companyName}
                     onChange={handleInputChange}
                     placeholder="Enter company name"
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                   />
                 </div>
 
                 {/* Email & Email Opt Out */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-xs    text-gray-700">
                       Email <span className="text-red-500">*</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -567,14 +567,14 @@ const AddCompanyPage = () => {
                     value={formData.emailAddress}
                     onChange={handleInputChange}
                     placeholder="Enter email"
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                   />
                 </div>
 
                 {/* Phone 1 & Phone 2 */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Phone 1 <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -583,11 +583,11 @@ const AddCompanyPage = () => {
                       value={formData.phoneNumber}
                       onChange={handleInputChange}
                       placeholder="(201) 555-0123"
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Phone 2
                     </label>
                     <input
@@ -596,7 +596,7 @@ const AddCompanyPage = () => {
                       value={formData.phone2}
                       onChange={handleInputChange}
                       placeholder="(201) 555-0123"
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                     />
                   </div>
                 </div>
@@ -604,7 +604,7 @@ const AddCompanyPage = () => {
                 {/* Fax & Website */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Fax
                     </label>
                     <input
@@ -613,11 +613,11 @@ const AddCompanyPage = () => {
                       value={formData.fax}
                       onChange={handleInputChange}
                       placeholder="Fax number"
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Website
                     </label>
                     <input
@@ -626,7 +626,7 @@ const AddCompanyPage = () => {
                       value={formData.website}
                       onChange={handleInputChange}
                       placeholder="https://example.com"
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                     />
                   </div>
                 </div>
@@ -634,7 +634,7 @@ const AddCompanyPage = () => {
                 {/* Reviews & Owner */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Reviews
                     </label>
                     <input
@@ -643,11 +643,11 @@ const AddCompanyPage = () => {
                       value={formData.reviews}
                       onChange={handleInputChange}
                       placeholder="e.g., 5.0"
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Owner
                     </label>
                     <select
@@ -655,7 +655,7 @@ const AddCompanyPage = () => {
                       value={formData.owner}
                       onChange={handleInputChange}
                       disabled={loadingData}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
                     >
                       <option value="">{loadingData ? 'Loading...' : 'Select Owner'}</option>
                       {users.map(user => (
@@ -669,12 +669,12 @@ const AddCompanyPage = () => {
 
                 {/* Tags & Source */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Tags
                   </label>
-                  <div className="flex flex-wrap gap-2 p-3 border border-[#E5E7EB] rounded-lg bg-white min-h-[40px]">
+                  <div className="flex flex-wrap gap-2 p-3 border border-[#E5E7EB] rounded  bg-white min-h-[40px]">
                     {formData.tags.map((tag, idx) => (
-                      <span key={idx} className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-red-200">
+                      <span key={idx} className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs  flex items-center gap-2 border border-red-200">
                         {tag}
                         <button
                           type="button"
@@ -682,7 +682,7 @@ const AddCompanyPage = () => {
                             ...prev,
                             tags: prev.tags.filter((_, i) => i !== idx)
                           }))}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red  hover:text-red-800"
                         >
                           ×
                         </button>
@@ -691,7 +691,7 @@ const AddCompanyPage = () => {
                     <input
                       type="text"
                       placeholder="Enter value separated by comma"
-                      className="flex-1 outline-none text-sm min-w-[100px]"
+                      className="flex-1 outline-none text-xs  min-w-[100px]"
                       onBlur={(e) => {
                         if (e.target.value) {
                           const newTags = e.target.value.split(',').map(t => t.trim()).filter(t => t);
@@ -709,7 +709,7 @@ const AddCompanyPage = () => {
                 {/* Source & Industry */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Source <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -717,7 +717,7 @@ const AddCompanyPage = () => {
                       value={formData.source}
                       onChange={handleInputChange}
                       disabled={loadingData}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
                     >
                       <option value="">Select</option>
                       {sources.map(src => (
@@ -726,7 +726,7 @@ const AddCompanyPage = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Industry <span className="text-red-500">*</span>
                     </label>
                     <select
@@ -734,7 +734,7 @@ const AddCompanyPage = () => {
                       value={formData.industryType}
                       onChange={handleInputChange}
                       disabled={loadingData}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
                     >
                       <option value="">Select</option>
                       {industries.map(ind => (
@@ -746,18 +746,18 @@ const AddCompanyPage = () => {
 
                 {/* Contacts */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Contacts
                   </label>
-                  <div className="flex flex-wrap gap-2 p-3 border border-[#E5E7EB] rounded-lg bg-white min-h-[40px]">
+                  <div className="flex flex-wrap gap-2 p-3 border border-[#E5E7EB] rounded  bg-white min-h-[40px]">
                     {selectedContacts.map((contact) => (
-                      <span key={contact.id} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-blue-200">
+                      <span key={contact.id} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs  flex items-center gap-2 border border-blue-200">
                         <span className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center text-xs">👤</span>
                         {contact.first_name} {contact.last_name}
                         <button
                           type="button"
                           onClick={() => handleRemoveContact(contact.id)}
-                          className="text-blue-600 hover:text-blue-800 ml-1"
+                          className="text-white  hover:text-blue-800 ml-1"
                         >
                           ×
                         </button>
@@ -772,7 +772,7 @@ const AddCompanyPage = () => {
                           }
                         }}
                         disabled={loadingData}
-                        className="flex-1 outline-none text-sm px-2 py-1 min-w-[100px]"
+                        className="flex-1 outline-none text-xs  p-1  min-w-[100px]"
                       >
                         <option value="">{loadingData ? 'Loading...' : 'Select contact'}</option>
                         {contacts.map(contact => (
@@ -788,13 +788,13 @@ const AddCompanyPage = () => {
                 {/* Deals */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-xs    text-gray-700">
                       Deals
                     </label>
                     <button
                       type="button"
                       onClick={() => setIsDealModalOpen(true)}
-                      className="flex items-center gap-1 text-red-600 hover:text-red-700 font-medium text-sm transition"
+                      className="flex items-center gap-1 text-red  hover:text-red-700   text-xs  transition"
                     >
                       <Plus size={16} />
                       Add New
@@ -811,11 +811,11 @@ const AddCompanyPage = () => {
                         }}
                         onFocus={() => setShowDealDropdown(true)}
                         placeholder="Search or type deal name..."
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                       />
                       
                       {showDealDropdown && (
-                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E5E7EB] rounded-lg shadow-lg z-10">
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E5E7EB] rounded  shadow-lg z-10">
                           <div className="max-h-48 overflow-y-auto">
                             {getFilteredDeals().length > 0 ? (
                               getFilteredDeals().map((deal) => (
@@ -823,14 +823,14 @@ const AddCompanyPage = () => {
                                   key={deal.id}
                                   type="button"
                                   onClick={() => handleAddDeal(deal)}
-                                  className="w-full text-left px-3 py-2 hover:bg-purple-50 transition text-sm text-gray-700 border-b border-[#EAECF0] last:border-b-0"
+                                  className="w-full text-left px-3 py-2 hover:bg-purple-50 transition text-xs  text-gray-700 border-b border-[#EAECF0] last:border-b-0"
                                 >
-                                  <div className="font-medium">{deal.deal_name || deal.name}</div>
-                                  {deal.deal_value && <div className="text-xs text-gray-500">${deal.deal_value}</div>}
+                                  <div className=" ">{deal.deal_name || deal.name}</div>
+                                  {deal.deal_value && <div className="text-xs text-gray-500">₹{deal.deal_value}</div>}
                                 </button>
                               ))
                             ) : (
-                              <div className="px-3 py-2 text-sm text-gray-500">
+                              <div className="px-3 py-2 text-xs  text-gray-500">
                                 {dealInput ? `No deals found matching "${dealInput}"` : (deals.length === 0 ? 'No deals available' : 'Fetching deals...')}
                               </div>
                             )}
@@ -839,7 +839,7 @@ const AddCompanyPage = () => {
                             <button
                               type="button"
                               onClick={handleAddCustomDeal}
-                              className="w-full text-left px-3 py-2 hover:bg-red-50 transition text-sm text-red-600 font-medium border-t border-[#EAECF0]"
+                              className="w-full text-left px-3 py-2 hover:bg-red-50 transition text-xs  text-red    border-t border-[#EAECF0]"
                             >
                               + Add "{dealInput.trim()}" as new deal
                             </button>
@@ -848,13 +848,13 @@ const AddCompanyPage = () => {
                       )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2 p-3 border border-[#E5E7EB] rounded-lg bg-white min-h-[40px]">
+                    <div className="flex flex-wrap gap-2 p-3 border border-[#E5E7EB] rounded  bg-white min-h-[40px]">
                       {selectedDeals.length > 0 ? (
                         selectedDeals.map((deal) => (
-                          <span key={deal.id} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm flex items-center gap-2 border border-purple-200">
+                          <span key={deal.id} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs  flex items-center gap-2 border border-purple-200">
                             <span className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-xs">📊</span>
                             {deal.deal_name}
-                            {deal.custom && <span className="text-xs font-semibold">(Custom)</span>}
+                            {deal.custom && <span className="text-xs ">(Custom)</span>}
                             <button
                               type="button"
                               onClick={() => handleRemoveDeal(deal.id)}
@@ -865,7 +865,7 @@ const AddCompanyPage = () => {
                           </span>
                         ))
                       ) : (
-                        <span className="text-gray-400 text-sm">No deals selected</span>
+                        <span className="text-[#1F2020] text-xs ">No deals selected</span>
                       )}
                     </div>
                   </div>
@@ -874,14 +874,14 @@ const AddCompanyPage = () => {
                 {/* Currency & Language */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Currency <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="currency"
                       value={formData.currency}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                     >
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>
@@ -891,14 +891,14 @@ const AddCompanyPage = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs    text-gray-700 mb-2">
                       Language <span className="text-red-500">*</span>
                     </label>
                     <select
                       name="language"
                       value={formData.language}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                      className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition"
                     >
                       <option value="English">English</option>
                       <option value="Spanish">Spanish</option>
@@ -911,7 +911,7 @@ const AddCompanyPage = () => {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs    text-gray-700 mb-2">
                     Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
@@ -920,7 +920,7 @@ const AddCompanyPage = () => {
                     onChange={handleInputChange}
                     placeholder="Enter company description"
                     rows="3"
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition resize-none"
                   />
                 </div>
               </div>
@@ -932,13 +932,13 @@ const AddCompanyPage = () => {
             <button
               type="button"
               onClick={() => togglePanel('address')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+              className="w-full text-left p-2  flex items-center justify-between hover:bg-gray-50 transition"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
+                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white  text-base">
                   📍
                 </div>
-                <span className="font-semibold text-gray-900 text-sm">Address Info</span>
+                <span className=" text-gray-900 text-xs ">Address Info</span>
               </div>
               <ChevronDown 
                 size={18} 
@@ -949,36 +949,36 @@ const AddCompanyPage = () => {
             {openPanels.address && (
               <div className="px-4 py-5 space-y-4 border-t border-[#EAECF0] bg-white">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <label className="block text-xs    text-gray-700 mb-2">Address</label>
                   <textarea
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
                     placeholder="Enter street address"
                     rows="3"
-                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+                    className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition resize-none"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                    <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="Enter city" className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">City</label>
+                    <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="Enter city" className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                    <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="Enter state" className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">State</label>
+                    <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="Enter state" className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Zip Code</label>
-                    <input type="text" name="zipCode" value={formData.zipCode} onChange={handleInputChange} placeholder="Enter zip code" className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">Zip Code</label>
+                    <input type="text" name="zipCode" value={formData.zipCode} onChange={handleInputChange} placeholder="Enter zip code" className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                    <input type="text" name="country" value={formData.country} onChange={handleInputChange} placeholder="Enter country" className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">Country</label>
+                    <input type="text" name="country" value={formData.country} onChange={handleInputChange} placeholder="Enter country" className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                 </div>
               </div>
@@ -990,13 +990,13 @@ const AddCompanyPage = () => {
             <button
               type="button"
               onClick={() => togglePanel('social')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+              className="w-full text-left p-2  flex items-center justify-between hover:bg-gray-50 transition"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
+                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white  text-base">
                   📱
                 </div>
-                <span className="font-semibold text-gray-900 text-sm">Social Profile</span>
+                <span className=" text-gray-900 text-xs ">Social Profile</span>
               </div>
               <ChevronDown 
                 size={18} 
@@ -1008,28 +1008,28 @@ const AddCompanyPage = () => {
               <div className="px-4 py-5 border-t border-[#EAECF0] bg-white">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
-                    <input type="url" name="facebook" value={formData.facebook} onChange={handleInputChange} placeholder="https://facebook.com/..." className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">Facebook</label>
+                    <input type="url" name="facebook" value={formData.facebook} onChange={handleInputChange} placeholder="https://facebook.com/..." className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
-                    <input type="url" name="linkedin" value={formData.linkedin} onChange={handleInputChange} placeholder="https://linkedin.com/..." className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">LinkedIn</label>
+                    <input type="url" name="linkedin" value={formData.linkedin} onChange={handleInputChange} placeholder="https://linkedin.com/..." className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Twitter</label>
-                    <input type="url" name="twitter" value={formData.twitter} onChange={handleInputChange} placeholder="https://twitter.com/..." className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">Twitter</label>
+                    <input type="url" name="twitter" value={formData.twitter} onChange={handleInputChange} placeholder="https://twitter.com/..." className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp</label>
-                    <input type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} placeholder="Enter phone number" className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">WhatsApp</label>
+                    <input type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleInputChange} placeholder="Enter phone number" className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
-                    <input type="url" name="instagram" value={formData.instagram} onChange={handleInputChange} placeholder="https://instagram.com/..." className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">Instagram</label>
+                    <input type="url" name="instagram" value={formData.instagram} onChange={handleInputChange} placeholder="https://instagram.com/..." className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Skype</label>
-                    <input type="text" name="skype" value={formData.skype} onChange={handleInputChange} placeholder="Enter Skype ID" className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition" />
+                    <label className="block text-xs    text-gray-700 mb-2">Skype</label>
+                    <input type="text" name="skype" value={formData.skype} onChange={handleInputChange} placeholder="Enter Skype ID" className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition" />
                   </div>
                 </div>
               </div>
@@ -1041,13 +1041,13 @@ const AddCompanyPage = () => {
             <button
               type="button"
               onClick={() => togglePanel('access')}
-              className="w-full text-left px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+              className="w-full text-left p-2  flex items-center justify-between hover:bg-gray-50 transition"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white font-semibold text-base">
+                <div className="w-8 h-8 flex items-center justify-center rounded bg-red-500 text-white  text-base">
                   🔒
                 </div>
-                <span className="font-semibold text-gray-900 text-sm">Access</span>
+                <span className=" text-gray-900 text-xs ">Access</span>
               </div>
               <ChevronDown 
                 size={18} 
@@ -1058,7 +1058,7 @@ const AddCompanyPage = () => {
             {openPanels.access && (
               <div className="px-4 py-5 border-t border-[#EAECF0] bg-white">
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-4">Visibility</label>
+                  <label className="block text-xs    text-gray-900 mb-4">Visibility</label>
                   <div className="space-y-3">
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
@@ -1069,7 +1069,7 @@ const AddCompanyPage = () => {
                         onChange={handleInputChange}
                         className="w-4 h-4 accent-red-500"
                       />
-                      <span className="text-sm text-gray-700">Public</span>
+                      <span className="text-xs  text-gray-700">Public</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
@@ -1080,7 +1080,7 @@ const AddCompanyPage = () => {
                         onChange={handleInputChange}
                         className="w-4 h-4 accent-red-500"
                       />
-                      <span className="text-sm text-gray-700">Private</span>
+                      <span className="text-xs  text-gray-700">Private</span>
                     </label>
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
@@ -1091,13 +1091,13 @@ const AddCompanyPage = () => {
                         onChange={handleInputChange}
                         className="w-4 h-4 accent-red-500"
                       />
-                      <span className="text-sm text-gray-700">Select People</span>
+                      <span className="text-xs  text-gray-700">Select People</span>
                     </label>
                   </div>
 
                   {formData.visibility === 'select' && (
                     <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs    text-gray-700 mb-2">
                         Select Users
                       </label>
                       <select
@@ -1110,7 +1110,7 @@ const AddCompanyPage = () => {
                           }));
                         }}
                         disabled={loadingData}
-                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
+                        className="w-full px-3 py-2 border border-[#E5E7EB] rounded  text-xs  bg-white focus:outline-none focus:border-red-500 transition disabled:opacity-50"
                         value={formData.selectedPeople}
                       >
                         <option value="" disabled>{loadingData ? 'Loading users...' : 'Select users'}</option>
@@ -1140,7 +1140,7 @@ const AddCompanyPage = () => {
             type="button"
             onClick={handleCancel}
             disabled={isLoading}
-            className="px-4 py-2 text-gray-700 border border-[#E5E7EB] rounded-lg hover:bg-gray-100 text-sm font-medium transition disabled:opacity-50"
+            className="p-2  text-gray-700 border border-[#E5E7EB] rounded  hover:bg-gray-100 text-xs    transition disabled:opacity-50"
           >
             Cancel
           </button>
@@ -1148,7 +1148,7 @@ const AddCompanyPage = () => {
             type="submit"
             onClick={handleSubmit}
             disabled={isLoading}
-            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+            className="p-2  bg-red-500 hover:bg-red-600 text-white rounded  text-xs    transition disabled:opacity-50"
           >
             {isLoading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Company' : 'Create Company')}
           </button>

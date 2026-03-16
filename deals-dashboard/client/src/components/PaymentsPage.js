@@ -165,38 +165,38 @@ const PaymentsPage = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-8 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <h1 className="text-5xl font-bold text-gray-900">Payments</h1>
-              <span className="bg-red-100 text-red-600 px-3 py-1.5 rounded-full text-xs font-bold">
+              <h1 className="text-xl  text-gray-900">Payments</h1>
+              <span className="bg-red-100 text-red  px-3 py-1.5 rounded-full text-xs ">
                 {filteredPayments.length}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+            <div className="flex items-center gap-2 text-xs  text-gray-600  ">
               <button className="hover:text-gray-900">Home</button>
-              <span className="text-gray-400">›</span>
+              <span className="text-[#1F2020]">›</span>
               <span className="text-gray-600">Payments</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button className="border border-gray-300 px-5 py-2.5 rounded-lg bg-white text-sm font-medium flex items-center gap-2 shadow-sm hover:bg-gray-50 transition">
+            <button className="border border-gray-300 p-2  rounded  bg-white text-xs    flex items-center gap-2 shadow-sm hover:bg-gray-50 transition">
               <Download size={18} />
               Export
             </button>
             <button 
               onClick={() => setShowAddPaymentModal(true)}
-              className="bg-red-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-sm hover:bg-red-700 transition">
+              className="bg-red-600 text-white p-2  rounded  text-xs   shadow-sm hover:bg-red-700 transition">
               + Record Payment
             </button>
           </div>
         </div>
 
         {/* Filter & Sort Bar */}
-        <div className="mb-6 flex items-center justify-between gap-4 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-2 bg-white p-2 rounded  border border-gray-200 shadow-sm">
           <div className="flex items-center gap-3 flex-1">
             <div className="relative flex-1 max-w-xs">
               <input
@@ -207,7 +207,7 @@ const PaymentsPage = () => {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full border border-gray-300 p-2  rounded  text-xs    focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
           </div>
@@ -216,18 +216,18 @@ const PaymentsPage = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-300 px-4 py-2 rounded-lg bg-white text-sm font-medium appearance-none pr-8"
+                className="border border-gray-300 p-2  rounded  bg-white text-xs    appearance-none pr-8"
               >
                 <option value="newest">Sort By: Newest</option>
                 <option value="oldest">Sort By: Oldest</option>
               </select>
-              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">▼</span>
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#1F2020] pointer-events-none">▼</span>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium hover:bg-gray-50">
+            <button className="flex items-center gap-2 p-2  border border-gray-300 rounded  bg-white text-xs    hover:bg-gray-50">
               <Filter size={18} />
               Filter
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium hover:bg-gray-50">
+            <button className="flex items-center gap-2 p-2  border border-gray-300 rounded  bg-white text-xs    hover:bg-gray-50">
               <Settings2 size={18} />
               Manage Columns
             </button>
@@ -236,8 +236,8 @@ const PaymentsPage = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="mb-6 p-2 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
@@ -246,20 +246,20 @@ const PaymentsPage = () => {
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-              <p className="mt-4 text-gray-600 font-medium">Loading payments...</p>
+              <p className="mt-4 text-gray-600  ">Loading payments...</p>
             </div>
           </div>
         ) : paginatedPayments.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <p className="text-gray-600 font-medium text-lg">No invoices to display</p>
-              <p className="text-gray-500 text-sm mt-2">Click "Record Payment" to process payments</p>
+              <p className="text-gray-600   text-lg">No invoices to display</p>
+              <p className="text-gray-500 text-xs  mt-2">Click "Record Payment" to process payments</p>
             </div>
           </div>
         ) : (
           <>
             {/* Table */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-white border border-gray-200 rounded  shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -267,14 +267,14 @@ const PaymentsPage = () => {
                       <th className="px-6 py-3 text-left">
                         <input type="checkbox" className="w-4 h-4" />
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Invoice ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Client</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Due Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Payment Method</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Transaction ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Action</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Invoice ID</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Client</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Due Date</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Payment Method</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Transaction ID</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Status</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -282,52 +282,52 @@ const PaymentsPage = () => {
                       const statusStyles = getStatusStyles(invoice.status);
                       return (
                         <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
-                          <td className="px-6 py-4">
+                          <td className="p-2 ">
                             <input type="checkbox" className="w-4 h-4" />
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm font-bold text-blue-600">#{invoice.invoice_number || invoice.id}</span>
+                          <td className="p-2 ">
+                            <span className="text-xs   text-white ">#{invoice.invoice_number || invoice.id}</span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="p-2 ">
                             <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold text-gray-600">
+                              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs  text-gray-600">
                                 {invoice.client_name?.charAt(0).toUpperCase()}
                               </div>
-                              <span className="text-sm font-medium text-gray-900">{invoice.client_name || 'N/A'}</span>
+                              <span className="text-xs    text-gray-900">{invoice.client_name || 'N/A'}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm font-semibold text-gray-900">{formatCurrency(invoice.total)}</span>
+                          <td className="p-2 ">
+                            <span className="text-xs   text-gray-900">{formatCurrency(invoice.total)}</span>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm text-gray-600">{formatDate(invoice.due_date)}</span>
+                          <td className="p-2 ">
+                            <span className="text-xs  text-gray-600">{formatDate(invoice.due_date)}</span>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm text-gray-600">{invoice.payment_method || 'N/A'}</span>
+                          <td className="p-2 ">
+                            <span className="text-xs  text-gray-600">{invoice.payment_method || 'N/A'}</span>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className="text-sm font-mono text-gray-600">TXN{String(invoice.id).padStart(10, '0')}</span>
+                          <td className="p-2 ">
+                            <span className="text-xs  font-mono text-gray-600">TXN{String(invoice.id).padStart(10, '0')}</span>
                           </td>
-                          <td className="px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusStyles.bg} ${statusStyles.text}`}>
+                          <td className="p-2 ">
+                            <span className={`px-3 py-1 rounded-full text-xs  ${statusStyles.bg} ${statusStyles.text}`}>
                               {invoice.status}
                             </span>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="p-2 ">
                             <div className="relative group">
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition">
+                              <button className="p-2 hover:bg-gray-100 rounded  transition">
                                 <MoreVertical size={18} className="text-gray-600" />
                               </button>
-                              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded  shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                                 <button
                                   onClick={() => handlePreviewInvoice(invoice)}
-                                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-2"
+                                  className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-50 border-b border-gray-100 flex items-center gap-2"
                                 >
                                   <span>👁️</span> Preview
                                 </button>
                                 <button
                                   onClick={() => handleDeleteInvoice(invoice)}
-                                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg flex items-center gap-2"
+                                  className="w-full text-left p-2  text-xs  text-red  hover:bg-red-50 rounded-b-lg flex items-center gap-2"
                                 >
                                   <span>🗑️</span> Delete
                                 </button>
@@ -348,7 +348,7 @@ const PaymentsPage = () => {
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  className="p-2  border border-gray-300 rounded  hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs   "
                 >
                   ← Previous
                 </button>
@@ -368,7 +368,7 @@ const PaymentsPage = () => {
                       <button
                         key={pageNumber}
                         onClick={() => setCurrentPage(pageNumber)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                        className={`px-3 py-2 rounded  text-xs    transition ${
                           currentPage === pageNumber
                             ? 'bg-red-600 text-white'
                             : 'border border-gray-300 hover:bg-gray-50'
@@ -382,11 +382,11 @@ const PaymentsPage = () => {
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  className="p-2  border border-gray-300 rounded  hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs   "
                 >
                   Next →
                 </button>
-                <span className="text-sm text-gray-600 ml-4">
+                <span className="text-xs  text-gray-600 ml-4">
                   Page {currentPage} of {totalPages}
                 </span>
               </div>
@@ -395,8 +395,8 @@ const PaymentsPage = () => {
         )}
 
         {/* Footer */}
-        <div className="text-center text-gray-500 text-sm border-t border-gray-200 pt-8 pb-6 font-medium mt-8">
-          Copyright © 2025 <span className="text-red-600 font-bold">Preadmin</span>
+        <div className="text-center text-gray-500 text-xs  border-t border-gray-200 pt-8 pb-6   mt-8">
+          Copyright © 2025 <span className="text-red  ">Preadmin</span>
         </div>
       </div>
 
@@ -411,26 +411,26 @@ const PaymentsPage = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && selectedInvoice && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-white rounded  shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-bold text-gray-900">Delete Confirmation</h2>
+              <h2 className="text-lg  text-gray-900">Delete Confirmation</h2>
             </div>
             
             <div className="p-6">
-              <p className="text-gray-700">Are you sure you want to delete invoice <span className="font-semibold">#{selectedInvoice.invoice_number}</span>?</p>
-              <p className="text-sm text-gray-500 mt-2">This action cannot be undone.</p>
+              <p className="text-gray-700">Are you sure you want to delete invoice <span className="">#{selectedInvoice.invoice_number}</span>?</p>
+              <p className="text-xs  text-gray-500 mt-2">This action cannot be undone.</p>
             </div>
 
             <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
               <button 
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50"
+                className="p-2  border border-gray-300 rounded  text-xs    hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                className="p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700"
               >
                 Yes, Delete
               </button>

@@ -80,10 +80,10 @@ const LeadsProjectsByStageChart = ({ projects, onDateRangeChange }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-border-light">
-      <div className="p-4 border-b border-border-light">
+    <div className="bg-white rounded  border border-border-light">
+      <div className="p-2 border-b border-border-light">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Projects By Stage</h2>
+          <h2 className="text-xs  text-gray-900">Projects By Stage</h2>
           <DateRangeDropdown
             value={selectedPeriod}
             onChange={setSelectedPeriod}
@@ -99,8 +99,8 @@ const LeadsProjectsByStageChart = ({ projects, onDateRangeChange }) => {
         ) : (
           <div className="h-96 flex flex-col items-center justify-center">
             <div className="text-center">
-              <p className="text-gray-600 text-lg font-medium mb-2">No Projects Available</p>
-              <p className="text-gray-500 text-sm">Create projects to see them displayed here by status.</p>
+              <p className="text-gray-600 text-lg   mb-2">No Projects Available</p>
+              <p className="text-gray-500 text-xs ">Create projects to see them displayed here by status.</p>
             </div>
           </div>
         )}

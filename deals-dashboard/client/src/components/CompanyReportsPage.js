@@ -29,7 +29,7 @@ const generateMonthlyData = (companies) => {
 
 const CompanyLogo = ({ name, color }) => (
   <div
-    className="w-8 h-8 rounded flex items-center justify-center text-white text-xs font-bold"
+    className="w-8 h-8 rounded flex items-center justify-center text-white text-xs "
     style={{ backgroundColor: color }}
   >
     {name.charAt(0)}
@@ -43,7 +43,7 @@ const Tag = ({ text }) => {
     Inactive: 'bg-red-50 text-red-700 border-red-200',
   };
   const classes = tagColors[text] || 'bg-gray-50 text-gray-700 border-gray-200';
-  return <span className={`text-xs font-semibold px-2 py-1 rounded border ${classes}`}>{text}</span>;
+  return <span className={`text-xs  p-1  rounded border ${classes}`}>{text}</span>;
 };
 
 const StatusPill = ({ status }) => {
@@ -53,7 +53,7 @@ const StatusPill = ({ status }) => {
     Prospect: 'bg-blue-500 text-white',
   };
   return (
-    <span className={`text-xs font-semibold px-2 py-1 rounded ${map[status] || 'bg-gray-500 text-white'}`}>
+    <span className={`text-xs  p-1  rounded ${map[status] || 'bg-gray-500 text-white'}`}>
       {status}
     </span>
   );
@@ -69,7 +69,7 @@ const ContactIcon = ({ type, title }) => {
   return (
     <span
       title={title}
-      className="inline-flex items-center justify-center w-6 h-6 hover:bg-gray-100 rounded cursor-pointer text-gray-600 text-sm"
+      className="inline-flex items-center justify-center w-6 h-6 hover:bg-gray-100 rounded cursor-pointer text-gray-600 text-xs "
     >
       {icons[type] || '○'}
     </span>
@@ -147,23 +147,23 @@ function CompaniesTable({ rows }) {
             setQuery(e.target.value);
             setPage(1);
           }}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          className="w-full px-3 py-2 border border-gray-300 rounded  text-xs "
         />
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs ">
           <thead>
             <tr className="text-xs text-gray-600 bg-gray-50 border-b border-gray-200">
               <th className="py-3 px-4 text-left w-8">
                 <input type="checkbox" className="cursor-pointer" />
               </th>
-              <th className="py-3 px-4 text-left font-semibold">Company Name</th>
-              <th className="py-3 px-4 text-left font-semibold">Email</th>
-              <th className="py-3 px-4 text-left font-semibold">Phone</th>
-              <th className="py-3 px-4 text-left font-semibold">Industry</th>
-              <th className="py-3 px-4 text-left font-semibold">Contacts</th>
-              <th className="py-3 px-4 text-left font-semibold">Status</th>
+              <th className="py-3 px-4 text-left ">Company Name</th>
+              <th className="py-3 px-4 text-left ">Email</th>
+              <th className="py-3 px-4 text-left ">Phone</th>
+              <th className="py-3 px-4 text-left ">Industry</th>
+              <th className="py-3 px-4 text-left ">Contacts</th>
+              <th className="py-3 px-4 text-left ">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -175,7 +175,7 @@ function CompaniesTable({ rows }) {
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <CompanyLogo name={r.name} color={r.color} />
-                    <span className="text-gray-800 font-medium">{r.name}</span>
+                    <span className="text-gray-800  ">{r.name}</span>
                   </div>
                 </td>
                 <td className="py-3 px-4 text-gray-600">{r.email}</td>
@@ -195,7 +195,7 @@ function CompaniesTable({ rows }) {
         <div className="text-center py-8 text-gray-500">No companies found</div>
       )}
 
-      <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
+      <div className="flex items-center justify-between mt-4 text-xs  text-gray-600">
         <div>
           Showing {pageData.length} of {filtered.length} companies
         </div>
@@ -281,13 +281,13 @@ export default function CompanyReportsPage() {
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-800">
+            <h1 className="text-2xl  text-gray-800">
               Company Reports{' '}
-              <span className="text-sm text-gray-500">({companies.length})</span>
+              <span className="text-xs  text-gray-500">({companies.length})</span>
             </h1>
             <p className="text-xs text-gray-500 mt-1">Home › Company Reports</p>
           </div>
-          <button className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 flex items-center gap-2">
+          <button className="bg-red-600 text-white p-2  rounded  text-xs    hover:bg-red-700 flex items-center gap-2">
             <Download size={16} />
             Download Report
           </button>
@@ -304,19 +304,19 @@ export default function CompanyReportsPage() {
         {!loading && !error && companies.length > 0 && (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-base font-semibold text-gray-900 mb-4">Companies by Month</h3>
+              <div className="bg-white rounded  shadow-sm border border-gray-200p-3 ">
+                <h3 className="text-base  text-gray-900 mb-4">Companies by Month</h3>
                 <CompaniesByYearChart data={monthlyData} />
               </div>
 
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-base font-semibold text-gray-900 mb-4">Company Status Distribution</h3>
+              <div className="bg-white rounded  shadow-sm border border-gray-200p-3 ">
+                <h3 className="text-base  text-gray-900 mb-4">Company Status Distribution</h3>
                 <CompanyStatusDonut data={companies} />
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">Company List</h3>
+            <div className="bg-white rounded  shadow-sm border border-gray-200p-3 ">
+              <h3 className="text-base  text-gray-900 mb-4">Company List</h3>
               <CompaniesTable rows={companies} />
             </div>
           </>

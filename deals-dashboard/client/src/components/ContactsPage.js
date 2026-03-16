@@ -3,7 +3,7 @@ import Contacts from './Contacts';
 
 const ContactsPage = () => {
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       <Contacts />
     </div>
   );

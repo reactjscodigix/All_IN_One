@@ -72,12 +72,12 @@ const InvoiceDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="p-2 bg-[#F7F8F9] min-h-screen">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-              <p className="mt-4 text-gray-600 font-medium">Loading dashboard...</p>
+              <p className="mt-4 text-gray-600  ">Loading dashboard...</p>
             </div>
           </div>
         </div>
@@ -86,18 +86,18 @@ const InvoiceDashboard = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="text-5xl font-bold text-gray-900">Invoice Dashboard</h1>
+            <h1 className="text-xl  text-gray-900">Invoice Dashboard</h1>
             <div className="flex gap-2">
               {['week', 'month', 'quarter', 'year'].map(range => (
                 <button
                   key={range}
                   onClick={() => setDateRange(range)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`p-2  rounded  text-xs    transition ${
                     dateRange === range
                       ? 'bg-red-600 text-white'
                       : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -108,9 +108,9 @@ const InvoiceDashboard = () => {
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600 font-medium">
+          <div className="flex items-center gap-2 text-xs  text-gray-600  ">
             <button className="hover:text-gray-900">Home</button>
-            <span className="text-gray-400">›</span>
+            <span className="text-[#1F2020]">›</span>
             <span className="text-gray-600">Dashboard</span>
           </div>
         </div>
@@ -119,50 +119,50 @@ const InvoiceDashboard = () => {
         {metrics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
             {/* Total Invoices */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition">
+            <div className="bg-white rounded-2xlp-3  border border-gray-100 shadow-sm hover:shadow-md transition">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-600">Total Invoices</h3>
+                <h3 className="text-xs    text-gray-600">Total Invoices</h3>
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Calendar className="text-blue-600" size={24} />
+                  <Calendar className="text-white " size={24} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{metrics.total_invoices || 0}</p>
+              <p className="text-xl  text-gray-900">{metrics.total_invoices || 0}</p>
               <p className="text-xs text-gray-500 mt-2">All time invoices created</p>
             </div>
 
             {/* Total Revenue */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition">
+            <div className="bg-white rounded-2xlp-3  border border-gray-100 shadow-sm hover:shadow-md transition">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-600">Total Revenue</h3>
+                <h3 className="text-xs    text-gray-600">Total Revenue</h3>
                 <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                   <DollarSign className="text-green-600" size={24} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(metrics.total_amount)}</p>
+              <p className="text-xl  text-gray-900">{formatCurrency(metrics.total_amount)}</p>
               <p className="text-xs text-gray-500 mt-2">Total invoice value</p>
             </div>
 
             {/* Amount Paid */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition">
+            <div className="bg-white rounded-2xlp-3  border border-gray-100 shadow-sm hover:shadow-md transition">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-600">Amount Paid</h3>
+                <h3 className="text-xs    text-gray-600">Amount Paid</h3>
                 <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                   <CheckCircle className="text-green-600" size={24} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-green-600">{formatCurrency(metrics.total_paid)}</p>
+              <p className="text-3xl  text-green-600">{formatCurrency(metrics.total_paid)}</p>
               <p className="text-xs text-gray-500 mt-2">Successfully collected</p>
             </div>
 
             {/* Amount Due */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition">
+            <div className="bg-white rounded-2xlp-3  border border-gray-100 shadow-sm hover:shadow-md transition">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-medium text-gray-600">Amount Due</h3>
+                <h3 className="text-xs    text-gray-600">Amount Due</h3>
                 <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <AlertCircle className="text-red-600" size={24} />
+                  <AlertCircle className="text-red " size={24} />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-red-600">{formatCurrency(metrics.total_due)}</p>
+              <p className="text-3xl  text-red ">{formatCurrency(metrics.total_due)}</p>
               <p className="text-xs text-gray-500 mt-2">Outstanding amount</p>
             </div>
           </div>
@@ -172,31 +172,31 @@ const InvoiceDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8">
           {/* Status Cards */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Invoice Status Breakdown</h3>
+            <div className="bg-white rounded-2xlp-3  border border-gray-100 shadow-sm">
+              <h3 className="text-md  text-gray-900 mb-4">Invoice Status Breakdown</h3>
               <div className="space-y-3">
                 {metrics && (
                   <>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
+                    <div className="flex items-center justify-between p-3 rounded  bg-green-50 border border-green-200">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">✓</span>
-                        <span className="text-sm font-medium text-green-700">Paid</span>
+                        <span className="text-xs    text-green-700">Paid</span>
                       </div>
-                      <span className="text-lg font-bold text-green-700">{metrics.paid_invoices || 0}</span>
+                      <span className="text-lg  text-green-700">{metrics.paid_invoices || 0}</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 border border-red-200">
+                    <div className="flex items-center justify-between p-3 rounded  bg-red-50 border border-red-200">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">!</span>
-                        <span className="text-sm font-medium text-red-700">Unpaid</span>
+                        <span className="text-xs    text-red-700">Unpaid</span>
                       </div>
-                      <span className="text-lg font-bold text-red-700">{metrics.unpaid_invoices || 0}</span>
+                      <span className="text-lg  text-red-700">{metrics.unpaid_invoices || 0}</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 border border-orange-200">
+                    <div className="flex items-center justify-between p-3 rounded  bg-orange-50 border border-orange-200">
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">⚠</span>
-                        <span className="text-sm font-medium text-orange-700">Overdue</span>
+                        <span className="text-xs    text-orange-700">Overdue</span>
                       </div>
-                      <span className="text-lg font-bold text-orange-700">{metrics.overdue_invoices || 0}</span>
+                      <span className="text-lg  text-orange-700">{metrics.overdue_invoices || 0}</span>
                     </div>
                   </>
                 )}
@@ -206,26 +206,26 @@ const InvoiceDashboard = () => {
 
           {/* Status Details */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Status Report</h3>
+            <div className="bg-white rounded-2xlp-3  border border-gray-100 shadow-sm">
+              <h3 className="text-md  text-gray-900 mb-4">Detailed Status Report</h3>
               <div className="space-y-2">
                 {breakdown && breakdown.length > 0 ? (
                   breakdown.map((status, idx) => {
                     const percentage = metrics ? Math.round((status.count / metrics.total_invoices) * 100) : 0;
                     return (
-                      <div key={idx} className={`p-4 rounded-lg border ${getStatusColor(status.status)}`}>
+                      <div key={idx} className={`p-2 rounded  border ${getStatusColor(status.status)}`}>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <span className={`text-lg font-bold ${getStatusTextColor(status.status)}`}>
+                            <span className={`text-lg  ${getStatusTextColor(status.status)}`}>
                               {getStatusIcon(status.status)}
                             </span>
-                            <span className={`font-medium ${getStatusTextColor(status.status)}`}>
+                            <span className={`  ${getStatusTextColor(status.status)}`}>
                               {status.status}
                             </span>
                           </div>
-                          <span className="text-sm font-semibold text-gray-700">{status.count} invoices</span>
+                          <span className="text-xs   text-gray-700">{status.count} invoices</span>
                         </div>
-                        <div className="space-y-1 text-sm">
+                        <div className="space-y-1 text-xs ">
                           <div className="w-full bg-gray-300 rounded-full h-2">
                             <div
                               className={`h-2 rounded-full transition-all ${
@@ -257,14 +257,14 @@ const InvoiceDashboard = () => {
         {/* Analytics Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
           {/* Average Invoice Value */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Average Invoice Value</h3>
+          <div className="bg-white rounded-2xlp-3  border border-gray-100 shadow-sm">
+            <h3 className="text-md  text-gray-900 mb-4">Average Invoice Value</h3>
             <div className="space-y-3">
               {breakdown && breakdown.length > 0 && (
                 breakdown.map((status, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition">
-                    <span className="text-sm font-medium text-gray-700">{status.status}</span>
-                    <span className="text-lg font-bold text-gray-900">
+                  <div key={idx} className="flex items-center justify-between p-3 rounded  hover:bg-gray-50 transition">
+                    <span className="text-xs    text-gray-700">{status.status}</span>
+                    <span className="text-lg  text-gray-900">
                       {formatCurrency(status.average_amount)}
                     </span>
                   </div>
@@ -274,14 +274,14 @@ const InvoiceDashboard = () => {
           </div>
 
           {/* Collection Rate */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Collection Performance</h3>
+          <div className="bg-white rounded-2xlp-3  border border-gray-100 shadow-sm">
+            <h3 className="text-md  text-gray-900 mb-4">Collection Performance</h3>
             {metrics && (
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Collection Rate</span>
-                    <span className="text-lg font-bold text-gray-900">
+                    <span className="text-xs    text-gray-700">Collection Rate</span>
+                    <span className="text-lg  text-gray-900">
                       {metrics.total_amount > 0 ? Math.round((metrics.total_paid / metrics.total_amount) * 100) : 0}%
                     </span>
                   </div>
@@ -292,16 +292,16 @@ const InvoiceDashboard = () => {
                     ></div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-green-600 font-medium">Total Collected</p>
-                    <p className="text-xl font-bold text-green-700 mt-1">
+                <div className="grid grid-cols-2 gap-3 text-xs ">
+                  <div className="p-3 bg-green-50 rounded  border border-green-200">
+                    <p className="text-green-600  ">Total Collected</p>
+                    <p className="text-xl  text-green-700 mt-1">
                       {formatCurrency(metrics.total_paid)}
                     </p>
                   </div>
-                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                    <p className="text-red-600 font-medium">Still Pending</p>
-                    <p className="text-xl font-bold text-red-700 mt-1">
+                  <div className="p-3 bg-red-50 rounded  border border-red-200">
+                    <p className="text-red   ">Still Pending</p>
+                    <p className="text-xl  text-red-700 mt-1">
                       {formatCurrency(metrics.total_due)}
                     </p>
                   </div>
@@ -312,8 +312,8 @@ const InvoiceDashboard = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center text-gray-500 text-sm font-medium">
-          © 2025 <span className="text-red-600 font-bold">Preadmin</span> - Invoice Dashboard
+        <div className="text-center text-gray-500 text-xs   ">
+          © 2025 <span className="text-red  ">Preadmin</span> - Invoice Dashboard
         </div>
       </div>
     </div>

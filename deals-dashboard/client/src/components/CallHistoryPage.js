@@ -230,12 +230,12 @@ export default function CallHistoryPage() {
   return (
     <div className="w-full h-[calc(100vh-80px)] bg-white flex">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col p-4 overflow-hidden relative">
+      <div className="flex-1 flex flex-col p-2 overflow-hidden relative">
         {/* Show Sidebar Toggle */}
         {!sidebarOpen && (
           <button
             onClick={() => setSidebarOpen(true)}
-            className="absolute top-4 right-4 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-semibold z-40"
+            className="absolute top-2 right-4 px-3 py-2 bg-blue-500 hover:bg-red-600 text-white rounded text-xs   z-40"
             title="Show sidebar"
           >
             ▸
@@ -246,13 +246,13 @@ export default function CallHistoryPage() {
         <div className="mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Call History</h1>
+              <h1 className="text-2xl  text-gray-900">Call History</h1>
               <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
                 <span>Home</span>
                 <span>/</span>
                 <span>Applications</span>
                 <span>/</span>
-                <span className="text-gray-900 font-semibold">Call History</span>
+                <span className="text-gray-900 ">Call History</span>
               </div>
             </div>
             {sidebarOpen && (
@@ -270,77 +270,77 @@ export default function CallHistoryPage() {
         {/* Controls */}
         <div className="flex items-center justify-between mb-4 gap-4">
           <div className="flex items-center gap-3">
-            <div className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-xs text-gray-600 hover:bg-gray-50 cursor-pointer whitespace-nowrap">
+            <div className="px-3 py-2 border border-gray-200 rounded  bg-white text-xs text-gray-600 hover:bg-gray-50 cursor-pointer whitespace-nowrap">
               📅 27 Nov 25 - 27 Nov 25
             </div>
             <div className="relative">
-              <button className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap">
+              <button className="px-3 py-2 border border-gray-200 rounded  bg-white text-xs text-gray-600 hover:bg-gray-50 flex items-center gap-2 whitespace-nowrap">
                 📊 Sort By : {sortBy === 'newest' ? 'Newest' : 'Oldest'}
               </button>
             </div>
           </div>
           <button 
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition-colors whitespace-nowrap">
+            className="p-2  bg-blue-500 hover:bg-red-600 text-white rounded  text-xs   transition-colors whitespace-nowrap">
             + Add Call
           </button>
         </div>
 
         {/* Table Container */}
-        <div className="flex-1 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm flex flex-col">
+        <div className="flex-1 bg-white border border-gray-200 rounded  overflow-hidden shadow-sm flex flex-col">
           {loading ? (
             <div className="p-6 text-center text-gray-600">Loading call history...</div>
           ) : error ? (
-            <div className="p-6 text-center text-red-600">{error}</div>
+            <div className="p-6 text-center text-red ">{error}</div>
           ) : (
             <div className="overflow-x-auto flex-1 flex flex-col">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs ">
                 <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
                   <tr>
-                    <th className="px-4 py-3 text-left">
+                    <th className="p-2 text-left">
                       <input type="checkbox" className="w-4 h-4 rounded" />
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Call Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Direction</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Details</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Date & Time</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase whitespace-nowrap">Action</th>
+                    <th className="p-2 text-left text-xs  text-gray-600  whitespace-nowrap">Name</th>
+                    <th className="p-2 text-left text-xs  text-gray-600  whitespace-nowrap">Call Type</th>
+                    <th className="p-2 text-left text-xs  text-gray-600  whitespace-nowrap">Direction</th>
+                    <th className="p-2 text-left text-xs  text-gray-600  whitespace-nowrap">Details</th>
+                    <th className="p-2 text-left text-xs  text-gray-600  whitespace-nowrap">Date & Time</th>
+                    <th className="p-2 text-left text-xs  text-gray-600  whitespace-nowrap">Action</th>
                   </tr>
                 </thead>
                 <tbody className="overflow-y-auto">
                   {callData.length > 0 ? (
                     callData.map((call) => (
                       <tr key={call.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setSelectedCaller(call)}>
-                        <td className="px-4 py-3">
+                        <td className="p-2">
                           <input type="checkbox" className="w-4 h-4 rounded" />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="p-2">
                           <div className="flex items-center gap-2">
                             <img src={call.avatar} className="w-8 h-8 rounded-full object-cover flex-shrink-0" alt={call.name} />
                             <div className="min-w-0">
-                              <p className="font-semibold text-gray-900 text-xs truncate">{call.name}</p>
+                              <p className=" text-gray-900 text-xs truncate">{call.name}</p>
                               <p className="text-xs text-gray-500 truncate">{call.email}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{call.phone}</td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1 ${call.callType === 'Video Call' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                        <td className="p-2 text-xs text-gray-600 whitespace-nowrap">{call.phone}</td>
+                        <td className="p-2">
+                          <span className={`p-1  rounded-full text-xs  inline-flex items-center gap-1 ${call.callType === 'Video Call' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
                             {call.callType === 'Video Call' ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}
                             <span className="hidden sm:inline">{call.callType}</span>
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1 ${getTypeColor(call.type)}`}>
+                        <td className="p-2">
+                          <span className={`p-1  rounded-full text-xs  inline-flex items-center gap-1 ${getTypeColor(call.type)}`}>
                             {getTypeIcon(call.type)}
                             <span className="hidden sm:inline">{call.type}</span>
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="p-2">
                           {call.callType === 'Audio Call' ? (
                             <div className="flex items-center gap-1 group">
-                              <span className="text-gray-700 text-xs font-semibold">
+                              <span className="text-gray-700 text-xs ">
                                 {call.phone}
                               </span>
                               <button
@@ -348,7 +348,7 @@ export default function CallHistoryPage() {
                                   e.stopPropagation();
                                   navigator.clipboard.writeText(call.phone);
                                 }}
-                                className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-blue-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="p-1 hover:bg-gray-200 rounded text-[#1F2020] hover:text-white  flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                 title="Copy phone number"
                               >
                                 📋
@@ -363,7 +363,7 @@ export default function CallHistoryPage() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="text-blue-600 hover:text-blue-700 hover:underline text-xs font-semibold truncate max-w-xs"
+                                    className="text-white  hover:text-blue-700 hover:underline text-xs  truncate max-w-xs"
                                     title={call.meetingLink}
                                   >
                                     {call.meetingLink.replace('https://meet.google.com/', 'meet.google.com/').replace('https://zoom.us/', 'zoom.us/')}
@@ -373,7 +373,7 @@ export default function CallHistoryPage() {
                                       e.stopPropagation();
                                       handleEditMeetingLink(call.id, call.meetingLink);
                                     }}
-                                    className="p-1 hover:bg-gray-200 rounded text-gray-400 hover:text-blue-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="p-1 hover:bg-gray-200 rounded text-[#1F2020] hover:text-white  flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                     title="Edit meeting link"
                                   >
                                     ✏️
@@ -384,7 +384,7 @@ export default function CallHistoryPage() {
                                       setPendingDeleteId(call.id);
                                       setShowConfirmDelete(true);
                                     }}
-                                    className="p-1 hover:bg-red-100 rounded text-gray-400 hover:text-red-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="p-1 hover:bg-red-100 rounded text-[#1F2020] hover:text-red  flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                     title="Remove meeting link"
                                   >
                                     ✕
@@ -396,7 +396,7 @@ export default function CallHistoryPage() {
                                     e.stopPropagation();
                                     handleEditMeetingLink(call.id, '');
                                   }}
-                                  className="text-blue-600 hover:text-blue-700 hover:underline text-xs font-semibold whitespace-nowrap"
+                                  className="text-white  hover:text-blue-700 hover:underline text-xs  whitespace-nowrap"
                                 >
                                   Add Link
                                 </button>
@@ -404,12 +404,12 @@ export default function CallHistoryPage() {
                             </>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{call.date}</td>
-                        <td className="px-4 py-3 flex items-center gap-1">
-                          <button onClick={(e) => { e.stopPropagation(); setSelectedCaller(call); }} className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-blue-600 flex-shrink-0" title="View details">
+                        <td className="p-2 text-xs text-gray-600 whitespace-nowrap">{call.date}</td>
+                        <td className="p-2 flex items-center gap-1">
+                          <button onClick={(e) => { e.stopPropagation(); setSelectedCaller(call); }} className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-white  flex-shrink-0" title="View details">
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteCall(call.id); }} className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-red-600 flex-shrink-0" title="Delete call">
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteCall(call.id); }} className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-600 hover:text-red  flex-shrink-0" title="Delete call">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
@@ -417,7 +417,7 @@ export default function CallHistoryPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="px-4 py-12 text-center text-gray-500 text-sm">
+                      <td colSpan="7" className="px-4 py-12 text-center text-gray-500 text-xs ">
                         No call history found
                       </td>
                     </tr>
@@ -431,9 +431,9 @@ export default function CallHistoryPage() {
 
       {/* Sidebar - Caller Details */}
       {sidebarOpen && selectedCaller && (
-        <div className="w-80 bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto flex flex-col">
+        <div className="w-80 bg-gray-50 border-l border-gray-200 p-2 overflow-y-auto flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-gray-900">Caller Details</h3>
+            <h3 className="text-lg  text-gray-900">Caller Details</h3>
             <button
               onClick={() => setSidebarOpen(false)}
               className="text-gray-500 hover:text-gray-700 text-lg"
@@ -444,47 +444,47 @@ export default function CallHistoryPage() {
           </div>
 
           {/* Caller Card */}
-          <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+          <div className="bg-white rounded  p-2 border border-gray-200 mb-4">
             <div className="flex justify-center mb-4">
               <img src={selectedCaller.avatar} className="w-20 h-20 rounded-full object-cover" alt={selectedCaller.name} />
             </div>
-            <h4 className="text-center font-bold text-gray-900 mb-6 text-lg">{selectedCaller.name}</h4>
+            <h4 className="text-center  text-gray-900 mb-6 text-lg">{selectedCaller.name}</h4>
 
-            <div className="space-y-3 text-sm">
+            <div className="space-y-3 text-xs ">
               <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase">Call Type</label>
-                <p className="font-bold text-gray-900">{selectedCaller.callType}</p>
+                <label className="text-xs  text-gray-500 ">Call Type</label>
+                <p className=" text-gray-900">{selectedCaller.callType}</p>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase">Direction</label>
-                <p className="font-bold text-gray-900">{selectedCaller.type}</p>
+                <label className="text-xs  text-gray-500 ">Direction</label>
+                <p className=" text-gray-900">{selectedCaller.type}</p>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Phone className="w-4 h-4 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-500">Phone</p>
-                  <p className="font-semibold text-gray-900">{selectedCaller.phone}</p>
+                  <p className=" text-gray-900">{selectedCaller.phone}</p>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase">Duration</label>
-                <p className="text-lg font-bold text-gray-900">{selectedCaller.duration}</p>
+                <label className="text-xs  text-gray-500 ">Duration</label>
+                <p className="text-lg  text-gray-900">{selectedCaller.duration}</p>
               </div>
               <div className="flex items-center gap-2 text-gray-600">
                 <Mail className="w-4 h-4 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-gray-500">Email</p>
-                  <p className="font-semibold text-gray-900 text-xs truncate">{selectedCaller.email}</p>
+                  <p className=" text-gray-900 text-xs truncate">{selectedCaller.email}</p>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase">Call Date</label>
-                <p className="text-xs font-bold text-gray-900">{selectedCaller.date}</p>
+                <label className="text-xs  text-gray-500 ">Call Date</label>
+                <p className="text-xs  text-gray-900">{selectedCaller.date}</p>
               </div>
               {selectedCaller.meetingLink && (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Meeting Link</label>
-                  <p className="text-xs font-mono text-blue-600 break-all truncate">{selectedCaller.meetingLink}</p>
+                  <label className="text-xs  text-gray-500 ">Meeting Link</label>
+                  <p className="text-xs font-mono text-white  break-all truncate">{selectedCaller.meetingLink}</p>
                 </div>
               )}
             </div>
@@ -495,15 +495,15 @@ export default function CallHistoryPage() {
             {selectedCaller.meetingLink && (
               <button 
                 onClick={() => handleJoinMeeting(selectedCaller.meetingLink)}
-                className="w-full px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-semibold text-sm transition-colors">
+                className="w-full p-2  bg-indigo-500 hover:bg-indigo-600 text-white rounded   text-xs  transition-colors">
                 Join Meeting
               </button>
             )}
             <div className="flex gap-2">
-              <button className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-colors">
+              <button className="flex-1 p-2  bg-blue-500 hover:bg-red-600 text-white rounded   text-xs  transition-colors">
                 Video Call
               </button>
-              <button className="flex-1 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold text-sm transition-colors">
+              <button className="flex-1 p-2  bg-green-500 hover:bg-green-600 text-white rounded   text-xs  transition-colors">
                 Audio Call
               </button>
             </div>
@@ -513,54 +513,54 @@ export default function CallHistoryPage() {
 
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-96 p-5">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Call</h2>
+          <div className="bg-white rounded  shadow-lg w-96 p-5">
+            <h2 className="text-xl  text-gray-900 mb-4">Add New Call</h2>
             
             <form onSubmit={handleAddCall} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Caller Name *</label>
+                <label className="block text-xs   text-gray-700 mb-1">Caller Name *</label>
                 <input
                   type="text"
                   name="callerName"
                   value={formData.callerName}
                   onChange={handleInputChange}
                   placeholder="Enter caller name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                <label className="block text-xs   text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Enter email (optional)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone</label>
+                <label className="block text-xs   text-gray-700 mb-1">Phone</label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
                   placeholder="Enter phone (optional)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Call Type</label>
+                <label className="block text-xs   text-gray-700 mb-1">Call Type</label>
                 <select
                   name="callType"
                   value={formData.callType}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:border-blue-500"
                 >
                   <option value="Video Call">Video Call</option>
                   <option value="Audio Call">Audio Call</option>
@@ -568,14 +568,14 @@ export default function CallHistoryPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Meeting Link *</label>
+                <label className="block text-xs   text-gray-700 mb-1">Meeting Link *</label>
                 <input
                   type="url"
                   name="meetingLink"
                   value={formData.meetingLink}
                   onChange={handleInputChange}
                   placeholder="https://meet.google.com/abc-defg-hij"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
@@ -584,13 +584,13 @@ export default function CallHistoryPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 p-2  border border-gray-300 text-gray-700 rounded   hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors"
+                  className="flex-1 p-2  bg-blue-500 hover:bg-red-600 text-white rounded   transition-colors"
                 >
                   Add Call
                 </button>
@@ -602,18 +602,18 @@ export default function CallHistoryPage() {
 
       {showEditMeetingModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-96 p-5">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Meeting Link</h2>
+          <div className="bg-white rounded  shadow-lg w-96 p-5">
+            <h2 className="text-xl  text-gray-900 mb-4">Edit Meeting Link</h2>
             
             <form onSubmit={handleSaveMeetingLink} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Meeting Link *</label>
+                <label className="block text-xs   text-gray-700 mb-1">Meeting Link *</label>
                 <input
                   type="url"
                   value={editingMeetingLink}
                   onChange={(e) => setEditingMeetingLink(e.target.value)}
                   placeholder="https://meet.google.com/abc-defg-hij or https://zoom.us/j/..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded  focus:outline-none focus:border-blue-500"
                   required
                   autoFocus
                 />
@@ -628,7 +628,7 @@ export default function CallHistoryPage() {
                     setEditingCallId(null);
                     setEditingMeetingLink('');
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                  className="flex-1 p-2  border border-gray-300 text-gray-700 rounded   hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
@@ -639,14 +639,14 @@ export default function CallHistoryPage() {
                       setPendingDeleteId(editingCallId);
                       setShowConfirmDelete(true);
                     }}
-                    className="px-4 py-2 border border-red-300 text-red-600 rounded-lg font-semibold hover:bg-red-50 transition-colors"
+                    className="p-2  border border-red-300 text-red  rounded   hover:bg-red-50 transition-colors"
                   >
                     Remove
                   </button>
                 )}
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors"
+                  className="flex-1 p-2  bg-blue-500 hover:bg-red-600 text-white rounded   transition-colors"
                 >
                   Save Link
                 </button>
@@ -658,9 +658,9 @@ export default function CallHistoryPage() {
 
       {showConfirmDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-80 p-5">
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Remove Meeting Link?</h2>
-            <p className="text-sm text-gray-600 mb-6">Are you sure you want to remove this meeting link?</p>
+          <div className="bg-white rounded  shadow-lg w-80 p-5">
+            <h2 className="text-lg  text-gray-900 mb-3">Remove Meeting Link?</h2>
+            <p className="text-xs  text-gray-600 mb-6">Are you sure you want to remove this meeting link?</p>
             
             <div className="flex gap-3">
               <button
@@ -668,7 +668,7 @@ export default function CallHistoryPage() {
                   setShowConfirmDelete(false);
                   setPendingDeleteId(null);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                className="flex-1 p-2  border border-gray-300 text-gray-700 rounded   hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
@@ -681,7 +681,7 @@ export default function CallHistoryPage() {
                   setEditingCallId(null);
                   setEditingMeetingLink('');
                 }}
-                className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors"
+                className="flex-1 p-2  bg-red-500 hover:bg-red-600 text-white rounded   transition-colors"
               >
                 Remove
               </button>

@@ -124,27 +124,27 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
       <div 
         className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
       >
-        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white z-10">
-          <h2 className="text-lg font-semibold text-gray-900">Add New Contract</h2>
+        <div className="flex justify-between items-center p-3  border-b border-[#EAECF0] sticky top-0 bg-white z-10">
+          <h2 className="text-md  text-gray-900">Add New Contract</h2>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
-        <form id="add-contract-form" onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form id="add-contract-form" onSubmit={handleSubmit} className="p-3 space-y-5">
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs    text-gray-700 mb-2">
               Subject<span className="text-red-500">*</span>
             </label>
             <input
@@ -153,13 +153,13 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
               value={formData.subject}
               onChange={handleInputChange}
               placeholder="Enter contract subject"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Start Date<span className="text-red-500">*</span>
               </label>
               <input
@@ -167,11 +167,11 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
                 name="start_date"
                 value={formData.start_date}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 End Date<span className="text-red-500">*</span>
               </label>
               <input
@@ -179,20 +179,20 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
                 name="end_date"
                 value={formData.end_date}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs    text-gray-700 mb-2">
               Client<span className="text-red-500">*</span>
             </label>
             <select
               name="client"
               value={formData.client}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
             >
               <option value="">Select</option>
               {companies.map(c => (
@@ -204,14 +204,14 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs    text-gray-700 mb-2">
               Contract Type<span className="text-red-500">*</span>
             </label>
             <select
               name="contract_type"
               value={formData.contract_type}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
             >
               <option value="">Select</option>
               <option value="Contracts under Seal">Contracts under Seal</option>
@@ -227,7 +227,7 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs    text-gray-700 mb-2">
               Contract Value<span className="text-red-500">*</span>
             </label>
             <input
@@ -237,29 +237,29 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
               onChange={handleInputChange}
               placeholder="0.00"
               step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition"
+              className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs    text-gray-700 mb-3">
               Attachment<span className="text-red-500">*</span>
             </label>
             {attachmentFile ? (
-              <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 flex items-center justify-between">
+              <div className="bg-gray-50 border border-gray-300 rounded  p-2 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-red-100 rounded flex items-center justify-center">
-                    <span className="text-red-600 text-sm">📄</span>
+                    <span className="text-red  text-xs ">📄</span>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{attachmentFile.name}</p>
+                    <p className="text-xs    text-gray-900">{attachmentFile.name}</p>
                     <p className="text-xs text-gray-500">{(attachmentFile.size / 1024).toFixed(2)} KB</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={removeAttachment}
-                  className="text-gray-400 hover:text-red-600 transition-colors"
+                  className="text-[#1F2020] hover:text-red  transition-colors"
                 >
                   ✕
                 </button>
@@ -270,13 +270,13 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                className={`border-2 border-dashed rounded  p-8 text-center transition-colors ${
                   dragActive ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50'
                 }`}
               >
-                <p className="text-sm text-gray-600 mb-2">Drop your files here or <button
+                <p className="text-xs  text-gray-600 mb-2">Drop your files here or <button
                   type="button"
-                  className="text-red-600 hover:text-red-700 font-medium"
+                  className="text-red  hover:text-red-700  "
                   onClick={() => document.getElementById('file-input').click()}
                 >browse</button></p>
                 <p className="text-xs text-gray-500">Maximum size : 50 MB</p>
@@ -292,7 +292,7 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-xs    text-gray-700 mb-2">
               Description<span className="text-red-500">*</span>
             </label>
             <textarea
@@ -301,24 +301,24 @@ const AddNewContractModal = ({ isOpen, onClose, onSubmit, companies = [] }) => {
               onChange={handleInputChange}
               placeholder="Enter contract description"
               rows="3"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 transition resize-none"
+              className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition resize-none"
             />
           </div>
 
         </form>
 
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex gap-3 justify-end">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-2  flex gap-3 justify-end">
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50"
+            className="p-2  border border-gray-300 rounded text-xs text-gray-700   hover:bg-gray-50 transition disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+            className="p-2  bg-red-600 text-white   rounded text-xs hover:bg-red-700 transition disabled:opacity-50"
           >
             {isLoading ? 'Creating...' : 'Create'}
           </button>

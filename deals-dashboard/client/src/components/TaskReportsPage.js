@@ -160,7 +160,7 @@ const TaskReportsPage = () => {
       'Low': 'bg-green-100 text-green-600',
       'Medium': 'bg-yellow-100 text-yellow-600',
       'High': 'bg-orange-100 text-orange-600',
-      'Critical': 'bg-red-100 text-red-600'
+      'Critical': 'bg-red-100 text-red '
     };
     return colors[category] || 'bg-gray-100 text-gray-600';
   };
@@ -176,17 +176,17 @@ const TaskReportsPage = () => {
   };
 
   const TaskItem = ({ task }) => (
-    <div className={`bg-white border-l-4 ${getBorderColor(task.color)} rounded-md p-4 flex justify-between items-center hover:shadow-md transition-shadow border border-gray-200`}>
+    <div className={`bg-white border-l-4 ${getBorderColor(task.color)} rounded  p-2 flex justify-between items-center hover:shadow-md transition-shadow border border-gray-200`}>
       <div className="flex items-center gap-3 flex-1">
         <input type="checkbox" className="cursor-pointer" />
-        <span className="text-gray-400 cursor-move">≡</span>
-        <span className="font-medium text-sm text-gray-900">{task.title}</span>
+        <span className="text-[#1F2020] cursor-move">≡</span>
+        <span className="  text-xs  text-gray-900">{task.title}</span>
         <div className="flex gap-2">
           {task.tags && (() => {
             try {
               const tagsArray = typeof task.tags === 'string' ? JSON.parse(task.tags) : task.tags;
               return Array.isArray(tagsArray) ? tagsArray.map((tag, i) => (
-                <span key={i} className={`text-xs px-2 py-0.5 rounded ${getTagColor(tag)}`}>
+                <span key={i} className={`text-xs p-1  rounded ${getTagColor(tag)}`}>
                   {tag}
                 </span>
               )) : null;
@@ -196,14 +196,14 @@ const TaskReportsPage = () => {
           })()}
         </div>
       </div>
-      <div className="flex items-center gap-4 ml-4">
-        <span className={`px-3 py-1 rounded text-xs font-medium ${getCategoryColor(task.category)}`}>
+      <div className="flex items-center gap-2 ml-4">
+        <span className={`px-3 py-1 rounded text-xs   ${getCategoryColor(task.category)}`}>
           {task.category}
         </span>
-        <span className="text-sm text-gray-500 whitespace-nowrap">{task.date}</span>
+        <span className="text-xs  text-gray-500 whitespace-nowrap">{task.date}</span>
         <img src={task.avatar} alt="avatar" className="w-8 h-8 rounded-full" onError={(e) => e.target.src = 'https://i.pravatar.cc/32?img=0'} />
         <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-          <MoreVertical size={16} className="text-gray-400" />
+          <MoreVertical size={16} className="text-[#1F2020]" />
         </button>
       </div>
     </div>
@@ -212,8 +212,8 @@ const TaskReportsPage = () => {
   const TaskGroup = ({ title, count, groupTasks }) => (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-4">
-        <h3 className="text-gray-700 font-semibold text-sm">{title}</h3>
-        {count > 0 && <span className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full font-semibold">{count}</span>}
+        <h3 className="text-gray-700  text-xs ">{title}</h3>
+        {count > 0 && <span className="bg-red-100 text-red  text-xs p-1  rounded-full ">{count}</span>}
       </div>
       <div className="space-y-2">
         {groupTasks.length > 0 ? (
@@ -229,18 +229,18 @@ const TaskReportsPage = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">Task Reports</h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <h1 className="text-2xl  text-gray-900">Task Reports</h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs   bg-red-100 text-red-800">
                 {tasks.length}
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">Home › Task Reports</p>
           </div>
-          <button className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2">
+          <button className="bg-red-600 text-white p-2  rounded  text-xs    hover:bg-red-700 transition-colors flex items-center gap-2">
             <Download size={16} />
             Download Report
           </button>
@@ -250,10 +250,10 @@ const TaskReportsPage = () => {
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded  shadow-sm border border-gray-200p-3 ">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-gray-900">Tasks By Year</h3>
-                <select value={year} onChange={(e) => setYear(e.target.value)} className="text-sm border border-gray-300 rounded px-2 py-1 text-gray-600">
+                <h3 className="text-base  text-gray-900">Tasks By Year</h3>
+                <select value={year} onChange={(e) => setYear(e.target.value)} className="text-xs  border border-gray-300 rounded p-1  text-gray-600">
                   <option value="2025">2025</option>
                   <option value="2024">2024</option>
                   <option value="2023">2023</option>
@@ -268,10 +268,10 @@ const TaskReportsPage = () => {
               )}
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded  shadow-sm border border-gray-200p-3 ">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-gray-900">Tasks By Status</h3>
-                <select className="text-sm border border-gray-300 rounded px-2 py-1 text-gray-600">
+                <h3 className="text-base  text-gray-900">Tasks By Status</h3>
+                <select className="text-xs  border border-gray-300 rounded p-1  text-gray-600">
                   <option value="2025">2025</option>
                   <option value="2024">2024</option>
                   <option value="2023">2023</option>
@@ -287,45 +287,45 @@ const TaskReportsPage = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="bg-white rounded  shadow-sm border border-gray-200 p-2 mb-6">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
                   <input
                     type="text"
                     placeholder="Search tasks..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 text-sm bg-white"
+                    className="pl-9 pr-4 py-2 border border-gray-300 rounded  focus:outline-none focus:border-gray-400 text-xs  bg-white"
                   />
                 </div>
-                <select className="border border-gray-300 px-3 py-2 rounded-lg text-sm text-gray-600 bg-white hover:border-gray-400">
+                <select className="border border-gray-300 px-3 py-2 rounded  text-xs  text-gray-600 bg-white hover:border-gray-400">
                   <option>All Tasks</option>
                   <option>Open</option>
                   <option>In Progress</option>
                   <option>Completed</option>
                 </select>
-                <button className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+                <button className="px-3 py-2 border border-gray-300 rounded  text-gray-600 text-xs    hover:bg-gray-50 flex items-center gap-2">
                   <Filter size={16} /> Filter
                 </button>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-xs  text-gray-600">
                   <span>📅</span>
                   <span>{new Date().toLocaleDateString()}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button className="text-sm text-gray-600 hover:text-gray-900 font-medium">
+                <button className="text-xs  text-gray-600 hover:text-gray-900  ">
                   Mark all as read
                 </button>
-                <button className="border border-gray-300 px-3 py-2 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+                <button className="border border-gray-300 px-3 py-2 rounded  text-gray-600 text-xs    hover:bg-gray-50 flex items-center gap-2">
                   Sort By <ChevronDown size={14} />
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded  shadow-sm border border-gray-200p-3 ">
             {loading ? (
               <div className="text-center py-8 text-gray-500">Loading tasks...</div>
             ) : error ? (
@@ -340,8 +340,8 @@ const TaskReportsPage = () => {
       </div>
 
       <div className="text-center text-xs text-gray-500 py-6 border-t border-gray-200 bg-white mt-6">
-        <span>Copyright © 2025 <span className="text-red-600 font-medium">AllINONE</span></span>
-        <div className="flex gap-4 justify-center mt-2">
+        <span>Copyright © 2025 <span className="text-red   ">AllINONE</span></span>
+        <div className="flex gap-2 justify-center mt-2">
           <span className="cursor-pointer hover:text-gray-700">About</span>
           <span className="cursor-pointer hover:text-gray-700">Terms</span>
           <span className="cursor-pointer hover:text-gray-700">Contact Us</span>

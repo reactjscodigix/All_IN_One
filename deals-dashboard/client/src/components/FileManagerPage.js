@@ -174,14 +174,14 @@ const FileManagerPage = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
+      <div className="p-3 sm:p-3 lg:p-3 bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="max-w-md w-full bg-white rounded  shadow-lgp-3 ">
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
-            <AlertCircle size={24} className="text-red-600" />
+            <AlertCircle size={24} className="text-red " />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 text-center mb-2">Authentication Required</h2>
+          <h2 className="text-xl  text-gray-900 text-center mb-2">Authentication Required</h2>
           <p className="text-gray-600 text-center mb-6">Please log in to access the File Manager</p>
-          <a href="/login" className="block w-full text-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+          <a href="/login" className="block w-full text-center p-2  bg-red-600 text-white rounded  hover:bg-red-700 transition-colors  ">
             Go to Login
           </a>
         </div>
@@ -191,7 +191,7 @@ const FileManagerPage = () => {
 
   if (loading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="p-3 sm:p-3 lg:p-3 bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading files...</p>
@@ -201,18 +201,18 @@ const FileManagerPage = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+    <div className="p-3 sm:p-3 lg:p-3 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+          <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded ">
             {error}
           </div>
         )}
         
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">File Manager</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+            <h1 className="text-xl  text-gray-900">File Manager</h1>
+            <div className="flex items-center gap-2 text-xs  text-gray-600 mt-2">
               <button className="text-gray-600 hover:text-gray-900">Home</button>
               <span>›</span>
               <button className="text-gray-600 hover:text-gray-900">Applications</button>
@@ -221,11 +221,11 @@ const FileManagerPage = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setShowUploadModal(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-smooth font-medium text-sm">
+            <button onClick={() => setShowUploadModal(true)} className="flex items-center gap-2 p-2  bg-red-600  text-white rounded  hover:bg-blue-700 transition-smooth   text-xs ">
               <Upload size={18} />
               Upload
             </button>
-            <button onClick={() => setShowCreateFolderModal(true)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-smooth font-medium text-sm">
+            <button onClick={() => setShowCreateFolderModal(true)} className="flex items-center gap-2 p-2  bg-red-600 text-white rounded  hover:bg-red-700 transition-smooth   text-xs text-xs ">
               <Plus size={18} />
               Create Folder
             </button>
@@ -236,27 +236,27 @@ const FileManagerPage = () => {
           <div className="w-64 flex-shrink-0">
             <div className="mb-4">
               <div className="relative">
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:border-gray-400 appearance-none cursor-pointer">
+                <select className="w-full p-2  border border-gray-300 rounded  text-xs    text-gray-700 bg-white hover:border-gray-400 appearance-none cursor-pointer">
                   <option>All Files</option>
                   <option>Music</option>
                   <option>Video</option>
                   <option>Documents</option>
                   <option>Photos</option>
                 </select>
-                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#1F2020] pointer-events-none" />
               </div>
             </div>
 
             <div className="space-y-3">
               {storages.map((storage) => (
-                <div key={storage.name} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                <div key={storage.name} className="bg-white border border-gray-200 rounded  p-2 hover:shadow-sm transition-shadow">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h3 className="text-sm font-bold text-gray-900">{storage.name}</h3>
+                      <h3 className="text-xs   text-gray-900">{storage.name}</h3>
                       <p className="text-xs text-gray-600">{storage.files} Files</p>
                       <p className="text-xs text-gray-600">{storage.size}</p>
                     </div>
-                    <button className="text-gray-400 hover:text-gray-600">
+                    <button className="text-[#1F2020] hover:text-gray-600">
                       <MoreVertical size={16} />
                     </button>
                   </div>
@@ -264,19 +264,19 @@ const FileManagerPage = () => {
               ))}
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4">
+            <div className="bg-white border border-gray-200 rounded  p-2 mt-4">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white  text-xs ">
                   {user?.first_name?.[0]}{user?.last_name?.[0]}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-gray-900">{user?.first_name} {user?.last_name}</p>
+                  <p className="text-xs   text-gray-900">{user?.first_name} {user?.last_name}</p>
                   <p className="text-xs text-gray-600">{user?.email}</p>
                 </div>
               </div>
               <label htmlFor="drop-file-input" className="cursor-pointer">
-                <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-100 transition-colors">
-                  <p className="text-sm font-medium text-gray-700">Drop files here</p>
+                <div className="bg-gray-50 border border-dashed border-gray-300 rounded p-3  text-center hover:bg-gray-100 transition-colors">
+                  <p className="text-xs    text-gray-700">Drop files here</p>
                   <p className="text-xs text-gray-600 mt-1">Select files to upload</p>
                 </div>
               </label>
@@ -284,84 +284,84 @@ const FileManagerPage = () => {
             </div>
 
             <div className="mt-4 space-y-2">
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+              <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                 <Folder size={16} />
                 All Folder / Files
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+              <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                 <Folder size={16} />
                 Drive
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+              <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                 <Folder size={16} />
                 Dropbox
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+              <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                 <Folder size={16} />
                 Shared with Me
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+              <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                 <Folder size={16} />
                 Document
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+              <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                 <Folder size={16} />
                 Recent File
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+              <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                 <Star size={16} />
                 Important
               </button>
-              <button className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
+              <button className="w-full text-left p-2  text-xs  text-gray-700 hover:bg-gray-100 rounded flex items-center gap-2">
                 <Music size={16} />
                 Media
               </button>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4">
+            <div className="bg-white border border-gray-200 rounded  p-2 mt-4">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-bold text-gray-900">Storage Details</h4>
-                <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-medium">Used 77%</span>
+                <h4 className="text-xs   text-gray-900">Storage Details</h4>
+                <span className="bg-green-100 text-green-700 p-1  rounded text-xs  ">Used 77%</span>
               </div>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Music</span>
-                  <span className="text-gray-900 font-medium">8.5 GB</span>
+                  <span className="text-gray-900  ">8.5 GB</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Video</span>
-                  <span className="text-gray-900 font-medium">2 GB</span>
+                  <span className="text-gray-900  ">2 GB</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Documents</span>
-                  <span className="text-gray-900 font-medium">24.5 GB</span>
+                  <span className="text-gray-900  ">24.5 GB</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Photos</span>
-                  <span className="text-gray-900 font-medium">8.5 GB</span>
+                  <span className="text-gray-900  ">8.5 GB</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Other</span>
-                  <span className="text-gray-900 font-medium">16.2 GB</span>
+                  <span className="text-gray-900  ">16.2 GB</span>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="flex-1">
-            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+            <div className="bg-white border border-gray-200 rounded p-3  mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900">Quick Access</h2>
-                <button className="text-sm text-red-600 hover:text-red-700 font-medium">View All</button>
+                <h2 className="text-lg  text-gray-900">Quick Access</h2>
+                <button className="text-xs  text-red  hover:text-red-700  ">View All</button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 {recentFiles.length > 0 ? recentFiles.map((file) => (
                   <div key={file.id} className="text-center">
-                    <div className="bg-gray-100 rounded-lg p-4 mb-2 hover:bg-gray-200 cursor-pointer transition-colors">
+                    <div className="bg-gray-100 rounded  p-2 mb-2 hover:bg-gray-200 cursor-pointer transition-colors">
                       <FileText size={24} className="mx-auto text-gray-600" />
                     </div>
-                    <p className="text-xs text-gray-700 font-medium truncate">{file.name}</p>
-                    <p className="text-xs text-red-600">{formatBytes(file.size_bytes)}</p>
+                    <p className="text-xs text-gray-700   truncate">{file.name}</p>
+                    <p className="text-xs text-red ">{formatBytes(file.size_bytes)}</p>
                   </div>
                 )) : (
                   <div className="col-span-6 text-center py-8 text-gray-500">
@@ -371,28 +371,28 @@ const FileManagerPage = () => {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+            <div className="bg-white border border-gray-200 rounded p-3  mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-900">Recent Folders</h2>
+                <h2 className="text-lg  text-gray-900">Recent Folders</h2>
                 <div className="relative">
-                  <select className="px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white appearance-none cursor-pointer">
+                  <select className="px-3 py-1 border border-gray-300 rounded text-xs   text-gray-700 bg-white appearance-none cursor-pointer">
                     <option>Last 7 Days</option>
                     <option>Last Month</option>
                     <option>Last Year</option>
                   </select>
-                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#1F2020] pointer-events-none" />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {recentFolders.length > 0 ? recentFolders.map((folder) => (
-                  <div key={folder.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+                  <div key={folder.id} className="bg-gray-50 border border-gray-200 rounded  p-2 hover:shadow-sm transition-shadow">
                     <div className="flex items-start justify-between mb-2">
-                      <Folder size={24} className="text-blue-600" />
-                      <button onClick={() => handleDeleteFolder(folder.id)} className="text-gray-400 hover:text-gray-600">
+                      <Folder size={24} className="text-white " />
+                      <button onClick={() => handleDeleteFolder(folder.id)} className="text-[#1F2020] hover:text-gray-600">
                         <MoreVertical size={16} />
                       </button>
                     </div>
-                    <h3 className="text-sm font-bold text-gray-900 mb-1">{folder.name}</h3>
+                    <h3 className="text-xs   text-gray-900 mb-1">{folder.name}</h3>
                     <div className="flex justify-between text-xs text-gray-600">
                       <span>{formatBytes(folder.size_bytes)}</span>
                       <span>{folder.file_count} files</span>
@@ -410,19 +410,19 @@ const FileManagerPage = () => {
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg">
+            <div className="bg-white border border-gray-200 rounded ">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-                <h2 className="text-lg font-bold text-gray-900">Recent Files</h2>
+                <h2 className="text-lg  text-gray-900">Recent Files</h2>
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <select className="px-3 py-1 border border-gray-300 rounded text-xs font-medium text-gray-700 bg-white appearance-none cursor-pointer">
+                    <select className="px-3 py-1 border border-gray-300 rounded text-xs   text-gray-700 bg-white appearance-none cursor-pointer">
                       <option>Last Modified</option>
                       <option>Newest to Oldest</option>
                       <option>Oldest to Newest</option>
                     </select>
-                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#1F2020] pointer-events-none" />
                   </div>
-                  <button className="text-sm text-red-600 hover:text-red-700 font-medium">View All</button>
+                  <button className="text-xs  text-red  hover:text-red-700  ">View All</button>
                 </div>
               </div>
 
@@ -430,31 +430,31 @@ const FileManagerPage = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Size</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Modified</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Share</th>
-                      <th className="px-6 py-3 text-left text-xs font-bold text-gray-700">Action</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Name</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Size</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Type</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Modified</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Share</th>
+                      <th className="px-6 py-3 text-left text-xs  text-gray-700">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {files.length > 0 ? files.map((file) => (
                       <tr key={file.id} className="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 flex items-center gap-2">
+                        <td className="p-2  flex items-center gap-2">
                           <FileText size={16} className="text-gray-600" />
-                          <span className="text-sm font-medium text-gray-900">{file.name}</span>
+                          <span className="text-xs    text-gray-900">{file.name}</span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{formatBytes(file.size_bytes)}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{file.file_type}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{new Date(file.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4">
+                        <td className="p-2  text-xs  text-gray-700">{formatBytes(file.size_bytes)}</td>
+                        <td className="p-2  text-xs  text-gray-700">{file.file_type}</td>
+                        <td className="p-2  text-xs  text-gray-700">{new Date(file.created_at).toLocaleDateString()}</td>
+                        <td className="p-2 ">
                           <div className="flex items-center gap-1">
                             <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-03.jpg" alt="user" className="w-6 h-6 rounded-full" />
                             <img src="https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-04.jpg" alt="user" className="w-6 h-6 rounded-full" />
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="p-2 ">
                           <div className="flex items-center gap-2">
                             <button onClick={() => toggleFavorite(file.id, file.is_favorite)} className={`p-1.5 rounded transition-colors ${favorites.has(file.id) ? 'text-yellow-500' : 'text-gray-600 hover:text-gray-900'} hover:bg-gray-100`}>
                               <Star size={16} fill={favorites.has(file.id) ? 'currentColor' : 'none'} />
@@ -481,9 +481,9 @@ const FileManagerPage = () => {
 
         {showCreateFolderModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <div className="bg-white rounded  shadow-xlp-3  w-96">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Create New Folder</h2>
+                <h2 className="text-xl  text-gray-900">Create New Folder</h2>
                 <button onClick={() => setShowCreateFolderModal(false)} className="text-gray-500 hover:text-gray-700">
                   <X size={20} />
                 </button>
@@ -494,13 +494,13 @@ const FileManagerPage = () => {
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleCreateFolder()}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full p-2  border border-gray-300 rounded  mb-4 focus:outline-none focus:ring-2 focus:ring-red-600"
               />
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setShowCreateFolderModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                <button onClick={() => setShowCreateFolderModal(false)} className="p-2  border border-gray-300 rounded  text-gray-700 hover:bg-gray-50">
                   Cancel
                 </button>
-                <button onClick={handleCreateFolder} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                <button onClick={handleCreateFolder} className="p-2  bg-red-600 text-white rounded  hover:bg-red-700">
                   Create
                 </button>
               </div>
@@ -510,14 +510,14 @@ const FileManagerPage = () => {
 
         {showUploadModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl p-6 w-96">
+            <div className="bg-white rounded  shadow-xlp-3  w-96">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Upload Files</h2>
+                <h2 className="text-xl  text-gray-900">Upload Files</h2>
                 <button onClick={() => setShowUploadModal(false)} disabled={uploading} className="text-gray-500 hover:text-gray-700 disabled:opacity-50">
                   <X size={20} />
                 </button>
               </div>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4 hover:border-gray-400 transition-colors">
+              <div className="border-2 border-dashed border-gray-300 rounded  p-8 text-center mb-4 hover:border-gray-400 transition-colors">
                 <input
                   ref={modalFileInputRef}
                   type="file"
@@ -531,19 +531,19 @@ const FileManagerPage = () => {
                   {uploading ? (
                     <>
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mx-auto mb-2"></div>
-                      <p className="text-gray-600 font-medium mb-1">Uploading...</p>
+                      <p className="text-gray-600   mb-1">Uploading...</p>
                     </>
                   ) : (
                     <>
-                      <Upload size={32} className="mx-auto mb-2 text-gray-400" />
-                      <p className="text-gray-600 font-medium mb-1">Click to select files</p>
+                      <Upload size={32} className="mx-auto mb-2 text-[#1F2020]" />
+                      <p className="text-gray-600   mb-1">Click to select files</p>
                       <p className="text-xs text-gray-500">or drag and drop</p>
                     </>
                   )}
                 </label>
               </div>
               <div className="flex gap-2 justify-end">
-                <button onClick={() => setShowUploadModal(false)} disabled={uploading} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button onClick={() => setShowUploadModal(false)} disabled={uploading} className="p-2  border border-gray-300 rounded  text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                   Close
                 </button>
               </div>

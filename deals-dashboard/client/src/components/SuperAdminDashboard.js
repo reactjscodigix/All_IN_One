@@ -13,10 +13,10 @@ const SuperAdminDashboard = () => {
       change: '+5.62%',
       trend: 'up',
       from: 'from last month',
-      borderColor: '#FF6A59',
-      backgroundColor: '#FFFCFB',
+      borderClass: 'border-l-[#FF6A59]',
+      bgClass: 'bg-[#FFFCFB]',
       icon: '📦',
-      circleColor: '#FFE5E0'
+      circleClass: 'bg-[#FFE5E0]'
     },
     {
       title: 'Active Companies',
@@ -24,10 +24,10 @@ const SuperAdminDashboard = () => {
       change: '+12%',
       trend: 'up',
       from: 'from last month',
-      borderColor: '#2ED573',
-      backgroundColor: '#F9FFFC',
+      borderClass: 'border-l-[#2ED573]',
+      bgClass: 'bg-[#F9FFFC]',
       icon: '✓',
-      circleColor: '#D4F9E8'
+      circleClass: 'bg-[#D4F9E8]'
     },
     {
       title: 'Total Subscribers',
@@ -35,10 +35,10 @@ const SuperAdminDashboard = () => {
       change: '+6%',
       trend: 'up',
       from: 'from last month',
-      borderColor: '#FFC107',
-      backgroundColor: '#FFFEF5',
+      borderClass: 'border-l-[#FFC107]',
+      bgClass: 'bg-[#FFFEF5]',
       icon: '👥',
-      circleColor: '#FFE8B3'
+      circleClass: 'bg-[#FFE8B3]'
     },
     {
       title: 'Total Earnings',
@@ -46,10 +46,10 @@ const SuperAdminDashboard = () => {
       change: '+16%',
       trend: 'up',
       from: 'from last month',
-      borderColor: '#FF6A59',
-      backgroundColor: '#FFFCFB',
+      borderClass: 'border-l-[#FF6A59]',
+      bgClass: 'bg-[#FFFCFB]',
       icon: '💵',
-      circleColor: '#FFE5E0'
+      circleClass: 'bg-[#FFE5E0]'
     }
   ];
 
@@ -224,41 +224,47 @@ const SuperAdminDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F5F6FB' }}>
+    <div className="min-h-screen bg-[#F5F6FB]">
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           
           {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between">
             <div>
-              <h1 style={{ fontSize: '28px', fontWeight: '600', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
+              <h1 className="text-xl  text-gray-800 font-poppins">
                 Dashboard
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <span style={{ fontSize: '13px', color: '#6B7280' }}>28 Nov 25 - 28 Nov 25</span>
-              <button style={{ padding: '8px 12px', border: '1px solid #E5E7EB', borderRadius: '6px', backgroundColor: '#FFF', cursor: 'pointer', fontSize: '13px' }}>
+              <span className="text-xs text-gray-500">28 Nov 25 - 28 Nov 25</span>
+              <button className="px-3 py-2 border border-gray-200 rounded  bg-white cursor-pointer text-xs">
                 ↻
               </button>
             </div>
           </div>
 
           {/* Welcome Banner */}
-          <div style={{ backgroundColor: '#1F2937', color: '#FFF', borderRadius: '8px', padding: '32px', marginBottom: '32px', position: 'relative', overflow: 'hidden' }}>
-            <div className="flex items-start justify-between">
+          <div className="bg-gray-800 text-white rounded  p-2 mb-8 relative overflow-hidden">
+            <div className="flex items-start justify-between relative z-10">
               <div>
-                <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '8px', fontFamily: "'Poppins', sans-serif" }}>
+                <h2 className="text-lg  font-poppins">
                   Welcome Back, Adrian
                 </h2>
-                <p style={{ fontSize: '14px', color: '#D1D5DB', fontFamily: "'Poppins', sans-serif" }}>
+                <p className="text-xs text-gray-300 font-poppins">
                   14 New Companies Subscribed Today !!!
                 </p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => navigate('/super-admin-companies')} style={{ padding: '8px 16px', backgroundColor: '#FF6A59', color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: "'Poppins', sans-serif" }}>
+                <button 
+                  onClick={() => navigate('/super-admin-companies')} 
+                  className="p-2 bg-[#FF6A59] text-white border-none rounded  cursor-pointer text-xs  font-poppins"
+                >
                   Companies
                 </button>
-                <button onClick={() => navigate('/super-admin-packages')} style={{ padding: '8px 16px', backgroundColor: '#FFF', color: '#1F2937', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600', fontFamily: "'Poppins', sans-serif" }}>
+                <button 
+                  onClick={() => navigate('/super-admin-packages')} 
+                  className="p-2 bg-white text-gray-800 border-none rounded  cursor-pointer text-xs  font-poppins"
+                >
                   All Packages
                 </button>
               </div>
@@ -274,53 +280,24 @@ const SuperAdminDashboard = () => {
                   if (index === 0 || index === 1 || index === 2) navigate('/super-admin-companies');
                   else if (index === 3) navigate('/super-admin-purchase-transaction');
                 }}
-                style={{
-                  backgroundColor: card.backgroundColor,
-                  border: `1px solid #E5E7EB`,
-                  borderLeft: `4px solid ${card.borderColor}`,
-                  borderRadius: '8px',
-                  padding: '20px',
-                  position: 'relative',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  transformOrigin: 'center'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                }}
+                className={`p-3 rounded border border-gray-200 border-l-4 relative shadow-sm cursor-pointer transition-all duration-200 origin-center hover:-translate-y-1 hover:shadow-lg ${card.bgClass} ${card.borderClass}`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p style={{ fontSize: '12px', color: '#6B7280', marginBottom: '6px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
+                    <p className="text-xs text-gray-500 mb-1.5 font-poppins ">
                       {card.title}
                     </p>
-                    <h3 style={{ fontSize: '26px', fontWeight: '700', color: '#1F2937', marginBottom: '8px', fontFamily: "'Poppins', sans-serif" }}>
+                    <h3 className="text-xl  text-gray-800 mb-2 font-poppins">
                       {card.value}
                     </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#10B981', fontFamily: "'Poppins', sans-serif", fontWeight: '600' }}>
+                    <div className="flex  gap-1 text-[12px] text-emerald-500 font-poppins  flex-col">
                       <span>📈</span>
                       <span>{card.change}</span>
-                      <span style={{ color: '#6B7280', fontWeight: '400' }}>{card.from}</span>
+                      <span className="text-gray-500 font-normal">{card.from}</span>
                     </div>
                   </div>
                   <div
-                    style={{
-                      width: '56px',
-                      height: '56px',
-                      borderRadius: '50%',
-                      backgroundColor: card.circleColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '24px',
-                      flexShrink: 0
-                    }}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${card.circleClass}`}
                   >
                     {card.icon}
                   </div>
@@ -332,16 +309,22 @@ const SuperAdminDashboard = () => {
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             {/* Companies Chart */}
-            <div onClick={() => navigate('/super-admin-companies')} style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}>
+            <div 
+              onClick={() => navigate('/super-admin-companies')} 
+              className="bg-white border border-gray-200 rounded  p-3  shadow-sm cursor-pointer transition-all duration-200 hover:shadow-lg"
+            >
               <div className="flex items-center justify-between mb-6">
-                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
+                <h3 className="text-xs   text-gray-800 font-poppins">
                   Companies
                 </h3>
-                <button onClick={(e) => { e.stopPropagation(); }} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); }} 
+                  className="text-[12px] text-gray-500 bg-none border-none cursor-pointer flex items-center gap-1 font-poppins "
+                >
                   This Week <ChevronDown size={16} />
                 </button>
               </div>
-              <div style={{ height: '240px' }}>
+              <div className="h-[240px]">
                 <Chart
                   options={companiesChartOptions}
                   series={companiesChartSeries}
@@ -349,30 +332,36 @@ const SuperAdminDashboard = () => {
                   height="100%"
                 />
               </div>
-              <div style={{ marginTop: '12px', fontSize: '11px', color: '#10B981', fontFamily: "'Poppins', sans-serif", fontWeight: '600' }}>
-                📈 <span>12.5%</span> <span style={{ color: '#6B7280', fontWeight: '400' }}>from last month</span>
+              <div className="mt-3 text-[11px] text-emerald-500 font-poppins ">
+                📈 <span>12.5%</span> <span className="text-gray-500 font-normal">from last month</span>
               </div>
             </div>
 
             {/* Revenue Chart */}
-            <div onClick={() => navigate('/super-admin-purchase-transaction')} style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }} className="lg:col-span-1" onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}>
+            <div 
+              onClick={() => navigate('/super-admin-purchase-transaction')} 
+              className="bg-white border border-gray-200 rounded  p-3  shadow-sm cursor-pointer transition-all duration-200 hover:shadow-lg lg:col-span-1"
+            >
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', marginBottom: '10px', fontFamily: "'Poppins', sans-serif" }}>
+                  <h3 className="text-xs   text-gray-800 mb-2.5 font-poppins">
                     Revenue
                   </h3>
-                  <p style={{ fontSize: '22px', fontWeight: '700', color: '#1F2937', marginBottom: '4px', fontFamily: "'Poppins', sans-serif" }}>
+                  <p className="text-[22px]  text-gray-800 mb-1 font-poppins">
                     $89,878.58
                   </p>
-                  <div style={{ fontSize: '11px', color: '#10B981', fontFamily: "'Poppins', sans-serif", fontWeight: '600' }}>
-                    📈 <span>40%</span> <span style={{ color: '#6B7280', fontWeight: '400' }}>increased from last year</span>
+                  <div className="text-[11px] text-emerald-500 font-poppins ">
+                    📈 <span>40%</span> <span className="text-gray-500 font-normal">increased from last year</span>
                   </div>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); }} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); }} 
+                  className="text-[12px] text-gray-500 bg-none border-none cursor-pointer flex items-center gap-1 font-poppins "
+                >
                   2025 <ChevronDown size={16} />
                 </button>
               </div>
-              <div style={{ height: '240px' }}>
+              <div className="h-[240px]">
                 <Chart
                   options={revenueChartOptions}
                   series={revenueChartSeries}
@@ -383,17 +372,23 @@ const SuperAdminDashboard = () => {
             </div>
 
             {/* Top Plans Chart */}
-            <div onClick={() => navigate('/super-admin-packages')} style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}>
+            <div 
+              onClick={() => navigate('/super-admin-packages')} 
+              className="bg-white border border-gray-200 rounded  p-3  shadow-sm cursor-pointer transition-all duration-200 hover:shadow-lg"
+            >
               <div className="flex items-center justify-between mb-6">
-                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
+                <h3 className="text-xs   text-gray-800 font-poppins">
                   Top Plans
                 </h3>
-                <button onClick={(e) => { e.stopPropagation(); }} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); }} 
+                  className="text-[12px] text-gray-500 bg-none border-none cursor-pointer flex items-center gap-1 font-poppins "
+                >
                   Last 30 Days <ChevronDown size={16} />
                 </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', minHeight: '240px' }}>
-                <div style={{ height: '180px', width: '100%', maxWidth: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="flex flex-col items-center justify-between min-h-[240px]">
+                <div className="h-[180px] w-full max-w-[150px] flex items-center justify-center">
                   <Chart
                     options={topPlansOptions}
                     series={topPlansSeries}
@@ -401,27 +396,27 @@ const SuperAdminDashboard = () => {
                     height="100%"
                   />
                 </div>
-                <div style={{ marginTop: '16px', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#0D6EFD' }}></div>
-                      <span style={{ fontSize: '12px', color: '#374151', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>Basic</span>
+                <div className="mt-4 w-full">
+                  <div className="flex items-center justify-between pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#0D6EFD]"></div>
+                      <span className="text-[12px] text-gray-600 font-poppins ">Basic</span>
                     </div>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>60%</span>
+                    <span className="text-xs  text-gray-800 font-poppins">60%</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#FFC107' }}></div>
-                      <span style={{ fontSize: '12px', color: '#374151', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>Premium</span>
+                  <div className="flex items-center justify-between pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#FFC107]"></div>
+                      <span className="text-[12px] text-gray-600 font-poppins ">Premium</span>
                     </div>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>20%</span>
+                    <span className="text-xs  text-gray-800 font-poppins">20%</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#FF6A59' }}></div>
-                      <span style={{ fontSize: '12px', color: '#374151', fontFamily: "'Poppins', sans-serif", fontWeight: '500' }}>Enterprise</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#FF6A59]"></div>
+                      <span className="text-[12px] text-gray-600 font-poppins ">Enterprise</span>
                     </div>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>20%</span>
+                    <span className="text-xs  text-gray-800 font-poppins">20%</span>
                   </div>
                 </div>
               </div>
@@ -429,48 +424,39 @@ const SuperAdminDashboard = () => {
           </div>
 
           {/* Tables Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" style={{ marginTop: '32px', marginBottom: '32px' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 my-8">
             {/* Recent Transactions */}
-            <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div className="bg-white border border-gray-200 rounded  p-3  shadow-sm">
               <div className="flex items-center justify-between mb-6">
-                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
+                <h3 className="text-xs   text-gray-800 font-poppins">
                   Recent Transactions
                 </h3>
-                <button onClick={() => navigate('/super-admin-purchase-transaction')} style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
+                <button 
+                  onClick={() => navigate('/super-admin-purchase-transaction')} 
+                  className="text-[11px]  text-white bg-[#FF6A59] border-none rounded  px-3 py-1.5 cursor-pointer font-poppins"
+                >
                   View All
                 </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              <div className="flex flex-col gap-0">
                 {recentTransactions.map((tx) => (
-                  <div key={tx.id} style={{ paddingBottom: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div
-                      style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        backgroundColor: '#F3F4F6',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '24px',
-                        flexShrink: 0
-                      }}
-                    >
+                  <div key={tx.id} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0 mb-4 last:mb-0 flex gap-3 items-start">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">
                       {tx.avatar}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#1F2937', marginBottom: '2px', fontFamily: "'Poppins', sans-serif" }}>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs  text-gray-800 mb-0.5 font-poppins">
                         {tx.company}
                       </h4>
-                      <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px', fontFamily: "'Poppins', sans-serif" }}>
+                      <p className="text-[11px] text-[#1F2020] mb-0.5 font-poppins">
                         {tx.date}
                       </p>
-                      <p style={{ fontSize: '11px', color: '#6B7280', fontFamily: "'Poppins', sans-serif" }}>
+                      <p className="text-[11px] text-gray-500 font-poppins">
                         {tx.plan}
                       </p>
                     </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ fontSize: '13px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs  text-gray-800 font-poppins">
                         {tx.amount}
                       </p>
                     </div>
@@ -480,44 +466,35 @@ const SuperAdminDashboard = () => {
             </div>
 
             {/* Recently Registered */}
-            <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div className="bg-white border border-gray-200 rounded  p-3  shadow-sm">
               <div className="flex items-center justify-between mb-6">
-                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
+                <h3 className="text-xs   text-gray-800 font-poppins">
                   Recently Registered
                 </h3>
-                <button onClick={() => navigate('/super-admin-companies')} style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
+                <button 
+                  onClick={() => navigate('/super-admin-companies')} 
+                  className="text-[11px]  text-white bg-[#FF6A59] border-none rounded  px-3 py-1.5 cursor-pointer font-poppins"
+                >
                   View All
                 </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              <div className="flex flex-col gap-0">
                 {recentlyRegistered.map((reg) => (
-                  <div key={reg.id} style={{ paddingBottom: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                    <div
-                      style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        backgroundColor: '#F3F4F6',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '24px',
-                        flexShrink: 0
-                      }}
-                    >
+                  <div key={reg.id} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0 mb-4 last:mb-0 flex gap-3 items-start">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">
                       {reg.avatar}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#1F2937', marginBottom: '2px', fontFamily: "'Poppins', sans-serif" }}>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs  text-gray-800 mb-0.5 font-poppins">
                         {reg.company}
                       </h4>
-                      <p style={{ fontSize: '11px', color: '#6B7280', marginBottom: '2px', fontFamily: "'Poppins', sans-serif" }}>
+                      <p className="text-[11px] text-gray-500 mb-0.5 font-poppins">
                         {reg.plan}
                       </p>
-                      <p style={{ fontSize: '11px', color: '#6B7280', marginBottom: '2px', fontFamily: "'Poppins', sans-serif" }}>
+                      <p className="text-[11px] text-gray-500 mb-0.5 font-poppins">
                         {reg.users}
                       </p>
-                      <p style={{ fontSize: '11px', color: '#0D6EFD', fontFamily: "'Poppins', sans-serif", cursor: 'pointer' }}>
+                      <p className="text-[11px] text-white  font-poppins cursor-pointer truncate">
                         {reg.email}
                       </p>
                     </div>
@@ -527,47 +504,38 @@ const SuperAdminDashboard = () => {
             </div>
 
             {/* Recently Plan Expired */}
-            <div style={{ backgroundColor: '#FFF', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div className="bg-white border border-gray-200 rounded  p-3  shadow-sm">
               <div className="flex items-center justify-between mb-6">
-                <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#1F2937', fontFamily: "'Poppins', sans-serif" }}>
+                <h3 className="text-xs   text-gray-800 font-poppins">
                   Recently Plan Expired
                 </h3>
-                <button onClick={() => navigate('/super-admin-subscriptions')} style={{ fontSize: '11px', fontWeight: '700', color: '#FFF', backgroundColor: '#FF6A59', border: 'none', borderRadius: '4px', padding: '6px 12px', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}>
+                <button 
+                  onClick={() => navigate('/super-admin-subscriptions')} 
+                  className="text-[11px]  text-white bg-[#FF6A59] border-none rounded  px-3 py-1.5 cursor-pointer font-poppins"
+                >
                   View All
                 </button>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              <div className="flex flex-col gap-0">
                 {recentlyExpired.map((exp) => (
-                  <div key={exp.id} style={{ paddingBottom: '16px', borderBottom: '1px solid #E5E7EB', display: 'flex', gap: '12px', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
-                      <div
-                        style={{
-                          width: '48px',
-                          height: '48px',
-                          borderRadius: '50%',
-                          backgroundColor: '#F3F4F6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '24px',
-                          flexShrink: 0
-                        }}
-                      >
+                  <div key={exp.id} className="pb-4 border-b border-gray-100 last:border-0 last:pb-0 mb-4 last:mb-0 flex gap-3 items-start justify-between">
+                    <div className="flex gap-3 flex-1 min-w-0">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">
                         {exp.avatar}
                       </div>
-                      <div style={{ minWidth: 0 }}>
-                        <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#1F2937', marginBottom: '2px', fontFamily: "'Poppins', sans-serif" }}>
+                      <div className="min-w-0">
+                        <h4 className="text-xs  text-gray-800 mb-0.5 font-poppins truncate">
                           {exp.company}
                         </h4>
-                        <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px', fontFamily: "'Poppins', sans-serif" }}>
+                        <p className="text-[11px] text-[#1F2020] mb-0.5 font-poppins">
                           {exp.date}
                         </p>
-                        <p style={{ fontSize: '11px', color: '#6B7280', fontFamily: "'Poppins', sans-serif" }}>
+                        <p className="text-[11px] text-gray-500 font-poppins truncate">
                           {exp.plan}
                         </p>
                       </div>
                     </div>
-                    <button style={{ fontSize: '11px', fontWeight: '700', color: '#0D6EFD', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
+                    <button className="text-[11px]  text-white  bg-transparent border-none cursor-pointer font-poppins whitespace-nowrap ml-2">
                       Send Reminder
                     </button>
                   </div>
@@ -577,8 +545,8 @@ const SuperAdminDashboard = () => {
           </div>
 
           {/* Footer */}
-          <div style={{ marginTop: '48px', textAlign: 'center', fontSize: '12px', color: '#9CA3AF', fontFamily: "'Poppins', sans-serif" }}>
-            <p>Copyright © 2025 <span style={{ color: '#FF6A59' }}>Preadmin</span></p>
+          <div className="mt-12 text-center text-[12px] text-[#1F2020] font-poppins">
+            <p>Copyright © 2025 <span className="text-[#FF6A59]">Preadmin</span></p>
           </div>
         </div>
       </div>

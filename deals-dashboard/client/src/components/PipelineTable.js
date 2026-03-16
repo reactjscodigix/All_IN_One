@@ -11,16 +11,16 @@ const PipelineTable = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-[28px] font-bold text-gray-900">Pipeline</h1>
-              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] font-bold">125</span>
+              <h1 className="text-[28px]  text-gray-900">Pipeline</h1>
+              <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] ">125</span>
             </div>
-            <div className="flex items-center gap-1 text-[13px] mt-1">
-              <button className="text-[#F97316] hover:text-[#EA580C] font-medium bg-transparent border-none cursor-pointer p-0">Home</button>
+            <div className="flex items-center gap-1 text-xs  mt-1">
+              <button className="text-[#F97316] hover:text-[#EA580C]   bg-transparent border-none cursor-pointer p-0">Home</button>
               <span className="text-[#D1D5DB]">&gt;</span>
               <span className="text-[#6B7280]">Pipeline</span>
             </div>
           </div>
-          <button className="bg-[#F62416] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:opacity-90 transition text-[13px]">
+          <button className="bg-[#F62416] text-white p-2  rounded    flex items-center gap-2 hover:opacity-90 transition text-xs ">
             <Plus size={18} />
             Add Pipeline
           </button>
@@ -32,34 +32,34 @@ const PipelineTable = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#EAECF0]">
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Pipeline Name</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Total Deal Value</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">No of Deals</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Stages</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Created Date</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Status</th>
-                <th className="px-6 py-4 text-left text-[12px] font-semibold text-[#6B7280]">Action</th>
+                <th className="p-2  text-left text-[12px]  text-[#6B7280]">Pipeline Name</th>
+                <th className="p-2  text-left text-[12px]  text-[#6B7280]">Total Deal Value</th>
+                <th className="p-2  text-left text-[12px]  text-[#6B7280]">No of Deals</th>
+                <th className="p-2  text-left text-[12px]  text-[#6B7280]">Stages</th>
+                <th className="p-2  text-left text-[12px]  text-[#6B7280]">Created Date</th>
+                <th className="p-2  text-left text-[12px]  text-[#6B7280]">Status</th>
+                <th className="p-2  text-left text-[12px]  text-[#6B7280]">Action</th>
               </tr>
             </thead>
             <tbody>
               {pipelines.map((pipeline) => (
                 <tr key={pipeline.id} className="border-b border-[#EAECF0] hover:bg-gray-50">
-                  <td className="px-6 py-4 text-[13px] font-medium text-gray-900">{pipeline.name}</td>
-                  <td className="px-6 py-4 text-[13px] text-gray-900">{pipeline.dealValue}</td>
-                  <td className="px-6 py-4 text-[13px] text-gray-900">{pipeline.numDeals}</td>
-                  <td className="px-6 py-4">
+                  <td className="p-2  text-xs    text-gray-900">{pipeline.name}</td>
+                  <td className="p-2  text-xs  text-gray-900">{pipeline.dealValue}</td>
+                  <td className="p-2  text-xs  text-gray-900">{pipeline.numDeals}</td>
+                  <td className="p-2 ">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-1 rounded-full" style={{ backgroundColor: pipeline.stageColor }}></div>
-                      <span className="text-[13px] text-gray-900">{pipeline.stage}</span>
+                      <span className="text-xs  text-gray-900">{pipeline.stage}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-[13px] text-gray-900">{pipeline.createdDate}</td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-block px-3 py-1 rounded-md text-[12px] font-medium ${pipeline.status === 'Active' ? 'bg-[#E4F8ED] text-[#28C76F]' : 'bg-[#FFE5E5] text-[#F62416]'}`}>
+                  <td className="p-2  text-xs  text-gray-900">{pipeline.createdDate}</td>
+                  <td className="p-2 ">
+                    <span className={`inline-block px-3 py-1 rounded  text-[12px]   ${pipeline.status === 'Active' ? 'bg-[#E4F8ED] text-[#28C76F]' : 'bg-[#FFE5E5] text-[#F62416]'}`}>
                       {pipeline.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="p-2 ">
                     <button className="text-[#9CA3AF] hover:bg-gray-100 p-1 rounded"><MoreVertical size={16} strokeWidth={2} /></button>
                   </td>
                 </tr>
@@ -69,9 +69,9 @@ const PipelineTable = () => {
         </div>
 
         <div className="flex items-center justify-center gap-2 mt-6">
-          <button className="px-3 py-2 border border-[#EAECF0] rounded-lg hover:bg-gray-50 text-[12px] text-gray-700">←</button>
-          <button className="px-3 py-2 bg-[#F62416] text-white rounded-lg text-[12px] font-medium">1</button>
-          <button className="px-3 py-2 border border-[#EAECF0] rounded-lg hover:bg-gray-50 text-[12px] text-gray-700">→</button>
+          <button className="px-3 py-2 border border-[#EAECF0] rounded  hover:bg-gray-50 text-[12px] text-gray-700">←</button>
+          <button className="px-3 py-2 bg-[#F62416] text-white rounded  text-[12px]  ">1</button>
+          <button className="px-3 py-2 border border-[#EAECF0] rounded  hover:bg-gray-50 text-[12px] text-gray-700">→</button>
         </div>
       </div>
     </div>

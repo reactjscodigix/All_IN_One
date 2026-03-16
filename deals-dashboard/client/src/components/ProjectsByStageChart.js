@@ -30,10 +30,10 @@ const ProjectsByStageChart = ({ projects, onDateRangeChange }) => {
   }));
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-border-light">
+    <div className="bg-white rounded  border border-border-light">
       <div className="p-2 border-b border-border-light">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Projects By Stage</h2>
+          <h2 className="text-xs  text-gray-900">Projects By Stage</h2>
           <div className="flex gap-2">
             <CustomDropdown
               options={['Marketing Pipeline', 'Sales Pipeline', 'Email', 'Chats', 'Operational']}
@@ -57,7 +57,7 @@ const ProjectsByStageChart = ({ projects, onDateRangeChange }) => {
               {stageData.map((item) => (
                 <div key={item.name} className="w-full flex justify-center">
                   <div
-                    className="flex items-center justify-center text-white  font-bold text-base  transition-all hover:shadow-lg"
+                    className="flex items-center justify-center text-white   text-base  transition-all hover:shadow-lg"
                     style={{
                       width: `${item.widthPercent}%`,
                       backgroundColor: item.color,

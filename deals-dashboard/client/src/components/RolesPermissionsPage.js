@@ -174,12 +174,12 @@ const RolesPermissionsPage = () => {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">Roles & Permissions</h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <h1 className="text-2xl  text-gray-900">Roles & Permissions</h1>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs   bg-red-100 text-red-800">
                 152
               </span>
             </div>
@@ -187,19 +187,19 @@ const RolesPermissionsPage = () => {
           </div>
           <div className="flex items-center gap-3">
             <div className="relative group">
-              <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2 transition-colors">
+              <button className="bg-white border border-gray-300 text-gray-700 p-2  rounded  text-xs    hover:bg-gray-50 flex items-center gap-2 transition-colors">
                 <Download size={16} />
                 Export
                 <ChevronDown size={16} />
               </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-10">
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700">Export as PDF</button>
-                <button className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-t border-gray-200">Export as Excel</button>
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded  shadow-lg hidden group-hover:block z-10">
+                <button className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700">Export as PDF</button>
+                <button className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 border-t border-gray-200">Export as Excel</button>
               </div>
             </div>
             <button
               onClick={() => setShowAddRoleModal(true)}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center gap-2"
+              className="bg-red-600 text-white p-2  rounded  text-xs    hover:bg-red-700 transition-colors flex items-center gap-2"
             >
               + Add New Role
             </button>
@@ -208,16 +208,16 @@ const RolesPermissionsPage = () => {
       </div>
 
       {/* Search & Filters */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 p-2 ">
         <div className="flex items-center gap-3">
           <div className="relative flex-1 max-w-xs">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1F2020]" />
             <input
               type="text"
               placeholder="Search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 text-sm bg-white w-full"
+              className="pl-9 pr-4 py-2 border border-gray-300 rounded  focus:outline-none focus:border-gray-400 text-xs  bg-white w-full"
             />
           </div>
         </div>
@@ -225,17 +225,17 @@ const RolesPermissionsPage = () => {
 
       {/* Table */}
       <div className="p-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded  shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs ">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="py-3 px-4 text-left w-8">
                     <input type="checkbox" className="cursor-pointer" />
                   </th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">Role Name</th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">Created</th>
-                  <th className="py-3 px-4 text-left font-semibold text-gray-700">Action</th>
+                  <th className="py-3 px-4 text-left  text-gray-700">Role Name</th>
+                  <th className="py-3 px-4 text-left  text-gray-700">Created</th>
+                  <th className="py-3 px-4 text-left  text-gray-700">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -245,7 +245,7 @@ const RolesPermissionsPage = () => {
                       <input type="checkbox" className="cursor-pointer" />
                     </td>
                     <td className="py-3 px-4">
-                      <button className="text-blue-600 hover:text-blue-700 font-medium bg-transparent border-none cursor-pointer">
+                      <button className="text-white  hover:text-blue-700   bg-transparent border-none cursor-pointer">
                         {role.name}
                       </button>
                     </td>
@@ -256,25 +256,25 @@ const RolesPermissionsPage = () => {
                           onClick={() => setOpenMenuId(openMenuId === role.id ? null : role.id)}
                           className="p-1 hover:bg-gray-200 rounded transition-colors"
                         >
-                          <MoreVertical size={16} className="text-gray-400" />
+                          <MoreVertical size={16} className="text-[#1F2020]" />
                         </button>
                         {openMenuId === role.id && (
-                          <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                          <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded  shadow-lg z-20">
                             <button
                               onClick={() => handleEditRole(role)}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-100"
+                              className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 border-b border-gray-100"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => handlePermission(role)}
-                              className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 border-b border-gray-100"
+                              className="w-full text-left p-2  hover:bg-gray-50 text-xs  text-gray-700 border-b border-gray-100"
                             >
                               Permission
                             </button>
                             <button
                               onClick={() => handleDeleteRole(role.id)}
-                              className="w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600"
+                              className="w-full text-left p-2  hover:bg-red-50 text-xs  text-red "
                             >
                               Delete
                             </button>
@@ -289,18 +289,18 @@ const RolesPermissionsPage = () => {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <div className="text-sm text-gray-600">
-              Show <select className="border border-gray-300 px-2 py-1 rounded text-sm bg-white">
+          <div className="flex items-center justify-between p-2  border-t border-gray-200 bg-gray-50">
+            <div className="text-xs  text-gray-600">
+              Show <select className="border border-gray-300 p-1  rounded text-xs  bg-white">
                 <option>10</option>
                 <option>25</option>
                 <option>50</option>
               </select> entries
             </div>
             <div className="flex items-center gap-2">
-              <button className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 transition-colors">&lt;</button>
-              <button className="px-3 py-1 bg-red-600 text-white rounded text-sm">1</button>
-              <button className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100 transition-colors">&gt;</button>
+              <button className="px-3 py-1 border border-gray-300 rounded text-xs  hover:bg-gray-100 transition-colors">&lt;</button>
+              <button className="px-3 py-1 bg-red-600 text-white rounded text-xs ">1</button>
+              <button className="px-3 py-1 border border-gray-300 rounded text-xs  hover:bg-gray-100 transition-colors">&gt;</button>
             </div>
           </div>
         </div>
@@ -308,8 +308,8 @@ const RolesPermissionsPage = () => {
 
       {/* Footer */}
       <div className="text-center text-xs text-gray-500 py-6 border-t border-gray-200 bg-white">
-        <span>Copyright © 2025 <span className="text-red-600 font-medium">Preadmin</span></span>
-        <div className="flex gap-4 justify-center mt-2">
+        <span>Copyright © 2025 <span className="text-red   ">Preadmin</span></span>
+        <div className="flex gap-2 justify-center mt-2">
           <span className="cursor-pointer hover:text-gray-700">About</span>
           <span className="cursor-pointer hover:text-gray-700">Terms</span>
           <span className="cursor-pointer hover:text-gray-700">Contact Us</span>
@@ -319,29 +319,29 @@ const RolesPermissionsPage = () => {
       {/* Add Role Modal */}
       {showAddRoleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Add Role</h2>
+          <div className="bg-white rounded  shadow-lgp-3  w-96">
+            <h2 className="text-lg  text-gray-900 mb-4">Add Role</h2>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Role Name <span className="text-red-600">*</span>
+              <label className="block text-xs    text-gray-700 mb-2">
+                Role Name <span className="text-red ">*</span>
               </label>
               <input
                 type="text"
                 value={newRoleName}
                 onChange={(e) => setNewRoleName(e.target.value)}
                 placeholder="Enter role name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-sm"
+                className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:border-red-600 text-xs "
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Description
               </label>
               <textarea
                 value={roleDescription}
                 onChange={(e) => setRoleDescription(e.target.value)}
                 placeholder="Enter role description"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-sm"
+                className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:border-red-600 text-xs "
                 rows="3"
               />
             </div>
@@ -352,13 +352,13 @@ const RolesPermissionsPage = () => {
                   setNewRoleName('');
                   setRoleDescription('');
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleAddRole}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                className="p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700"
               >
                 Create
               </button>
@@ -370,42 +370,42 @@ const RolesPermissionsPage = () => {
       {/* Edit Role Modal */}
       {showEditRoleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Edit Role</h2>
+          <div className="bg-white rounded  shadow-lgp-3  w-96">
+            <h2 className="text-lg  text-gray-900 mb-4">Edit Role</h2>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Role Name <span className="text-red-600">*</span>
+              <label className="block text-xs    text-gray-700 mb-2">
+                Role Name <span className="text-red ">*</span>
               </label>
               <input
                 type="text"
                 value={roleName}
                 onChange={(e) => setRoleName(e.target.value)}
                 placeholder="Enter role name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-sm"
+                className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:border-red-600 text-xs "
               />
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs    text-gray-700 mb-2">
                 Description
               </label>
               <textarea
                 value={roleDescription}
                 onChange={(e) => setRoleDescription(e.target.value)}
                 placeholder="Enter role description"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-sm"
+                className="w-full p-2  border border-gray-300 rounded  focus:outline-none focus:border-red-600 text-xs "
                 rows="3"
               />
             </div>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowEditRoleModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="p-2  border border-gray-300 rounded  text-xs    text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleUpdateRole}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+                className="p-2  bg-red-600 text-white rounded  text-xs    hover:bg-red-700"
               >
                 Save Changes
               </button>

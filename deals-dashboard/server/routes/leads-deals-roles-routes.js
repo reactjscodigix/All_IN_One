@@ -3,7 +3,7 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
   app.get('/api/leads', async (req, res) => {
     let connection;
     try {
-      const { status, source, skip = 0, limit = 50 } = req.query;
+      const { status, source, owner_id, skip = 0, limit = 50 } = req.query;
       connection = await pool.getConnection();
       
       let query = `SELECT 
@@ -22,6 +22,10 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
       if (source) {
         query += ' AND l.lead_source = ?';
         params.push(source);
+      }
+      if (owner_id) {
+        query += ' AND l.owner_id = ?';
+        params.push(owner_id);
       }
       
       query += ' ORDER BY l.created_at DESC LIMIT ?, ?';
@@ -42,6 +46,9 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
     try {
       const { 
         lead_name, 
+        project_name,
+        referral_name,
+        referral_contact,
         name,
         email, 
         phone, 
@@ -54,14 +61,19 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
         notes, 
         description,
         value,
+        company_id,
         currency,
         rating,
         lead_type,
         industry,
+        business_type,
+        marketing_services,
+        it_services,
         visibility,
         tags,
         owner_id,
         people_assigned,
+        service_category_id,
         created_by 
       } = req.body;
       
@@ -72,13 +84,17 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
       
       connection = await pool.getConnection();
       const [result] = await connection.query(
-        `INSERT INTO leads (lead_name, email, phone, company, lead_source, lead_status, notes, value, currency, rating, lead_type, industry, visibility, tags, owner_id, people_assigned)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO leads (lead_name, project_name, referral_name, referral_contact, email, phone, company, company_id, lead_source, lead_status, notes, value, currency, rating, lead_type, industry, business_type, marketing_services, it_services, visibility, tags, owner_id, people_assigned, service_category_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           finalLeadName,
+          project_name || null,
+          referral_name || null,
+          referral_contact || null,
           email || null,
           phone || null,
           company || company_name || null,
+          company_id || null,
           lead_source || source || 'Website',
           lead_status || status || 'New',
           notes || description || null,
@@ -87,10 +103,14 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
           rating || 5,
           lead_type || null,
           industry || null,
+          business_type || null,
+          marketing_services ? JSON.stringify(marketing_services) : null,
+          it_services || null,
           visibility || 'Public',
           tags ? JSON.stringify(tags) : null,
           owner_id || null,
-          people_assigned ? JSON.stringify(people_assigned) : null
+          people_assigned ? JSON.stringify(people_assigned) : null,
+          service_category_id || null
         ]
       );
       
@@ -108,7 +128,12 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
     let connection;
     try {
       connection = await pool.getConnection();
-      const [leads] = await connection.query('SELECT * FROM leads WHERE id = ?', [req.params.id]);
+      const [leads] = await connection.query(`
+        SELECT l.*, u.first_name AS owner_first_name, u.last_name AS owner_last_name 
+        FROM leads l 
+        LEFT JOIN users u ON l.owner_id = u.id 
+        WHERE l.id = ?
+      `, [req.params.id]);
       connection.release();
       
       if (!leads.length) return res.status(404).json({ error: 'Lead not found' });
@@ -124,6 +149,9 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
     try {
       const { 
         lead_name, 
+        project_name,
+        referral_name,
+        referral_contact,
         name,
         email, 
         phone, 
@@ -136,13 +164,19 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
         notes, 
         description,
         value,
+        company_id,
         currency,
         rating,
         lead_type,
         industry,
+        business_type,
+        marketing_services,
+        it_services,
         visibility,
         tags,
-        owner_id
+        owner_id,
+        people_assigned,
+        service_category_id
       } = req.body;
       connection = await pool.getConnection();
       
@@ -153,6 +187,9 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
         updateFields.push('lead_name = ?'); 
         params.push(lead_name || name); 
       }
+      if (project_name !== undefined) { updateFields.push('project_name = ?'); params.push(project_name); }
+      if (referral_name !== undefined) { updateFields.push('referral_name = ?'); params.push(referral_name); }
+      if (referral_contact !== undefined) { updateFields.push('referral_contact = ?'); params.push(referral_contact); }
       if (email !== undefined) { updateFields.push('email = ?'); params.push(email); }
       if (phone !== undefined) { updateFields.push('phone = ?'); params.push(phone); }
       if (company !== undefined || company_name !== undefined) { 
@@ -172,16 +209,28 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
         params.push(notes || description); 
       }
       if (value !== undefined) { updateFields.push('value = ?'); params.push(value); }
+      if (company_id !== undefined) { updateFields.push('company_id = ?'); params.push(company_id); }
       if (currency !== undefined) { updateFields.push('currency = ?'); params.push(currency); }
       if (rating !== undefined) { updateFields.push('rating = ?'); params.push(rating); }
       if (lead_type !== undefined) { updateFields.push('lead_type = ?'); params.push(lead_type); }
       if (industry !== undefined) { updateFields.push('industry = ?'); params.push(industry); }
+      if (business_type !== undefined) { updateFields.push('business_type = ?'); params.push(business_type); }
+      if (marketing_services !== undefined) { 
+        updateFields.push('marketing_services = ?'); 
+        params.push(marketing_services ? JSON.stringify(marketing_services) : null); 
+      }
+      if (it_services !== undefined) { updateFields.push('it_services = ?'); params.push(it_services); }
       if (visibility !== undefined) { updateFields.push('visibility = ?'); params.push(visibility); }
       if (tags !== undefined) { 
         updateFields.push('tags = ?'); 
         params.push(tags ? JSON.stringify(tags) : null); 
       }
       if (owner_id !== undefined) { updateFields.push('owner_id = ?'); params.push(owner_id); }
+      if (people_assigned !== undefined) { 
+        updateFields.push('people_assigned = ?'); 
+        params.push(people_assigned ? JSON.stringify(people_assigned) : null); 
+      }
+      if (service_category_id !== undefined) { updateFields.push('service_category_id = ?'); params.push(service_category_id); }
       
       if (!updateFields.length) return res.status(400).json({ error: 'No fields to update' });
       
@@ -199,6 +248,24 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
     }
   });
 
+  app.delete('/api/leads/:id', async (req, res) => {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      const [result] = await connection.query('DELETE FROM leads WHERE id = ?', [req.params.id]);
+      connection.release();
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Lead not found' });
+      }
+      
+      return res.json({ success: true, message: 'Lead deleted successfully' });
+    } catch (err) {
+      console.error('Error deleting lead:', err);
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   app.post('/api/leads/:id/convert', async (req, res) => {
     let connection;
     try {
@@ -206,7 +273,7 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
       connection = await pool.getConnection();
       
       await connection.query(
-        `UPDATE leads SET status = 'Converted', converted_company_id = ?, converted_contact_id = ?, converted_deal_id = ?, updated_at = NOW()
+        `UPDATE leads SET lead_status = 'Converted to Deal', converted_company_id = ?, converted_contact_id = ?, converted_deal_id = ?, updated_at = NOW()
          WHERE id = ?`,
         [converted_company_id || null, converted_contact_id || null, converted_deal_id || null, req.params.id]
       );
@@ -284,8 +351,9 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
       const [dealResult] = await connection.query(
         `INSERT INTO deals (
           deal_name, description, deal_value, currency, status,
-          company_id, pipeline, deal_stage, probability, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+          company_id, service_category_id, pipeline, deal_stage, probability, 
+          department_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
           deal_name,
           description || null,
@@ -293,18 +361,20 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
           currency || 'USD',
           'Open',
           finalCompanyId, 
+          leadData.service_category_id || null,
           'New', 
           stageId || 'New',
-          10
+          10,
+          leadData.department_id || null
         ]
       );
       
       const dealId = dealResult.insertId;
       
       const [leadUpdateResult] = await connection.query(
-        `UPDATE leads SET lead_status = ?, updated_at = NOW()
+        `UPDATE leads SET lead_status = ?, converted_deal_id = ?, updated_at = NOW()
          WHERE id = ?`,
-        ['Qualified', leadId]
+        ['Qualified', dealId, leadId]
       );
       
       const [newDeal] = await connection.query('SELECT * FROM deals WHERE id = ?', [dealId]);

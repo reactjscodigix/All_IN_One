@@ -88,9 +88,9 @@ const DateRangePicker = ({ isOpen, onClose, onDateRangeChange }) => {
     <>
       <div className="fixed inset-0 z-40" onClick={onClose}></div>
       
-      <div className="absolute top-full mt-2 left-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 w-80">
+      <div className="absolute top-full mt-2 left-0 bg-white border border-gray-200 rounded  shadow-xl z-50 w-80">
         <div className="bg-white border-b border-gray-200 p-3 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">Select Date Range</h3>
+          <h3 className="text-xs   text-gray-900">Select Date Range</h3>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -114,7 +114,7 @@ const DateRangePicker = ({ isOpen, onClose, onDateRangeChange }) => {
                   }}
                   className="w-4 h-4 cursor-pointer"
                 />
-                <span className="text-sm text-gray-700">{option.label}</span>
+                <span className="text-xs  text-gray-700">{option.label}</span>
               </label>
             ))}
           </div>
@@ -122,21 +122,21 @@ const DateRangePicker = ({ isOpen, onClose, onDateRangeChange }) => {
           {showCustomRange && (
             <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
               <div>
-                <label className="text-xs font-medium text-gray-700 block mb-1">Start Date</label>
+                <label className="text-xs   text-gray-700 block mb-1">Start Date</label>
                 <input
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-500"
+                  className="w-full p-1 .5 border border-gray-300 rounded text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700 block mb-1">End Date</label>
+                <label className="text-xs   text-gray-700 block mb-1">End Date</label>
                 <input
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-red-500"
+                  className="w-full p-1 .5 border border-gray-300 rounded text-xs  focus:outline-none focus:border-red-500"
                 />
               </div>
             </div>
@@ -146,13 +146,13 @@ const DateRangePicker = ({ isOpen, onClose, onDateRangeChange }) => {
         <div className="bg-gray-50 border-t border-gray-200 p-3 flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 px-3 py-1.5 text-gray-700 font-medium text-sm border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+            className="flex-1 px-3 py-1.5 text-gray-700   text-xs  border border-gray-300 rounded hover:bg-gray-100 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleApply}
-            className="flex-1 px-3 py-1.5 bg-red-600 text-white font-medium text-sm rounded hover:bg-red-700 transition-colors"
+            className="flex-1 px-3 py-1.5 bg-red-600 text-white   text-xs  rounded hover:bg-red-700 transition-colors"
           >
             Apply
           </button>

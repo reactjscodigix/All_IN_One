@@ -12,6 +12,8 @@ const SignupPage = () => {
     password: '',
     confirmPassword: '',
     role: 'Employee',
+    roleType: 'Employee',
+    department: 'Admin',
     phone: '',
     company: '',
     companyId: null,
@@ -31,12 +33,14 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
-  const ROLES = [
-    { id: 'Super Admin', label: 'Super Admin', color: 'red' },
-    { id: 'Admin', label: 'Admin', color: 'orange' },
-    { id: 'Deal Manager', label: 'Deal Manager', color: 'purple' },
-    { id: 'Project Manager', label: 'Project Manager', color: 'green' },
-    { id: 'Employee', label: 'Employee', color: 'cyan' },
+  const DEPARTMENTS = [
+    'Admin',
+    'Leads Management',
+    'Deals Management',
+    'Sales Department',
+    'Marketing Department',
+    'IT Department',
+    'Accounting Department'
   ];
 
   useEffect(() => {
@@ -87,6 +91,10 @@ const SignupPage = () => {
       setError('Passwords do not match');
       return false;
     }
+    if (!formData.department) {
+      setError('Please select a department');
+      return false;
+    }
     return true;
   };
 
@@ -97,13 +105,6 @@ const SignupPage = () => {
       [name]: value
     }));
     setError('');
-  };
-
-  const handleRoleChange = (roleId) => {
-    setFormData(prev => ({
-      ...prev,
-      role: roleId
-    }));
   };
 
   const handleAddProject = (e) => {
@@ -154,6 +155,31 @@ const SignupPage = () => {
     setSelectedDeals(prev => prev.filter(deal => deal.id !== dealId));
   };
 
+  const getRoleName = (department, roleType) => {
+    if (department === 'Admin') {
+      return roleType === 'Manager' ? 'Admin' : 'Employee';
+    }
+    if (department === 'Leads Management') {
+      return roleType === 'Manager' ? 'Leads Manager' : 'Employee';
+    }
+    if (department === 'Deals Management') {
+      return roleType === 'Manager' ? 'Deals Manager' : 'Employee';
+    }
+    if (department === 'Sales Department') {
+      return roleType === 'Manager' ? 'Sales Manager' : 'Sales Executive';
+    }
+    if (department === 'Marketing Department') {
+      return roleType === 'Manager' ? 'Marketing Manager' : 'Marketing Executive';
+    }
+    if (department === 'IT Department') {
+      return roleType === 'Manager' ? 'IT Manager' : 'IT Specialist';
+    }
+    if (department === 'Accounting Department') {
+      return roleType === 'Manager' ? 'Accounting Manager' : 'Accountant';
+    }
+    return 'Employee';
+  };
+
   const handleSignup = async (e) => {
     e.preventDefault();
     setError('');
@@ -165,12 +191,14 @@ const SignupPage = () => {
       return;
     }
 
+    const derivedRoleName = getRoleName(formData.department, formData.roleType);
     console.log('Form validation passed, proceeding with signup');
     console.log('Form data:', { 
       firstName: formData.firstName, 
       lastName: formData.lastName, 
       email: formData.email, 
-      role: formData.role,
+      role: derivedRoleName,
+      department: formData.department,
       passwordLength: formData.password.length
     });
 
@@ -187,7 +215,8 @@ const SignupPage = () => {
           last_name: formData.lastName,
           email: formData.email,
           password: formData.password,
-          role_name: formData.role,
+          role_name: derivedRoleName,
+          department: formData.department || null,
           phone: formData.phone || null,
           company: formData.company || null,
         }),
@@ -211,13 +240,24 @@ const SignupPage = () => {
         throw new Error(`Invalid user ID received from server: ${userData.id}`);
       }
 
-      const roleFromResponse = userData.role_name || formData.role;
-      const validRoles = ['Super Admin', 'Admin', 'Deal Manager', 'Project Manager', 'Employee'];
-      const finalRole = validRoles.includes(roleFromResponse) ? roleFromResponse : 'Employee';
+      const roleFromResponse = userData.role_name || derivedRoleName;
+      const validRoles = [
+        'Super Admin', 'Admin', 'Leads Manager', 'Deals Manager', 
+        'Sales Manager', 'Marketing Manager', 'IT Manager', 
+        'Accounting Manager', 'Sales Executive', 'Marketing Executive', 
+        'IT Specialist', 'Accountant', 'Employee'
+      ];
+      let finalRole = validRoles.includes(roleFromResponse) ? roleFromResponse : 'Employee';
+      
+      // Ensure Super Admin override for known admin emails
+      const userEmail = userData.email?.toLowerCase();
+      if (userEmail === 'rohityadav@gmail.com' || userEmail === 'admin@example.com') {
+        finalRole = 'Super Admin';
+      }
       
       console.log('🔍 ROLE VALIDATION:');
       console.log('  Backend returned role_name:', userData.role_name);
-      console.log('  Fallback to formData.role:', formData.role);
+      console.log('  Fallback to derivedRoleName:', derivedRoleName);
       console.log('  Valid roles:', validRoles);
       console.log('  Role matches?:', validRoles.includes(roleFromResponse));
       console.log('  Final role used:', finalRole);
@@ -227,6 +267,7 @@ const SignupPage = () => {
         email: userData.email,
         name: userData.first_name,
         role: finalRole,
+        department: userData.department || formData.department,
         avatar: userData.avatar || `https://i.pravatar.cc/150?u=${userData.email}`,
       };
 
@@ -241,89 +282,92 @@ const SignupPage = () => {
     }
   };
 
-  const selectedRole = ROLES.find(r => r.id === formData.role);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 flex items-center justify-center p-4 py-10">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-centerp-2   py-12">
+      <div className="w-full max-w-2xl m-auto">
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-lg mb-4">
-            <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center text-white font-bold text-lg">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-red-50 border border-red-100 rounded-xl shadow-sm mb-4">
+            <div className="w-10 h-10 bg-red-600 rounded  flex items-center justify-center text-white   text-xl">
               D
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-          <p className="text-gray-600">Join Deals Dashboard with Role-Based Access</p>
+          <h1 className="text-2xl   text-gray-900 mb-1">Create Account</h1>
+          <p className="text-sm text-gray-500 ">Join our Enterprise CRM Platform</p>
         </div>
 
-        <form onSubmit={handleSignup} className="bg-white rounded-lg shadow-lg p-8">
+        {/* Signup Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-              <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded  flex items-center gap-3">
+              <AlertCircle size={18} className="text-red-500 flex-shrink-0" />
+              <p className="text-xs  text-red-700">{error}</p>
             </div>
           )}
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+          <form onSubmit={handleSignup} className="space-y-6">
+            {/* Name Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
                   First Name
                 </label>
                 <div className="relative">
-                  <User size={20} className="absolute left-3 top-3 text-gray-400" />
+                  <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1F2020]" />
                   <input
                     type="text"
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleInputChange}
                     placeholder="John"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder:text-[#1F2020]"
                     required
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
                   Last Name
                 </label>
                 <div className="relative">
-                  <User size={20} className="absolute left-3 top-3 text-gray-400" />
+                  <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1F2020]" />
                   <input
                     type="text"
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleInputChange}
                     placeholder="Doe"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder:text-[#1F2020]"
                     required
                   />
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Email Field */}
+            <div className="space-y-2">
+              <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
                 Email Address
               </label>
               <div className="relative">
-                <Mail size={20} className="absolute left-3 top-3 text-gray-400" />
+                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1F2020]" />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="you@company.com"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder:text-[#1F2020]"
                   required
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Phone & Company Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
                   Phone (Optional)
                 </label>
                 <input
@@ -331,13 +375,13 @@ const SignupPage = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  placeholder="+1 (555) 123-4567"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="+1 (555) 000-0000"
+                  className="w-full p-2  bg-gray-50 border border-gray-200 rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder:text-[#1F2020]"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
                   Company (Optional)
                 </label>
                 <input
@@ -345,223 +389,140 @@ const SignupPage = () => {
                   name="company"
                   value={formData.company}
                   onChange={handleInputChange}
-                  placeholder="Your Company"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="Acme Inc."
+                  className="w-full p-2  bg-gray-50 border border-gray-200 rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder:text-[#1F2020]"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Select Role
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {ROLES.map((role) => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => handleRoleChange(role.id)}
-                    className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
-                      formData.role === role.id
-                        ? `border-${role.color}-500 bg-${role.color}-50 text-${role.color}-700`
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      {formData.role === role.id && <Check size={16} />}
-                      {role.label}
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-gray-500">
-                Selected: <span className="font-semibold">{selectedRole?.label}</span>
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Projects (Optional)
-              </label>
-              <input
-                type="text"
-                value={projectInput}
-                onChange={(e) => setProjectInput(e.target.value)}
-                onKeyPress={handleAddProject}
-                placeholder="Type project name and press Enter"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-              {formData.projects.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {formData.projects.map((project, index) => (
-                    <span key={index} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                      {project}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveProject(index)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Deals (Optional)
+            {/* Department & Role Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
+                  Department
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setIsDealModalOpen(true)}
-                  className="flex items-center gap-1 text-red-600 hover:text-red-700 text-sm font-medium"
+                <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleInputChange}
+                  className="w-full p-2  bg-gray-50 border border-gray-200 rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent appearance-none cursor-pointer"
+                  required
                 >
-                  <Plus size={16} /> Add New Deal
-                </button>
-              </div>
-              {selectedDeals.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedDeals.map((deal) => (
-                    <span key={deal.id} className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-                      {deal.deal_name || deal.name}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveDeal(deal.id)}
-                        className="text-purple-600 hover:text-purple-800"
-                      >
-                        <X size={14} />
-                      </button>
-                    </span>
+                  <option value="">Choose a department</option>
+                  {DEPARTMENTS.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
                   ))}
-                </div>
-              )}
-              {selectedDeals.length === 0 && (
-                <p className="text-xs text-gray-500 mt-2">No deals added yet</p>
-              )}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
+                  Role Type
+                </label>
+                <select
+                  name="roleType"
+                  value={formData.roleType}
+                  onChange={handleInputChange}
+                  className="w-full p-2  bg-gray-50 border border-gray-200 rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent appearance-none cursor-pointer"
+                  required
+                >
+                  <option value="Employee">Employee</option>
+                  <option value="Manager">Manager</option>
+                </select>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Password Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock size={20} className="absolute left-3 top-3 text-gray-400" />
+                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1F2020]" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    className="w-full pl-10 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder:text-[#1F2020]"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 text-sm"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs    text-red  hover:text-red-700  er"
                   >
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label className="block text-[11px]   text-[#1F2020]  tracking-wider">
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock size={20} className="absolute left-3 top-3 text-gray-400" />
+                  <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1F2020]" />
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     placeholder="••••••••"
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
-                      formData.confirmPassword && !passwordsMatch
-                        ? 'border-red-300 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-red-500'
-                    }`}
+                    className={`w-full pl-10 pr-12 py-2.5 bg-gray-50 border ${!passwordsMatch ? 'border-red-500' : 'border-gray-200'} rounded  text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all placeholder:text-[#1F2020]`}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 text-sm"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs    text-red  hover:text-red-700  er"
                   >
                     {showConfirmPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
-                {formData.confirmPassword && !passwordsMatch && (
-                  <p className="mt-1 text-xs text-red-600">Passwords do not match</p>
-                )}
-                {formData.confirmPassword && passwordsMatch && (
-                  <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
-                    <Check size={12} /> Passwords match
-                  </p>
-                )}
               </div>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading || (formData.confirmPassword && !passwordsMatch)}
-            className="w-full mt-8 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-          >
-            <LogIn size={18} />
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </button>
+            {/* Signup Button */}
+            <button
+              type="submit"
+              disabled={loading || (formData.confirmPassword && !passwordsMatch)}
+              className="w-full bg-red-600 text-white py-3 rounded   text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]"
+            >
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  <LogIn size={18} />
+                  <span>Create Account</span>
+                </>
+              )}
+            </button>
+          </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+          {/* Footer Link */}
+          <div className="mt-8 pt-6 border-t border-gray-50 text-center">
+            <p className="text-sm text-gray-500 ">
               Already have an account?{' '}
-              <Link to="/login" className="text-red-600 font-semibold hover:text-red-700 transition-colors">
+              <Link to="/login" className="text-red    hover:underline">
                 Sign In
               </Link>
             </p>
           </div>
-
-          <div className="mt-6 space-y-4">
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-green-900">
-                  💬 Real-Time Chat Features
-                </p>
-                <ul className="text-xs text-green-800 space-y-1 ml-4 list-disc">
-                  <li>Instant messaging with team members</li>
-                  <li>Conversation history and management</li>
-                  <li>Message read status tracking</li>
-                  <li>One-on-one and group conversations</li>
-                </ul>
-                <p className="text-xs text-green-800 mt-2">
-                  After signup, navigate to the <strong>Chat</strong> section in the sidebar to start messaging!
-                </p>
-              </div>
-            </div>
-
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-xs text-blue-800">
-                <strong>Note:</strong> Select your role carefully. You can request role changes from the administrator after account creation.
-              </p>
-            </div>
-          </div>
-        </form>
-
-        <AddNewDealModal
-          isOpen={isDealModalOpen}
-          onClose={() => setIsDealModalOpen(false)}
-          onSubmit={handleDealSubmit}
-          contacts={[]}
-          projects={formData.projects}
-          companies={[]}
-          isCompanyContext={true}
-        />
+        </div>
       </div>
+
+      <AddNewDealModal
+        isOpen={isDealModalOpen}
+        onClose={() => setIsDealModalOpen(false)}
+        onSubmit={handleDealSubmit}
+        contacts={[]}
+        projects={formData.projects}
+        companies={[]}
+        isCompanyContext={true}
+      />
     </div>
   );
 };

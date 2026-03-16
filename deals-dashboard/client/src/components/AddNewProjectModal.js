@@ -225,29 +225,29 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
         className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-[#EAECF0] sticky top-0 bg-white">
+        <div className="flex justify-between items-centerp-3  border-b border-[#EAECF0] sticky top-0 bg-white">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">Add New Project</h2>
+            <h2 className="text-md  text-gray-900">Add New Project</h2>
             {isFetching && <span className="text-xs text-gray-500">(Loading data...)</span>}
           </div>
           <button
             onClick={handleCancel}
             disabled={isLoading}
-            className="text-gray-400 hover:text-red-600 transition-colors text-2xl disabled:opacity-50"
+            className="text-[#1F2020] hover:text-red  transition-colors text-2xl disabled:opacity-50"
           >
             ×
           </button>
         </div>
 
         {error && (
-          <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+          <div className="p-2 m-4 bg-red-50 border border-red-200 rounded ">
+            <p className="text-xs  text-red-700  ">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Name <span className="text-red-500">*</span>
             </label>
             <input
@@ -257,13 +257,13 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
               onChange={handleInputChange}
               disabled={isFetching}
               placeholder="Enter project name"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Project ID <span className="text-red-500">*</span>
               </label>
               <input
@@ -273,11 +273,11 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 onChange={handleInputChange}
                 disabled={isFetching}
                 placeholder="e.g., #12145"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Project Type <span className="text-red-500">*</span>
               </label>
               <select
@@ -285,7 +285,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.project_type}
                 onChange={handleInputChange}
                 disabled={isFetching}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Choose</option>
                 {projectTypes.map(type => (
@@ -297,7 +297,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Client <span className="text-red-500">*</span>
               </label>
               <select
@@ -305,7 +305,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.client}
                 onChange={handleInputChange}
                 disabled={isFetching}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">{isFetching ? 'Loading companies...' : 'Select'}</option>
                 {companies.map(company => (
@@ -316,7 +316,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Category <span className="text-red-500">*</span>
               </label>
               <select
@@ -324,7 +324,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.category}
                 onChange={handleInputChange}
                 disabled={isFetching}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Select</option>
                 {categories.map(cat => (
@@ -336,7 +336,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Project Timing <span className="text-red-500">*</span>
               </label>
               <select
@@ -344,7 +344,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.project_timing}
                 onChange={handleInputChange}
                 disabled={isFetching}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Select</option>
                 {timings.map(timing => (
@@ -353,7 +353,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Price <span className="text-red-500">*</span>
               </label>
               <input
@@ -363,13 +363,13 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 onChange={handleInputChange}
                 disabled={isFetching}
                 placeholder="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
+            <label className="block text-xs   text-gray-900 mb-2">
               Responsible Persons <span className="text-red-500">*</span>
             </label>
             <div className="mb-3">
@@ -380,7 +380,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                   e.target.value = '';
                 }}
                 disabled={isFetching || users.length === 0}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">{isFetching ? 'Loading users...' : '+ Add person'}</option>
                 {users.map(user => (
@@ -395,15 +395,15 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 {formData.responsible_persons.map((userId) => {
                   const user = getResponsiblePersonUser(userId);
                   return user ? (
-                    <div key={userId} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200">
-                      <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-semibold flex-shrink-0">
+                    <div key={userId} className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs  border border-blue-200">
+                      <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs  flex-shrink-0">
                         {getInitials(user.first_name, user.last_name)}
                       </div>
                       <span>{user.first_name} {user.last_name}</span>
                       <button
                         type="button"
                         onClick={() => handleRemovePerson(userId)}
-                        className="text-blue-500 hover:text-red-600 font-bold"
+                        className="text-blue-500 hover:text-red  "
                       >
                         ×
                       </button>
@@ -415,7 +415,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Team Leader <span className="text-red-500">*</span>
             </label>
             {formData.team_leader ? (
@@ -423,15 +423,15 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 const teamLeader = getTeamLeaderUser(parseInt(formData.team_leader));
                 return teamLeader ? (
                   <div className="relative mb-3">
-                    <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                      <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                    <div className="flex items-center gap-2 p-2  border border-gray-300 rounded  bg-gray-50">
+                      <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center text-xs   flex-shrink-0">
                         {getInitials(teamLeader.first_name, teamLeader.last_name)}
                       </div>
-                      <span className="text-sm text-gray-900 flex-1">{teamLeader.first_name} {teamLeader.last_name}</span>
+                      <span className="text-xs  text-gray-900 flex-1">{teamLeader.first_name} {teamLeader.last_name}</span>
                       <button
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, team_leader: '' }))}
-                        className="text-gray-400 hover:text-red-600"
+                        className="text-[#1F2020] hover:text-red "
                       >
                         ×
                       </button>
@@ -444,7 +444,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value=""
                 onChange={(e) => setFormData(prev => ({ ...prev, team_leader: e.target.value }))}
                 disabled={isFetching || users.length === 0}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">{isFetching ? 'Loading team members...' : 'Select'}</option>
                 {users.map(user => (
@@ -458,7 +458,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Start Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -467,11 +467,11 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.start_date}
                 onChange={handleInputChange}
                 disabled={isFetching}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Due Date <span className="text-red-500">*</span>
               </label>
               <input
@@ -480,14 +480,14 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.due_date}
                 onChange={handleInputChange}
                 disabled={isFetching}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Priority
               </label>
               <select
@@ -495,7 +495,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.priority}
                 onChange={handleInputChange}
                 disabled={isFetching}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Select</option>
                 {priorities.map(p => (
@@ -504,7 +504,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-1">
+              <label className="block text-xs   text-gray-900 mb-1">
                 Status
               </label>
               <select
@@ -512,7 +512,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.status}
                 onChange={handleInputChange}
                 disabled={isFetching}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
+                className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
               >
                 <option value="">Select</option>
                 {statuses.map(s => (
@@ -523,7 +523,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-1">
+            <label className="block text-xs   text-gray-900 mb-1">
               Description <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -533,7 +533,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
               disabled={isFetching}
               placeholder="Description"
               rows="4"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-none disabled:opacity-50"
+              className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-none disabled:opacity-50"
             />
           </div>
 
@@ -542,14 +542,14 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
               type="button"
               onClick={handleCancel}
               disabled={isLoading || isFetching}
-              className="px-6 py-2 text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+              className="p-2  text-gray-700   border border-gray-300 rounded  hover:bg-gray-50 transition disabled:opacity-50 text-xs"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading || isFetching || users.length === 0}
-              className="px-6 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+              className="p-2  bg-red-600 text-white   rounded  hover:bg-red-700 transition disabled:opacity-50"
             >
               {isLoading ? 'Creating...' : isFetching ? 'Loading data...' : 'Create New'}
             </button>

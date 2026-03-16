@@ -84,7 +84,7 @@ const ProjectTasksPanel = ({ projectId }) => {
 
   const getPriorityColor = (priority) => {
     const colors = {
-      'Critical': 'text-red-600 bg-red-50',
+      'Critical': 'text-red  bg-red-50',
       'High': 'text-orange-600 bg-orange-50',
       'Medium': 'text-yellow-600 bg-yellow-50',
       'Low': 'text-green-600 bg-green-50'
@@ -94,7 +94,7 @@ const ProjectTasksPanel = ({ projectId }) => {
 
   const getStatusIcon = (status) => {
     const statuses = {
-      'Todo': <Circle size={16} className="text-gray-400" />,
+      'Todo': <Circle size={16} className="text-[#1F2020]" />,
       'In Progress': <AlertCircle size={16} className="text-blue-500" />,
       'In Review': <AlertCircle size={16} className="text-purple-500" />,
       'Completed': <CheckCircle size={16} className="text-green-500" />,
@@ -108,36 +108,36 @@ const ProjectTasksPanel = ({ projectId }) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Project Tasks</h3>
+        <h3 className="text-md  text-gray-900">Project Tasks</h3>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition text-sm font-medium"
+          className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red  rounded  hover:bg-red-100 transition text-xs   "
         >
           <Plus size={16} /> Add Task
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleAddTask} className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3 mb-4">
+        <form onSubmit={handleAddTask} className="bg-gray-50 border border-gray-200 rounded  p-2 space-y-3 mb-4">
           <input
             type="text"
             placeholder="Task title"
             value={newTask.title}
             onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
           />
           <textarea
             placeholder="Task description"
             value={newTask.description}
             onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
             rows="2"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500 resize-none"
+            className="w-full px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500 resize-none"
           />
           <div className="grid grid-cols-3 gap-3">
             <select
               value={newTask.priority}
               onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+              className="px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
             >
               <option value="Low">Low</option>
               <option value="Medium">Medium</option>
@@ -147,7 +147,7 @@ const ProjectTasksPanel = ({ projectId }) => {
             <select
               value={newTask.assigned_to || ''}
               onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value ? parseInt(e.target.value) : null })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+              className="px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
             >
               <option value="">Assign to...</option>
               {teamMembers.map(member => (
@@ -160,20 +160,20 @@ const ProjectTasksPanel = ({ projectId }) => {
               type="date"
               value={newTask.due_date}
               onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-red-500"
+              className="px-3 py-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
             />
           </div>
           <div className="flex gap-2 justify-end">
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
+              className="px-3 py-2 text-xs    text-gray-700 border border-gray-300 rounded  hover:bg-gray-100"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              className="px-3 py-2 text-xs    text-white bg-red-600 rounded  hover:bg-red-700"
             >
               Create Task
             </button>
@@ -186,7 +186,7 @@ const ProjectTasksPanel = ({ projectId }) => {
           <div className="text-center py-8 text-gray-500">No tasks yet. Create one to get started!</div>
         ) : (
           tasks.map(task => (
-            <div key={task.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition bg-white">
+            <div key={task.id} className="border border-gray-200 rounded  p-2 hover:shadow-sm transition bg-white">
               <div className="flex items-start gap-3">
                 <button
                   onClick={() => handleStatusChange(task.id, task.status === 'Completed' ? 'Todo' : 'Completed')}
@@ -195,18 +195,18 @@ const ProjectTasksPanel = ({ projectId }) => {
                   {getStatusIcon(task.status)}
                 </button>
                 <div className="flex-grow min-w-0">
-                  <h4 className={`font-medium text-sm ${task.status === 'Completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                  <h4 className={`  text-xs  ${task.status === 'Completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                     {task.title}
                   </h4>
                   {task.description && (
                     <p className="text-xs text-gray-600 mt-1 line-clamp-2">{task.description}</p>
                   )}
                   <div className="flex flex-wrap gap-2 mt-2">
-                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                    <span className={`inline-block p-1  rounded text-xs   ${getPriorityColor(task.priority)}`}>
                       {task.priority}
                     </span>
                     {task.due_date && (
-                      <span className="inline-block px-2 py-1 text-xs text-gray-600 bg-gray-100 rounded">
+                      <span className="inline-block p-1  text-xs text-gray-600 bg-gray-100 rounded">
                         Due: {new Date(task.due_date).toLocaleDateString()}
                       </span>
                     )}
@@ -215,7 +215,7 @@ const ProjectTasksPanel = ({ projectId }) => {
                 <div className="flex gap-2 flex-shrink-0">
                   <button
                     onClick={() => handleDeleteTask(task.id)}
-                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                    className="p-1 text-red  hover:bg-red-50 rounded"
                   >
                     <Trash2 size={16} />
                   </button>

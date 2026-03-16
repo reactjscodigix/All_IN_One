@@ -126,44 +126,71 @@ const LeadsPage = () => {
 
   const columns = [
     {
-      key: 'name',
-      label: 'Lead Name',
+      key: 'project_name',
+      label: 'Project Name',
       sortable: true,
       render: (value, row) => (
-        <button
-          onClick={() => navigate(`/lead/${row.id}`)}
-          className="font-medium text-red-600 hover:text-red-700 hover:underline cursor-pointer transition"
-        >
-          {value}
-        </button>
+        <div className="flex flex-col">
+          <button
+            onClick={() => navigate(`/lead/${row.id}`)}
+            className="text-left text-[#1F2020] hover:text-red-600 font-[500] transition text-sm"
+          >
+            {value || 'No Project Name'}
+          </button>
+          <span className="text-[11px] text-gray-500 ">{row.name || row.lead_name}</span>
+        </div>
+      )
+    },
+    {
+      key: 'business_type',
+      label: 'Business Type',
+      sortable: true,
+      render: (value) => <span className="text-xs text-gray-600">{value || 'N/A'}</span>
+    },
+    {
+      key: 'created_at',
+      label: 'Generate Date',
+      sortable: true,
+      render: (value) => (
+        <span className="text-xs text-gray-600">
+          {value ? new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+        </span>
       )
     },
     {
       key: 'email',
       label: 'Email',
       sortable: true,
-      render: (value) => <a href={`mailto:${value}`} className="text-gray-600 hover:text-red-600 text-sm">{value}</a>
+      render: (value) => <a href={`mailto:${value}`} className="text-gray-600 hover:text-red  text-xs ">{value}</a>
     },
     {
       key: 'phone',
       label: 'Phone',
       sortable: false,
-      render: (value) => <span className="text-sm text-gray-600">{value || '-'}</span>
+      render: (value) => <span className="text-xs  text-gray-600">{value || '-'}</span>
     },
     {
       key: 'company',
       label: 'Company',
       sortable: true,
-      render: (value) => <span className="text-sm text-gray-600">{value || '-'}</span>
+      render: (value) => <span className="text-xs  text-gray-600">{value || '-'}</span>
     },
     {
       key: 'source',
       label: 'Source',
       sortable: true,
-      render: (value) => (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          {value}
-        </span>
+      render: (value, row) => (
+        <div className="flex flex-col gap-1">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs   bg-blue-100 text-blue-800 w-fit">
+            {value}
+          </span>
+          {(row.referral_name || row.referral_contact) && (
+            <div className="text-[10px] text-orange-600 flex flex-col">
+              {row.referral_name && <span>Ref: {row.referral_name}</span>}
+              {row.referral_contact && <span className="text-gray-400">{row.referral_contact}</span>}
+            </div>
+          )}
+        </div>
       )
     },
     {
@@ -177,7 +204,7 @@ const LeadsPage = () => {
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(value)}`}>
+        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs   ${getStatusBadge(value)}`}>
           {value}
         </span>
       )
@@ -187,28 +214,28 @@ const LeadsPage = () => {
   const filteredLeads = getFilteredLeads();
 
   return (
-    <div className="p-2 bg-gray-50 min-h-screen">
+    <div className="p-2 bg-[#F7F8F9] min-h-screen">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-[1.250025rem] font-bold text-gray-900">Leads</h1>
-          <p className="text-gray-600 text-sm mt-2">Manage all your sales leads</p>
+          <h1 className="text-[1.250025rem]  text-gray-900">Leads</h1>
+          <p className="text-gray-600 text-xs ">Manage all your sales leads</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
-          className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 hover:bg-red-700 transition text-[13px]">
+          className="bg-red-600 text-white p-2  rounded    flex items-center gap-2 hover:bg-red-700 transition text-xs ">
           <Plus size={16} /> Add New Lead
         </button>
       </div>
 
-      <div className="mb-6 bg-white rounded-lg shadow p-4">
+      <div className="mb-6 bg-white rounded  shadow p-2">
         <div className="flex items-center gap-3 flex-wrap">
           <Filter size={18} className="text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
+          <span className="text-xs    text-gray-700">Filter by Status:</span>
           {['All', 'New', 'Contacted', 'Qualified', 'Unqualified'].map(status => (
             <button
               key={status}
               onClick={() => setSelectedStatus(status)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+              className={`px-3 py-1.5 rounded  text-xs    transition ${
                 selectedStatus === status
                   ? 'bg-red-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

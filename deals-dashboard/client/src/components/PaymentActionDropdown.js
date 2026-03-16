@@ -52,30 +52,30 @@ const PaymentActionDropdown = ({ payment, onEdit, onDelete, onView, onDownload, 
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded-md transition flex-shrink-0 text-lg leading-none"
+        className="text-[#1F2020] hover:text-gray-600 hover:bg-gray-100 p-1.5 rounded  transition flex-shrink-0 text-lg leading-none"
       >
         ⋮
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-48 bg-white border border-[#E5E7EB] rounded-lg shadow-lg z-20">
+        <div className="absolute right-0 mt-1 w-48 bg-white border border-[#E5E7EB] rounded  shadow-lg z-20">
           <button
             onClick={handleView}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
           >
             <Eye size={14} strokeWidth={2} />
             View Details
           </button>
           <button
             onClick={handleEdit}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
           >
             <Edit2 size={14} strokeWidth={2} />
             Edit Payment
           </button>
           <button
             onClick={handleDownload}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-gray-700 hover:bg-gray-50 transition border-b border-[#E5E7EB]"
           >
             <Download size={14} strokeWidth={2} />
             Download Receipt
@@ -84,7 +84,7 @@ const PaymentActionDropdown = ({ payment, onEdit, onDelete, onView, onDownload, 
           {payment.status !== 'Refunded' && (
             <button
               onClick={handleRefund}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-orange-600 hover:bg-orange-50 transition border-b border-[#E5E7EB]"
+              className="w-full flex items-center gap-2 p-2  text-xs  text-orange-600 hover:bg-orange-50 transition border-b border-[#E5E7EB]"
             >
               <RotateCcw size={14} strokeWidth={2} />
               Mark as Refunded
@@ -93,7 +93,7 @@ const PaymentActionDropdown = ({ payment, onEdit, onDelete, onView, onDownload, 
 
           <button
             onClick={handleDelete}
-            className="w-full flex items-center gap-2 px-4 py-2.5 text-[13px] text-red-600 hover:bg-red-50 transition"
+            className="w-full flex items-center gap-2 p-2  text-xs  text-red  hover:bg-red-50 transition"
           >
             <Trash2 size={14} strokeWidth={2} />
             Delete
