@@ -5,12 +5,15 @@ import { followupsAPI } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import UpcomingEvents from './UpcomingEvents';
 
-const CalendarPage = () => {
+const CalendarPage = ({ department }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [allCallEvents, setAllCallEvents] = useState([]);
   const [callEvents, setCallEvents] = useState([]);
+  const [allFollowupEvents, setAllFollowupEvents] = useState([]);
   const [followupEvents, setFollowupEvents] = useState([]);
+  const [allCustomEvents, setAllCustomEvents] = useState([]);
   const [customEvents, setCustomEvents] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -35,6 +38,22 @@ const CalendarPage = () => {
     fetchFollowups();
   }, []);
 
+  useEffect(() => {
+    if (department) {
+      const filterFn = (e) => (
+        (department === 'Marketing' && (e.department === 'Marketing' || e.category === 'Marketing')) ||
+        (department === 'IT' && (e.department === 'IT' || e.category === 'IT'))
+      );
+      setCallEvents(allCallEvents.filter(filterFn));
+      setFollowupEvents(allFollowupEvents.filter(filterFn));
+      setCustomEvents(allCustomEvents.filter(filterFn));
+    } else {
+      setCallEvents(allCallEvents);
+      setFollowupEvents(allFollowupEvents);
+      setCustomEvents(allCustomEvents);
+    }
+  }, [allCallEvents, allFollowupEvents, allCustomEvents, department]);
+
   const fetchFollowups = async () => {
     try {
       const filters = {};
@@ -53,6 +72,7 @@ const CalendarPage = () => {
         title: f.subject,
         date: new Date(f.scheduled_date),
         category: 'Follow-up',
+        department: f.department || f.category, // Added department
         type: f.type,
         meetingLink: f.meeting_link,
         relatedName: f.related_name,
@@ -61,7 +81,7 @@ const CalendarPage = () => {
                f.type.includes('Meeting') ? 'bg-blue-100 border-l-4 border-blue-500' :
                'bg-orange-100 border-l-4 border-orange-500'
       }));
-      setFollowupEvents(events);
+      setAllFollowupEvents(events);
     } catch (error) {
       console.error('Error fetching follow-ups:', error);
     }
@@ -78,9 +98,10 @@ const CalendarPage = () => {
           title: `${call.call_type} - ${call.caller_name}`,
           date: new Date(call.created_at),
           category: call.call_type,
+          department: call.department, // Added department
           color: call.call_type === 'Video Call' ? 'bg-indigo-100 border-l-4 border-indigo-500' : 'bg-cyan-100 border-l-4 border-cyan-500'
         }));
-        setCallEvents(events);
+        setAllCallEvents(events);
       }
     } catch (error) {
       console.error('Error fetching call history:', error);
@@ -108,10 +129,11 @@ const CalendarPage = () => {
       title: formData.title,
       date: new Date(formData.date),
       category: formData.category,
+      department: department || 'General', // Added department
       color: categoryColorMap[formData.category] || 'bg-gray-100 border-l-4 border-gray-500'
     };
 
-    setCustomEvents(prev => [...prev, newEvent]);
+    setAllCustomEvents(prev => [...prev, newEvent]);
     setFormData({ title: '', date: '', category: 'Client Call' });
     setShowModal(false);
   };

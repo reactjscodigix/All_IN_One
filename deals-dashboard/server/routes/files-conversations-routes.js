@@ -228,9 +228,11 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
       const { userId } = req.params;
       connection = await getConnection();
 
+      // Combined query to get both private conversations and group chats
       const [conversations] = await connection.query(`
-        SELECT 
+        (SELECT 
           c.id,
+          'private' as chat_type,
           c.participant1_id,
           c.participant2_id,
           c.last_message_text,
@@ -258,9 +260,31 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
         FROM conversations c
         LEFT JOIN users u1 ON c.participant1_id = u1.id
         LEFT JOIN users u2 ON c.participant2_id = u2.id
-        WHERE c.participant1_id = ? OR c.participant2_id = ?
-        ORDER BY c.updated_at DESC
-      `, [userId, userId, userId, userId, userId, userId]);
+        WHERE c.participant1_id = ? OR c.participant2_id = ?)
+        
+        UNION ALL
+        
+        (SELECT 
+          g.id,
+          'group' as chat_type,
+          NULL as participant1_id,
+          NULL as participant2_id,
+          NULL as last_message_text,
+          NULL as last_message_timestamp,
+          g.created_at,
+          g.updated_at,
+          NULL as other_user_id,
+          g.name as name,
+          g.avatar as avatar,
+          'Active' as status,
+          'Group Chat' as lastMessage,
+          DATE_FORMAT(g.created_at, '%M %d, %Y %H:%i') as timestamp
+        FROM chat_groups g
+        INNER JOIN chat_group_members gm ON g.id = gm.group_id
+        WHERE gm.user_id = ?)
+        
+        ORDER BY updated_at DESC
+      `, [userId, userId, userId, userId, userId, userId, userId]);
 
       res.json(conversations);
     } catch (error) {
@@ -270,35 +294,104 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
     }
   });
 
+  app.post('/api/chat-groups', async (req, res) => {
+    let connection;
+    try {
+      const { name, description, created_by, members = [] } = req.body;
+      connection = await getConnection();
+      await connection.beginTransaction();
+
+      const [groupResult] = await connection.query(
+        'INSERT INTO chat_groups (name, description, created_by) VALUES (?, ?, ?)',
+        [name, description, created_by]
+      );
+      
+      const groupId = groupResult.insertId;
+
+      // Add creator as Admin
+      await connection.query(
+        'INSERT INTO chat_group_members (group_id, user_id, role) VALUES (?, ?, ?)',
+        [groupId, created_by, 'Admin']
+      );
+
+      // Add other members
+      for (const userId of members) {
+        if (userId !== created_by) {
+          await connection.query(
+            'INSERT INTO chat_group_members (group_id, user_id) VALUES (?, ?)',
+            [groupId, userId]
+          );
+        }
+      }
+
+      await connection.commit();
+      res.status(201).json({ id: groupId, name, description, members_count: members.length + 1 });
+    } catch (error) {
+      if (connection) await connection.rollback();
+      responseError(res, 500, 'Failed to create group', error);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.get('/api/chat-groups/:groupId/members', async (req, res) => {
+    let connection;
+    try {
+      const { groupId } = req.params;
+      connection = await getConnection();
+      const query = 'SELECT u.id, u.first_name, u.last_name, u.email, u.avatar, gm.role, gm.joined_at ' +
+                    'FROM users u ' +
+                    'INNER JOIN chat_group_members gm ON u.id = gm.user_id ' +
+                    'WHERE gm.group_id = ?';
+      const [members] = await connection.query(query, [groupId]);
+      res.json(members);
+    } catch (error) {
+      responseError(res, 500, 'Failed to fetch group members', error);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
   app.post('/api/messages', async (req, res) => {
     let connection;
     try {
-      const { sender_id, receiver_id, message_text } = req.body;
+      const { sender_id, receiver_id, group_id, message_text } = req.body;
 
-      if (!sender_id || !receiver_id || !message_text) {
-        return res.status(400).json({ error: 'Sender ID, receiver ID, and message text required' });
+      if (!sender_id || (!receiver_id && !group_id) || !message_text) {
+        return res.status(400).json({ error: 'Sender ID, (Receiver ID or Group ID), and message text required' });
       }
 
       connection = await getConnection();
 
-      // Verify both users exist before creating message
-      const [senderCheck] = await connection.query('SELECT id FROM users WHERE id = ?', [sender_id]);
-      const [receiverCheck] = await connection.query('SELECT id FROM users WHERE id = ?', [receiver_id]);
+      let conversation_id = null;
+      if (receiver_id) {
+        // One-on-one message
+        const [conv] = await connection.query(
+          'SELECT id FROM conversations WHERE (participant1_id = ? AND participant2_id = ?) OR (participant1_id = ? AND participant2_id = ?)',
+          [sender_id, receiver_id, receiver_id, sender_id]
+        );
 
-      if (senderCheck.length === 0) {
-        connection.release();
-        return res.status(404).json({ error: `Sender with ID ${sender_id} not found` });
+        if (conv.length > 0) {
+          conversation_id = conv[0].id;
+        } else {
+          const [newConv] = await connection.query(
+            'INSERT INTO conversations (participant1_id, participant2_id) VALUES (?, ?)',
+            [sender_id, receiver_id]
+          );
+          conversation_id = newConv.insertId;
+        }
       }
 
-      if (receiverCheck.length === 0) {
-        connection.release();
-        return res.status(404).json({ error: `Receiver with ID ${receiver_id} not found` });
-      }
+      const insertMsgQuery = 'INSERT INTO messages (sender_id, receiver_id, conversation_id, group_id, message_text) ' +
+                             'VALUES (?, ?, ?, ?, ?)';
+      const [result] = await connection.query(insertMsgQuery, [sender_id, receiver_id || null, conversation_id, group_id || null, message_text]);
 
-      const [result] = await connection.query(`
-        INSERT INTO messages (sender_id, receiver_id, message_text)
-        VALUES (?, ?, ?)
-      `, [sender_id, receiver_id, message_text]);
+      if (conversation_id) {
+        await connection.query(
+          'UPDATE conversations SET last_message_text = ?, last_message_timestamp = CURRENT_TIMESTAMP WHERE id = ?',
+          [message_text, conversation_id]
+        );
+      }
 
       const [message] = await connection.query('SELECT * FROM messages WHERE id = ?', [result.insertId]);
       res.status(201).json(message[0]);
@@ -313,30 +406,34 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
     let connection;
     try {
       const { userId } = req.params;
-      const { conversationWith } = req.query;
+      const { conversationWith, groupId } = req.query;
 
       connection = await getConnection();
 
       let query = `
         SELECT 
           m.*,
+          u.first_name, u.last_name, u.avatar as sender_avatar,
           CASE 
             WHEN m.sender_id = ? THEN 'user'
             ELSE 'other'
           END as sender,
-          CASE 
-            WHEN m.sender_id = ? THEN m.message_text
-            ELSE m.message_text
-          END as text,
+          m.message_text as text,
           DATE_FORMAT(m.created_at, '%h:%i %p') as timestamp
         FROM messages m
-        WHERE (m.sender_id = ? OR m.receiver_id = ?)
+        LEFT JOIN users u ON m.sender_id = u.id
+        WHERE 1=1
       `;
-      const params = [userId, userId, userId, userId];
+      const params = [userId];
 
-      if (conversationWith) {
-        query += ' AND (m.sender_id = ? OR m.receiver_id = ?)';
-        params.push(conversationWith, conversationWith);
+      if (groupId) {
+        query += ' AND m.group_id = ?';
+        params.push(groupId);
+      } else if (conversationWith) {
+        query += ' AND ((m.sender_id = ? AND m.receiver_id = ?) OR (m.sender_id = ? AND m.receiver_id = ?))';
+        params.push(userId, conversationWith, conversationWith, userId);
+      } else {
+        return res.status(400).json({ error: 'conversationWith or groupId required' });
       }
 
       query += ' ORDER BY m.created_at ASC';

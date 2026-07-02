@@ -225,12 +225,14 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
           gt.*, 
           u.first_name as assigned_by_name,
           CASE 
+            WHEN gt.project_id IS NOT NULL THEN p_id.name
             WHEN gt.linked_type = 'Project' THEN p.name
             WHEN gt.linked_type = 'Deal' THEN d.deal_name
             WHEN gt.linked_type = 'Lead' THEN l.project_name
             ELSE NULL
           END as project_name,
           CASE 
+            WHEN gt.project_id IS NOT NULL THEN c_pid.company_name
             WHEN gt.linked_type = 'Project' THEN c_p.company_name
             WHEN gt.linked_type = 'Deal' THEN c_d.company_name
             WHEN gt.linked_type = 'Lead' THEN l.lead_name
@@ -238,9 +240,11 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
           END as client_name
         FROM general_tasks gt 
         LEFT JOIN users u ON gt.created_by = u.id 
+        LEFT JOIN projects p_id ON gt.project_id = p_id.id
         LEFT JOIN projects p ON gt.linked_type = 'Project' AND gt.linked_id = p.id
         LEFT JOIN deals d ON gt.linked_type = 'Deal' AND gt.linked_id = d.id
         LEFT JOIN leads l ON gt.linked_type = 'Lead' AND gt.linked_id = l.id
+        LEFT JOIN companies c_pid ON p_id.company_id = c_pid.id
         LEFT JOIN companies c_p ON p.company_id = c_p.id
         LEFT JOIN companies c_d ON d.company_id = c_d.id
         WHERE 1=1
@@ -270,15 +274,25 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
 
   app.post('/api/tasks', async (req, res) => {
     try {
-      const { title, description, status, priority, assigned_to, due_date, due_time, tags, linked_type, linked_id, created_by, task_type, next_followup_date } = req.body;
+      const { 
+        title, description, status, priority, assigned_to, due_date, due_time, 
+        tags, linked_type, linked_id, created_by, task_type, next_followup_date,
+        internal_notes, reminder_date, category, sub_type, project_id,
+        workflow_type, department_id
+      } = req.body;
 
       if (!title) {
         return res.status(400).json({ error: 'Task title required' });
       }
 
       const [result] = await db.query(`
-        INSERT INTO general_tasks (title, description, status, priority, assigned_to, due_date, due_time, tags, linked_type, linked_id, created_by, task_type, next_followup_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO general_tasks (
+          title, description, status, priority, assigned_to, due_date, due_time, 
+          tags, linked_type, linked_id, created_by, task_type, next_followup_date,
+          internal_notes, reminder_date, category, sub_type, project_id,
+          workflow_type, department_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         title,
         description || null,
@@ -292,7 +306,14 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
         linked_id || null,
         created_by || null,
         task_type || 'General',
-        next_followup_date || null
+        next_followup_date || null,
+        internal_notes || null,
+        reminder_date || null,
+        category || null,
+        sub_type || null,
+        project_id || null,
+        workflow_type || null,
+        department_id || null
       ]);
 
       const taskId = result.insertId;

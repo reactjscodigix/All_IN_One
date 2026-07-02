@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import AddNewEstimationModal from './AddNewEstimationModal';
 import ReviseQuotationModal from './ReviseQuotationModal';
 import DateRangeDropdown from './DateRangeDropdown';
-import { estimationsAPI, dealsAPI } from '../services/api';
+import { estimationsAPI, dealsAPI, leadsAPI, activitiesAPI } from '../services/api';
 import { showSuccessToast } from '../utils/toast';
 
 const EstimationsPage = () => {
@@ -681,6 +681,10 @@ const EstimationsPage = () => {
     try {
       setIsUpdating(true);
       lastUpdateRef.current = Date.now();
+      
+      // Get the estimation before update to check links
+      const estimation = estimations.find(est => est.id === estimationId);
+      
       // Optimistic update
       const updatedEstimations = estimations.map(est =>
         est.id === estimationId ? { ...est, status: newStatus } : est
@@ -688,6 +692,60 @@ const EstimationsPage = () => {
       setEstimations(updatedEstimations);
 
       await estimationsAPI.update(estimationId, { status: newStatus });
+      
+      // Sync with Deal and Lead stages
+      if (estimation) {
+        const dealIdToUpdate = estimation.deal_id || (estimation.lead_id ? Number(estimation.lead_id) + 1000000 : null);
+        const leadIdToUpdate = estimation.lead_id;
+
+        // Map estimation status to Deal stage
+        let newDealStage = null;
+        if (newStatus === 'Accepted') newDealStage = 'Won';
+        else if (newStatus === 'Declined') newDealStage = 'Lost';
+        else if (newStatus === 'Sent' || newStatus === 'Revised') newDealStage = 'Quotation';
+        else if (newStatus === 'Draft') newDealStage = 'Quotation';
+
+        if (newDealStage) {
+          if (dealIdToUpdate) {
+            try {
+              await dealsAPI.update(dealIdToUpdate, { 
+                pipeline: newDealStage,
+                deal_stage: newDealStage,
+                status: newStatus === 'Accepted' ? 'Won' : (newStatus === 'Declined' ? 'Lost' : (newStatus === 'Sent' || newStatus === 'Revised' ? 'Quotation' : 'Open'))
+              });
+            } catch (err) {
+              console.warn('Failed to sync deal status:', err);
+            }
+          }
+
+          if (leadIdToUpdate) {
+            try {
+              await leadsAPI.update(leadIdToUpdate, { 
+                status: newDealStage === 'Lost' ? 'Lost' : newDealStage
+              });
+            } catch (err) {
+              console.warn('Failed to sync lead status:', err);
+            }
+          }
+        }
+
+        // Log activity for status change
+        try {
+          const isVirtual = !isNaN(parseInt(dealIdToUpdate)) && parseInt(dealIdToUpdate) > 1000000;
+          await activitiesAPI.create({
+            title: `${newStatus === 'Sent' || newStatus === 'Revised' ? 'Quotation Sent' : `Quotation Status: ${newStatus}`}`,
+            description: `Quotation ${estimation.estimation_number || estimation.id} status changed to ${newStatus}.`,
+            activity_type: (newStatus === 'Sent' || newStatus === 'Revised') ? 'Email' : 'Activity',
+            lead_id: leadIdToUpdate,
+            deal_id: isVirtual ? null : dealIdToUpdate,
+            status: 'Completed',
+            priority: 'Medium'
+          });
+        } catch (err) {
+          console.warn('Failed to log status change activity:', err);
+        }
+      }
+
       // Success: No need to fetch immediately
       setActionMenu(null);
       showSuccessToast(`Status updated to ${newStatus}`);

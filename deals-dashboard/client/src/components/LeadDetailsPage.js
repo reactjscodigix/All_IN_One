@@ -1756,7 +1756,7 @@ const LeadDetailsPage = () => {
 
                           {call.ai_suggested_actions && (
                             <div className="mt-3 pt-3 border-t border-blue-100">
-                              <h6 className="text-[10px] font-bold text-blue-900 mb-2 uppercase">Suggested Next Actions</h6>
+                              <h6 className="text-xs  text-blue-900 mb-2 uppercase">Suggested Next Actions</h6>
                               <div className="flex flex-wrap gap-2">
                                 {JSON.parse(typeof call.ai_suggested_actions === 'string' ? call.ai_suggested_actions : JSON.stringify(call.ai_suggested_actions)).map((action, i) => (
                                   <span key={i} className="px-2 py-1 bg-white border border-blue-200 text-blue-700 rounded text-[9px] font-medium">
@@ -1821,14 +1821,14 @@ const LeadDetailsPage = () => {
                             
                             {call.ai_summary && (
                               <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-gray-700">AI Summary:</p>
+                                <p className="text-xs  text-gray-700">AI Summary:</p>
                                 <p className="text-[10px] text-gray-600 leading-relaxed italic">"{call.ai_summary}"</p>
                               </div>
                             )}
 
                             {call.ai_key_points && (
                               <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-gray-700">Key Discussion Points:</p>
+                                <p className="text-xs  text-gray-700">Key Discussion Points:</p>
                                 <ul className="list-disc list-inside text-[10px] text-gray-600 pl-1">
                                   {(typeof call.ai_key_points === 'string' ? JSON.parse(call.ai_key_points) : call.ai_key_points).map((point, i) => (
                                     <li key={i}>{point}</li>
@@ -1839,7 +1839,7 @@ const LeadDetailsPage = () => {
 
                             {call.ai_suggested_actions && (
                               <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-blue-700">Suggested Next Actions:</p>
+                                <p className="text-xs  text-blue-700">Suggested Next Actions:</p>
                                 <ul className="list-disc list-inside text-[10px] text-blue-600 pl-1">
                                   {(typeof call.ai_suggested_actions === 'string' ? JSON.parse(call.ai_suggested_actions) : call.ai_suggested_actions).map((action, i) => (
                                     <li key={i}>{action}</li>

@@ -3,8 +3,9 @@ import { Search, ChevronDown, Filter, Plus, MoreVertical } from 'lucide-react';
 import AddNewCampaignModal from './AddNewCampaignModal';
 import { campaignAPI } from '../services/api';
 
-const CrmCampaignPage = () => {
+const CrmCampaignPage = ({ department }) => {
   const [stats, setStats] = useState([]);
+  const [allCampaigns, setAllCampaigns] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,6 +16,20 @@ const CrmCampaignPage = () => {
   useEffect(() => {
     loadCampaigns();
   }, []);
+
+  useEffect(() => {
+    if (department) {
+      const filtered = allCampaigns.filter(c => 
+        (department === 'Marketing' && (c.category === 'Marketing' || c.type === 'Marketing' || c.department === 'Marketing')) ||
+        (department === 'IT' && (c.category === 'IT' || c.type === 'IT' || c.department === 'IT'))
+      );
+      setCampaigns(filtered);
+      calculateStats(filtered);
+    } else {
+      setCampaigns(allCampaigns);
+      calculateStats(allCampaigns);
+    }
+  }, [allCampaigns, department]);
 
   const loadCampaigns = async () => {
     try {
@@ -28,17 +43,14 @@ const CrmCampaignPage = () => {
       }
       
       if (Array.isArray(campaignsList)) {
-        setCampaigns(campaignsList);
-        calculateStats(campaignsList);
+        setAllCampaigns(campaignsList);
       } else {
-        setCampaigns([]);
-        setStats([]);
+        setAllCampaigns([]);
       }
     } catch (error) {
       console.error('❌ Failed to load campaigns:', error);
       setError('Failed to load campaigns: ' + error.message);
-      setCampaigns([]);
-      setStats([]);
+      setAllCampaigns([]);
     } finally {
       setIsLoading(false);
     }

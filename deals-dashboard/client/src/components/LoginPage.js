@@ -82,12 +82,9 @@ const LoginPage = () => {
 
   const DEMO_USERS = [
     { email: 'admin@example.com', password: 'admin123', role: 'Super Admin' },
-    { email: 'leads@example.com', password: 'pass123', role: 'Leads Manager' },
-    { email: 'deals@example.com', password: 'pass123', role: 'Deals Manager' },
-    { email: 'sales@example.com', password: 'pass123', role: 'Sales Manager' },
-    { email: 'marketing@example.com', password: 'pass123', role: 'Marketing Manager' },
-    { email: 'it@example.com', password: 'pass123', role: 'IT Manager' },
-    { email: 'accounting@example.com', password: 'pass123', role: 'Accounting Manager' },
+    { email: 'rohityadav@gmail.com', password: 'admin123', role: 'Super Admin' },
+    { email: 'leads@gmail.com', password: '123456', role: 'Leads Manager' },
+    { email: 'sales@gmail.com', password: '123456', role: 'Sales Manager' },
   ];
 
   const handleDemoLogin = async (demoUser) => {

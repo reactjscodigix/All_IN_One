@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 
 const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
+  const [isFetching, setIsFetching] = useState(false);
+  const [confirmedProjects, setConfirmedProjects] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  
   const [formData, setFormData] = useState({
     name: '',
     projectId: '',
@@ -18,6 +22,39 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
     status: '',
     description: '',
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchRequiredData();
+    }
+  }, [isOpen]);
+
+  const fetchRequiredData = async () => {
+    setIsFetching(true);
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const [companiesRes, confirmedRes] = await Promise.all([
+        fetch(`${apiUrl}/confirmed-it-clients`),
+        fetch(`${apiUrl}/confirmed-it-projects`)
+      ]);
+      
+      if (companiesRes.ok) {
+        const companiesData = await companiesRes.json();
+        setCompanies(Array.isArray(companiesData) ? companiesData : []);
+      }
+
+      if (confirmedRes.ok) {
+        const confirmedData = await confirmedRes.json();
+        setConfirmedProjects(Array.isArray(confirmedData) ? confirmedData : []);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setCompanies([]);
+      setConfirmedProjects([]);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   useEffect(() => {
     const formatDateForInput = (dateStr) => {
@@ -87,6 +124,20 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Auto-select client if a confirmed project is selected
+    if (name === 'name' && value) {
+      const selectedProject = confirmedProjects.find(p => p.name === value);
+      if (selectedProject) {
+        setFormData(prev => ({
+          ...prev,
+          name: value,
+          client: selectedProject.company_name // In this modal client seems to be name string
+        }));
+        return;
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -183,14 +234,23 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
             <label className="block text-xs    mb-2  text-gray-600">
               Name <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
+            <select
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder="Project name"
-              className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
-            />
+              disabled={isFetching}
+              className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400 disabled:opacity-50"
+            >
+              <option value="">{isFetching ? 'Loading projects...' : 'Select IT Project'}</option>
+              {confirmedProjects.map(project => (
+                <option key={project.id} value={project.name}>
+                  {project.name} ({project.company_name})
+                </option>
+              ))}
+              {!isFetching && confirmedProjects.length === 0 && (
+                <option disabled>No confirmed IT projects found</option>
+              )}
+            </select>
           </div>
 
           {/* Project ID */}
@@ -235,13 +295,15 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               name="client"
               value={formData.client}
               onChange={handleInputChange}
-              className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
+              disabled={isFetching}
+              className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400 disabled:opacity-50"
             >
-              <option value="">Select</option>
-              <option value="NovaWave LLC">NovaWave LLC</option>
-              <option value="BlueSky">BlueSky</option>
-              <option value="Silve Hawk">Silve Hawk</option>
-              <option value="Summit Peak">Summit Peak</option>
+              <option value="">{isFetching ? 'Loading companies...' : 'Select'}</option>
+              {companies.map(company => (
+                <option key={company.id} value={company.company_name}>
+                  {company.company_name}
+                </option>
+              ))}
             </select>
           </div>
 

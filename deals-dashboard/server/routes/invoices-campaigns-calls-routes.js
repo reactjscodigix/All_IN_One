@@ -1,4 +1,5 @@
 const { requireAuth, requireRole } = require('../middleware/authMiddleware');
+const { generateEstimationNumber } = require('../middleware/helpers');
 const nodemailer = require('nodemailer');
 
 module.exports = function(app, pool) {
@@ -921,7 +922,13 @@ module.exports = function(app, pool) {
         tax_percentage, tax_amount, subtotal, total
       } = req.body;
 
-      const finalEstimationNumber = estimation_number || `EST-${Date.now()}`;
+      let finalEstimationNumber = estimation_number;
+
+      // If estimation_number is not provided, or it looks like the default starting number,
+      // generate a fresh unique one to avoid "Duplicate entry" errors.
+      if (!finalEstimationNumber || finalEstimationNumber.endsWith('-001')) {
+        finalEstimationNumber = await generateEstimationNumber(pool);
+      }
 
       if (!client_id && !lead_id) {
         return res.status(400).json({ error: 'Client ID or Lead ID required' });
@@ -1065,23 +1072,46 @@ module.exports = function(app, pool) {
         values
       );
 
-      if (updates.status === 'Sent') {
+      if (updates.status === 'Sent' || updates.status === 'Accepted') {
         const [estimations] = await connection.query('SELECT * FROM estimations WHERE id = ?', [id]);
         if (estimations.length > 0) {
           const est = estimations[0];
-          const targetStatus = (est.version > 1) ? 'Revised Quotation' : 'Quotation';
           
-          if (est.deal_id) {
-            await connection.query(
-              'UPDATE deals SET pipeline = ?, deal_stage = ?, deal_value = ?, updated_at = NOW() WHERE id = ?',
-              [targetStatus, targetStatus, est.amount, est.deal_id]
-            );
-          }
-          if (est.lead_id) {
-            await connection.query(
-              'UPDATE leads SET lead_status = ?, value = ?, updated_at = NOW() WHERE id = ?',
-              [targetStatus, est.amount, est.lead_id]
-            );
+          if (updates.status === 'Sent') {
+            const targetStatus = (est.version > 1) ? 'Revised Quotation' : 'Quotation';
+            
+            if (est.deal_id) {
+              await connection.query(
+                'UPDATE deals SET pipeline = ?, deal_stage = ?, deal_value = ?, updated_at = NOW() WHERE id = ?',
+                [targetStatus, targetStatus, est.amount, est.deal_id]
+              );
+            }
+            if (est.lead_id) {
+              await connection.query(
+                'UPDATE leads SET lead_status = ?, value = ?, updated_at = NOW() WHERE id = ?',
+                [targetStatus, est.amount, est.lead_id]
+              );
+            }
+          } else if (updates.status === 'Accepted') {
+            // When accepted, mark deal as Won and company as Active
+            if (est.deal_id) {
+              await connection.query(
+                "UPDATE deals SET pipeline = 'Won', deal_stage = 'Won', status = 'Won', updated_at = NOW() WHERE id = ?",
+                [est.deal_id]
+              );
+            }
+            if (est.lead_id) {
+              await connection.query(
+                "UPDATE leads SET lead_status = 'Won', updated_at = NOW() WHERE id = ?",
+                [est.lead_id]
+              );
+            }
+            if (est.client_id) {
+              await connection.query(
+                "UPDATE companies SET status = 'Active', updated_at = NOW() WHERE id = ?",
+                [est.client_id]
+              );
+            }
           }
         }
       }
@@ -1187,12 +1217,12 @@ module.exports = function(app, pool) {
         SELECT * FROM estimation_line_items WHERE estimation_id = ? ORDER BY id ASC
       `, [id]);
 
-      // 3. Configure Nodemailer
+      // 3. Configure Nodemailer with optimized Gmail settings
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
           user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
+          pass: process.env.SMTP_PASS?.trim() // Ensure no accidental spaces
         }
       });
 

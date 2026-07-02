@@ -67,10 +67,9 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       const getDepartmentPrefix = () => {
         // Fallback to user's primary department
         if (user?.role === 'Super Admin') return '/super-admin';
-        if (user?.role === 'Admin' || user?.department === 'Leads Management') return '/leads';
-        if (user?.department === 'Deals Management') return '/deals';
-        if (user?.role === 'Sales Manager' || user?.role === 'Sales Executive' || user?.department === 'Sales Department') return '/sales';
-        if (user?.department === 'Marketing Department' || user?.department === 'IT Department') return '/projects';
+        if (user?.role === 'Admin' || user?.department === 'Leads Management' || user?.department === 'Deals Management' || user?.role === 'Sales Manager' || user?.role === 'Sales Executive' || user?.department === 'Sales Department') return '/sales';
+        if (user?.department === 'Marketing Department') return '/marketing';
+        if (user?.department === 'IT Department') return '/it';
         
         return '';
       };
@@ -85,7 +84,9 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
         'contacts', 'companies', 'campaign', 'proposals', 'contracts', 
         'estimations', 'invoices', 'payments', 'activities', 'chat',
         'video-call', 'audio-call', 'call-history', 'email', 'todo', 
-        'notes', 'file-manager', 'social-feed'
+        'notes', 'file-manager', 'social-feed', 'seo-gmb', 'ppc-ads',
+        'graphics-video', 'content-calendar', 'blogs-calendar', 'marketing-drive',
+        'it-inventory', 'it-ticketing'
       ];
       
       if (sharedModules.some(m => page.includes(m))) {
@@ -102,6 +103,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
           cleanPage = 'targets';
         } else if (page === 'sales-reports') {
           cleanPage = 'reports';
+        } else if (page === 'it-chat') {
+          cleanPage = 'chat';
+        } else if (page === 'revenue-forecast') {
+          cleanPage = 'analytics';
         }
         
         finalPage = `${prefix}/${cleanPage}`;
@@ -171,7 +176,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
   );
 
   const isManager = user?.role?.toLowerCase().includes('manager') || user?.role === 'Admin' || user?.role === 'Super Admin';
-  const isSalesRole = user?.role === 'Sales Manager' || user?.role === 'Sales Executive' || user?.department === 'Sales Department';
+  const isSalesRole = user?.role === 'Sales Manager' || user?.role === 'Sales Executive' || user?.department === 'Sales Department' || user?.department === 'Leads Management' || user?.department === 'Deals Management';
   const isSuperAdmin = user?.role === 'Super Admin';
 
   const renderAdminMenu = () => (
@@ -214,31 +219,14 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       active={['leads-dashboard', 'leads', 'deals-dashboard', 'deals-list', 'pipeline', 'projects-dashboard', 'projects', 'kanban', 'quotations', 'contacts', 'companies', 'invoices', 'analytics', 'reports', 'notifications', 'profile-settings', 'followups', 'approvals', 'tasks', 'performance', 'commission', 'calendar', 'campaign'].includes(currentPage)}
       items={
         <>
-          {/* Leads Section */}
-          <div className="p-2 text-xs    text-[#1F2020] ">Leads Management</div>
           <SubmenuItem label="Leads Dashboard" page="leads-dashboard" icon={Layout} prefix="/leads" />
-          <SubmenuItem label="All Leads" page="leads" icon={Users} prefix="/leads" />
-          {isManager && <SubmenuItem label="Lead Distribution" page="leads-distribution" icon={Users2} prefix="/leads" />}
-          
-          {/* Deals Section */}
-          <div className="p-2 text-xs    text-[#1F2020] ">Deals Management</div>
+          <SubmenuItem label="Sales Dashboard" page="sales-dashboard" icon={Layout} prefix="/sales" />
           <SubmenuItem label="Deals Dashboard" page="deals-dashboard" icon={BarChart3} prefix="/deals" />
+          <SubmenuItem label="All Leads" page="leads" icon={Users} prefix="/leads" />
           <SubmenuItem label="All Deals" page="deals-list" icon={Briefcase} prefix="/deals" />
-          {isManager && (
-            <>
-              <SubmenuItem label="Revenue Forecast" page="analytics" icon={TrendingUp} prefix="/deals" />
-              <SubmenuItem label="Discount Approval" page="approvals" icon={FileCheck} prefix="/deals" />
-            </>
-          )}
           
-          {/* Projects Section */}
-          <div className="p-2 text-xs    text-[#1F2020] ">Project Management</div>
-          <SubmenuItem label="Project Dashboard" page="projects-dashboard" icon={Activity} prefix="/projects" />
+          <div className="p-2 text-xs  text-[#1F2020] uppercase tracking-wider bg-gray-50/50 mt-2">Operations</div>
           <SubmenuItem label="All Projects" page="projects" icon={Layers} prefix="/projects" />
-          {isManager && <SubmenuItem label="Resource Allocation" page="manage-users" icon={Users} prefix="/projects" />}
-          
-          {/* CRM Modules */}
-          <div className="p-2 text-xs    text-[#1F2020] ">Operations</div>
           <SubmenuItem label="Quotations" page="quotations" icon={FileStack} prefix="/deals" />
           <SubmenuItem label="Clients" page="contacts" icon={Users2} prefix="/deals" />
           <SubmenuItem label="Invoices" page="invoices" icon={CreditCard} prefix="/deals" />
@@ -296,35 +284,114 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
   const renderSalesMenu = () => (
     <NestedMenu
       icon={TrendingUp}
-      label="Sales Dashboard"
+      label="Sales Management"
       expanded={expandedMenus.sales}
       onToggle={() => toggleMenu('sales')}
-      active={['sales-dashboard', 'quotations', 'customers', 'sales-targets', 'performance', 'commission', 'approvals', 'sales-reports', 'analytics', 'notifications', 'profile-settings', 'followups', 'tasks', 'calendar'].includes(currentPage)}
+      active={['sales-dashboard', 'leads-dashboard', 'leads', 'leads-distribution', 'deals-dashboard', 'deals-list', 'revenue-forecast', 'approvals', 'tasks', 'followups', 'calendar', 'quotations', 'contacts', 'invoices', 'campaign', 'analytics'].includes(currentPage)}
       items={
         <>
-          {/* Main Sales Actions */}
-          <SubmenuItem label="Sales Dashboard" page="sales-dashboard" icon={Layout} />
-          <SubmenuItem label="My Tasks" page="tasks" icon={ClipboardList} />
-          <SubmenuItem label="Follow-Ups" page="followups" icon={History} />
-          <SubmenuItem label="Calendar" page="calendar" icon={Calendar} />
-          <SubmenuItem label="Quotations" page="quotations" icon={FileStack} />
-          
-          {/* Sales Operations */}
-          <div className="p-2 text-xs text-[#1F2020]">Sales Operations</div>
-          <SubmenuItem label="Customers" page="customers" icon={Users2} />
-          <SubmenuItem label="Sales Targets" page="sales-targets" icon={Target} />
-          
-          {isManager && <SubmenuItem label="Discount Approval" page="approvals" icon={FileCheck} />}
-          
-          {/* Reports */}
-          <div className="p-2 text-xs text-[#1F2020]">Reports & Analytics</div>
-          <SubmenuItem label="Sales Reports" page="sales-reports" icon={BarChart} />
-          <SubmenuItem label="Analytics" page="analytics" icon={TrendingUp} />
-          
-          {/* Support */}
-          <div className="p-2 text-xs text-[#1F2020]">Support & Personal</div>
+          <SubmenuItem label="Leads Dashboard" page="leads-dashboard" icon={Layout} prefix="/leads" />
+          <SubmenuItem label="Sales Dashboard" page="sales-dashboard" icon={Layout} prefix="/sales" />
+          <SubmenuItem label="Deals Dashboard" page="deals-dashboard" icon={BarChart3} prefix="/deals" />
+          <SubmenuItem label="All Leads" page="leads" icon={Users} prefix="/leads" />
+          <SubmenuItem label="All Deals" page="deals-list" icon={Briefcase} prefix="/deals" />
+
+          {isManager && <div className="p-1.5 text-xs  text-gray-400 uppercase mt-1">Management</div>}
+          {isManager && <SubmenuItem label="Lead Distribution" page="leads-distribution" icon={Users2} prefix="/leads" />}
+
+          <div className="p-1.5 text-xs  text-gray-400 uppercase mt-1">Operations</div>
+          <SubmenuItem label="My Tasks" page="tasks" icon={ClipboardList} prefix="/sales" />
+          <SubmenuItem label="Follow-Ups" page="followups" icon={History} prefix="/sales" />
+          <SubmenuItem label="Calendar" page="calendar" icon={Calendar} prefix="/sales" />
+          <SubmenuItem label="Quotations" page="quotations" icon={FileStack} prefix="/deals" />
+          <SubmenuItem label="Clients" page="contacts" icon={Users2} prefix="/deals" />
+          <SubmenuItem label="Invoices" page="invoices" icon={CreditCard} prefix="/deals" />
+          <SubmenuItem label="Campaigns" page="campaign" icon={Megaphone} prefix="/deals" />
+          <SubmenuItem label="Reports & Analytics" page="analytics" icon={BarChart} prefix="/deals" />
+
+          <div className="p-1.5 text-xs  text-gray-400 uppercase mt-1">Support</div>
           <SubmenuItem label="Notifications" page="notifications" icon={Bell} />
           <SubmenuItem label="Profile" page="profile-settings" icon={UserCircle} />
+        </>
+      }
+    />
+  );
+
+  const renderITMenu = () => (
+    <NestedMenu
+      icon={Terminal}
+      label="IT Project Dashboard"
+      expanded={expandedMenus.it}
+      onToggle={() => toggleMenu('it')}
+      active={['projects-dashboard', 'projects', 'tasks', 'kanban', 'analytics', 'file-manager', 'notes', 'calendar', 'chat', 'activities'].includes(currentPage)}
+      items={
+        <>
+          {/* Project Focus - Jira Style */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Project Management</div>
+          <SubmenuItem label="IT Dashboard" page="projects-dashboard" icon={Layout} prefix="/it" />
+          {isManager && <SubmenuItem label="Manager Overview" page="it-manager-dashboard" icon={Gauge} prefix="/it" />}
+          {isManager && <SubmenuItem label="Team Management" page="it-teams" icon={Users2} prefix="/it" />}
+          <SubmenuItem label="All Projects" page="projects" icon={Briefcase} prefix="/it" />
+          <SubmenuItem label="Tasks & Issues" page="tasks" icon={ClipboardList} prefix="/it" />
+          <SubmenuItem label="Kanban Board" page="kanban" icon={Layers} prefix="/it" />
+          
+          {/* Engineering/Development Tools */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Development Tools</div>
+          <SubmenuItem label="Analytics & KPI" page="analytics" icon={BarChart} prefix="/it" />
+          <SubmenuItem label="Activity Stream" page="activities" icon={Activity} prefix="/it" />
+          <SubmenuItem label="Files & Docs" page="file-manager" icon={HardDrive} prefix="/it" />
+          
+          {/* Communication */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Collaboration</div>
+          <SubmenuItem label="IT Calendar" page="calendar" icon={Calendar} prefix="/it" />
+          <SubmenuItem label="Team Chat" page="it-chat" icon={Users} prefix="/it" />
+          <SubmenuItem label="Notes & Wiki" page="notes" icon={FileText} prefix="/it" />
+          
+          {/* Support/Personal */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Support</div>
+          <SubmenuItem label="Notifications" page="notifications" icon={Bell} />
+          <SubmenuItem label="My Profile" page="profile-settings" icon={UserCircle} />
+        </>
+      }
+    />
+  );
+
+  const renderMarketingMenu = () => (
+    <NestedMenu
+      icon={Megaphone}
+      label="Marketing Dashboard"
+      expanded={expandedMenus.marketing}
+      onToggle={() => toggleMenu('marketing')}
+      active={['projects-dashboard', 'projects', 'tasks', 'campaign', 'calendar', 'all-blogs', 'file-manager', 'analytics', 'activities'].includes(currentPage)}
+      items={
+        <>
+          {/* Digital Marketing Operations */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Marketing Operations</div>
+          <SubmenuItem label="Marketing Overview" page="projects-dashboard" icon={Layout} prefix="/marketing" />
+          <SubmenuItem label="All Projects" page="projects" icon={Briefcase} prefix="/marketing" />
+          <SubmenuItem label="Daily Tasks" page="tasks" icon={ClipboardList} prefix="/marketing" />
+          
+          {/* Specialized Teams/Tasks */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Specialized Channels</div>
+          <SubmenuItem label="SEO & GMB" page="seo-gmb" icon={SearchCode} prefix="/marketing" />
+          <SubmenuItem label="PPC (Paid Ads)" page="campaign" icon={TrendingUp} prefix="/marketing" />
+          <SubmenuItem label="Graphics & Video" page="tasks" icon={Palette} prefix="/marketing" />
+          
+          {/* Content & Scheduling */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Content Strategy</div>
+          <SubmenuItem label="Content Calendar" page="calendar" icon={Calendar} prefix="/marketing" />
+          <SubmenuItem label="Blogs Calendar" page="all-blogs" icon={FileJson} prefix="/marketing" />
+          
+          {/* Assets & Data */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Assets & Analytics</div>
+          <SubmenuItem label="Marketing Drive" page="file-manager" icon={HardDrive} prefix="/marketing" />
+          <SubmenuItem label="Campaign Analytics" page="analytics" icon={BarChart} prefix="/marketing" />
+          <SubmenuItem label="Activity Stream" page="activities" icon={Activity} prefix="/marketing" />
+          
+          {/* Support */}
+          <div className="p-2 text-xs    text-[#1F2020] ">Support</div>
+          <SubmenuItem label="Notifications" page="notifications" icon={Bell} />
+          <SubmenuItem label="My Profile" page="profile-settings" icon={UserCircle} />
         </>
       }
     />
@@ -337,6 +404,8 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
         <>
           {renderAdminMenu()}
           {renderOperationsMenu()}
+          {renderMarketingMenu()}
+          {renderITMenu()}
           {renderAccountingMenu()}
         </>
       )}
@@ -348,7 +417,9 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       {!isSuperAdmin && !isSalesRole && (
         <>
           {(user?.department === 'Admin' || !user?.department) && renderAdminMenu()}
-          {['Leads Management', 'Deals Management', 'IT Department', 'Marketing Department'].includes(user?.department) && renderOperationsMenu()}
+          {user?.department === 'Sales Department' && renderSalesMenu()}
+          {user?.department === 'Marketing Department' && renderMarketingMenu()}
+          {user?.department === 'IT Department' && renderITMenu()}
           {user?.department === 'Accounting Department' && renderAccountingMenu()}
         </>
       )}

@@ -232,11 +232,12 @@ const TaskCard = ({
   );
 };
 
-const TasksPage = () => {
+const TasksPage = ({ department }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState('All Tasks');
+  const [allTasks, setAllTasks] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [leads, setLeads] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -260,11 +261,11 @@ const TasksPage = () => {
   const [viewMode, setViewMode] = useState('list');
 
   const handleStatusChange = useCallback(async (taskId, newStatus) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = allTasks.find(t => t.id === taskId);
     if (!task) return;
 
     const updatedTask = { ...task, status: newStatus };
-    setTasks(tasks.map(t => t.id === taskId ? updatedTask : t));
+    setAllTasks(allTasks.map(t => t.id === taskId ? updatedTask : t));
 
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -323,10 +324,10 @@ const TasksPage = () => {
       loadTasks();
     }
     setOpenMenuId(null);
-  }, [tasks, projects, deals, leads]);
+  }, [allTasks, projects, deals, leads]);
 
   const handleSyncKanbanStatus = useCallback(async (taskId) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = allTasks.find(t => t.id === taskId);
     if (!task) return;
 
     if (task.linked_type === 'Project' && task.linked_id) {
@@ -372,23 +373,23 @@ const TasksPage = () => {
       alert('This task is not linked to a project, deal, or lead.');
     }
     setOpenMenuId(null);
-  }, [tasks, projects, deals, leads, handleStatusChange]);
+  }, [allTasks, projects, deals, leads, handleStatusChange]);
 
   const handleDeleteTask = useCallback(async (taskId) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
-      const previousTasks = [...tasks];
-      setTasks(prev => prev.filter(t => t.id !== taskId));
+      const previousTasks = [...allTasks];
+      setAllTasks(prev => prev.filter(t => t.id !== taskId));
       try {
         await taskAPI.deleteGeneral(taskId);
         showSuccessToast('Task deleted successfully');
       } catch (err) {
         console.error('Error deleting task:', err);
         showErrorToast('Failed to delete task');
-        setTasks(previousTasks);
+        setAllTasks(previousTasks);
       }
     }
     setOpenMenuId(null);
-  }, [tasks]);
+  }, [allTasks]);
 
   const tabs = ['All Tasks', 'My Tasks', 'Today', 'Upcoming', 'Overdue', 'Completed'];
 
@@ -401,16 +402,16 @@ const TasksPage = () => {
     },
     {
       key: 'title',
+      label: 'Task Title',
+      sortable: true,
+      render: (value) => <span className="text-xs font-[500] text-gray-900">{value}</span>
+    },
+    {
+      key: 'project_name',
       label: 'Project Name',
       sortable: true,
-      render: (_, row) => (
-        <div className="flex flex-col">
-          {row.project_name ? (
-            <span className="text-xs font-[500] text-blue-600">{row.project_name}</span>
-          ) : (
-            <span className="text-xs font-[500] text-gray-400">-</span>
-          )}
-        </div>
+      render: (value) => (
+        <span className="text-xs font-[500] text-blue-600">{value || '-'}</span>
       )
     },
     {
@@ -709,15 +710,42 @@ const TasksPage = () => {
       const response = await fetch(`${apiUrl}/tasks`);
       if (response.ok) {
         const data = await response.json();
-        setTasks(Array.isArray(data) ? data : []);
+        setAllTasks(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error('Error loading tasks:', err);
-      setTasks([]);
+      setAllTasks([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (department) {
+      const filtered = allTasks.filter(t => {
+        if (department === 'Marketing') {
+          return (
+            t.workflow_type === 'Marketing' || 
+            t.department === 'Marketing' ||
+            Number(t.department_id) === 5 ||
+            (t.linked_type === 'Project' && projects.find(p => p.id === parseInt(t.linked_id))?.workflow_type === 'Marketing')
+          );
+        }
+        if (department === 'IT') {
+          return (
+            t.workflow_type === 'IT' || 
+            t.department === 'IT' ||
+            Number(t.department_id) === 6 ||
+            (t.linked_type === 'Project' && projects.find(p => p.id === parseInt(t.linked_id))?.workflow_type === 'IT')
+          );
+        }
+        return true;
+      });
+      setTasks(filtered);
+    } else {
+      setTasks(allTasks);
+    }
+  }, [allTasks, department, projects]);
 
   const handleEditTask = (task) => {
     setEditingTask(task);
@@ -763,12 +791,8 @@ const TasksPage = () => {
       }
 
       if (response.ok) {
-        const savedTask = await response.json();
-        if (editingTask) {
-          setTasks(prev => prev.map(t => t.id === editingTask.id ? savedTask : t));
-        } else {
-          setTasks(prev => [savedTask, ...prev]);
-        }
+        showSuccessToast(editingTask ? 'Task updated successfully' : 'Task created successfully');
+        loadTasks();
         setIsModalOpen(false);
         setEditingTask(null);
       }
@@ -1056,6 +1080,7 @@ const TasksPage = () => {
         }}
         onSubmit={handleCreateTask}
         initialData={editingTask}
+        department={department}
       />
 
       <AddNewLeadModal

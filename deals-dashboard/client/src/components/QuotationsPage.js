@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Download, Plus, MoreVertical, FileText, Send, Copy, Trash2, Eye, Edit2, FileJson, LayoutGrid, List, ChevronDown, RotateCcw, Maximize, Search, Star, Filter, ChevronUp, Printer, ChevronsUpDown, Hash, CircleDollarSign, Calendar, Clock, Wallet, ExternalLink, User, Mail, Phone } from 'lucide-react';
 import Swal from 'sweetalert2';
 import AddNewEstimationModal from './AddNewEstimationModal';
@@ -8,6 +9,7 @@ import { estimationsAPI, dealsAPI, leadsAPI, activitiesAPI } from '../services/a
 import { showSuccessToast } from '../utils/toast';
 
 const QuotationsPage = () => {
+  const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState('kanban');
@@ -28,6 +30,27 @@ const QuotationsPage = () => {
   const [dragOverStatus, setDragOverStatus] = useState(null);
   const lastUpdateRef = useRef(0);
   const [expandedRows, setExpandedRows] = useState(new Set());
+
+  useEffect(() => {
+    if (location.state?.autoOpenAdd) {
+      const data = location.state;
+      const initialData = {
+        related_type: data.related_type,
+        related_id: data.related_id,
+        client_name: data.related_name,
+        company_name: data.related_name,
+        client_email: data.client_email,
+        client_phone: data.client_phone,
+        lead_id: data.related_type === 'Lead' ? data.related_id : '',
+        deal_id: data.related_type === 'Deal' ? data.related_id : ''
+      };
+      setSelectedQuotation(initialData);
+      setIsModalOpen(true);
+      
+      // Clear state to avoid reopening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const toggleRow = (itemId) => {
     const newExpandedRows = new Set(expandedRows);

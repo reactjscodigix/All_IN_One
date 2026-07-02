@@ -3,7 +3,8 @@ import { Search, Filter, Download, MoreVertical, Plus, Star, Eye, Edit, Trash2 }
 import AddProjectModal from './AddProjectModal';
 import { projectAPI } from '../services/api';
 
-const CrmProjectsPage = () => {
+const CrmProjectsPage = ({ department }) => {
+  const [allProjects, setAllProjects] = useState([]);
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,11 +16,23 @@ const CrmProjectsPage = () => {
     loadProjects();
   }, []);
 
+  useEffect(() => {
+    if (department) {
+      const filtered = allProjects.filter(p => 
+        (department === 'Marketing' && (p.category === 'Marketing' || p.project_type === 'Marketing' || p.service_type === 'Marketing')) ||
+        (department === 'IT' && (p.category === 'IT' || p.project_type === 'IT' || p.service_type === 'IT' || p.category === 'Software'))
+      );
+      setProjects(filtered);
+    } else {
+      setProjects(allProjects);
+    }
+  }, [allProjects, department]);
+
   const loadProjects = async () => {
     try {
       setIsLoading(true);
       setError('');
-      const data = await projectAPI.getAll();
+      const data = await projectAPI.getAll({ assignedOnly: true });
       
       let projectsList = data;
       if (!Array.isArray(data)) {
@@ -27,14 +40,14 @@ const CrmProjectsPage = () => {
       }
       
       if (Array.isArray(projectsList)) {
-        setProjects(projectsList);
+        setAllProjects(projectsList);
       } else {
-        setProjects([]);
+        setAllProjects([]);
       }
     } catch (error) {
       console.error('❌ Failed to load projects:', error);
       setError('Failed to load projects: ' + error.message);
-      setProjects([]);
+      setAllProjects([]);
     } finally {
       setIsLoading(false);
     }
@@ -217,13 +230,6 @@ const CrmProjectsPage = () => {
                         title="View Details"
                       >
                         <Eye size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleEditProject(project)}
-                        className="p-1.5 text-[#1F2020] hover:text-orange-600 hover:bg-orange-50 rounded  transition"
-                        title="Edit"
-                      >
-                        <Edit size={18} />
                       </button>
                       <button 
                         onClick={() => handleDeleteProject(project.id)}

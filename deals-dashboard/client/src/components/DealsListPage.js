@@ -272,7 +272,7 @@ const DealsListPage = () => {
   }
 
   return (
-    <div className="p-2 bg-[#F7F8F9] min-h-screen w-full overflow-hidden">
+    <div className="p-4 bg-[#F7F8F9] min-h-screen w-full overflow-hidden">
       <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-[1.250025rem]  text-gray-900">Deals</h1>

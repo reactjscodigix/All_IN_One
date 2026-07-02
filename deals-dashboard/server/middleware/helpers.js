@@ -121,4 +121,39 @@ async function checkPermission(userId, module, action) {
   }
 }
 
-module.exports = { hashPassword, checkPermission };
+async function generateEstimationNumber(pool) {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const currentYear = new Date().getFullYear();
+    const pattern = `Q-${currentYear}-%`;
+
+    const [rows] = await connection.query(
+      'SELECT estimation_number FROM estimations WHERE estimation_number LIKE ? ORDER BY estimation_number DESC LIMIT 1',
+      [pattern]
+    );
+
+    let nextNumber = 1;
+    if (rows.length > 0) {
+      const lastNumber = rows[0].estimation_number;
+      const parts = lastNumber.split('-');
+      // Support formats like Q-2026-001 and Q-2026-001-v1
+      if (parts.length >= 3) {
+        const lastSeq = parseInt(parts[2]);
+        if (!isNaN(lastSeq)) {
+          nextNumber = lastSeq + 1;
+        }
+      }
+    }
+
+    return `Q-${currentYear}-${String(nextNumber).padStart(3, '0')}`;
+  } catch (error) {
+    console.error('Error generating estimation number:', error.message);
+    // Fallback to timestamp if database fails
+    return `Q-${new Date().getFullYear()}-${Date.now().toString().slice(-3)}`;
+  } finally {
+    if (connection) connection.release();
+  }
+}
+
+module.exports = { hashPassword, checkPermission, generateEstimationNumber };

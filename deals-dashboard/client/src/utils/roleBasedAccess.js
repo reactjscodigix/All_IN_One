@@ -413,7 +413,7 @@ const ROLE_UI_VISIBILITY = {
   },
   'Sales Manager': {
     sidebar: { dashboard: true, crm: true, applications: true, reports: true },
-    modules: { SalesDashboard: true, Leads: true, Deals: true, Proposals: true, Reports: true }
+    modules: { SalesDashboard: true, LeadsDashboard: true, DealsDashboard: true, Leads: true, Deals: true, Pipelines: true, Proposals: true, Reports: true }
   },
   'Marketing Manager': {
     sidebar: { dashboard: true, crm: true, applications: true, reports: true },

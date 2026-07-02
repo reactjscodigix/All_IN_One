@@ -62,7 +62,7 @@ const CompaniesList = () => {
       <div className="px-6 pb-8">
         <div className="grid grid-cols-4 gap-6">
           {filteredCompanies.map((company) => (
-            <div key={company.id} className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-5">
+            <div key={company.id} className="bg-white border border-[#EAECF0] rounded shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-2">
               <div className="flex justify-between items-start mb-3">
                 <div className={`w-12 h-12 rounded  ${company.icon} flex items-center justify-center text-white  text-lg`}>
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2c1.1 0 2 .9 2 2v2.5c0 .3-.2.5-.5.5s-.5.2-.5.5v1c0 .3.2.5.5.5s.5.2.5.5V10c0 .3-.2.5-.5.5s-.5.2-.5.5v1c0 .3.2.5.5.5s.5.2.5.5v1.5c0 1.1-.9 2-2 2h-8c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h8zm0 18c5.5 0 10-4.5 10-10S17.5 0 12 0 2 4.5 2 10s4.5 10 10 10z" /></svg>

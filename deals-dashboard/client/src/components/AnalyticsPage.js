@@ -249,8 +249,8 @@ const AnalyticsPage = () => {
               <TrendingUp size={24} />
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Effectiveness</p>
-              <h3 className="text-xl font-bold text-gray-900">
+              <p className="text-xs text-gray-500 uppercase  tracking-wider">Effectiveness</p>
+              <h3 className="text-xl  text-gray-900">
                 {effectivenessData.length > 0 ? 
                   Math.round((effectivenessData.reduce((acc, curr) => acc + curr.successful_meetings, 0) / 
                   effectivenessData.reduce((acc, curr) => acc + curr.total_meetings, 0)) * 100) : 0}%
@@ -262,8 +262,8 @@ const AnalyticsPage = () => {
               <Users size={24} />
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Total Meetings</p>
-              <h3 className="text-xl font-bold text-gray-900">
+              <p className="text-xs text-gray-500 uppercase  tracking-wider">Total Meetings</p>
+              <h3 className="text-xl  text-gray-900">
                 {effectivenessData.reduce((acc, curr) => acc + curr.total_meetings, 0)}
               </h3>
             </div>
@@ -273,8 +273,8 @@ const AnalyticsPage = () => {
               <Clock size={24} />
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Avg Duration</p>
-              <h3 className="text-xl font-bold text-gray-900">
+              <p className="text-xs text-gray-500 uppercase  tracking-wider">Avg Duration</p>
+              <h3 className="text-xl  text-gray-900">
                 {Math.round(effectivenessData.reduce((acc, curr) => acc + curr.avg_duration, 0) / (effectivenessData.length || 1))}m
               </h3>
             </div>
@@ -284,8 +284,8 @@ const AnalyticsPage = () => {
               <CheckCircle size={24} />
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Conversion Rate</p>
-              <h3 className="text-xl font-bold text-gray-900">
+              <p className="text-xs text-gray-500 uppercase  tracking-wider">Conversion Rate</p>
+              <h3 className="text-xl  text-gray-900">
                 {effectivenessData.length > 0 ? 
                   Math.round((effectivenessData.reduce((acc, curr) => acc + curr.conversions, 0) / 
                   effectivenessData.reduce((acc, curr) => acc + curr.total_meetings, 0)) * 100) : 0}%
@@ -306,7 +306,7 @@ const AnalyticsPage = () => {
                     sortable: true,
                     render: (value) => (
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-600">
+                        <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs  text-gray-600">
                           {getInitials(value)}
                         </div>
                         <span className="text-xs font-medium text-gray-900">{value}</span>
@@ -326,7 +326,7 @@ const AnalyticsPage = () => {
                             style={{ width: `${(val / row.total_meetings) * 100}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-bold text-gray-700">{val} ({Math.round((val / row.total_meetings) * 100)}%)</span>
+                        <span className="text-xs  text-gray-700">{val} ({Math.round((val / row.total_meetings) * 100)}%)</span>
                       </div>
                     )
                   },
@@ -335,7 +335,7 @@ const AnalyticsPage = () => {
                     label: 'Deal Conversions', 
                     sortable: true,
                     render: (val) => (
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-bold">
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs ">
                         {val} Deals
                       </span>
                     )

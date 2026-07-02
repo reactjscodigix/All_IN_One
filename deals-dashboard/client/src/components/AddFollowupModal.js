@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, ChevronDown, Calendar, Clock, Link, MapPin, Repeat, CheckCircle, 
-  Video as VideoIcon, Phone, MessageSquare, Mail
+  Video as VideoIcon, Phone, MessageSquare, Mail, Layout, Paperclip, Image as ImageIcon
 } from 'lucide-react';
-import { leadsAPI, dealsAPI, contactsAPI, invoicesAPI, usersAPI, followupsAPI } from '../services/api';
+import { leadsAPI, dealsAPI, contactsAPI, invoicesAPI, usersAPI, followupsAPI, projectAPI } from '../services/api';
 import { generateMeetingCode, generateMeetingLink } from '../utils/meetingUtils';
 
 const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
@@ -13,10 +13,12 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
   const [isFirstForClient, setIsFirstForClient] = useState(false);
+  const [projects, setProjects] = useState([]);
 
   const [formData, setFormData] = useState({
     related_type: 'Lead',
     related_id: '',
+    project_id: '',
     type: 'Internal Video Call',
     subject: '',
     description: '',
@@ -44,7 +46,8 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
     next_followup_type: 'Call',
     isNextFollowup: false,
     previous_followup_id: '',
-    previous_outcome: ''
+    previous_outcome: '',
+    workflow_type: ''
   });
 
   const [openPanels, setOpenPanels] = useState({
@@ -58,107 +61,70 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // Format dates correctly for HTML input fields (YYYY-MM-DD)
-        const formattedData = { ...initialData };
-        if (initialData.scheduled_date) {
+        const clientEmail = initialData.client_email || initialData.email || initialData.company_email || initialData.contact_email || '';
+        const clientPhone = initialData.client_phone || initialData.phone || initialData.company_phone || initialData.contact_phone || '';
+        const clientName = initialData.related_name || initialData.client_name || initialData.lead_name || initialData.company_name || initialData.name || '';
+        
+        const formattedData = {
+          ...initialData,
+          client_email: clientEmail,
+          client_phone: clientPhone,
+          related_name: clientName,
+          scheduled_date: initialData.scheduled_date ? initialData.scheduled_date.split('T')[0] : (new Date().toISOString().split('T')[0]),
+          scheduled_time: initialData.scheduled_time || '10:00',
+          recurrence_end_date: initialData.recurrence_end_date ? initialData.recurrence_end_date.split('T')[0] : '',
+          next_followup_date: initialData.next_followup_date ? initialData.next_followup_date.split('T')[0] : ''
+        };
+        
+        const userStr = localStorage.getItem('user');
+        let userEmail = '';
+        if (userStr) {
           try {
-            const d = new Date(initialData.scheduled_date);
-            if (!isNaN(d.getTime())) {
-              // Use local date methods instead of UTC to avoid timezone shifts
-              const year = d.getFullYear();
-              const month = String(d.getMonth() + 1).padStart(2, '0');
-              const day = String(d.getDate()).padStart(2, '0');
-              formattedData.scheduled_date = `${year}-${month}-${day}`;
-            } else {
-              formattedData.scheduled_date = initialData.scheduled_date.split('T')[0];
-            }
-          } catch (e) {
-            formattedData.scheduled_date = initialData.scheduled_date.split('T')[0];
-          }
-        }
-        if (initialData.recurrence_end_date) {
-          try {
-            const d = new Date(initialData.recurrence_end_date);
-            if (!isNaN(d.getTime())) {
-              const year = d.getFullYear();
-              const month = String(d.getMonth() + 1).padStart(2, '0');
-              const day = String(d.getDate()).padStart(2, '0');
-              formattedData.recurrence_end_date = `${year}-${month}-${day}`;
-            } else {
-              formattedData.recurrence_end_date = initialData.recurrence_end_date.split('T')[0];
-            }
-          } catch (e) {
-            formattedData.recurrence_end_date = initialData.recurrence_end_date.split('T')[0];
-          }
-        }
-        if (initialData.next_followup_date) {
-          try {
-            const d = new Date(initialData.next_followup_date);
-            if (!isNaN(d.getTime())) {
-              const year = d.getFullYear();
-              const month = String(d.getMonth() + 1).padStart(2, '0');
-              const day = String(d.getDate()).padStart(2, '0');
-              formattedData.next_followup_date = `${year}-${month}-${day}`;
-            } else {
-              formattedData.next_followup_date = initialData.next_followup_date.split('T')[0];
-            }
-          } catch (e) {
-            formattedData.next_followup_date = initialData.next_followup_date.split('T')[0];
-          }
-        }
-
-        // Map assigned_to_name and assigned_to
-        if (initialData.assigned_to_name) {
-          formattedData.assigned_to_name = initialData.assigned_to_name;
-        }
-        if (initialData.assigned_to) {
-          formattedData.assigned_to = initialData.assigned_to;
-        }
-        if (initialData.assigned_to_email) {
-          formattedData.assigned_to_email = initialData.assigned_to_email;
+            const user = JSON.parse(userStr);
+            userEmail = user.email || '';
+          } catch (e) {}
         }
 
         setFormData(prev => ({
           ...prev,
           ...formattedData,
+          assigned_to_email: initialData.assigned_to_email || userEmail,
           isNextFollowup: !!initialData.isNextFollowup || !!initialData.previous_followup_id,
           previous_outcome: initialData.previous_outcome || '',
-          id: initialData.id // maintain id if it exists for updates
-        }));
-        
-        setOpenPanels(prev => ({
-          ...prev,
-          completion: initialData.status === 'Completed',
-          meeting: ['Google Meet', 'Zoom Meeting', 'In-Person Meeting', 'Demo'].includes(initialData.type)
+          id: initialData.id,
+          workflow_type: initialData.workflow_type || '',
+          formal_message: initialData.formal_message || `Dear ${clientName || 'Client'}, I would like to schedule a ${initialData.type || 'Call'} to discuss our collaboration. Looking forward to connecting with you.`
         }));
       } else {
+        const isSeoGmb = window.location.pathname.includes('seo-gmb');
+        const workflowContext = isSeoGmb ? (window.location.pathname.includes('gmb') ? 'GMB' : 'SEO') : '';
         const userStr = localStorage.getItem('user');
-        let initialAssignedTo = '';
-        let initialAssignedToName = '';
+        let userId = '';
+        let userName = '';
+        let userEmail = '';
+
         if (userStr) {
-           try {
-             const user = JSON.parse(userStr);
-             initialAssignedTo = user.id || '';
-             initialAssignedToName = user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : (user.username || '');
-             setCurrentUser(user);
-           } catch (e) {}
+          try {
+            const user = JSON.parse(userStr);
+            setCurrentUser(user); // Set the state so it can be used elsewhere
+            userId = user.id || user.userId || '';
+            userName = user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : (user.username || '');
+            userEmail = user.email || '';
+          } catch (e) {
+            console.error('Error parsing user from localStorage');
+          }
         }
 
         setFormData({
-          related_type: 'Lead',
+          related_type: workflowContext ? 'Project' : 'Lead',
           related_id: '',
-          type: 'Internal Video Call',
+          project_id: '',
+          type: 'Call',
           subject: '',
           description: '',
-          scheduled_date: (() => {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-          })(),
+          scheduled_date: new Date().toISOString().split('T')[0],
           scheduled_time: '10:00',
-          priority: 'High',
+          priority: 'Medium',
           reminder_before: '10 minutes',
           is_recurring: false,
           recurrence_frequency: 'Weekly',
@@ -169,18 +135,22 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
           client_email: '',
           client_phone: '',
           formal_message: '',
-          assigned_to: initialAssignedTo,
-          assigned_to_name: initialAssignedToName,
+          assigned_to: userId,
+          assigned_to_name: userName,
+          assigned_to_email: userEmail,
           status: 'Scheduled',
           outcome: '',
           call_duration: '',
           remarks: '',
           next_followup_date: '',
           next_followup_time: '10:00',
-          next_followup_type: 'Internal Video Call'
+          next_followup_type: 'Call',
+          isNextFollowup: false,
+          previous_followup_id: '',
+          previous_outcome: '',
+          workflow_type: workflowContext
         });
       }
-      setError('');
     }
   }, [isOpen, initialData]);
 
@@ -188,8 +158,18 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
     if (isOpen) {
       fetchRelatedRecords();
       fetchUsers();
+      fetchProjects();
     }
   }, [formData.related_type, isOpen, currentUser]);
+
+  const fetchProjects = async () => {
+    try {
+      const data = await projectAPI.getAll();
+      setProjects(Array.isArray(data) ? data : (data.data || []));
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    }
+  };
 
   useEffect(() => {
     const checkFollowups = async () => {
@@ -224,12 +204,22 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
         if (currentUser) {
           const name = currentUser.first_name && currentUser.last_name ? `${currentUser.first_name} ${currentUser.last_name}` : (currentUser.username || '');
           if (name) {
-            setFormData(prev => ({ ...prev, assigned_to: currentUser.id, assigned_to_name: name }));
+            setFormData(prev => ({ 
+              ...prev, 
+              assigned_to: currentUser.id, 
+              assigned_to_name: name,
+              assigned_to_email: currentUser.email || ''
+            }));
           }
         } else if (usersList.length > 0) {
           const firstUser = usersList[0];
           const name = firstUser.first_name && firstUser.last_name ? `${firstUser.first_name} ${firstUser.last_name}` : (firstUser.username || '');
-          setFormData(prev => ({ ...prev, assigned_to: firstUser.id, assigned_to_name: name }));
+          setFormData(prev => ({ 
+            ...prev, 
+            assigned_to: firstUser.id, 
+            assigned_to_name: name,
+            assigned_to_email: firstUser.email || ''
+          }));
         }
       }
     } catch (err) {
@@ -287,10 +277,10 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
       console.log('Selected related record:', record);
       
       if (record) {
-        // Handle various field names from different entities (Lead, Deal, Contact)
-        const clientEmail = record.email || record.contact_email || record.email_address || '';
-        const clientPhone = record.phone || record.phone1 || record.mobile || record.phone_number || '';
-        const clientName = record.lead_name || record.deal_name || (record.first_name ? `${record.first_name} ${record.last_name}` : '') || record.name || 'Client';
+        // Handle various field names from different entities (Lead, Deal, Contact, Invoice)
+        const clientEmail = record.email || record.contact_email || record.company_email || record.email_address || '';
+        const clientPhone = record.phone || record.contact_phone || record.company_phone || record.phone1 || record.mobile || record.phone_number || '';
+        const clientName = record.lead_name || record.deal_name || record.client_name || record.company_name || (record.first_name ? `${record.first_name} ${record.last_name}` : '') || record.name || 'Client';
         const description = record.description || record.notes || record.requirement || record.deal_description || record.additional_info || record.requirement_details || record.project_notes || '';
         
         console.log('Populating client info:', { clientEmail, clientPhone, clientName, description });
@@ -319,7 +309,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
         }
         
         let meeting_link = prev.meeting_link;
-        if (['Internal Video Call', 'WhatsApp Call', 'Phone Call', 'Zoom Meeting', 'Demo', 'Google Meet'].includes(value)) {
+        if (['Internal Video Call', 'WhatsApp Call', 'Phone Call', 'Zoom Meeting', 'Demo', 'Google Meet', 'Meeting', 'Call'].includes(value)) {
           meeting_link = generateMeetingLink(value);
         }
         
@@ -327,7 +317,8 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
           ...prev,
           type: value,
           subject: newSubject,
-          meeting_link: meeting_link
+          meeting_link: meeting_link,
+          formal_message: `Dear ${prev.related_name || 'Client'}, I would like to schedule a ${value} to discuss our collaboration. Looking forward to connecting with you.`
         };
       });
     } else {
@@ -410,7 +401,11 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
     }
   };
 
-  const isMeetingType = ['Google Meet', 'Zoom Meeting', 'In-Person Meeting', 'Demo', 'Internal Video Call', 'WhatsApp Call'].includes(formData.type);
+  const isMeetingType = [
+    'Google Meet', 'Zoom Meeting', 'In-Person Meeting', 'Demo', 
+    'Internal Video Call', 'WhatsApp Call', 'Meeting', 
+    'Proposal Discussion', 'Payment Reminder', 'Call'
+  ].includes(formData.type);
 
   if (!isOpen) return null;
 
@@ -494,49 +489,77 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs  text-gray-700 mb-1.5">
-                        Related Type <span className="text-red-500">*</span>
+                    {!(formData.workflow_type === 'SEO' || formData.workflow_type === 'GMB') && (
+                      <>
+                        <div>
+                          <label className="block text-xs  text-gray-700 mb-1.5">
+                            Related Type <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <select
+                              name="related_type"
+                              value={formData.related_type}
+                              onChange={handleInputChange}
+                              className="w-full p-2 bg-white border border-gray-300 rounded text-xs appearance-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all pr-10"
+                            >
+                              <option value="Lead">Lead</option>
+                              <option value="Deal">Deal</option>
+                              <option value="Customer">Customer</option>
+                              <option value="Invoice">Invoice</option>
+                              <option value="Project">Project</option>
+                            </select>
+                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs  text-gray-700 mb-1.5">
+                            Related Record <span className="text-red-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <select
+                              name="related_id"
+                              value={formData.related_id}
+                              onChange={handleInputChange}
+                              className="w-full p-2 bg-white border border-gray-300 rounded text-xs appearance-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all pr-10"
+                            >
+                              <option value="">Select {formData.related_type}</option>
+                              {relatedRecords.map(record => (
+                                <option key={record.id} value={record.id}>
+                                  {record.lead_name || record.name || record.deal_name || record.company_name || record.invoice_number || 
+                                   ((record.first_name || record.last_name) ? `${record.first_name || ''} ${record.last_name || ''}`.trim() : null) || 
+                                   `ID: ${record.id}`}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {(formData.related_type === 'Project' || formData.workflow_type === 'SEO' || formData.workflow_type === 'GMB') && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                      <label className="block text-xs text-gray-700 mb-1.5 flex items-center gap-2">
+                        <Layout size={14} className="text-red-500" />
+                        Project Name <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <select
-                          name="related_type"
-                          value={formData.related_type}
+                          name="project_id"
+                          value={formData.project_id || formData.related_id}
                           onChange={handleInputChange}
                           className="w-full p-2 bg-white border border-gray-300 rounded text-xs appearance-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all pr-10"
                         >
-                          <option value="Lead">Lead</option>
-                          <option value="Deal">Deal</option>
-                          <option value="Customer">Customer</option>
-                          <option value="Invoice">Invoice</option>
-                        </select>
-                        <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs  text-gray-700 mb-1.5">
-                        Related Record <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          name="related_id"
-                          value={formData.related_id}
-                          onChange={handleInputChange}
-                          className="w-full p-2 bg-white border border-gray-300 rounded text-xs appearance-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all pr-10"
-                        >
-                          <option value="">Select {formData.related_type}</option>
-                          {relatedRecords.map(record => (
-                            <option key={record.id} value={record.id}>
-                              {record.lead_name || record.name || record.deal_name || record.company_name || record.invoice_number || 
-                               ((record.first_name || record.last_name) ? `${record.first_name || ''} ${record.last_name || ''}`.trim() : null) || 
-                               `ID: ${record.id}`}
-                            </option>
+                          <option value="">Select Project</option>
+                          {projects.map(project => (
+                            <option key={project.id} value={project.id}>{project.name}</option>
                           ))}
                         </select>
                         <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   <div>
                     <label className="block text-xs  text-gray-700 mb-1.5 flex justify-between items-center">
@@ -696,7 +719,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
 
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <div>
-                          <label className="block text-[10px] text-blue-600 mb-1.5 flex items-center gap-2 uppercase tracking-wider font-bold">
+                          <label className="block text-[10px] text-blue-600 mb-1.5 flex items-center gap-2 uppercase tracking-wider ">
                             <Mail size={12} /> Client Email
                           </label>
                           <input
@@ -709,7 +732,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-blue-600 mb-1.5 flex items-center gap-2 uppercase tracking-wider font-bold">
+                          <label className="block text-[10px] text-blue-600 mb-1.5 flex items-center gap-2 uppercase tracking-wider ">
                             <Phone size={12} /> Client Phone
                           </label>
                           <input
@@ -724,7 +747,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                       </div>
 
                       <div className="mt-4">
-                        <label className="block text-[10px] text-blue-600 mb-1.5 flex items-center gap-2 uppercase tracking-wider font-bold">
+                        <label className="block text-[10px] text-blue-600 mb-1.5 flex items-center gap-2 uppercase tracking-wider ">
                           <MessageSquare size={12} /> Formal Invitation Message
                         </label>
                         <textarea
@@ -832,6 +855,54 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                       className="w-full p-2 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all resize-none"
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-xs  text-gray-700 flex items-center gap-1 uppercase tracking-wider">
+                        <Paperclip size={12} className="text-red-500" />
+                        Documents
+                      </label>
+                      <div 
+                        onClick={() => document.getElementById('followup-doc-upload').click()}
+                        className="border border-dashed border-gray-200 rounded p-3 text-center cursor-pointer hover:border-red-400 transition-colors bg-gray-50/50"
+                      >
+                        <span className="text-[9px] text-gray-500">Click to Upload</span>
+                        <input 
+                          id="followup-doc-upload" 
+                          type="file" 
+                          multiple 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files);
+                            setFormData(prev => ({ ...prev, documents: [...(prev.documents || []), ...files] }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs  text-gray-700 flex items-center gap-1 uppercase tracking-wider">
+                        <ImageIcon size={12} className="text-red-500" />
+                        Images
+                      </label>
+                      <div 
+                        onClick={() => document.getElementById('followup-img-upload').click()}
+                        className="border border-dashed border-gray-200 rounded p-3 text-center cursor-pointer hover:border-red-400 transition-colors bg-gray-50/50"
+                      >
+                        <span className="text-[9px] text-gray-500">Add Images</span>
+                        <input 
+                          id="followup-img-upload" 
+                          type="file" 
+                          accept="image/*" 
+                          multiple 
+                          className="hidden" 
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files);
+                            setFormData(prev => ({ ...prev, images: [...(prev.images || []), ...files] }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -928,6 +999,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                         >
                           <option value="">Select Outcome</option>
                           <option value="Interested">Interested</option>
+                          <option value="Asking for Quotation">Asking for Quotation</option>
                           <option value="Not Interested">Not Interested</option>
                           <option value="Call Back Later">Call Back Later</option>
                           <option value="Wrong Number">Wrong Number</option>

@@ -28,7 +28,8 @@ const VALID_MEET_WORDS = [
 ];
 
 export const generateMeetingCode = () => {
-  // Google Meet style: xxx-yyyy-zzz (ONLY letters a-z are valid, no numbers)
+  // Use words for more "human-readable" and valid-looking codes
+  // Standard Google Meet format is xxx-yyyy-zzz (3-4-3)
   const letters = 'abcdefghijklmnopqrstuvwxyz';
   const part = (length) => Array.from({ length }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
   return `${part(3)}-${part(4)}-${part(3)}`;
@@ -36,17 +37,21 @@ export const generateMeetingCode = () => {
 
 export const generateMeetingLink = (type) => {
   const code = generateMeetingCode();
+  
   switch (type) {
+    case 'Google Meet':
+      // Direct code link is the most universal format
+      return `https://meet.google.com/${code}`;
     case 'Zoom Meeting':
-      return `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}`;
+      return `https://zoom.us/j/${Math.floor(100000000 + Math.random() * 900000000)}`;
     case 'WhatsApp Call':
       return `https://wa.me/call/${code}`;
     case 'Phone Call':
       return `tel:${Math.floor(Math.random() * 10000000000)}`;
-    case 'Google Meet':
     case 'Internal Video Call':
+    case 'Demo':
     default:
-      // Return a specific room code instead of '/new' to ensure both parties land in the same meeting
-      return `https://meet.google.com/${code}`;
+      // Jitsi works instantly for both parties without an account or API
+      return `https://meet.jit.si/CRM-Meeting-${code}`;
   }
 };

@@ -1,7 +1,7 @@
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const getAuthHeaders = () => {
-  const user = localStorage.getItem('user');
+  const user = localStorage.getItem('currentUser');
   const headers = { 'Content-Type': 'application/json' };
   
   if (user) {
@@ -238,7 +238,10 @@ export const campaignAPI = {
 };
 
 export const projectAPI = {
-  getAll: () => apiService.get('/projects'),
+  getAll: (filters = {}) => {
+    const queryString = new URLSearchParams(filters).toString();
+    return apiService.get(`/projects${queryString ? '?' + queryString : ''}`);
+  },
   getById: (id) => apiService.get(`/projects/${id}`),
   create: (data) => apiService.post('/projects', data),
   update: (id, data) => apiService.put(`/projects/${id}`, data),
@@ -269,6 +272,7 @@ export const projectTeamAPI = {
   addMember: (projectId, data) => apiService.post(`/projects/${projectId}/team`, data),
   getMembers: (projectId) => apiService.get(`/projects/${projectId}/team`),
   removeMember: (projectId, userId) => apiService.delete(`/projects/${projectId}/team/${userId}`),
+  assignTeam: (projectId, teamId) => apiService.post(`/projects/${projectId}/assign-team`, { team_id: teamId }),
 };
 
 export const proposalsAPI = {
@@ -369,15 +373,19 @@ export const notesAPI = {
 
 export const conversationsAPI = {
   getByUserId: (userId) => apiService.get(`/conversations/${userId}`),
-  getMessagesByUserId: (userId, conversationWith) => {
-    const params = new URLSearchParams({ conversationWith }).toString();
-    return apiService.get(`/messages/${userId}${params ? '?' + params : ''}`);
+  getMessagesByUserId: (userId, conversationWith, groupId) => {
+    const params = new URLSearchParams();
+    if (conversationWith) params.append('conversationWith', conversationWith);
+    if (groupId) params.append('groupId', groupId);
+    return apiService.get(`/messages/${userId}?${params.toString()}`);
   },
   getAvailableUsers: (userId, search = '') => {
     const params = new URLSearchParams(search ? { search } : {}).toString();
     return apiService.get(`/available-users/${userId}${params ? '?' + params : ''}`);
   },
   sendMessage: (data) => apiService.post('/messages', data),
+  createGroup: (data) => apiService.post('/chat-groups', data),
+  getGroupMembers: (groupId) => apiService.get(`/chat-groups/${groupId}/members`),
 };
 
 export const filesAPI = {
@@ -391,6 +399,20 @@ export const filesAPI = {
   getStorageStats: () => apiService.get('/files/storage-stats'),
 };
 
+export const teamsAPI = {
+  getAll: (departmentId) => apiService.get(`/teams${departmentId ? '?department_id=' + departmentId : ''}`),
+  create: (data) => apiService.post('/teams', data),
+  getMembers: (teamId) => apiService.get(`/teams/${teamId}/members`),
+  addMember: (teamId, data) => apiService.post(`/teams/${teamId}/members`, data),
+};
+
+export const itManagerAPI = {
+  getTeamTasks: () => apiService.get('/it/manager/team-tasks'),
+  getPerformance: () => apiService.get('/it/manager/performance'),
+  getDeadlines: () => apiService.get('/it/manager/deadlines'),
+  getProjectsSummary: () => apiService.get('/it/manager/projects-summary'),
+};
+
 export const foldersAPI = {
   getAll: (filters = {}) => {
     const queryString = new URLSearchParams(filters).toString();
@@ -398,6 +420,13 @@ export const foldersAPI = {
   },
   create: (data) => apiService.post('/folders', data),
   delete: (folderId) => apiService.delete(`/folders/${folderId}`),
+};
+
+export const marketingAPI = {
+  getSeo: () => apiService.get('/marketing/seo'),
+  getGmb: () => apiService.get('/marketing/gmb'),
+  createSeo: (data) => apiService.post('/marketing/seo', data),
+  createGmb: (data) => apiService.post('/marketing/gmb', data),
 };
 
 export const followupsAPI = {

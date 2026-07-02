@@ -12,9 +12,9 @@ module.exports = function setupEntitiesRoutes(app, pool) {
   app.get('/api/contacts', async (req, res) => {
     try {
       const { skip = 0, limit = 50, search, assignedTo } = req.query;
-      // Connection handled by db.query
 
-      let query = `SELECT 
+      // 1. Get contacts for companies with WON deals only (Converted Clients)
+      let contactsQuery = `SELECT 
         ct.id,
         ct.first_name,
         ct.last_name,
@@ -32,28 +32,83 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         u.first_name AS owner_first_name,
         u.last_name AS owner_last_name
       FROM contacts ct
-      LEFT JOIN companies c ON ct.company_id = c.id
+      INNER JOIN companies c ON ct.company_id = c.id
+      INNER JOIN deals d ON d.company_id = c.id
       LEFT JOIN users u ON ct.owner_id = u.id
-      WHERE 1=1`;
-      const params = [];
+      WHERE c.status = 'Active' AND d.status = 'Won'`;
+      const contactsParams = [];
 
       if (assignedTo) {
-        query += ' AND (ct.owner_id = ? OR c.created_by = ?)';
-        params.push(assignedTo, assignedTo);
+        contactsQuery += ' AND (ct.owner_id = ? OR c.created_by = ?)';
+        contactsParams.push(assignedTo, assignedTo);
       }
 
       if (search) {
-        query += ' AND (ct.first_name LIKE ? OR ct.last_name LIKE ? OR ct.email LIKE ?)';
+        contactsQuery += ' AND (ct.first_name LIKE ? OR ct.last_name LIKE ? OR ct.email LIKE ? OR c.company_name LIKE ?)';
         const searchTerm = `%${search}%`;
-        params.push(searchTerm, searchTerm, searchTerm);
+        contactsParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
-      query += ' ORDER BY ct.created_at DESC LIMIT ?, ?';
-      params.push(parseInt(skip), parseInt(limit));
+      // Group by contact ID to handle cases where multiple won deals might exist for one client
+      contactsQuery += ' GROUP BY ct.id ORDER BY ct.created_at DESC';
+      
+      const [contacts] = await db.query(contactsQuery, contactsParams);
 
-      const [contacts] = await db.query(query, params);
+      // 2. Get companies that have a WON deal (Converted Clients) but might not have individual contacts
+      let companiesQuery = `SELECT DISTINCT
+        c.id AS company_id,
+        c.company_name,
+        c.email,
+        c.phone,
+        c.address,
+        c.city AS location,
+        c.status,
+        c.created_at
+      FROM companies c
+      INNER JOIN deals d ON d.company_id = c.id
+      WHERE c.status = 'Active' AND d.status = 'Won'`;
+      const companiesParams = [];
 
-      return res.json(contacts);
+      if (search) {
+        companiesQuery += ' AND (c.company_name LIKE ? OR c.email LIKE ?)';
+        const searchTerm = `%${search}%`;
+        companiesParams.push(searchTerm, searchTerm);
+      }
+
+      const [activeCompanies] = await db.query(companiesQuery, companiesParams);
+
+      // 3. Merge them: Ensure every active company is represented
+      // If a company has contacts, they are already in the 'contacts' list
+      // We want to add entries for companies that DON'T have contacts in the list
+      
+      const contactCompanyIds = new Set(contacts.map(ct => ct.company_id).filter(id => id !== null));
+      
+      const companyEntries = activeCompanies
+        .filter(comp => !contactCompanyIds.has(comp.company_id))
+        .map(comp => ({
+          id: `comp-${comp.company_id}`, // Virtual ID to avoid collisions
+          first_name: comp.company_name,
+          last_name: '(Company)',
+          email: comp.email,
+          phone: comp.phone,
+          company_id: comp.company_id,
+          company_name: comp.company_name,
+          position: 'Organization',
+          status: comp.status,
+          location: comp.location,
+          address: comp.address,
+          created_at: comp.created_at,
+          is_company_entry: true
+        }));
+
+      const allResults = [...contacts, ...companyEntries];
+      
+      // Sort and paginate
+      allResults.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      const paginatedResults = allResults.slice(parseInt(skip), parseInt(skip) + parseInt(limit));
+
+      return res.json(paginatedResults);
     } catch (err) {
       responseError(res, 500, 'Failed to fetch contacts', err);
     }
@@ -492,8 +547,10 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         LEFT JOIN companies c ON l.company_id = c.id
         LEFT JOIN users u ON l.owner_id = u.id
         LEFT JOIN service_categories sc ON l.service_category_id = sc.id
-        WHERE l.lead_status IN ('Qualified', 'Contacted', 'Converted Lead', 'Quotation', 'Revised Quotation', 'Finalized Deal')
+        WHERE l.lead_status IN ('Qualified', 'Contacted', 'Converted Lead', 'Quotation', 'Revised Quotation', 'Finalized Deal', 'Converted to Deal', 'Won')
+        AND l.converted_deal_id IS NULL
         AND NOT EXISTS (SELECT 1 FROM deals d2 WHERE d2.deal_name = l.lead_name AND (d2.company_id = l.company_id OR (d2.company_id IS NULL AND l.company_id IS NULL)))
+        AND NOT EXISTS (SELECT 1 FROM deals d3 WHERE d3.company_id = l.company_id AND l.company_id IS NOT NULL)
         ${search ? ' AND l.lead_name LIKE ?' : ''}
         ${assignee_id ? ' AND l.owner_id = ?' : ''}
         
@@ -565,7 +622,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           LEFT JOIN companies c ON l.company_id = c.id
           LEFT JOIN users u ON l.owner_id = u.id
           LEFT JOIN service_categories sc ON l.service_category_id = sc.id
-          WHERE l.id = ?`;
+          WHERE l.id = ? AND l.converted_deal_id IS NULL`;
         params = [leadId];
       } else {
         // Real deal
@@ -1101,15 +1158,32 @@ module.exports = function setupEntitiesRoutes(app, pool) {
 
   app.get('/api/projects', async (req, res) => {
     try {
-      const { skip = 0, limit = 50, search, status } = req.query;
-      // Connection handled by db.query
-
+      const { skip = 0, limit = 50, search, status, userId: queryUserId, assignedOnly, department } = req.query;
+      const headerUserId = req.headers['x-user-id'];
+      const userRole = req.headers['x-user-role'];
+      
+      const userId = queryUserId || headerUserId;
+      
       let query = 'SELECT p.*, c.company_name FROM projects p LEFT JOIN companies c ON p.company_id = c.id WHERE 1=1';
       const params = [];
 
+      if (department) {
+        query += ' AND p.department_id = (SELECT id FROM departments WHERE name LIKE ? LIMIT 1)';
+        params.push(`%${department}%`);
+      }
+
+      // Filter by user if they are not Admin or Manager, or if assignedOnly is explicitly requested
+      const isManager = userRole && (userRole.toLowerCase().includes('admin') || userRole.toLowerCase().includes('manager'));
+      
+      if (userId && (assignedOnly === 'true' || !isManager)) {
+        query += ' AND (p.created_by = ? OR p.team_id IN (SELECT team_id FROM team_members WHERE user_id = ?) OR p.id IN (SELECT project_id FROM project_team WHERE user_id = ?))';
+        params.push(userId, userId, userId);
+      }
+
       if (search) {
-        query += ' AND p.title LIKE ?';
-        params.push(`%${search}%`);
+        query += ' AND (p.name LIKE ? OR p.title LIKE ?)';
+        const searchTerm = `%${search}%`;
+        params.push(searchTerm, searchTerm);
       }
 
       if (status) {
@@ -1124,6 +1198,60 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       return res.json(projects);
     } catch (err) {
       responseError(res, 500, 'Failed to fetch projects', err);
+    }
+  });
+
+  app.get('/api/confirmed-it-projects', async (req, res) => {
+    try {
+      // Fetch deals that are 'Won' and linked to 'IT Services Department'
+      const query = `
+        SELECT 
+          d.id, d.deal_name as name, d.company_id, c.company_name
+        FROM deals d
+        JOIN companies c ON d.company_id = c.id
+        JOIN service_categories sc ON d.service_category_id = sc.id
+        JOIN departments dept ON sc.suggested_department_id = dept.id
+        WHERE d.status = 'Won' 
+        AND dept.name = 'IT Services Department'
+        ORDER BY d.updated_at DESC
+      `;
+      
+      const [deals] = await db.query(query);
+      return res.json(deals);
+    } catch (err) {
+      responseError(res, 500, 'Failed to fetch confirmed IT projects', err);
+    }
+  });
+
+  app.get('/api/confirmed-it-clients', async (req, res) => {
+    try {
+      console.log('🔍 GET /api/confirmed-it-clients hit');
+      // Fetch companies that have at least one 'Won' deal OR 'Won' lead in 'IT Services Department'
+      // Also fetch associated project_id if it exists
+      const query = `
+        SELECT DISTINCT
+          c.id, c.company_name, c.email, c.phone,
+          (SELECT p.id FROM projects p WHERE p.company_id = c.id LIMIT 1) as project_id
+        FROM companies c
+        LEFT JOIN deals d ON d.company_id = c.id
+        LEFT JOIN leads l ON l.company_id = c.id
+        LEFT JOIN service_categories sc_d ON d.service_category_id = sc_d.id
+        LEFT JOIN service_categories sc_l ON l.service_category_id = sc_l.id
+        LEFT JOIN departments dept_d ON sc_d.suggested_department_id = dept_d.id
+        LEFT JOIN departments dept_l ON sc_l.suggested_department_id = dept_l.id
+        WHERE c.status = 'Active' 
+        AND (
+          (d.status = 'Won' AND dept_d.name = 'IT Department')
+          OR 
+          (l.lead_status = 'Won' AND dept_l.name = 'IT Department')
+        )
+        ORDER BY c.company_name ASC
+      `;
+      
+      const [clients] = await db.query(query);
+      return res.json(clients);
+    } catch (err) {
+      responseError(res, 500, 'Failed to fetch confirmed IT clients', err);
     }
   });
 

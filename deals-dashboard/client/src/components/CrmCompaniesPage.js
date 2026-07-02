@@ -203,7 +203,7 @@ const CrmCompaniesPage = () => {
           {filteredCompanies.map((company) => (
             <div 
               key={company.id}
-              className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+              className="bg-white border border-[#EAECF0] rounded shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-2 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
             >
               <div className="flex justify-between items-start mb-3">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white  text-lg overflow-hidden flex-shrink-0 ${company.logo && company.logo.startsWith('data:') ? 'bg-white' : 'bg-gradient-to-br from-blue-400 to-blue-600'} shadow-sm`}>

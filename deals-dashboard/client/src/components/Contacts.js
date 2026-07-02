@@ -1,13 +1,190 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Phone, MapPin, Plus, MessageCircle, Users, ChevronDown, X, Search } from 'lucide-react';
+import { Mail, Phone, MapPin, Plus, MessageCircle, Users, ChevronDown, X, Search, LayoutGrid, List, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddContactModal from './AddContactModal';
 import ContactActionDropdown from './ContactActionDropdown';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
+import { projectTeamAPI, usersAPI, teamsAPI } from '../services/api';
+
+const ProjectTeamModal = ({ isOpen, onClose, projectId, currentTeam, users, teams, onAssign, onAssignTeam }) => {
+  const [selectedUser, setSelectedUser] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState('');
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState([]);
+  const [role, setRole] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [assignType, setAssignType] = useState('user'); // 'user' or 'team'
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (selectedTeam) {
+        try {
+          const data = await teamsAPI.getMembers(selectedTeam);
+          setSelectedTeamMembers(Array.isArray(data) ? data : []);
+        } catch (error) {
+          console.error('Error fetching team members:', error);
+          setSelectedTeamMembers([]);
+        }
+      } else {
+        setSelectedTeamMembers([]);
+      }
+    };
+    fetchMembers();
+  }, [selectedTeam]);
+
+  if (!isOpen) return null;
+
+  const handleAssign = async () => {
+    if (assignType === 'user' && !selectedUser) return;
+    if (assignType === 'team' && !selectedTeam) return;
+    
+    setIsSubmitting(true);
+    try {
+      if (assignType === 'user') {
+        await onAssign(projectId, { user_id: selectedUser, role });
+        setSelectedUser('');
+        setRole('');
+      } else {
+        await onAssignTeam(projectId, selectedTeam);
+        setSelectedTeam('');
+        setSelectedTeamMembers([]);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[110] animate-in fade-in duration-200">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-600" />
+            Assign Project Team
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-4">
+          <div className="flex p-1 bg-gray-100 rounded-lg">
+            <button
+              onClick={() => setAssignType('user')}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${assignType === 'user' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Single Member
+            </button>
+            <button
+              onClick={() => setAssignType('team')}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${assignType === 'team' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Whole Team
+            </button>
+          </div>
+
+          {assignType === 'user' ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Team Member</label>
+                <select
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                >
+                  <option value="">Select User</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.first_name} {user.last_name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Role (Optional)</label>
+                <input
+                  type="text"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  placeholder="e.g. Lead Developer, Designer"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                />
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Team</label>
+              <select
+                value={selectedTeam}
+                onChange={(e) => setSelectedTeam(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              >
+                <option value="">Select Team</option>
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>{team.name || `Team #${team.id}`}</option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-[10px] text-gray-500">All members of this team will be assigned to the project.</p>
+              
+              {selectedTeamMembers.length > 0 && (
+                <div className="mt-3 bg-blue-50/50 rounded-lg p-3 border border-blue-100">
+                  <h4 className="text-[11px] font-semibold text-blue-800 mb-2 uppercase tracking-wider">Team Members to be Added:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTeamMembers.map(member => (
+                      <div key={member.id} className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-md border border-blue-100 shadow-sm">
+                        <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-[8px]">
+                          {member.first_name?.[0]}{member.last_name?.[0]}
+                        </div>
+                        <span className="text-[10px] font-medium text-gray-700">{member.first_name} {member.last_name}</span>
+                        <span className="text-[9px] text-gray-400">({member.role || 'Member'})</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="pt-2">
+            <button
+              onClick={handleAssign}
+              disabled={(assignType === 'user' ? !selectedUser : !selectedTeam) || isSubmitting}
+              className="w-full bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-all shadow-sm"
+            >
+              {isSubmitting ? 'Assigning...' : assignType === 'user' ? 'Assign Member' : 'Assign Team'}
+            </button>
+          </div>
+
+          {currentTeam && currentTeam.length > 0 && (
+            <div className="mt-6 border-t border-gray-100 pt-4">
+              <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                Current Team Members ({currentTeam.length})
+              </h4>
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1 custom-scrollbar">
+                {currentTeam.map(member => (
+                  <div key={member.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 group hover:bg-gray-100 transition-all">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-medium text-xs border border-blue-200 shadow-sm">
+                        {member.first_name?.[0]}{member.last_name?.[0]}
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-gray-900">{member.first_name} {member.last_name}</div>
+                        <div className="text-[10px] text-gray-500">{member.role || 'Team Member'}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Contacts = () => {
   const navigate = useNavigate();
   const [contacts, setContacts] = useState([]);
+  const [viewMode, setViewMode] = useState('table');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,6 +192,11 @@ const Contacts = () => {
   const [selectedContact, setSelectedContact] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
   const [expandedFilters, setExpandedFilters] = useState({});
+  const [projectTeams, setProjectTeams] = useState({});
+  const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [activeProjectId, setActiveProjectId] = useState(null);
   const [filters, setFilters] = useState({
     name: '',
     tags: [],
@@ -138,22 +320,28 @@ const Contacts = () => {
     }
     
     return apiContacts.map((contact) => {
-      const initials = `${contact.first_name?.charAt(0) || ''}${contact.last_name?.charAt(0) || ''}`.toUpperCase();
+      // Handle both individual contacts (first_name/last_name) and company clients (company_name)
+      const name = contact.company_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || 'Unknown';
+      const initials = contact.company_name 
+        ? contact.company_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+        : `${contact.first_name?.charAt(0) || ''}${contact.last_name?.charAt(0) || ''}`.toUpperCase();
+
       return {
         id: contact.id,
-        name: `${contact.first_name} ${contact.last_name}`,
+        project_id: contact.project_id,
+        name: name,
         email: contact.email || '',
         phone: contact.phone || '',
-        position: contact.position || '',
-        country: contact.country || contact.company_name || 'USA',
-        owner: contact.owner || '',
-        avatar: initials,
+        position: contact.position || 'Confirmed Client',
+        country: contact.country || contact.company_name || 'India',
+        owner: contact.owner || 'System',
+        avatar: initials || '?',
         avatarImage: contact.avatar || null,
-        tags: contact.tags ? (typeof contact.tags === 'string' ? contact.tags.split(',').map(t => t.trim()) : Array.isArray(contact.tags) ? contact.tags : ['Collab']) : ['Collab'],
-        rating: contact.rating || 0,
+        tags: contact.tags ? (typeof contact.tags === 'string' ? contact.tags.split(',').map(t => t.trim()) : Array.isArray(contact.tags) ? contact.tags : ['Confirmed']) : ['Confirmed'],
+        rating: contact.rating || 5,
         status: contact.status || 'Active',
         collaborators: [
-          { avatar: initials }
+          { avatar: initials || '?' }
         ]
       };
     });
@@ -185,27 +373,95 @@ const Contacts = () => {
     });
   }, []);
 
+  const fetchUsers = async () => {
+    try {
+      const data = await usersAPI.getAll();
+      setUsers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const data = await teamsAPI.getAll();
+      setTeams(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+    }
+  };
+
+  const fetchProjectTeam = async (projectId) => {
+    if (!projectId) return;
+    try {
+      const data = await projectTeamAPI.getMembers(projectId);
+      setProjectTeams(prev => ({
+        ...prev,
+        [projectId]: Array.isArray(data) ? data : []
+      }));
+    } catch (error) {
+      console.error(`Error fetching team for project ${projectId}:`, error);
+    }
+  };
+
   const fetchContacts = useCallback(async () => {
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/contacts`);
+      // Only fetch confirmed IT clients as requested by the user
+      const response = await fetch(`${apiUrl}/confirmed-it-clients`);
+      if (!response.ok) {
+        throw new Error(`API Error ${response.status}`);
+      }
       let data = await response.json();
+      console.log('🔍 Raw API response:', data);
       
       if (!Array.isArray(data)) {
         data = data.data || data.contacts || [];
       }
       
       const transformedData = transformContactData(data);
+      console.log('🔍 Transformed data:', transformedData);
       setContacts(transformedData);
       setFilteredContacts(transformedData);
       generateFilterOptions(transformedData);
-      console.log('✅ Contacts fetched:', transformedData.length);
+      console.log('✅ Confirmed IT clients fetched:', transformedData.length);
+
+      // Fetch teams for projects
+      transformedData.forEach(contact => {
+        if (contact.project_id) {
+          fetchProjectTeam(contact.project_id);
+        }
+      });
+      fetchUsers();
+      fetchTeams();
     } catch (error) {
       console.error('❌ Error fetching contacts:', error);
       setContacts([]);
       setFilteredContacts([]);
     }
   }, [generateFilterOptions]);
+
+  const handleAssignTeam = async (projectId, memberData) => {
+    try {
+      await projectTeamAPI.addMember(projectId, memberData);
+      showSuccessToast('Team member assigned successfully!');
+      fetchProjectTeam(projectId);
+    } catch (error) {
+      console.error('Error assigning team member:', error);
+      showErrorToast('Failed to assign team member');
+    }
+  };
+
+  const handleAssignWholeTeam = async (projectId, teamId) => {
+    try {
+      await projectTeamAPI.assignTeam(projectId, teamId);
+      showSuccessToast('Whole team assigned successfully!');
+      fetchProjectTeam(projectId);
+    } catch (error) {
+      console.error('Error assigning whole team:', error);
+      showErrorToast('Failed to assign whole team');
+    }
+  };
 
   useEffect(() => {
     fetchContacts();
@@ -299,6 +555,120 @@ const Contacts = () => {
     }
   };
 
+  const renderTableView = () => (
+    <div className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)]">
+      <div className="overflow-x-auto ">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50 border-b border-[#EAECF0]">
+              <th className="px-6 py-4 text-xs font-semibold text-gray-900">Name</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-900">Email</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-900">Phone</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-900">Location</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-900">Team</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-900">Status</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-900">Tags</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-900 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#EAECF0]">
+            {filteredContacts.map((contact) => (
+              <tr key={contact.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 overflow-hidden">
+                      {contact.avatarImage ? (
+                        <img src={contact.avatarImage} alt={contact.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div style={{ backgroundColor: getAvatarColor(contact.avatar) }} className="w-full h-full flex items-center justify-center text-white">
+                          {contact.avatar}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-gray-900">{contact.name}</div>
+                      <div className="text-[10px] text-gray-500">{contact.position}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-xs text-gray-600">{contact.email}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-xs text-gray-600">{contact.phone}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-xs text-gray-600">{contact.country}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2 overflow-hidden">
+                      {projectTeams[contact.project_id]?.map((member, i) => (
+                        <div 
+                          key={member.id} 
+                          title={`${member.first_name} ${member.last_name} (${member.role || 'Team Member'})`}
+                          className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-blue-100 flex items-center justify-center text-[8px]  text-blue-700 border border-blue-200 shadow-sm cursor-help"
+                        >
+                          {member.first_name?.[0]}{member.last_name?.[0]}
+                        </div>
+                      ))}
+                    </div>
+                    {contact.project_id && (
+                      <button 
+                        onClick={() => {
+                          setActiveProjectId(contact.project_id);
+                          setIsTeamModalOpen(true);
+                        }}
+                        className="p-1 hover:bg-blue-50 text-blue-600 rounded-full transition-colors group"
+                        title="Assign Team"
+                      >
+                        <UserPlus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                      </button>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                    contact.status === 'Active' ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-700'
+                  }`}>
+                    {contact.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex gap-1 flex-wrap">
+                    {contact.tags.slice(0, 2).map((tag, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          backgroundColor: getTagStyle(tag).bg,
+                          color: getTagStyle(tag).text
+                        }}
+                        className="text-[10px] px-2 py-0.5 rounded"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {contact.tags.length > 2 && (
+                      <span className="text-[10px] text-gray-400">+{contact.tags.length - 2}</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <ContactActionDropdown
+                    contact={contact}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onPreview={handlePreview}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="w-full bg-gray-50">
       <div className="mb-8 px-6 pt-6">
@@ -307,7 +677,7 @@ const Contacts = () => {
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-[28px]  text-gray-900">Contacts</h1>
               <span className="bg-[#FFE5E5] text-[#F62416] px-2.5 py-0.5 rounded-full text-[12px] ">
-                125
+                {filteredContacts.length}
               </span>
             </div>
             <div className="flex items-center gap-1 text-xs  mt-1">
@@ -319,16 +689,20 @@ const Contacts = () => {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button className="p-2 hover:bg-white rounded  transition text-gray-600">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-              </svg>
+          <div className="flex gap-2 bg-white p-1 border border-[#E5E7EB] rounded-lg">
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-[#F62416] text-white shadow-sm' : 'text-gray-400 hover:bg-gray-50'}`}
+              title="Grid View"
+            >
+              <LayoutGrid size={18} />
             </button>
-            <button className="p-2 hover:bg-white rounded  transition text-gray-600">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 4H5a2 2 0 00-2 2v14a2 2 0 002 2h4m0-21v21m0-21h10a2 2 0 012 2v14a2 2 0 01-2 2h-10" />
-              </svg>
+            <button 
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-[#F62416] text-white shadow-sm' : 'text-gray-400 hover:bg-gray-50'}`}
+              title="Table View"
+            >
+              <List size={18} />
             </button>
           </div>
         </div>
@@ -579,105 +953,109 @@ const Contacts = () => {
       />
 
       <div className="px-6 pb-8">
-        <div className="grid gap-6 grid-cols-4">
-            {filteredContacts.map((contact) => (
-              <div
-                key={contact.id}
-                className="bg-white border border-[#EAECF0] rounded-[12px] shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-5"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center  text-xs  flex-shrink-0 overflow-hidden">
-                      {contact.avatarImage ? (
-                        <img src={contact.avatarImage} alt={contact.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div style={{ backgroundColor: getAvatarColor(contact.avatar) }} className="w-full h-full flex items-center justify-center text-white">
-                          {contact.avatar}
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-xs   text-gray-900 truncate">
-                        {contact.name}
-                      </h3>
-                      <p className="text-xs  text-[#6B7280] truncate">
-                        {contact.position}
-                      </p>
-                    </div>
-                  </div>
-                  <ContactActionDropdown
-                    contact={contact}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onPreview={handlePreview}
-                  />
-                </div>
-
-                <div className="space-y-1.5 mb-4">
-                  <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
-                    <Mail size={15} strokeWidth={1.5} className="flex-shrink-0" />
-                    <a href={`mailto:${contact.email}`} className="hover:text-gray-900 truncate transition">
-                      {contact.email}
-                    </a>
-                  </div>
-                  <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
-                    <Phone size={15} strokeWidth={1.5} className="flex-shrink-0" />
-                    <span className="truncate">{contact.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
-                    <MapPin size={15} strokeWidth={1.5} className="flex-shrink-0" />
-                    <span className="truncate">{contact.country}</span>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  {contact.tags.map((tag, idx) => {
-                    const tagStyle = getTagStyle(tag);
-                    return (
-                      <span
-                        key={idx}
-                        style={{
-                          backgroundColor: tagStyle.bg,
-                          color: tagStyle.text
-                        }}
-                        className="text-[12px] px-3 py-1 rounded   "
-                      >
-                        {tag}
-                      </span>
-                    );
-                  })}
-                </div>
-
-                <div className="pt-3 border-t border-[#F3F4F6] flex items-center justify-between">
-                  <div className="flex gap-2 text-[#6B7280]">
-                    <a href={`mailto:${contact.email}`} className="hover:text-gray-900 transition p-0.5" title="Email">
-                      <Mail size={15} strokeWidth={1.5} />
-                    </a>
-                    <a href={`tel:${contact.phone}`} className="hover:text-gray-900 transition p-0.5" title="Phone">
-                      <Phone size={15} strokeWidth={1.5} />
-                    </a>
-                    <button className="hover:text-gray-900 transition p-0.5" title="Chat" onClick={() => alert(`Message for ${contact.name}`)}>
-                      <MessageCircle size={15} strokeWidth={1.5} />
-                    </button>
-                    <button className="hover:text-gray-900 transition p-0.5" title="Users" onClick={() => alert(`Collaborators: ${contact.collaborators.map(c => c.avatar).join(', ')}`)}>
-                      <Users size={15} strokeWidth={1.5} />
-                    </button>
-                  </div>
-                  <div className="flex gap-1">
-                    {contact.collaborators.slice(0, 3).map((collaborator, idx) => (
-                      <div
-                        key={idx}
-                        style={{ backgroundColor: getAvatarColor(collaborator.avatar) }}
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs   border border-white"
-                      >
-                        {collaborator.avatar}
+        {viewMode === 'table' ? (
+          renderTableView()
+        ) : (
+          <div className="grid gap-6 grid-cols-4">
+              {filteredContacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className="bg-white border border-[#EAECF0] rounded shadow-[0_2px_6px_rgba(0,0,0,0.05)] p-2"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-3">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center  text-xs  flex-shrink-0 overflow-hidden">
+                        {contact.avatarImage ? (
+                          <img src={contact.avatarImage} alt={contact.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div style={{ backgroundColor: getAvatarColor(contact.avatar) }} className="w-full h-full flex items-center justify-center text-white">
+                            {contact.avatar}
+                          </div>
+                        )}
                       </div>
-                    ))}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-xs   text-gray-900 truncate">
+                          {contact.name}
+                        </h3>
+                        <p className="text-xs  text-[#6B7280] truncate">
+                          {contact.position}
+                        </p>
+                      </div>
+                    </div>
+                    <ContactActionDropdown
+                      contact={contact}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onPreview={handlePreview}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 mb-4">
+                    <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
+                      <Mail size={15} strokeWidth={1.5} className="flex-shrink-0" />
+                      <a href={`mailto:${contact.email}`} className="hover:text-gray-900 truncate transition">
+                        {contact.email}
+                      </a>
+                    </div>
+                    <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
+                      <Phone size={15} strokeWidth={1.5} className="flex-shrink-0" />
+                      <span className="truncate">{contact.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2  text-xs  text-[#6B7280]">
+                      <MapPin size={15} strokeWidth={1.5} className="flex-shrink-0" />
+                      <span className="truncate">{contact.country}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    {contact.tags.map((tag, idx) => {
+                      const tagStyle = getTagStyle(tag);
+                      return (
+                        <span
+                          key={idx}
+                          style={{
+                            backgroundColor: tagStyle.bg,
+                            color: tagStyle.text
+                          }}
+                          className="text-[12px] px-3 py-1 rounded   "
+                        >
+                          {tag}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  <div className="pt-3 border-t border-[#F3F4F6] flex items-center justify-between">
+                    <div className="flex gap-2 text-[#6B7280]">
+                      <a href={`mailto:${contact.email}`} className="hover:text-gray-900 transition p-0.5" title="Email">
+                        <Mail size={15} strokeWidth={1.5} />
+                      </a>
+                      <a href={`tel:${contact.phone}`} className="hover:text-gray-900 transition p-0.5" title="Phone">
+                        <Phone size={15} strokeWidth={1.5} />
+                      </a>
+                      <button className="hover:text-gray-900 transition p-0.5" title="Chat" onClick={() => alert(`Message for ${contact.name}`)}>
+                        <MessageCircle size={15} strokeWidth={1.5} />
+                      </button>
+                      <button className="hover:text-gray-900 transition p-0.5" title="Users" onClick={() => alert(`Collaborators: ${contact.collaborators.map(c => c.avatar).join(', ')}`)}>
+                        <Users size={15} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                    <div className="flex gap-1">
+                      {contact.collaborators.slice(0, 3).map((collaborator, idx) => (
+                        <div
+                          key={idx}
+                          style={{ backgroundColor: getAvatarColor(collaborator.avatar) }}
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs   border border-white"
+                        >
+                          {collaborator.avatar}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-        </div>
+              ))}
+          </div>
+        )}
 
         {filteredContacts.length === 0 && (
           <div className="text-center py-16">
@@ -693,6 +1071,20 @@ const Contacts = () => {
           </button>
         </div>
       </div>
+
+      <ProjectTeamModal
+        isOpen={isTeamModalOpen}
+        onClose={() => {
+          setIsTeamModalOpen(false);
+          setActiveProjectId(null);
+        }}
+        projectId={activeProjectId}
+        currentTeam={projectTeams[activeProjectId] || []}
+        users={users}
+        teams={teams}
+        onAssign={handleAssignTeam}
+        onAssignTeam={handleAssignWholeTeam}
+      />
     </div>
   );
 };

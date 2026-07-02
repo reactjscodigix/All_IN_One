@@ -255,6 +255,76 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
     }
   };
 
+  const handleLeadChange = async (leadId) => {
+    if (!leadId) return;
+
+    setLoadingData(true);
+    try {
+      const leadData = await leadsAPI.getById(leadId);
+      if (leadData) {
+        let clientName = leadData.lead_name || leadData.name || leadData.company_name || '';
+        let clientEmail = leadData.email || '';
+        let clientPhone = leadData.phone || '';
+        let businessDescription = leadData.description || '';
+        let referralName = leadData.referral_name || '';
+        let leadBusinessType = leadData.business_type || '';
+        let contactPerson = leadData.lead_name || leadData.name || '';
+
+        // Initialize services from lead data
+        const processServices = (data) => {
+          let services = [];
+          if (data.it_services && data.it_services !== 'None') {
+            services.push({
+              id: Date.now() + 1 + Math.random(),
+              productName: data.it_services === 'Other' ? data.it_services_other : data.it_services,
+              description: '',
+              duration: '',
+              quantity: 1,
+              rate: 0
+            });
+          }
+          
+          const marketingServices = parseJson(data.marketing_services);
+          if (Array.isArray(marketingServices) && marketingServices.length > 0) {
+            marketingServices.forEach((service, index) => {
+              services.push({
+                id: Date.now() + 100 + index + Math.random(),
+                productName: service,
+                description: '',
+                duration: '',
+                quantity: 1,
+                rate: 0
+              });
+            });
+          }
+          return services;
+        };
+
+        const leadServices = processServices(leadData);
+
+        setFormData(prev => ({
+          ...prev,
+          client: clientName,
+          lead_id: leadId,
+          contactPerson: contactPerson || prev.contactPerson,
+          businessType: leadBusinessType || prev.businessType,
+          client_email: clientEmail || prev.client_email,
+          client_phone: clientPhone || prev.client_phone,
+          business_description: businessDescription || prev.business_description,
+          referral_name: referralName || prev.referral_name,
+          items: leadServices.length > 0 ? leadServices : prev.items
+        }));
+
+        // Fetch version history
+        fetchVersions(null, leadId);
+      }
+    } catch (err) {
+      console.error('Error fetching lead details:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
   const handleDealChange = async (e) => {
     const dealId = e.target.value;
     if (!dealId) {
@@ -482,12 +552,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
           lead_id: ''
         }));
       } else if (selectedLead) {
-        setFormData(prev => ({
-          ...prev,
-          client: value,
-          client_id: '',
-          lead_id: selectedLead.id
-        }));
+        handleLeadChange(selectedLead.id);
       } else {
         setFormData(prev => ({
           ...prev,

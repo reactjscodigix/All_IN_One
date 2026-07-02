@@ -3,9 +3,11 @@ import { Plus, FileText, MoreVertical, Folder, Star, ChevronDown, Music, Upload,
 import { fileManagerAPI } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 
-const FileManagerPage = () => {
+const FileManagerPage = ({ department }) => {
   const { user, isAuthenticated } = useAuth();
+  const [allFiles, setAllFiles] = useState([]);
   const [files, setFiles] = useState([]);
+  const [allFolders, setAllFolders] = useState([]);
   const [folders, setFolders] = useState([]);
   const [storageStats, setStorageStats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +22,20 @@ const FileManagerPage = () => {
 
   const userId = user?.id;
 
+  useEffect(() => {
+    if (department) {
+      const filterFn = (item) => (
+        (department === 'Marketing' && (item.department === 'Marketing' || item.category === 'Marketing')) ||
+        (department === 'IT' && (item.department === 'IT' || item.category === 'IT'))
+      );
+      setFiles(allFiles.filter(filterFn));
+      setFolders(allFolders.filter(filterFn));
+    } else {
+      setFiles(allFiles);
+      setFolders(allFolders);
+    }
+  }, [allFiles, allFolders, department]);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -29,8 +45,8 @@ const FileManagerPage = () => {
         fileManagerAPI.getStorageStats(userId)
       ]);
       
-      setFiles(filesData);
-      setFolders(foldersData);
+      setAllFiles(filesData);
+      setAllFolders(foldersData);
       setStorageStats(statsData);
       
       const favoriteIds = new Set();
@@ -125,7 +141,7 @@ const FileManagerPage = () => {
       }
       setFavorites(newFavorites);
       
-      setFiles(files.map(f => 
+      setAllFiles(allFiles.map(f => 
         f.id === fileId ? { ...f, is_favorite: !isFavorite } : f
       ));
     } catch (err) {

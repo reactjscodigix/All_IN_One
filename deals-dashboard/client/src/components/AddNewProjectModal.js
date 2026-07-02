@@ -8,6 +8,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
   const [error, setError] = useState('');
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [confirmedProjects, setConfirmedProjects] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,17 +29,18 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
 
   useEffect(() => {
     if (isOpen) {
-      fetchUsersAndCompanies();
+      fetchRequiredData();
     }
   }, [isOpen]);
 
-  const fetchUsersAndCompanies = async () => {
+  const fetchRequiredData = async () => {
     setIsFetching(true);
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const [usersRes, companiesRes] = await Promise.all([
+      const [usersRes, companiesRes, confirmedRes] = await Promise.all([
         fetch(`${apiUrl}/contacts`),
-        fetch(`${apiUrl}/companies`)
+        fetch(`${apiUrl}/confirmed-it-clients`),
+        fetch(`${apiUrl}/confirmed-it-projects`)
       ]);
       
       if (usersRes.ok) {
@@ -50,10 +52,16 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
         const companiesData = await companiesRes.json();
         setCompanies(Array.isArray(companiesData) ? companiesData : []);
       }
+
+      if (confirmedRes.ok) {
+        const confirmedData = await confirmedRes.json();
+        setConfirmedProjects(Array.isArray(confirmedData) ? confirmedData : []);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
       setUsers([]);
       setCompanies([]);
+      setConfirmedProjects([]);
     } finally {
       setIsFetching(false);
     }
@@ -103,6 +111,20 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Auto-select client if a confirmed project is selected
+    if (name === 'name' && value) {
+      const selectedProject = confirmedProjects.find(p => p.name === value);
+      if (selectedProject) {
+        setFormData(prev => ({
+          ...prev,
+          name: value,
+          client: selectedProject.company_id.toString()
+        }));
+        return;
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -250,15 +272,23 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
             <label className="block text-xs   text-gray-900 mb-1">
               Name <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
+            <select
               name="name"
               value={formData.name}
               onChange={handleInputChange}
               disabled={isFetching}
-              placeholder="Enter project name"
               className="w-full p-2  border border-gray-300 rounded  text-xs  bg-white focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition disabled:opacity-50"
-            />
+            >
+              <option value="">{isFetching ? 'Loading projects...' : 'Select IT Project'}</option>
+              {confirmedProjects.map(project => (
+                <option key={project.id} value={project.name}>
+                  {project.name} ({project.company_name})
+                </option>
+              ))}
+              {!isFetching && confirmedProjects.length === 0 && (
+                <option disabled>No confirmed IT projects found</option>
+              )}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -11,11 +11,30 @@ async function addPipelineAndCampaignData() {
 
     await connection.beginTransaction();
 
-    await connection.query('DELETE FROM deals WHERE id > 0');
-    await connection.query('DELETE FROM leads WHERE id > 0');
+    // await connection.query('DELETE FROM deals WHERE id > 0');
+    // await connection.query('DELETE FROM leads WHERE id > 0');
     await connection.query('DELETE FROM campaigns WHERE id > 0');
     await connection.query('DELETE FROM pipeline WHERE id > 0');
-    console.log('✅ Cleaned old data');
+    // Don't delete companies as they might be linked elsewhere, but we need some for deals
+    console.log('✅ Cleaned campaign and pipeline data (kept leads and deals)');
+
+    const companies = [
+      { company_name: 'TechCorp', status: 'Active' },
+      { company_name: 'Innovation Labs', status: 'Active' },
+      { company_name: 'Future Systems', status: 'Active' },
+      { company_name: 'Growth Co', status: 'Active' }
+    ];
+
+    const insertedCompanies = {};
+    for (const company of companies) {
+      const [result] = await connection.query(
+        'INSERT INTO companies (company_name, status) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)',
+        [company.company_name, company.status]
+      );
+      const id = result.insertId || (await connection.query('SELECT id FROM companies WHERE company_name = ?', [company.company_name]))[0][0].id;
+      insertedCompanies[company.company_name] = id;
+      console.log(`✅ Ensured Company: ${company.company_name} (ID: ${id})`);
+    }
 
     const pipelines = [
       { name: 'Sales Pipeline - 2025', description: 'Main sales pipeline for Q1 2025', status: 'Active' },
@@ -97,19 +116,22 @@ async function addPipelineAndCampaignData() {
     ];
 
     const insertedLeads = [];
-    for (const lead of leads) {
+    const userIds = [1, 2, 3];
+    for (let i = 0; i < leads.length; i++) {
+      const lead = leads[i];
+      const ownerId = userIds[i % userIds.length];
       const [result] = await connection.query(
-        'INSERT INTO leads (lead_name, email, phone, company, lead_source, lead_status) VALUES (?, ?, ?, ?, ?, ?)',
-        [lead.lead_name, lead.email, lead.phone, lead.company, lead.lead_source, lead.lead_status]
+        'INSERT INTO leads (lead_name, email, phone, company, lead_source, lead_status, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [lead.lead_name, lead.email, lead.phone, lead.company, lead.lead_source, lead.lead_status, ownerId]
       );
       insertedLeads.push({ id: result.insertId, ...lead });
-      console.log(`✅ Created Lead: ${lead.lead_name} from ${lead.lead_source}`);
+      console.log(`✅ Created Lead: ${lead.lead_name} from ${lead.lead_source} (Owner ID: ${ownerId})`);
     }
 
     const deals = [
       {
         deal_name: 'SaaS Platform Implementation - TechCorp',
-        company_id: 1,
+        company_id: insertedCompanies['TechCorp'],
         contact_id: 1,
         deal_value: 50000,
         deal_stage: 'Proposal Sent',
@@ -120,7 +142,7 @@ async function addPipelineAndCampaignData() {
       },
       {
         deal_name: 'Custom Development - Innovation Labs',
-        company_id: 2,
+        company_id: insertedCompanies['Innovation Labs'],
         contact_id: 2,
         deal_value: 75000,
         deal_stage: 'Negotiation',
@@ -131,7 +153,7 @@ async function addPipelineAndCampaignData() {
       },
       {
         deal_name: 'Annual License Renewal - Future Systems',
-        company_id: 3,
+        company_id: insertedCompanies['Future Systems'],
         contact_id: 3,
         deal_value: 120000,
         deal_stage: 'Won',
@@ -142,7 +164,7 @@ async function addPipelineAndCampaignData() {
       },
       {
         deal_name: 'Cloud Migration Services - Growth Co',
-        company_id: 4,
+        company_id: insertedCompanies['Growth Co'],
         contact_id: 4,
         deal_value: 95000,
         deal_stage: 'Follow Up',
@@ -154,13 +176,17 @@ async function addPipelineAndCampaignData() {
     ];
 
     for (const deal of deals) {
-      const [result] = await connection.query(
-        `INSERT INTO deals 
-         (deal_name, company_id, contact_id, deal_value, currency, deal_stage, pipeline, status, probability, expected_close_date)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [deal.deal_name, deal.company_id, deal.contact_id, deal.deal_value, 'INR', deal.deal_stage, deal.pipeline, deal.status, deal.probability, deal.expected_close_date]
-      );
-      console.log(`✅ Created Deal: ${deal.deal_name} (₹${deal.deal_value.toLocaleString()}, ${deal.probability}% probability)`);
+      try {
+        const [result] = await connection.query(
+          `INSERT INTO deals 
+           (deal_name, company_id, contact_id, deal_value, currency, deal_stage, pipeline, status, probability, expected_close_date)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [deal.deal_name, deal.company_id, deal.contact_id || null, deal.deal_value, 'INR', deal.deal_stage, deal.pipeline, deal.status, deal.probability, deal.expected_close_date]
+        );
+        console.log(`✅ Created Deal: ${deal.deal_name} (₹${deal.deal_value.toLocaleString()}, ${deal.probability}% probability)`);
+      } catch (dealErr) {
+        console.warn(`⚠️ Failed to create deal "${deal.deal_name}": ${dealErr.message}`);
+      }
     }
 
     await connection.commit();

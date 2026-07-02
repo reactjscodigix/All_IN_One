@@ -226,6 +226,77 @@ async function initializeDatabase() {
       console.warn('Could not update due_time in general_tasks:', err.message);
     }
 
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "internal_notes"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN internal_notes LONGTEXT');
+        console.log('✓ Added internal_notes to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not add internal_notes to general_tasks:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "reminder_date"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN reminder_date DATETIME');
+        console.log('✓ Added reminder_date to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not add reminder_date to general_tasks:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "category"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN category VARCHAR(100)');
+        console.log('✓ Added category to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not add category to general_tasks:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "sub_type"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN sub_type VARCHAR(100)');
+        console.log('✓ Added sub_type to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not add sub_type to general_tasks:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "project_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN project_id INT');
+        await connection.query('ALTER TABLE general_tasks ADD CONSTRAINT fk_tasks_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL');
+        console.log('✓ Added project_id to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not add project_id to general_tasks:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "task_type"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN task_type VARCHAR(100) DEFAULT "General"');
+        console.log('✓ Added task_type to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not add task_type to general_tasks:', err.message);
+    }
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM general_tasks LIKE "next_followup_date"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE general_tasks ADD COLUMN next_followup_date DATETIME');
+        console.log('✓ Added next_followup_date to general_tasks');
+      }
+    } catch (err) {
+      console.warn('Could not add next_followup_date to general_tasks:', err.message);
+    }
+
     await connection.query(`
       CREATE TABLE IF NOT EXISTS proposals (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1160,51 +1231,86 @@ async function initializeDatabase() {
       }
     }
 
-    await connection.query(`
-      CREATE TABLE IF NOT EXISTS activities (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        activity_type VARCHAR(100) NOT NULL DEFAULT 'Note',
-        title VARCHAR(255) NOT NULL,
-        description LONGTEXT,
-        status ENUM('Pending', 'Completed', 'Cancelled') DEFAULT 'Pending',
-        priority ENUM('Low', 'Medium', 'High', 'Critical') DEFAULT 'Medium',
-        contact_id INT,
-        deal_id INT,
-        project_id INT,
-        company_id INT,
-        lead_id INT,
-        task_id INT,
-        assigned_to INT,
-        created_by INT,
-        scheduled_date DATETIME,
-        completed_date DATETIME,
-        duration_minutes INT,
-        meeting_link VARCHAR(500),
-        notes LONGTEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,
-        FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,
-        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
-        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
-        FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL,
-        FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL,
-        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
-        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-        INDEX idx_activity_type (activity_type),
-        INDEX idx_status (status),
-        INDEX idx_contact_id (contact_id),
-        INDEX idx_deal_id (deal_id),
-        INDEX idx_project_id (project_id),
-        INDEX idx_company_id (company_id),
-        INDEX idx_lead_id (lead_id),
-        INDEX idx_task_id (task_id),
-        INDEX idx_assigned_to (assigned_to),
-        INDEX idx_created_by (created_by),
-        INDEX idx_scheduled_date (scheduled_date),
-        INDEX idx_created_at (created_at)
-      )
-    `);
+    await connection.query('CREATE TABLE IF NOT EXISTS chat_groups (' +
+      'id INT AUTO_INCREMENT PRIMARY KEY,' +
+      'name VARCHAR(255) NOT NULL,' +
+      'description TEXT,' +
+      'department_id INT,' +
+      'created_by INT,' +
+      'avatar LONGTEXT,' +
+      'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,' +
+      'updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,' +
+      'FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,' +
+      'FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL' +
+      ')');
+
+    await connection.query('CREATE TABLE IF NOT EXISTS chat_group_members (' +
+      'id INT AUTO_INCREMENT PRIMARY KEY,' +
+      'group_id INT NOT NULL,' +
+      'user_id INT NOT NULL,' +
+      'role ENUM("Member", "Admin") DEFAULT "Member",' +
+      'joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,' +
+      'FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE CASCADE,' +
+      'FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,' +
+      'UNIQUE KEY unique_member (group_id, user_id)' +
+      ')');
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM messages LIKE "group_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE messages ADD COLUMN group_id INT AFTER conversation_id');
+        await connection.query('ALTER TABLE messages MODIFY COLUMN conversation_id INT');
+        await connection.query('ALTER TABLE messages MODIFY COLUMN receiver_id INT');
+        await connection.query('ALTER TABLE messages ADD CONSTRAINT fk_messages_group FOREIGN KEY (group_id) REFERENCES chat_groups(id) ON DELETE CASCADE');
+        console.log('✓ Added group_id to messages');
+      }
+    } catch (err) {
+      console.warn('Could not update messages table for groups:', err.message);
+    }
+
+    await connection.query('CREATE TABLE IF NOT EXISTS activities (' +
+      'id INT AUTO_INCREMENT PRIMARY KEY,' +
+      'activity_type VARCHAR(100) NOT NULL DEFAULT "Note",' +
+      'title VARCHAR(255) NOT NULL,' +
+      'description LONGTEXT,' +
+      'status ENUM("Pending", "Completed", "Cancelled") DEFAULT "Pending",' +
+      'priority ENUM("Low", "Medium", "High", "Critical") DEFAULT "Medium",' +
+      'contact_id INT,' +
+      'deal_id INT,' +
+      'project_id INT,' +
+      'company_id INT,' +
+      'lead_id INT,' +
+      'task_id INT,' +
+      'assigned_to INT,' +
+      'created_by INT,' +
+      'scheduled_date DATETIME,' +
+      'completed_date DATETIME,' +
+      'duration_minutes INT,' +
+      'meeting_link VARCHAR(500),' +
+      'notes LONGTEXT,' +
+      'created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,' +
+      'updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,' +
+      'FOREIGN KEY (contact_id) REFERENCES contacts(id) ON DELETE SET NULL,' +
+      'FOREIGN KEY (deal_id) REFERENCES deals(id) ON DELETE SET NULL,' +
+      'FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,' +
+      'FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,' +
+      'FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL,' +
+      'FOREIGN KEY (task_id) REFERENCES general_tasks(id) ON DELETE SET NULL,' +
+      'FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,' +
+      'FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,' +
+      'INDEX idx_activity_type (activity_type),' +
+      'INDEX idx_status (status),' +
+      'INDEX idx_contact_id (contact_id),' +
+      'INDEX idx_deal_id (deal_id),' +
+      'INDEX idx_project_id (project_id),' +
+      'INDEX idx_company_id (company_id),' +
+      'INDEX idx_lead_id (lead_id),' +
+      'INDEX idx_task_id (task_id),' +
+      'INDEX idx_assigned_to (assigned_to),' +
+      'INDEX idx_created_by (created_by),' +
+      'INDEX idx_scheduled_date (scheduled_date),' +
+      'INDEX idx_created_at (created_at)' +
+      ')');
 
     try {
       const [columns] = await connection.query('SHOW COLUMNS FROM activities LIKE "created_by"');
@@ -1286,6 +1392,18 @@ async function initializeDatabase() {
     `);
 
     // Add AI and recording columns to followups if they don't exist
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM followups LIKE "project_id"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE followups ADD COLUMN project_id INT AFTER task_id');
+        await connection.query('ALTER TABLE followups ADD CONSTRAINT fk_followups_project FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL');
+        await connection.query('ALTER TABLE followups ADD INDEX idx_project_id (project_id)');
+        console.log('✓ Added project_id to followups');
+      }
+    } catch (err) {
+      console.warn('Could not update followups project_id:', err.message);
+    }
+
     try {
       const [columns] = await connection.query('SHOW COLUMNS FROM followups');
       const columnNames = columns.map(c => c.Field);
@@ -1620,6 +1738,23 @@ async function initializeDatabase() {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS gmb_management (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        location_name VARCHAR(255) NOT NULL,
+        map_url VARCHAR(500),
+        average_rating DECIMAL(3, 2) DEFAULT 0.0,
+        total_reviews INT DEFAULT 0,
+        status ENUM('Active', 'Needs Optimization', 'Pending Verification', 'Suspended') DEFAULT 'Active',
+        last_post_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        INDEX idx_project_id (project_id)
+      )
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS creative_requests (
         id INT AUTO_INCREMENT PRIMARY KEY,
         project_id INT NOT NULL,
@@ -1891,6 +2026,25 @@ async function initializeDatabase() {
     const companyIds = companies.map(c => c.id);
     const mainCompanyId = companyIds[0] || null;
 
+    const [existingProjects] = await connection.query('SELECT COUNT(*) as count FROM projects');
+    if (existingProjects[0].count === 0) {
+      const demoProjects = [
+        { name: 'Website SEO & GMB Optimization', company_id: mainCompanyId, budget: 15000, status: 'Execution', start_date: new Date() },
+        { name: 'Digital Marketing Campaign Q3', company_id: companyIds[1] || mainCompanyId, budget: 25000, status: 'Planning', start_date: new Date() },
+        { name: 'App Development - Phase 1', company_id: companyIds[2] || mainCompanyId, budget: 45000, status: 'Execution', start_date: new Date() }
+      ];
+      for (const project of demoProjects) {
+        await connection.query(
+          'INSERT INTO projects (name, company_id, budget, status, start_date, created_by) VALUES (?, ?, ?, ?, ?, ?)',
+          [project.name, project.company_id, project.budget, project.status, project.start_date, adminId]
+        );
+      }
+      console.log('✓ Demo projects created');
+    }
+
+    const [projects] = await connection.query('SELECT id FROM projects LIMIT 10');
+    const projectIds = projects.map(p => p.id);
+
     const [existingActivities] = await connection.query('SELECT COUNT(*) as count FROM activities');
     if (existingActivities[0].count === 0) {
       const demoActivities = [
@@ -2027,6 +2181,37 @@ async function initializeDatabase() {
         );
       }
       console.log('✓ Demo proposals created');
+    }
+
+    const [existingSeo] = await connection.query('SELECT COUNT(*) as count FROM seo_management');
+    if (existingSeo[0].count === 0 && projectIds.length > 0) {
+      const demoSeo = [
+        { project_id: projectIds[0], keyword: 'crm software for small business', target_url: 'https://novawave.com/crm', current_ranking: 5, target_ranking: 1, search_volume: 1200, competition: 'Medium' },
+        { project_id: projectIds[0], keyword: 'best deals dashboard 2024', target_url: 'https://novawave.com/dashboard', current_ranking: 12, target_ranking: 3, search_volume: 850, competition: 'High' },
+        { project_id: projectIds[1] || projectIds[0], keyword: 'enterprise software solutions', target_url: 'https://silverhawk.com/solutions', current_ranking: 2, target_ranking: 1, search_volume: 3200, competition: 'High' }
+      ];
+      for (const seo of demoSeo) {
+        await connection.query(
+          'INSERT INTO seo_management (project_id, keyword, target_url, current_ranking, target_ranking, search_volume, competition, last_updated) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+          [seo.project_id, seo.keyword, seo.target_url, seo.current_ranking, seo.target_ranking, seo.search_volume, seo.competition]
+        );
+      }
+      console.log('✓ Demo SEO records created');
+    }
+
+    const [existingGmb] = await connection.query('SELECT COUNT(*) as count FROM gmb_management');
+    if (existingGmb[0].count === 0 && projectIds.length > 0) {
+      const demoGmb = [
+        { project_id: projectIds[0], location_name: 'NovaWave HQ - Silicon Valley', map_url: 'https://maps.google.com/?cid=123', average_rating: 4.8, total_reviews: 156, status: 'Active' },
+        { project_id: projectIds[1] || projectIds[0], location_name: 'Silver Hawk Software - Austin', map_url: 'https://maps.google.com/?cid=456', average_rating: 4.2, total_reviews: 89, status: 'Needs Optimization' }
+      ];
+      for (const gmb of demoGmb) {
+        await connection.query(
+          'INSERT INTO gmb_management (project_id, location_name, map_url, average_rating, total_reviews, status, last_post_date) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+          [gmb.project_id, gmb.location_name, gmb.map_url, gmb.average_rating, gmb.total_reviews, gmb.status]
+        );
+      }
+      console.log('✓ Demo GMB records created');
     }
 
     const [existingConversations] = await connection.query('SELECT COUNT(*) as count FROM conversations');

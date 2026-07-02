@@ -35,8 +35,6 @@ const SignupPage = () => {
 
   const DEPARTMENTS = [
     'Admin',
-    'Leads Management',
-    'Deals Management',
     'Sales Department',
     'Marketing Department',
     'IT Department',
@@ -158,12 +156,6 @@ const SignupPage = () => {
   const getRoleName = (department, roleType) => {
     if (department === 'Admin') {
       return roleType === 'Manager' ? 'Admin' : 'Employee';
-    }
-    if (department === 'Leads Management') {
-      return roleType === 'Manager' ? 'Leads Manager' : 'Employee';
-    }
-    if (department === 'Deals Management') {
-      return roleType === 'Manager' ? 'Deals Manager' : 'Employee';
     }
     if (department === 'Sales Department') {
       return roleType === 'Manager' ? 'Sales Manager' : 'Sales Executive';

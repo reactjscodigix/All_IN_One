@@ -120,26 +120,15 @@ module.exports = function setupFollowupsRoutes(app, pool) {
     }
 
     try {
-      let transporter;
-      if (SMTP_HOST === 'smtp.gmail.com') {
-        transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: SMTP_USER,
-            pass: SMTP_PASS
-          }
-        });
-      } else {
-        transporter = nodemailer.createTransport({
-          host: SMTP_HOST,
-          port: SMTP_PORT,
-          secure: SMTP_PORT == 465,
-          auth: {
-            user: SMTP_USER,
-            pass: SMTP_PASS
-          }
-        });
-      }
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: parseInt(SMTP_PORT),
+        secure: SMTP_PORT == 465,
+        auth: {
+          user: SMTP_USER,
+          pass: SMTP_PASS
+        }
+      });
 
       // Format date safely
       let dateObj;
@@ -288,8 +277,16 @@ module.exports = function setupFollowupsRoutes(app, pool) {
           content: icsContent
         }
       };
-      await transporter.sendMail(mailOptions);
-      console.log(`✓ Professional email invitation sent to ${client_email}`);
+
+      console.log('✉️ Attempting to send mail with options:', {
+        from: mailOptions.from,
+        to: mailOptions.to,
+        cc: mailOptions.cc,
+        subject: mailOptions.subject
+      });
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`✓ Professional email invitation sent. Response: ${info.response}, MessageID: ${info.messageId}`);
       return true;
     } catch (error) {
       console.error('❌ Email Invite Error:', error.message);
@@ -297,6 +294,29 @@ module.exports = function setupFollowupsRoutes(app, pool) {
         console.error('💡 TIP: Check your SMTP_USER and SMTP_PASS in .env. If using Gmail, you MUST use an App Password.');
       }
       return false;
+    }
+  };
+
+  const generateValidFallbackLink = (type, currentLink) => {
+    // If we already have a valid non-placeholder link, use it
+    if (currentLink && !currentLink.includes('/new') && currentLink.startsWith('http')) {
+      return currentLink;
+    }
+
+    const letters = 'abcdefghijklmnopqrstuvwxyz';
+    const part = (l) => Array.from({ length: l }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
+    // Use the 3-4-3 letters format which is standard for Google Meet
+    const code = `${part(3)}-${part(4)}-${part(3)}`;
+
+    if (type === 'Google Meet' || type === 'Internal Video Call' || type === 'Meeting' || type === 'Demo') {
+      return `https://meet.google.com/${code}`;
+    } else if (type === 'Zoom Meeting') {
+      return `https://zoom.us/j/${Math.floor(100000000 + Math.random() * 900000000)}`;
+    } else if (type === 'WhatsApp Call') {
+      return `https://wa.me/call/${code}`;
+    } else {
+      // Robust default: Jitsi
+      return `https://meet.jit.si/Enterprise-CRM-${code}`;
     }
   };
 
@@ -324,30 +344,17 @@ module.exports = function setupFollowupsRoutes(app, pool) {
     // Auth configuration from environment variables
     const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
     let PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
+    const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
 
     if (!CLIENT_EMAIL || !PRIVATE_KEY) {
-      console.warn('⚠️ Google Calendar API credentials missing. Falling back to mock sync.');
-      console.log(`📅 Mocking Google Calendar Invite for ${client_email}...`);
+      console.warn('⚠️ Google Calendar API credentials missing. Falling back to dynamic link.');
+      console.log(`📅 Creating Fallback Invite for ${client_email}...`);
       
-      let mockLink = meeting_link;
-      if (!mockLink) {
-        // Generate a random code for fallback instead of using '/new' which redirects each person to a different room
-        // Google Meet only uses letters a-z
-        const letters = 'abcdefghijklmnopqrstuvwxyz';
-        const part = (l) => Array.from({ length: l }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
-        const code = `${part(3)}-${part(4)}-${part(3)}`;
-        
-        if (type === 'Google Meet' || type === 'Internal Video Call' || type === 'Meeting') {
-          mockLink = `https://meet.google.com/${code}`;
-        }
-        else if (type === 'Zoom Meeting') mockLink = `https://zoom.us/j/${Math.floor(Math.random() * 1000000000)}`;
-        else if (type === 'WhatsApp Call') mockLink = `https://wa.me/call/${code}`;
-        else mockLink = `https://meet.google.com/${code}`;
-      }
+      const fallbackLink = generateValidFallbackLink(type, meeting_link);
 
       return {
         calendar_event_id: calendar_event_id || "mock-event-id-" + Date.now(),
-        meeting_link: mockLink
+        meeting_link: fallbackLink
       };
     }
 
@@ -373,6 +380,11 @@ module.exports = function setupFollowupsRoutes(app, pool) {
 
       const client = await auth.getClient();
       const calendar = google.calendar({ version: 'v3', auth: client });
+
+      // Target the specific calendar ID from env, or the assigned person's calendar, or default to service account's 'primary'
+      const targetCalendarId = GOOGLE_CALENDAR_ID || assigned_to_email || 'primary';
+      
+      console.log(`📅 Targeting Calendar: ${targetCalendarId} for ${client_email}`);
 
       // Calculate end time (default 30 mins)
       const durationMatch = meeting_duration?.match(/(\d+)/);
@@ -412,6 +424,14 @@ module.exports = function setupFollowupsRoutes(app, pool) {
       const attendees = [{ email: client_email }];
       if (assigned_to_email) attendees.push({ email: assigned_to_email });
       attendees.push({ email: CLIENT_EMAIL, responseStatus: 'accepted' });
+
+      console.log('📅 Calendar Event Details:', {
+        summary: subject,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        attendees: attendees.map(a => a.email),
+        serviceAccount: CLIENT_EMAIL
+      });
 
       // For Google Meet, we want the API to generate a fresh link, not use the 'new' placeholder
       const location = type === 'Google Meet' && meeting_link?.includes('/new') ? '' : meeting_link;
@@ -454,7 +474,7 @@ module.exports = function setupFollowupsRoutes(app, pool) {
           console.log(`🚀 Updating REAL Google Calendar Event ${calendar_event_id} for ${client_email}...`);
           response = await calendar.events.patch({
             auth: client,
-            calendarId: 'primary',
+            calendarId: targetCalendarId,
             eventId: calendar_event_id,
             resource: event,
             sendUpdates: 'all',
@@ -465,7 +485,7 @@ module.exports = function setupFollowupsRoutes(app, pool) {
           console.log(`🚀 Sending REAL Google Calendar Invite to ${client_email}...`);
           response = await calendar.events.insert({
             auth: client,
-            calendarId: 'primary',
+            calendarId: targetCalendarId,
             resource: event,
             sendUpdates: 'all',
             conferenceDataVersion: 1,
@@ -496,7 +516,7 @@ module.exports = function setupFollowupsRoutes(app, pool) {
             if (calendar_event_id && !calendar_event_id.startsWith('mock-') && !calendar_event_id.startsWith('fallback-')) {
               response = await calendar.events.patch({
                 auth: client,
-                calendarId: 'primary',
+                calendarId: targetCalendarId,
                 eventId: calendar_event_id,
                 resource: localEvent,
                 conferenceDataVersion: retryConferenceVersion,
@@ -504,7 +524,7 @@ module.exports = function setupFollowupsRoutes(app, pool) {
             } else {
               response = await calendar.events.insert({
                 auth: client,
-                calendarId: 'primary',
+                calendarId: targetCalendarId,
                 resource: localEvent,
                 conferenceDataVersion: retryConferenceVersion,
               });
@@ -522,7 +542,7 @@ module.exports = function setupFollowupsRoutes(app, pool) {
               if (calendar_event_id && !calendar_event_id.startsWith('mock-') && !calendar_event_id.startsWith('fallback-')) {
                 response = await calendar.events.patch({
                   auth: client,
-                  calendarId: 'primary',
+                  calendarId: targetCalendarId,
                   eventId: calendar_event_id,
                   resource: finalEvent,
                   conferenceDataVersion: 0,
@@ -530,16 +550,17 @@ module.exports = function setupFollowupsRoutes(app, pool) {
               } else {
                 response = await calendar.events.insert({
                   auth: client,
-                  calendarId: 'primary',
+                  calendarId: targetCalendarId,
                   resource: finalEvent,
                   conferenceDataVersion: 0,
                 });
               }
             } catch (finalError) {
                 console.error('❌ Final retry failed:', finalError.message);
+                const fallbackLink = generateValidFallbackLink(type, meeting_link);
                 return {
                   calendar_event_id: calendar_event_id || "fallback-id-" + Date.now(),
-                  meeting_link: meeting_link
+                  meeting_link: fallbackLink
                 };
             }
           }
@@ -553,17 +574,27 @@ module.exports = function setupFollowupsRoutes(app, pool) {
         }
       }
 
+      // If Google API succeeded but didn't provide a hangoutLink (e.g. for Zoom/Phone types)
+      // or if it's a Google Meet but Link generation was disabled/failed
+      let finalMeetingLink = response.data.hangoutLink || meeting_link;
+      
+      // Ensure we never return a '/new' placeholder
+      if (!finalMeetingLink || finalMeetingLink.includes('/new')) {
+        finalMeetingLink = generateValidFallbackLink(type, finalMeetingLink);
+      }
+
       return {
         calendar_event_id: response.data.id,
-        meeting_link: response.data.hangoutLink || meeting_link
+        meeting_link: finalMeetingLink
       };
 
     } catch (error) {
       console.error('❌ Google Calendar API Error:', error.message);
       // Fallback to mock so user can still proceed
+      const fallbackLink = generateValidFallbackLink(type, meeting_link);
       return {
         calendar_event_id: calendar_event_id || "fallback-id-" + Date.now(),
-        meeting_link: meeting_link
+        meeting_link: fallbackLink
       };
     }
   };
@@ -655,14 +686,24 @@ module.exports = function setupFollowupsRoutes(app, pool) {
 
       // Auto-trigger calendar invite if scheduling a meeting (move this here so followUpCount is ready)
       let calendarInfo = null;
-      const inviteTypes = ['Google Meet', 'Zoom Meeting', 'Internal Video Call', 'Demo', 'WhatsApp Call', 'In-Person Meeting', 'Meeting', 'Proposal Discussion', 'Payment Reminder'];
+      const inviteTypes = ['Google Meet', 'Zoom Meeting', 'Internal Video Call', 'Demo', 'WhatsApp Call', 'In-Person Meeting', 'Meeting', 'Proposal Discussion', 'Payment Reminder', 'Call'];
+      
+      console.log(`🔍 Checking if invite should be sent: Type=${type}, Email=${client_email}, IsInList=${inviteTypes.includes(type)}`);
       
       if (inviteTypes.includes(type) && client_email) {
+        console.log(`📅 Triggering calendar invite for ${client_email}...`);
         calendarInfo = await sendCalendarInvite(insertData);
         if (calendarInfo) {
+          console.log(`✓ Calendar invite triggered successfully. Link: ${calendarInfo.meeting_link}`);
           insertData.calendar_event_id = calendarInfo.calendar_event_id;
           insertData.meeting_link = calendarInfo.meeting_link || insertData.meeting_link;
+        } else {
+          console.warn(`⚠️ Calendar invite returned null for ${client_email}`);
         }
+      } else if (inviteTypes.includes(type) && !client_email) {
+        console.warn(`⚠️ Missing client_email for meeting type ${type}. Invite skipped.`);
+      } else if (!inviteTypes.includes(type) && client_email) {
+        console.log(`ℹ️ Follow-up type ${type} is not in inviteTypes list. Email invite will still be sent if it's a meeting.`);
       }
 
       // Map to specific ID columns for relational integrity if needed
@@ -697,7 +738,13 @@ module.exports = function setupFollowupsRoutes(app, pool) {
 
       // Always send professional email invite for meeting types to ensure notification
       if (inviteTypes.includes(type) && client_email) {
-        await sendProfessionalEmailInvite({ ...insertData, id: newId });
+        console.log(`✉️ Sending professional email invite to ${client_email}...`);
+        const emailSent = await sendProfessionalEmailInvite({ ...insertData, id: newId });
+        if (emailSent) {
+          console.log(`✓ Professional email sent successfully to ${client_email}`);
+        } else {
+          console.error(`❌ Failed to send professional email to ${client_email}`);
+        }
       }
 
       res.status(201).json({
@@ -809,12 +856,12 @@ module.exports = function setupFollowupsRoutes(app, pool) {
     const { id } = req.params;
     try {
       // 1. Fetch the meeting link
-      const [rows] = await pool.query("SELECT meeting_link, status FROM followups WHERE id = ?", [id]);
+      const [rows] = await pool.query("SELECT meeting_link, status, type FROM followups WHERE id = ?", [id]);
       if (rows.length === 0) {
         return res.status(404).send('Meeting invitation not found');
       }
 
-      const { meeting_link, status } = rows[0];
+      const { meeting_link, status, type } = rows[0];
 
       // 2. Update status to 'Client Joined' if it was 'Scheduled'
       if (status === 'Scheduled' || status === 'Pending') {
@@ -829,6 +876,15 @@ module.exports = function setupFollowupsRoutes(app, pool) {
 
       // Handle raw meeting links or those needing protocol
       let targetUrl = meeting_link;
+      
+      // Critical Fix: If it's a placeholder link, generate a real one on the fly and update DB
+      if (targetUrl.includes('/new')) {
+        console.warn(`⚠️ Placeholder link detected for meetup ${id}. Generating dynamic fallback.`);
+        targetUrl = generateValidFallbackLink(type, targetUrl);
+        // Save the real link back to DB so it persists
+        await pool.query("UPDATE followups SET meeting_link = ?, updated_at = NOW() WHERE id = ?", [targetUrl, id]);
+      }
+
       if (!targetUrl.startsWith('http')) {
         targetUrl = 'https://' + targetUrl;
       }
@@ -935,27 +991,42 @@ module.exports = function setupFollowupsRoutes(app, pool) {
       `, values);
 
       // Auto-trigger calendar update if meeting details changed
-      const inviteTypes = ['Google Meet', 'Zoom Meeting', 'Internal Video Call', 'Demo', 'WhatsApp Call', 'In-Person Meeting', 'Meeting', 'Proposal Discussion', 'Payment Reminder'];
-      if (inviteTypes.includes(finalUpdateData.type || updateData.type)) {
+      const inviteTypes = ['Google Meet', 'Zoom Meeting', 'Internal Video Call', 'Demo', 'WhatsApp Call', 'In-Person Meeting', 'Meeting', 'Proposal Discussion', 'Payment Reminder', 'Call'];
+      
+      const currentType = finalUpdateData.type || updateData.type;
+      
+      if (inviteTypes.includes(currentType)) {
         try {
           // Fetch the full record to ensure we have all fields for the invite
           const [updatedRows] = await connection.query("SELECT * FROM followups WHERE id = ?", [id]);
           if (updatedRows.length > 0) {
             const followup = updatedRows[0];
+            console.log(`🔍 Updating invite for ${followup.client_email || 'unknown email'}: Type=${followup.type}`);
+            
             if (followup.client_email) {
+              console.log(`📅 Triggering calendar update for ${followup.client_email}...`);
               const calendarInfo = await sendCalendarInvite(followup);
               if (calendarInfo && calendarInfo.calendar_event_id && calendarInfo.calendar_event_id !== followup.calendar_event_id) {
+                console.log(`✓ Calendar update successful. Link: ${calendarInfo.meeting_link}`);
                 await connection.query(
                   "UPDATE followups SET calendar_event_id = ?, meeting_link = ? WHERE id = ?",
                   [calendarInfo.calendar_event_id, calendarInfo.meeting_link, id]
                 );
               }
               // Send professional email on update to confirm changes
-              await sendProfessionalEmailInvite(followup);
+              console.log(`✉️ Sending professional email update to ${followup.client_email}...`);
+              const emailSent = await sendProfessionalEmailInvite(followup);
+              if (emailSent) {
+                console.log(`✓ Professional email update sent to ${followup.client_email}`);
+              } else {
+                console.error(`❌ Failed to send professional email update to ${followup.client_email}`);
+              }
+            } else {
+              console.warn(`⚠️ Missing client_email for meeting type ${currentType} in update. Invite skipped.`);
             }
           }
         } catch (calErr) {
-          console.error('Failed to update calendar invite on followup update:', calErr.message);
+          console.error('❌ Failed to update calendar invite on followup update:', calErr.message);
         }
       }
 

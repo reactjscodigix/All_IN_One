@@ -7,7 +7,8 @@ import {
   ArrowLeft, Layout, PlusCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { followupsAPI } from '../services/api';
+import { followupsAPI, leadsAPI, dealsAPI } from '../services/api';
+import { generateMeetingLink } from '../utils/meetingUtils';
 import AddFollowupModal from './AddFollowupModal';
 import AdvancedDataTable from './AdvancedDataTable';
 import DateRangeDropdown from './DateRangeDropdown';
@@ -100,14 +101,28 @@ const FollowupsPage = () => {
     fetchFollowups();
   }, [fetchFollowups]);
 
+  const sanitizeFollowupForAPI = (data) => {
+    const sanitized = { ...data };
+    const dateFields = ['scheduled_date', 'recurrence_end_date', 'next_followup_date', 'created_at', 'updated_at'];
+    
+    dateFields.forEach(field => {
+      if (sanitized[field] && typeof sanitized[field] === 'string' && sanitized[field].includes('T')) {
+        sanitized[field] = sanitized[field].split('T')[0];
+      }
+    });
+    
+    return sanitized;
+  };
+
   const handleAddFollowup = async (formData) => {
     try {
+      const sanitizedData = sanitizeFollowupForAPI(formData);
       if (formData.id) {
-        await followupsAPI.update(formData.id, formData);
+        await followupsAPI.update(formData.id, sanitizedData);
         
         // If status is Completed AND a next followup date is provided, create a new followup
         if (formData.status === 'Completed' && formData.next_followup_date) {
-          const nextFollowupData = {
+          const nextFollowupData = sanitizeFollowupForAPI({
             related_type: formData.related_type,
             related_id: formData.related_id,
             related_name: formData.related_name,
@@ -120,7 +135,7 @@ const FollowupsPage = () => {
             assigned_to_name: formData.assigned_to_name,
             status: 'Scheduled',
             previous_followup_id: formData.id
-          };
+          });
           await followupsAPI.create(nextFollowupData);
           showSuccessToast('Follow-up updated and next one scheduled');
         } else {
@@ -129,10 +144,25 @@ const FollowupsPage = () => {
         
         // Automation: Update Lead/Deal stages based on selected Outcome
         if (formData.status === 'Completed' && formData.outcome) {
-          console.log(`Updating ${formData.related_type} ${formData.related_id} stage based on outcome: ${formData.outcome}`);
+          try {
+            if (formData.outcome === 'Asking for Quotation') {
+              if (formData.related_type === 'Lead') {
+                await leadsAPI.update(formData.related_id, { lead_status: 'Qualified' });
+                console.log(`Auto-updated lead ${formData.related_id} to Qualified`);
+              } else if (formData.related_type === 'Deal') {
+                await dealsAPI.update(formData.related_id, { deal_stage: 'Quotation' });
+                console.log(`Auto-updated deal ${formData.related_id} to Quotation stage`);
+              }
+            } else if (formData.outcome === 'Converted to Deal' && formData.related_type === 'Lead') {
+               // Optional: trigger conversion logic if needed, or just status update
+               await leadsAPI.update(formData.related_id, { lead_status: 'Converted to Deal' });
+            }
+          } catch (autoErr) {
+            console.error('Automation failed:', autoErr);
+          }
         }
       } else {
-        await followupsAPI.create(formData);
+        await followupsAPI.create(sanitizedData);
         showSuccessToast('Follow-up scheduled successfully');
       }
 
@@ -162,6 +192,35 @@ const FollowupsPage = () => {
     }
   };
 
+  const handleJoinMeeting = async (e, row) => {
+    e.stopPropagation();
+    let link = row.meeting_link;
+    
+    // Validate if it's a valid Google Meet link (must be exactly abc-defg-hij format)
+    const meetCode = link ? link.split('/').filter(Boolean).pop() : null;
+    const isInvalidGoogleMeet = row.type === 'Google Meet' && (!meetCode || !/^[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(meetCode));
+    
+    if (!link || isInvalidGoogleMeet) {
+      // Use the utility to generate a valid meeting link (letters only for Google Meet)
+      link = generateMeetingLink(row.type);
+      
+      try {
+        // Ensure date fields are in YYYY-MM-DD format for the API to avoid "Incorrect date value" errors
+        const updateData = sanitizeFollowupForAPI({ ...row, meeting_link: link });
+        
+        await followupsAPI.update(row.id, updateData);
+        showSuccessToast('New meeting link generated');
+        // Refresh to show the link
+        fetchFollowups();
+      } catch (err) {
+        showErrorToast('Failed to generate meeting link');
+        return;
+      }
+    }
+    
+    window.open(link, '_blank');
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'High': return ' text-red-600 border border-red-100';
@@ -178,7 +237,7 @@ const FollowupsPage = () => {
       case 'Pending': return ' text-orange-600 border border-orange-100';
       case 'Overdue': return ' text-red-600 border border-red-100';
       case 'Cancelled': return ' text-gray-600 border border-gray-200';
-      case 'Client Joined': return ' text-green-700 bg-green-50 border border-green-200 font-bold';
+      case 'Client Joined': return ' text-green-700 bg-green-50 border border-green-200 ';
       default: return ' text-gray-600';
     }
   };
@@ -375,9 +434,9 @@ const FollowupsPage = () => {
       render: (_, row) => (
         <div className="flex flex-col items-center">
           {row.calendar_event_id ? (
-            <span className="text-[9px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 font-bold">SYNCED</span>
+            <span className="text-[9px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 ">SYNCED</span>
           ) : (
-            <span className="text-[9px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-gray-100">LOCAL</span>
+            <span className="text-[9px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded border border-gray-100 uppercase">OFFLINE</span>
           )}
         </div>
       )
@@ -457,7 +516,7 @@ const FollowupsPage = () => {
           status === 'Completed' ? 'bg-green-50 text-green-600' : 
           status === 'Pending' ? 'bg-orange-50 text-orange-600' :
           status === 'Overdue' ? 'bg-red-50 text-red-600' :
-          status === 'Client Joined' ? 'bg-green-100 text-green-700 animate-pulse font-bold' :
+          status === 'Client Joined' ? 'bg-green-100 text-green-700 animate-pulse ' :
           'bg-gray-100 text-gray-600'
         }`}>
           {status}
@@ -473,7 +532,7 @@ const FollowupsPage = () => {
         let colorClass = 'text-gray-600 bg-gray-50 border-gray-100';
         
         // Positive outcomes
-        if (['Interested', 'Meeting Scheduled', 'Converted to Deal', 'Useful', 'Accepted'].includes(outcome)) {
+        if (['Interested', 'Asking for Quotation', 'Meeting Scheduled', 'Converted to Deal', 'Useful', 'Accepted'].includes(outcome)) {
           colorClass = 'text-green-700 bg-green-50 border-green-100';
         } 
         // Neutral/Follow-up outcomes
@@ -509,17 +568,34 @@ const FollowupsPage = () => {
       label: 'Action',
       render: (_, row) => (
         <div className="flex items-center justify-end gap-1">
-          {row.meeting_link && (row.status === 'Scheduled' || row.status === 'Pending' || row.status === 'Client Joined') && (
+          {row.outcome === 'Asking for Quotation' && (
             <button 
               onClick={(e) => { 
                 e.stopPropagation(); 
-                // Always use the database ID for the video call route to ensure link synchronization
-                navigate(`/video-call/${row.id}`);
+                navigate('/sales/quotations', { 
+                  state: { 
+                    related_type: row.related_type,
+                    related_id: row.related_id,
+                    related_name: row.related_name,
+                    client_email: row.client_email,
+                    client_phone: row.client_phone,
+                    autoOpenAdd: true 
+                  } 
+                });
               }}
-              title="Join Meeting"
-              className={`px-2 py-1 ${row.status === 'Client Joined' ? 'bg-green-600 animate-pulse' : 'bg-blue-600'} text-white rounded text-[10px] font-bold hover:opacity-90 transition-all flex items-center gap-1 shadow-sm`}
+              title="Create Quotation"
+              className="px-2 py-1 bg-green-600 text-white rounded text-xs  hover:bg-green-700 transition-all flex items-center gap-1 shadow-sm"
             >
-              <VideoIcon size={12} /> {row.status === 'Client Joined' ? 'JOIN NOW' : 'JOIN'}
+              <Calculator size={12} /> CREATE QUOTATION
+            </button>
+          )}
+          {((row.type === 'Google Meet' || row.type === 'Zoom Meeting') || row.meeting_link) && (row.status === 'Scheduled' || row.status === 'Pending' || row.status === 'Client Joined') && (
+            <button 
+              onClick={(e) => handleJoinMeeting(e, row)}
+              title="Join Meeting"
+              className={`px-2 py-1 ${row.status === 'Client Joined' ? 'bg-green-600 animate-pulse' : 'bg-white border border-red-200 text-red-500'} rounded text-xs hover:opacity-90 transition-all flex items-center gap-1 shadow-sm`}
+            >
+              <VideoIcon size={12} className={row.status === 'Client Joined' ? 'text-white' : 'text-red-500'} /> {row.status === 'Client Joined' ? 'JOIN NOW' : 'JOIN'}
             </button>
           )}
           {row.status !== 'Completed' && (
@@ -1245,28 +1321,36 @@ const FollowupsPage = () => {
                                           </td>
                                           <td className="p-2 text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                              {f.status === 'Scheduled' && ['Google Meet', 'Zoom Meeting', 'Internal Video Call'].includes(f.type) && (
+                                              {f.outcome === 'Asking for Quotation' && (
                                                 <button 
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    // Always use internal video call page for recording and AI analysis
-                                                    // Extract code from meeting link if it's an external URL
-                                                    let code = f.meeting_link;
-                                                    if (f.meeting_link?.includes('meet.google.com/')) {
-                                                      code = f.meeting_link.split('meet.google.com/').pop().split('?')[0];
-                                                    } else if (f.meeting_link?.includes('zoom.us/')) {
-                                                      code = f.meeting_link.split('/').pop().split('?')[0];
-                                                    } else if (f.meeting_link?.includes('/')) {
-                                                      code = f.meeting_link.split('/').pop();
-                                                    }
-                                                    
-                                                    navigate(`/video-call/${code || f.id}`);
+                                                  onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    navigate('/sales/quotations', { 
+                                                      state: { 
+                                                        related_type: f.related_type,
+                                                        related_id: f.related_id,
+                                                        related_name: f.related_name,
+                                                        client_email: f.client_email,
+                                                        client_phone: f.client_phone,
+                                                        autoOpenAdd: true 
+                                                      } 
+                                                    });
                                                   }}
-                                                  className="p-1 text-red-600 hover:bg-red-50 border border-red-200 rounded flex items-center gap-1"
+                                                  className="p-1 text-green-600  flex items-center gap-1"
+                                                  title="Create Quotation"
+                                                >
+                                                  <Calculator size={12} />
+                                                  
+                                                </button>
+                                              )}
+                                              {f.status === 'Scheduled' && ['Google Meet', 'Zoom Meeting', 'Internal Video Call', 'Demo'].includes(f.type) && (
+                                                <button 
+                                                  onClick={(e) => handleJoinMeeting(e, f)}
+                                                  className="px-2 py-1 text-red-600 hover:bg-red-50 border border-red-200 rounded flex items-center gap-1 shadow-sm transition-all"
                                                   title="Join Meeting"
                                                 >
                                                   <VideoIcon size={12} />
-                                                  <span className="text-[10px] font-bold">JOIN</span>
+                                                  <span className="text-xs font-medium">JOIN</span>
                                                 </button>
                                               )}
                                               {f.status === 'Completed' && (

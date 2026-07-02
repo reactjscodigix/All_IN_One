@@ -1,41 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, ChevronDown, MoreVertical, Calendar, User, CornerDownLeft, CheckSquare, Edit2, Check, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { projectAPI, usersAPI } from '../services/api';
 
-const KanbanPage = () => {
+const KanbanPage = ({ department }) => {
   const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [realUsers, setRealUsers] = useState([]);
   
   const getInitialStatuses = () => {
-    if (user?.department === 'IT Department') {
-      return ['Backlog', 'Development', 'Testing', 'Deployment', 'Completed'];
+    const dept = department || user?.department;
+    if (dept?.toLowerCase().includes('it')) {
+      return ['Backlog', 'Development', 'Testing', 'Deployment', 'Completed', 'Execution', 'Planning'];
     }
-    if (user?.department === 'Marketing Department') {
-      return ['Planning', 'In Progress', 'Content Creation', 'Approval', 'Published'];
+    if (dept?.toLowerCase().includes('marketing')) {
+      return ['Planning', 'In Progress', 'Content Creation', 'Approval', 'Published', 'Execution', 'Completed'];
     }
-    return ['TO DO', 'in-progress', 'pending requirements', 'QA testing', 'Done', 'On Hold'];
+    return ['To Do', 'In Progress', 'Review', 'Completed', 'On Hold', 'Cancelled', 'Planning', 'Execution'];
   };
 
   const [statusList, setStatusList] = useState(getInitialStatuses());
+  const [projects, setProjects] = useState({});
 
-  const [projects, setProjects] = useState(() => {
-    const statuses = getInitialStatuses();
-    const initialProjects = {};
-    statuses.forEach(status => {
-      initialProjects[status] = [];
-    });
-    
-    // Add some sample data based on department
-    if (user?.department === 'IT Department') {
-      initialProjects['Backlog'] = [
-        { id: 1, ticketNo: 'IT-101', name: 'API Integration', priority: 'High', budget: '$12,000', tasks: '2/5', dueDate: '20 Mar', assignees: 2 }
-      ];
-      initialProjects['Development'] = [
-        { id: 2, ticketNo: 'IT-102', name: 'Frontend Refactor', priority: 'Medium', budget: '$8,000', tasks: '5/10', dueDate: '15 Mar', assignees: 3 }
-      ];
+  useEffect(() => {
+    fetchData();
+  }, [department, user?.department]);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const dept = department || user?.department;
+      const [projectsData, usersData] = await Promise.all([
+        projectAPI.getAll({ department: dept }),
+        usersAPI.getAll()
+      ]);
+
+      setRealUsers(usersData);
+
+      const statuses = getInitialStatuses();
+      const grouped = {};
+      statuses.forEach(s => grouped[s] = []);
+
+      projectsData.forEach(p => {
+        const status = p.status || 'Planning';
+        if (!grouped[status]) {
+          grouped[status] = [];
+          if (!statusList.includes(status)) {
+            setStatusList(prev => [...prev, status]);
+          }
+        }
+        grouped[status].push({
+          id: p.id,
+          ticketNo: `PRJ-${p.id}`,
+          name: p.name || p.title,
+          priority: p.priority || 'Medium',
+          budget: `${p.currency || 'INR'} ${p.budget || 0}`,
+          tasks: '0/0',
+          dueDate: p.due_date ? new Date(p.due_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : 'No date',
+          assignees: 0,
+          company: p.company_name
+        });
+      });
+
+      setProjects(grouped);
+    } catch (err) {
+      console.error('Failed to fetch Kanban data:', err);
+      setError('Failed to load Kanban data');
+    } finally {
+      setIsLoading(false);
     }
-    
-    return initialProjects;
-  });
+  };
 
   const [draggedProject, setDraggedProject] = useState(null);
   const [activeAddStatus, setActiveAddStatus] = useState(null);
@@ -48,10 +85,12 @@ const KanbanPage = () => {
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [tempTaskName, setTempTaskName] = useState('');
 
-  const users = [
-    { id: 'unassigned', name: 'Unassigned', email: '', avatar: null },
-    { id: 'automatic', name: 'Automatic', email: '', avatar: null },
-    { id: 'user1', name: 'ashwini1006', email: 'ashwinikhedekar1006@gmail.com', avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-10.jpg' }
+  const avatars = [
+    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-10.jpg',
+    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-08.jpg',
+    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-07.jpg',
+    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg',
+    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-03.jpg'
   ];
 
   const handleAddStatus = () => {
@@ -205,13 +244,41 @@ const KanbanPage = () => {
     return projects[status]?.length || 0;
   };
 
-  const avatars = [
-    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-10.jpg',
-    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-08.jpg',
-    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-07.jpg',
-    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg',
-    'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-03.jpg'
+  const users = [
+    { id: 'unassigned', name: 'Unassigned', email: '', avatar: null },
+    ...realUsers.map(u => ({
+      id: u.id,
+      name: u.first_name + (u.last_name ? ' ' + u.last_name : ''),
+      email: u.email,
+      avatar: u.avatar || 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-10.jpg'
+    }))
   ];
+
+  if (isLoading) {
+    return (
+      <div className="w-full bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Kanban board...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded p-4 text-red-700">
+          ❌ {error}
+        </div>
+      </div>
+    );
+  }
+
+  const allProjects = Object.values(projects).flat();
+  const totalTasks = allProjects.length;
+  const completedTasks = projects['Completed']?.length || 0;
+  const pendingTasks = totalTasks - completedTasks;
 
   return (
     <div className="p-3 sm:p-3 lg:p-3 bg-gray-50 min-h-screen">
@@ -233,19 +300,19 @@ const KanbanPage = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                {avatars.slice(0, 3).map((avatar, idx) => (
-                  <img key={idx} src={avatar} alt="user" className="w-8 h-8 rounded-full border-2 border-white" />
+                {realUsers.slice(0, 3).map((u, idx) => (
+                  <img key={idx} src={u.avatar || avatars[idx % avatars.length]} alt="user" className="w-8 h-8 rounded-full border-2 border-white" />
                 ))}
-                <span className="text-xs  text-gray-700  ">1+</span>
+                {realUsers.length > 3 && <span className="text-xs  text-gray-700  ">{realUsers.length - 3}+</span>}
               </div>
 
               <div className="text-xs ">
                 <span className="text-gray-600">Total Task: </span>
-                <span className=" text-gray-900">55</span>
+                <span className=" text-gray-900">{totalTasks}</span>
                 <span className="text-gray-600 ml-4">Pending: </span>
-                <span className=" text-gray-900">15</span>
+                <span className=" text-gray-900">{pendingTasks}</span>
                 <span className="text-gray-600 ml-4">Completed: </span>
-                <span className=" text-gray-900">40</span>
+                <span className=" text-gray-900">{completedTasks}</span>
               </div>
             </div>
 
@@ -428,6 +495,12 @@ const KanbanPage = () => {
                     )}
 
                     <div className="space-y-1 text-xs text-gray-600 mb-3">
+                      {project.company && (
+                        <div className="flex items-center justify-between">
+                          <span>Company</span>
+                          <span className="text-gray-900 truncate max-w-[120px]">{project.company}</span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between">
                         <span>Estimate Date</span>
                         <span className="  text-gray-900">{project.dueDate}</span>

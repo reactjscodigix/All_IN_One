@@ -589,9 +589,9 @@ const CrmDealsPage = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 p-4 min-h-screen">
       {/* Page Header */}
-      <div className="p-2 flex flex-col md:flex-row md:items-center justify-between gap-2">
+      <div className=" flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-[500] text-gray-900">Deals</h1>
@@ -619,7 +619,7 @@ const CrmDealsPage = () => {
         </div>
       </div>
 
-      <div className="p-2 pt-0">
+      <div className="pt-0">
         {/* Row 1: Search and Add Button */}
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="relative max-w-sm flex-1">

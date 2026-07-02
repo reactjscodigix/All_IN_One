@@ -83,19 +83,24 @@ import NotificationsPage from './components/NotificationsPage';
 import ProfileSettingsPage from './components/ProfileSettingsPage';
 import DepartmentsPage from './components/DepartmentsPage';
 import AutomationRulesPage from './components/AutomationRulesPage';
+import SeoGmbPage from './components/SeoGmbPage';
+import RevenueForecastPage from './components/RevenueForecastPage';
+import ITChatPage from './components/ITChatPage';
+import ITTeamsPage from './components/ITTeamsPage';
+import ITManagerDashboard from './components/ITManagerDashboard';
 
 // Shared modules across departments
 const SHARED_MODULES = [
   'calendar', 'tasks', 'followups', 'analytics', 'reports', 
   'dashboard', 'list', 'details', 'kanban', 'quotations', 
-  'customers', 'targets', 'performance', 'commission', 'distribution',
+  'customers', 'targets', 'performance', 'commission', 'leads-distribution',
   'contacts', 'companies', 'campaign', 'proposals', 'contracts', 
   'estimations', 'invoices', 'payments', 'activities', 'chat',
   'video-call', 'audio-call', 'call-history', 'email', 'todo', 
-  'notes', 'file-manager', 'social-feed'
+  'notes', 'file-manager', 'social-feed', 'seo-gmb'
 ];
 
-const DEPARTMENTS = ['deals', 'leads', 'projects', 'sales', 'super-admin'];
+const DEPARTMENTS = ['deals', 'leads', 'projects', 'sales', 'super-admin', 'marketing', 'it'];
 
 const routeMap = {
   '/': 'dashboard-router',
@@ -139,7 +144,11 @@ const routeMap = {
   '/pipeline': 'pipeline',
   '/campaign': 'campaign',
   '/estimations': 'estimations',
-  '/chat': 'chat',
+  '/it/chat': 'it-chat',
+  '/it/teams': 'it-teams',
+  '/it/it-manager-dashboard': 'it-manager-dashboard',
+  '/deals/analytics': 'revenue-forecast',
+  '/marketing/seo-gmb': 'seo-gmb',
   '/video-call': 'video-call',
   '/audio-call': 'audio-call',
   '/call-history': 'call-history',
@@ -202,11 +211,7 @@ const DashboardRouter = () => {
 
     if (user.role === 'Super Admin') {
       navigate('/super-admin');
-    } else if (user.role === 'Admin' || user.department === 'Leads Management') {
-      navigate('/leads/dashboard');
-    } else if (user.department === 'Deals Management') {
-      navigate('/deals/dashboard');
-    } else if (user.role === 'Sales Manager' || user.role === 'Sales Executive' || user.department === 'Sales Department') {
+    } else if (user.role === 'Admin' || user.department === 'Sales Department' || user.department === 'Leads Management' || user.department === 'Deals Management') {
       navigate('/sales/dashboard');
     } else if (user.department === 'Marketing Department' || user.department === 'IT Department') {
       navigate('/projects/dashboard');
@@ -312,6 +317,7 @@ function AppContent() {
         <Route path="/" element={<DashboardRouter />} />
         <Route path="/deals/dashboard" element={<DealsDashboard />} />
         <Route path="/deals/kanban" element={<DealsKanbanBoard onDealClick={handleViewDealDetails} />} />
+        <Route path="/deals/analytics" element={<RevenueForecastPage />} />
         <Route path="/deals/deal/:id" element={<LeadDetailsPage />} />
         <Route path="/sales/dashboard" element={<SalesDashboard />} />
         <Route path="/sales/quotations" element={<QuotationsPage />} />
@@ -335,7 +341,7 @@ function AppContent() {
         <Route path="/add-company" element={<AddCompanyPage />} />
         <Route path="/company-details" element={<CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />} />
         <Route path="/leads/list" element={<CrmLeadsPage />} />
-        <Route path="/leads/distribution" element={<LeadDistributionPage />} />
+        <Route path="/leads/leads-distribution" element={<LeadDistributionPage />} />
         <Route path="/leads/lead/:id" element={<LeadDetailsPage />} />
         <Route path="/lead/:id" element={<NavigateToLead />} />
         <Route path="/task/:taskId" element={<TaskDetailsPage />} />
@@ -356,6 +362,34 @@ function AppContent() {
         <Route path="/sales/calendar" element={<CalendarPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         
+        <Route path="/projects/seo-gmb" element={<SeoGmbPage />} />
+        
+        {/* Marketing Routes */}
+        <Route path="/marketing/dashboard" element={<ProjectsDashboard department="Marketing" onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
+        <Route path="/marketing/list" element={<CrmProjectsPage department="Marketing" />} />
+        <Route path="/marketing/tasks" element={<TasksPage department="Marketing" />} />
+        <Route path="/marketing/seo-gmb" element={<SeoGmbPage />} />
+        <Route path="/marketing/campaign" element={<CrmCampaignPage department="Marketing" />} />
+        <Route path="/marketing/calendar" element={<CalendarPage department="Marketing" />} />
+        <Route path="/marketing/all-blogs" element={<AllBlogsPage />} />
+        <Route path="/marketing/file-manager" element={<FileManagerPage department="Marketing" />} />
+        <Route path="/marketing/analytics" element={<AnalyticsPage department="Marketing" />} />
+        <Route path="/marketing/activities" element={<ActivitiesPage department="Marketing" />} />
+        
+        {/* IT Routes */}
+        <Route path="/it/dashboard" element={<ProjectsDashboard department="IT" onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
+        <Route path="/it/list" element={<CrmProjectsPage department="IT" />} />
+        <Route path="/it/tasks" element={<TasksPage department="IT" />} />
+        <Route path="/it/kanban" element={<KanbanPage department="IT" />} />
+        <Route path="/it/analytics" element={<AnalyticsPage department="IT" />} />
+        <Route path="/it/activities" element={<ActivitiesPage department="IT" />} />
+        <Route path="/it/file-manager" element={<FileManagerPage department="IT" />} />
+        <Route path="/it/calendar" element={<CalendarPage department="IT" />} />
+        <Route path="/it/chat" element={<ITChatPage />} />
+        <Route path="/it/notes" element={<NotesPage department="IT" />} />
+        <Route path="/it/teams" element={<ITTeamsPage />} />
+        <Route path="/it/it-manager-dashboard" element={<ITManagerDashboard />} />
+        
         {/* Dynamic tasks routes based on department */}
         <Route path="/deals/tasks" element={<TasksPage />} />
         <Route path="/leads/tasks" element={<TasksPage />} />
@@ -371,7 +405,6 @@ function AppContent() {
         <Route path="/followups" element={<FollowupsPage />} />
         
         {/* Dynamic analytics/reports routes based on department */}
-        <Route path="/deals/analytics" element={<AnalyticsPage />} />
         <Route path="/leads/analytics" element={<AnalyticsPage />} />
         <Route path="/projects/analytics" element={<AnalyticsPage />} />
         <Route path="/sales/analytics" element={<AnalyticsPage />} />

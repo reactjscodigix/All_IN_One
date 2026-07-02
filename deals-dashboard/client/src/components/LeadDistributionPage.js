@@ -1,37 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  Search,
-  Filter,
-  RefreshCw,
-  MoreVertical,
-  User,
-  Calendar,
-  Clock,
-  ExternalLink,
-  ChevronDown,
-  RotateCcw,
-  ChevronRight,
-  Layout
+import { 
+  Users, UserPlus, Shield, Zap, CheckCircle2, 
+  Clock, AlertCircle, Search, Filter, ArrowRight,
+  BarChart3, RefreshCw, Settings, MoreVertical
 } from 'lucide-react';
-import AdvancedDataTable from './AdvancedDataTable';
-import AdvancedFilterDropdown from './AdvancedFilterDropdown';
-import AdvancedDateRangePicker from './AdvancedDateRangePicker';
-import SortByDropdown from './SortByDropdown';
-import ManageColumnsDropdown from './ManageColumnsDropdown';
-import leadsData from '../data/crmLeadsData.json';
-
-import { leadsAPI, companiesAPI } from '../services/api';
+import { leadsAPI, usersAPI } from '../services/api';
+import { showSuccessToast, showErrorToast } from '../utils/toast';
 
 const LeadDistributionPage = () => {
-  const navigate = useNavigate();
-  const [leads, setLeads] = useState([]);
+  const [unassignedLeads, setUnassignedLeads] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilters, setSelectedFilters] = useState({});
-  const [dateRange, setDateRange] = useState({ start: null, end: null });
-  const [sortBy, setSortBy] = useState('newest');
-  const [visibleColumns, setVisibleColumns] = useState([]);
+  const [searchTerm, setSearchKeys] = useState('');
+  const [activeTab, setActiveTab] = useState('manual'); // 'manual', 'rules', 'performance'
 
   useEffect(() => {
     fetchData();
@@ -40,395 +21,269 @@ const LeadDistributionPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const leadsRes = await leadsAPI.getAll();
-      
-      let baseLeads = [];
-      if (leadsRes && Array.isArray(leadsRes) && leadsRes.length > 0) {
-        baseLeads = leadsRes;
-      } else {
-        baseLeads = leadsData.leads || [];
-      }
+      const [leadsRes, usersRes] = await Promise.all([
+        leadsAPI.getAll(),
+        usersAPI.getAll()
+      ]);
 
-      // Augment leads data with distribution-specific fields
-      const augmentedLeads = baseLeads.map(lead => {
-        const createdAt = lead.created_at || '2024-01-01';
-        const createdDate = new Date(createdAt);
-        const today = new Date();
-        const ageInDays = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
+      // Filter unassigned leads (owner_id is null or 0)
+      const leads = Array.isArray(leadsRes) ? leadsRes : [];
+      setUnassignedLeads(leads.filter(l => !l.owner_id));
 
-        const assignmentTypes = ['Manual', 'Round Robin', 'Auto'];
-        const priorities = ['Low', 'Medium', 'High'];
-        const serviceTypes = ['Dev', 'Marketing'];
-        const followUpStatuses = ['Scheduled', 'Completed', 'Overdue'];
-
-        return {
-          ...lead,
-          id: lead.id,
-          name: lead.lead_name || lead.name || 'Unknown',
-          reference: `LD-${lead.id.toString().padStart(4, '0')}`,
-          service_type: lead.industry === 'Software' ? 'Dev' : (serviceTypes[lead.id % serviceTypes.length]),
-          priority: priorities[lead.id % priorities.length],
-          assignment_type: assignmentTypes[lead.id % assignmentTypes.length],
-          assigned_date: lead.created_at || '2024-01-15',
-          last_activity: lead.last_contact_date || '2024-02-10',
-          next_followup: lead.follow_up_date || '2024-03-05',
-          followup_status: followUpStatuses[lead.id % followUpStatuses.length],
-          lead_age: ageInDays > 0 ? ageInDays : (lead.id * 3 + 5),
-          status: lead.lead_status || lead.status || 'New'
-        };
-      });
-      setLeads(augmentedLeads);
+      // Filter sales/leads team members
+      const users = Array.isArray(usersRes) ? usersRes : [];
+      setTeamMembers(users.filter(u => 
+        u.department?.includes('Sales') || 
+        u.department?.includes('Leads') || 
+        u.role_name?.includes('Manager') ||
+        u.role_name?.includes('Executive')
+      ));
     } catch (err) {
-      console.error('Error fetching leads:', err);
-      // Fallback to mock data on error
-      const augmentedLeads = (leadsData.leads || []).map(lead => {
-        return {
-          ...lead,
-          reference: `LD-${lead.id.toString().padStart(4, '0')}`,
-          service_type: 'Dev',
-          priority: 'Medium',
-          assignment_type: 'Manual',
-          assigned_date: '2024-01-15',
-          last_activity: '2024-02-10',
-          next_followup: '2024-03-05',
-          followup_status: 'Scheduled',
-          lead_age: 5,
-          status: lead.status || 'New'
-        };
-      });
-      setLeads(augmentedLeads);
+      console.error('Error fetching distribution data:', err);
+      showErrorToast('Failed to load distribution data');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const handleAssignLead = async (leadId, userId) => {
+    try {
+      await leadsAPI.update(leadId, { owner_id: userId });
+      showSuccessToast('Lead assigned successfully');
+      setUnassignedLeads(prev => prev.filter(l => l.id !== leadId));
+    } catch (err) {
+      showErrorToast('Failed to assign lead');
+    }
   };
 
-  const columns = [
-    {
-      key: 'id',
-      label: 'Lead ID & Ref',
-      sortable: true,
-      render: (value, row) => (
-        <div className="flex flex-col" onClick={(e) => e.stopPropagation()}>
-          <Link 
-            to={`/lead/${row.id}`}
-            className="group flex flex-col"
-          >
-            <span className="text-[10px] text-gray-400  leading-tight group-hover:text-red transition-colors">#{value}</span>
-            <div className="text-red text-[11px] hover:underline flex items-center gap-1  leading-tight">
-              {row.reference}
-              <ExternalLink size={10} />
-            </div>
-          </Link>
-        </div>
-      )
-    },
-    {
-      key: 'name',
-      label: 'Lead Name',
-      sortable: true,
-      render: (value) => <span className="text-xs text-gray-900 ">{value}</span>
-    },
-    {
-      key: 'service_type',
-      label: 'Service Type',
-      sortable: true,
-      render: (value) => (
-        <span className={`px-2 py-1 rounded-full text-xs  ${
-          value === 'Dev' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'
-        }`}>
-          {value}
-        </span>
-      )
-    },
-    {
-      key: 'priority',
-      label: 'Priority',
-      sortable: true,
-      render: (value) => {
-        const colors = {
-          High: 'text-red-600 bg-red-50',
-          Medium: 'text-orange-600 bg-orange-50',
-          Low: 'text-green-600 bg-green-50'
-        };
-        return (
-          <span className={`px-2 py-1 rounded-full text-[11px]  ${colors[value] || 'bg-gray-50'}`}>
-            {value}
-          </span>
-        );
-      }
-    },
-    {
-      key: 'owner_name',
-      label: 'Assigned To',
-      sortable: true,
-      render: (value) => (
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-[8px]  text-gray-600">
-            {value ? value.split(' ').map(n => n[0]).join('') : 'U'}
-          </div>
-          <span className="text-xs text-gray-700 ">{value || 'Unassigned'}</span>
-        </div>
-      )
-    },
-    {
-      key: 'assignment_type',
-      label: 'Assignment Type',
-      sortable: true,
-      render: (value) => {
-        const colors = {
-          Manual: 'bg-gray-100 text-gray-700',
-          'Round Robin': 'bg-indigo-50 text-indigo-700',
-          Auto: 'bg-teal-50 text-teal-700'
-        };
-        return (
-          <span className={`px-2 py-1 rounded text-[11px]  ${colors[value] || 'bg-gray-100'}`}>
-            {value}
-          </span>
-        );
-      }
-    },
-    {
-      key: 'assigned_date',
-      label: 'Assigned Date',
-      sortable: true,
-      render: (value) => <span className="text-xs text-gray-500">{formatDate(value)}</span>
-    },
-    {
-      key: 'last_activity',
-      label: 'Last Activity',
-      sortable: true,
-      render: (value) => <span className="text-xs text-gray-500">{formatDate(value)}</span>
-    },
-    {
-      key: 'next_followup',
-      label: 'Next Follow-Up',
-      sortable: true,
-      render: (value) => <span className="text-xs text-gray-500  text-red-500">{formatDate(value)}</span>
-    },
-    {
-      key: 'followup_status',
-      label: 'Follow-Up Status',
-      sortable: true,
-      render: (value) => {
-        const colors = {
-          Completed: 'bg-green-100 text-green-700',
-          Scheduled: 'bg-blue-100 text-blue-700',
-          Overdue: 'bg-red-100 text-red-700'
-        };
-        return (
-          <span className={`px-2 py-1 rounded text-[11px]   ${colors[value] || 'bg-gray-100'}`}>
-            {value}
-          </span>
-        );
-      }
-    },
-    {
-      key: 'lead_age',
-      label: 'Lead Age (Days)',
-      sortable: true,
-      render: (value) => (
-        <div className="flex items-center gap-1 text-gray-700 ">
-          <span className="text-xs">{value}</span>
-          <span className="text-[10px] text-gray-400">days</span>
-        </div>
-      )
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      sortable: true,
-      render: (value) => {
-        const getStatusColor = (status) => {
-          switch (status?.toLowerCase()) {
-            case 'new': return 'bg-blue-50 text-blue-700 border-blue-100';
-            case 'contacted': return 'bg-yellow-50 text-yellow-700 border-yellow-100';
-            case 'qualified': return 'bg-purple-50 text-purple-700 border-purple-100';
-            case 'converted to deal': return 'bg-green-50 text-green-700 border-green-100';
-            case 'lost': return 'bg-red-50 text-red-700 border-red-100';
-            default: return 'bg-gray-50 text-gray-700 border-gray-100';
-          }
-        };
-        return (
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px]  border ${getStatusColor(value)}`}>
-            {value}
-          </span>
-        );
-      }
-    },
-    {
-      key: 'action',
-      label: 'Action',
-      render: (_, row) => (
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            // Handle reassign logic
-          }}
-          className="p-1.5 text-gray-400 hover:text-red transition-colors rounded-md hover:bg-red-50"
-        >
-          <RefreshCw size={14} />
-        </button>
-      )
-    }
+  const stats = [
+    { label: 'Unassigned Leads', value: unassignedLeads.length, icon: Users, color: 'text-orange-600', bg: 'bg-orange-50' },
+    { label: 'Active Team', value: teamMembers.length, icon: Shield, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Avg. Response Time', value: '14m', icon: Clock, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'Auto-Rules Active', value: '5', icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
-
-  useEffect(() => {
-    setVisibleColumns(columns.map(c => c.key));
-  }, []);
-
-  const filterConfigs = [
-    {
-      key: 'status',
-      label: 'Status',
-      options: [
-        { label: 'New', value: 'New' },
-        { label: 'Contacted', value: 'Contacted' },
-        { label: 'Qualified', value: 'Qualified' },
-        { label: 'Lost', value: 'Lost' },
-      ]
-    },
-    {
-      key: 'service_type',
-      label: 'Service Type',
-      options: [
-        { label: 'Dev', value: 'Dev' },
-        { label: 'Marketing', value: 'Marketing' }
-      ]
-    },
-    {
-      key: 'assignment_type',
-      label: 'Assignment Type',
-      options: [
-        { label: 'Manual', value: 'Manual' },
-        { label: 'Round Robin', value: 'Round Robin' },
-        { label: 'Auto', value: 'Auto' }
-      ]
-    }
-  ];
-
-  const handleResetFilters = () => {
-    setSelectedFilters({});
-    setDateRange({ start: null, end: null });
-    setSearchTerm('');
-    setSortBy('newest');
-  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-lg text-gray-600">Loading lead distribution...</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Page Header */}
-      <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-2 space-y-2 bg-gray-50/50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-xl font-[500] text-gray-900">Lead Distribution</h1>
-            <span className="bg-red-100 text-red  text-[12px]  text-black px-2 py-1 rounded-full">
-              {leads.length}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500 ">
-            <span>Home</span>
-            <ChevronRight size={14} />
-            <span className="text-gray-900">Lead Distribution</span>
-          </div>
+          <h1 className="text-xl  text-gray-900">Lead Distribution</h1>
+          <p className="text-gray-500 text-sm mt-1">Manage lead assignments and routing rules</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-xs  text-gray-600 hover:bg-gray-50 transition-colors shadow-sm">
-            Export
-            <ChevronDown size={14} />
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={fetchData}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors border border-gray-200 bg-white"
+          >
+            <RefreshCw size={15} />
           </button>
-          <button className="p-2 bg-white border border-gray-200 rounded text-gray-400 hover:text-gray-600 transition-colors shadow-sm">
-            <RotateCcw size={16} />
-          </button>
-          <button className="p-2 bg-white border border-gray-200 rounded text-gray-400 hover:text-gray-600 transition-colors shadow-sm">
-            <Layout size={16} />
+          <button className="flex items-center gap-2 bg-red-600 text-white p-2 rounded text-xs  hover:bg-red-700 transition-colors shadow-sm">
+            <Zap size={15} /> Run Auto-Distribute
           </button>
         </div>
       </div>
 
-      <div className="p-4 pt-0">
-        {/* Row 1: Search and Action Button */}
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div className="relative max-w-sm flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text"
-              placeholder="Search leads..."
-              className="w-full pl-10 pr-4 py-2 bg-white border border-gray-100 rounded text-xs focus:outline-none focus:border-red transition-colors shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+        {stats.map((stat, i) => (
+          <div key={i} className="bg-white p-2 rounded border border-gray-200 shadow-sm flex items-center gap-2">
+            <div className={`p-2 rounded ${stat.bg} ${stat.color}`}>
+              <stat.icon size={15} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500   ">{stat.label}</p>
+              <p className="text-xl  text-gray-900">{stat.value}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {/* logic to run auto distribution */}}
-              className="flex items-center gap-2 px-4 py-2 bg-red text-white rounded text-xs  hover:bg-red/90 transition-colors shadow-sm"
-            >
-              <RefreshCw size={15} />
-              Run Auto-Distribution
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2: Filters */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <SortByDropdown
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-            />
-            <AdvancedDateRangePicker
-              dateRange={dateRange}
-              onChange={setDateRange}
-            />
-            <AdvancedFilterDropdown
-              filterConfigs={filterConfigs}
-              selectedFilters={selectedFilters}
-              onFilterChange={setSelectedFilters}
-            />
-            <ManageColumnsDropdown
-              columns={columns}
-              visibleColumns={visibleColumns}
-              onChange={setVisibleColumns}
-            />
-            <button
-              onClick={handleResetFilters}
-              className="p-2 text-gray-400 hover:text-red transition-colors rounded-lg hover:bg-red-50"
-              title="Reset Filters"
-            >
-              <RotateCcw size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <AdvancedDataTable
-            columns={columns}
-            data={leads}
-            hideInternalHeader={true}
-            externalSearchTerm={searchTerm}
-            externalFilters={selectedFilters}
-            externalDateRange={dateRange}
-            externalSortBy={sortBy}
-            externalVisibleColumns={visibleColumns}
-            searchKeys={['name', 'reference', 'id']}
-            onRowClick={(row) => navigate(`/lead/${row.id}`)}
-          />
-        </div>
+        ))}
       </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-gray-200 pb-px">
+        {[
+          { id: 'manual', label: 'Manual Queue', icon: UserPlus },
+          { id: 'rules', label: 'Routing Rules', icon: Settings },
+          { id: 'performance', label: 'Team Performance', icon: BarChart3 },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 p-2 text-xs  transition-all relative ${
+              activeTab === tab.id 
+                ? 'text-red-600 border-b-2 border-red-600 mb-[-1px]' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <tab.icon size={15} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'manual' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Queue */}
+          <div className="lg:col-span-2 space-y-2">
+            <div className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-2 border-b border-gray-100 flex items-center justify-between gap-2">
+                <div className="relative flex-1">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Search unassigned leads..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                  />
+                </div>
+                <button className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded text-xs text-gray-600 hover:bg-gray-50">
+                  <Filter size={15} /> Filter
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                      <th className="p-2 text-xs  text-gray-600">Lead Details</th>
+                      <th className="p-2 text-xs  text-gray-600">Source</th>
+                      <th className="p-2 text-xs  text-gray-600">Wait Time</th>
+                      <th className="p-2 text-xs  text-gray-600">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {unassignedLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="p-2 text-center text-gray-500">
+                          <CheckCircle2 size={32} className="mx-auto text-green-500 mb-2 opacity-20" />
+                          No unassigned leads in queue.
+                        </td>
+                      </tr>
+                    ) : (
+                      unassignedLeads.map(lead => (
+                        <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="p-2">
+                            <div className=" text-gray-900">{lead.lead_name || lead.name}</div>
+                            <div className="text-xs text-gray-500">{lead.email}</div>
+                          </td>
+                          <td className="p-2">
+                            <span className="px-2 py-0.5 rounded text-xs  bg-blue-50 text-blue-700 border border-blue-100">
+                              {lead.lead_source || 'Website'}
+                            </span>
+                          </td>
+                          <td className="p-2">
+                            <div className="flex items-center gap-1.5 text-orange-600 ">
+                              <Clock size={14} />
+                              {Math.floor(Math.random() * 60)}m
+                            </div>
+                          </td>
+                          <td className="p-2">
+                            <select 
+                              onChange={(e) => handleAssignLead(lead.id, e.target.value)}
+                              className="w-full p-1.5 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+                              defaultValue=""
+                            >
+                              <option value="" disabled>Assign To...</option>
+                              {teamMembers.map(u => (
+                                <option key={u.id} value={u.id}>{u.first_name} {u.last_name}</option>
+                              ))}
+                            </select>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions / Team Load */}
+          <div className="space-y-6">
+            <div className="bg-white p-5 rounded border border-gray-200 shadow-sm">
+              <h3 className=" text-gray-900 mb-4 flex items-center gap-2">
+                <Users size={18} className="text-blue-600" />
+                Team Load Balancer
+              </h3>
+              <div className="space-y-4">
+                {teamMembers.slice(0, 5).map(member => (
+                  <div key={member.id} className="space-y-1.5">
+                    <div className="flex justify-between text-xs">
+                      <span className=" text-gray-700">{member.first_name} {member.last_name}</span>
+                      <span className="text-gray-500">{Math.floor(Math.random() * 10) + 2} active leads</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 rounded-full" 
+                        style={{ width: `${Math.random() * 80 + 10}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button className="w-full mt-6 py-2 text-xs  text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1">
+                View All Team Members <ArrowRight size={14} />
+              </button>
+            </div>
+
+            <div className="bg-gradient-to-br from-red-600 to-red-700 p-5 rounded text-white shadow-md">
+              <h3 className=" mb-2 flex items-center gap-2">
+                <Zap size={18} />
+                Smart Routing
+              </h3>
+              <p className="text-red-100 text-xs mb-4 leading-relaxed">
+                Currently distributing leads based on <strong>Round Robin</strong> algorithm with <strong>Location</strong> affinity.
+              </p>
+              <button className="w-full py-2 bg-white/10 hover:bg-white/20 rounded text-xs  transition-colors border border-white/20">
+                Configure Rules
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'rules' && (
+        <div className="bg-white rounded border border-gray-200 shadow-sm p-8 text-center">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-600">
+              <Zap size={32} />
+            </div>
+            <h3 className="text-lg  text-gray-900">Automation Engine</h3>
+            <p className="text-gray-500 text-sm">
+              Define rules to automatically route leads based on source, location, value, or product interest.
+            </p>
+            <div className="pt-4">
+              <button className="px-6 py-2 bg-red-600 text-white rounded text-sm  shadow-sm hover:bg-red-700 transition-all">
+                Create First Rule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'performance' && (
+        <div className="bg-white rounded border border-gray-200 shadow-sm p-8 text-center">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto text-blue-600">
+              <BarChart3 size={32} />
+            </div>
+            <h3 className="text-lg  text-gray-900">Performance Analytics</h3>
+            <p className="text-gray-500 text-sm">
+              Track conversion rates, response times, and workload distribution across your sales team.
+            </p>
+            <div className="pt-4 flex gap-2 justify-center">
+              <div className="px-4 py-1.5 bg-gray-100 rounded-full text-xs  text-gray-600 ">Available in Pro Plan</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

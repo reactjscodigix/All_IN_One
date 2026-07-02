@@ -92,8 +92,9 @@ const formatReadableRange = (range) => {
   return `${formatReadableDate(range.startDate)} - ${formatReadableDate(range.endDate)}`;
 };
 
-const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
+const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails, department }) => {
   const { user } = useAuth();
+  const [allProjects, setAllProjects] = useState([]);
   const [projects, setProjects] = useState([]);
   const [leads, setLeads] = useState([]);
   const [deals, setDeals] = useState([]);
@@ -110,6 +111,18 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
   useEffect(() => {
     fetchAllData();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (department) {
+      const filtered = allProjects.filter(p => 
+        (department === 'Marketing' && (p.category === 'Marketing' || p.projectType === 'Marketing' || p.serviceType === 'Marketing')) ||
+        (department === 'IT' && (p.category === 'IT' || p.projectType === 'IT' || p.serviceType === 'IT' || p.category === 'Software'))
+      );
+      setProjects(filtered);
+    } else {
+      setProjects(allProjects);
+    }
+  }, [allProjects, department]);
 
   const transformProject = (project) => ({
     id: project.id,
@@ -180,13 +193,13 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
       const transformedDeals = Array.isArray(dealsRes) ? dealsRes.map(transformDeal) : [];
       const transformedCompanies = Array.isArray(companiesRes) ? companiesRes : [];
 
-      setProjects(transformedProjects);
+      setAllProjects(transformedProjects);
       setLeads(transformedLeads);
       setDeals(transformedDeals);
       setCompanies(transformedCompanies);
     } catch (err) {
       console.error('Failed to fetch data:', err);
-      setProjects([]);
+      setAllProjects([]);
       setLeads([]);
       setDeals([]);
       setCompanies([]);
@@ -353,7 +366,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
       };
       const response = await projectAPI.create(payload);
       const newProject = transformProject(response);
-      setProjects(prev => [newProject, ...prev]);
+      setAllProjects(prev => [newProject, ...prev]);
     } catch (err) {
       console.error('Failed to add project:', err);
       // Fallback for demo if API fails
@@ -367,7 +380,7 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
         status: formData.status,
         ...formData,
       };
-      setProjects(prev => [newProject, ...prev]);
+      setAllProjects(prev => [newProject, ...prev]);
     }
   };
 
@@ -391,22 +404,22 @@ const ProjectsDashboard = ({ onViewProjectDetails, onViewCompanyDetails }) => {
       };
       const response = await projectAPI.update(projectId, payload);
       const updatedProject = transformProject(response);
-      setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
+      setAllProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
     } catch (err) {
       console.error('Failed to edit project:', err);
       // Fallback for demo
-      setProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...formData, company: formData.client, budget: formData.price } : p));
+      setAllProjects(prev => prev.map(p => p.id === projectId ? { ...p, ...formData, company: formData.client, budget: formData.price } : p));
     }
   };
 
   const handleDeleteProject = async (projectId) => {
     try {
       await projectAPI.delete(projectId);
-      setProjects(prev => prev.filter(p => p.id !== projectId));
+      setAllProjects(prev => prev.filter(p => p.id !== projectId));
     } catch (err) {
       console.error('Failed to delete project:', err);
       // Even if API fails, update UI for demo purposes
-      setProjects(prev => prev.filter(p => p.id !== projectId));
+      setAllProjects(prev => prev.filter(p => p.id !== projectId));
     }
   };
 

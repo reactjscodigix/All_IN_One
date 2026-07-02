@@ -187,6 +187,7 @@ export default function VideoCallPage() {
           setMeetingUrl(data.meeting_link);
           if (data.meeting_link.includes('google.com')) setMeetingProvider('google');
           else if (data.meeting_link.includes('zoom.us')) setMeetingProvider('zoom');
+          else if (data.meeting_link.includes('jit.si')) setMeetingProvider('jitsi');
           setIsJoined(true);
         }
       }
@@ -412,7 +413,11 @@ export default function VideoCallPage() {
                       <Calendar size={15} className="text-blue-500" />
                     </div>
                     
-                    <h2 className="text-xl  mb-2 ">Google Meet Bridge</h2>
+                    <h2 className="text-xl  mb-2 ">
+                      {meetingProvider === 'google' ? 'Google Meet Bridge' : 
+                       meetingProvider === 'zoom' ? 'Zoom Meeting Bridge' : 
+                       meetingProvider === 'jitsi' ? 'CRM Video Bridge' : 'Video Call Bridge'}
+                    </h2>
                     <p className="text-gray-400 text-xs mb-2 leading-relaxed px-10">
                       Welcome to the Integrated CRM Video Experience. Conduct your meeting 
                       while using the CRM's **Live Summary, Notes, and AI Insights** 
@@ -655,7 +660,7 @@ export default function VideoCallPage() {
                     .map(u => (
                       <div key={u.id} className="group flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 font-bold border border-blue-500/20">
+                          <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400  border border-blue-500/20">
                             {u.first_name[0]}{u.last_name?.[0] || ''}
                           </div>
                           <div>

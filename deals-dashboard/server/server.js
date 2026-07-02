@@ -29,6 +29,36 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve React build assets (production mode)
+const clientBuildPath = path.join(__dirname, '..', 'client', 'build');
+
+// Serve CRA build static (js/css/media) + root index.html
+app.use(express.static(clientBuildPath));
+
+// Explicitly expose manifest + icons at server root (prevents SPA/404 fallback issues)
+app.get(['/manifest.json', '/favicon.svg', '/favicon.ico'], (req, res) => {
+  const filePath = path.join(clientBuildPath, req.path);
+  return res.sendFile(filePath, (err) => {
+    if (err) {
+      res.status(404).json({ error: `Static file not found: ${req.path}` });
+    }
+  });
+});
+
+// If the client asks for manifest.webmanifest (PWA), serve the same content as manifest.json if needed
+app.get('/manifest.webmanifest', (req, res) => {
+  const filePath = path.join(clientBuildPath, 'manifest.json');
+  return res.sendFile(filePath, (err) => {
+    if (err) {
+      res.status(404).json({ error: 'manifest.webmanifest not available' });
+    }
+  });
+});
+
+
+
+
+
 app.set('etag', false);
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -291,8 +321,26 @@ setupDepartmentDashboardRoutes(app, pool);
 setupMarketingITWorkflowRoutes(app, pool);
 setupFollowupsRoutes(app, pool);
 
+// Root route serves the React app index.html
 app.get('/', (req, res) => {
-  res.send('CRM Backend API is running!');
+  res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
+    if (err) {
+      res.status(500).send('Error loading application. Please ensure the client is built.');
+    }
+  });
+});
+
+// SPA fallback for all other non-API routes
+app.get('/:path*', (req, res, next) => {
+  // If it's an API route or looks like a static asset request (has an extension), fall through
+  if (req.path.startsWith('/api') || req.path.includes('.')) {
+    return next();
+  }
+  res.sendFile(path.join(clientBuildPath, 'index.html'), (err) => {
+    if (err) {
+      next();
+    }
+  });
 });
 
 app.use((req, res) => {
