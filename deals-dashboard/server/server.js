@@ -331,7 +331,7 @@ app.get('/', (req, res) => {
 });
 
 // SPA fallback for all other non-API routes
-app.get('/:path*', (req, res, next) => {
+app.get('/*path', (req, res, next) => {
   // If it's an API route or looks like a static asset request (has an extension), fall through
   if (req.path.startsWith('/api') || req.path.includes('.')) {
     return next();
