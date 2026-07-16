@@ -256,8 +256,8 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
           SUM(CASE WHEN t.status = 'Completed' THEN 1 ELSE 0 END) as completed_tasks,
           SUM(CASE WHEN t.status != 'Completed' THEN 1 ELSE 0 END) as remaining_tasks,
           MAX(t.due_date) as tentative_completion_date,
-          (SELECT MAX(completed_date) FROM followups f WHERE f.project_id = p.id AND f.recurrence_frequency = 'Weekly' AND f.status = 'Completed') as last_weekly_report,
-          (SELECT MAX(completed_date) FROM followups f WHERE f.project_id = p.id AND f.recurrence_frequency = 'Monthly' AND f.status = 'Completed') as last_monthly_report,
+          (SELECT MAX(updated_at) FROM followups f WHERE f.project_id = p.id AND f.recurrence_frequency = 'Weekly' AND f.status = 'Completed') as last_weekly_report,
+          (SELECT MAX(updated_at) FROM followups f WHERE f.project_id = p.id AND f.recurrence_frequency = 'Monthly' AND f.status = 'Completed') as last_monthly_report,
           (SELECT subject FROM followups f WHERE f.project_id = p.id ORDER BY f.scheduled_date DESC LIMIT 1) as last_update
         FROM projects p
         LEFT JOIN teams te ON p.team_id = te.id
@@ -442,7 +442,14 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
     let connection;
     try {
       connection = await pool.getConnection();
-      const [seo] = await connection.query('SELECT * FROM seo_management');
+      const projectId = req.query.project_id || req.query.projectId;
+      let query = 'SELECT * FROM seo_management';
+      const params = [];
+      if (projectId) {
+        query += ' WHERE project_id = ?';
+        params.push(projectId);
+      }
+      const [seo] = await connection.query(query, params);
       connection.release();
       res.json({ success: true, data: seo });
     } catch (error) {
@@ -473,7 +480,14 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
     let connection;
     try {
       connection = await pool.getConnection();
-      const [gmb] = await connection.query('SELECT * FROM gmb_management');
+      const projectId = req.query.project_id || req.query.projectId;
+      let query = 'SELECT * FROM gmb_management';
+      const params = [];
+      if (projectId) {
+        query += ' WHERE project_id = ?';
+        params.push(projectId);
+      }
+      const [gmb] = await connection.query(query, params);
       connection.release();
       res.json({ success: true, data: gmb });
     } catch (error) {

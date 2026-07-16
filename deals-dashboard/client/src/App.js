@@ -3,91 +3,116 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navig
 import './App.css';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
-import ProtectedRoute from './components/ProtectedRoute';
-import LoginPage from './components/LoginPage';
-import SignupPage from './components/SignupPage';
-import Layout from './components/Layout';
-import DealsDashboard from './components/DealsDashboard';
-import LeadsDashboard from './components/LeadsDashboard';
-import ProjectsDashboard from './components/ProjectsDashboard';
-import ProjectDetailsPage from './components/ProjectDetailsPage';
-import ContactsPage from './components/ContactsPage';
-import CrmCompaniesPage from './components/CrmCompaniesPage';
-import AddCompanyPage from './components/AddCompanyPage';
-import CrmDealsPage from './components/CrmDealsPage';
-import CrmLeadsPage from './components/CrmLeadsPage';
-import CrmPipelinePage from './components/CrmPipelinePage';
-import CrmCampaignPage from './components/CrmCampaignPage';
-import CrmProjectsPage from './components/CrmProjectsPage';
-import CompanyDetailsPage from './components/CompanyDetailsPage';
-import ChatPage from './components/ChatPage';
-import VideoCallPage from './components/VideoCallPage';
-import AudioCallPage from './components/AudioCallPage';
-import CallHistoryPage from './components/CallHistoryPage';
-import CalendarPage from './components/CalendarPage';
-import EmailPage from './components/EmailPage';
-import TodoPage from './components/TodoPage';
-import TasksPage from './components/TasksPage';
-import ProposalsPage from './components/ProposalsPage';
-import ContractsPage from './components/ContractsPage';
-import NotesPage from './components/NotesPage';
-import FileManagerPage from './components/FileManagerPage';
-import SocialFeedPage from './components/SocialFeedPage';
-import KanbanPage from './components/KanbanPage';
-import InvoicesPage from './components/InvoicesPage';
-import PaymentsPage from './components/PaymentsPage';
-import PaymentDetailsPage from './components/PaymentDetailsPage';
-import SuperAdminDashboard from './components/SuperAdminDashboard';
-import Companies from './components/Companies';
-import Subscriptions from './components/Subscriptions';
-import Packages from './components/Packages';
-import Domain from './components/Domain';
-import PurchaseTransaction from './components/PurchaseTransaction';
-import SalesDashboard from './components/SalesDashboard';
-import EstimationsPage from './components/EstimationsPage';
-import ActivitiesPage from './components/ActivitiesPage';
-import FollowupsPage from './components/FollowupsPage';
-import AnalyticsPage from './components/AnalyticsPage';
-import LeadReport from './components/LeadReport';
-import DealReport from './components/DealReport';
-import ContactReportsPage from './components/ContactReportsPage';
-import CompanyReportsPage from './components/CompanyReportsPage';
-import ProjectReportsPage from './components/ProjectReportsPage';
-import TaskReportsPage from './components/TaskReportsPage';
-import ContactDetailsPage from './components/ContactDetailsPage';
-import RolesPermissionsPage from './components/RolesPermissionsPage';
-import DeleteAccountRequestPage from './components/DeleteAccountRequestPage';
-import MembershipPlansPage from './components/MembershipPlansPage';
-import MembershipAddonsPage from './components/MembershipAddonsPage';
-import MembershipTransactionsPage from './components/MembershipTransactionsPage';
-import PagesPage from './components/PagesPage';
-import AllBlogsPage from './components/AllBlogsPage';
-import BlogCategoriesPage from './components/BlogCategoriesPage';
-import BlogCommentsPage from './components/BlogCommentsPage';
-import BlogTagsPage from './components/BlogTagsPage';
-import ManageUsersPage from './components/ManageUsersPage';
-import RolePermissionsDetailPage from './components/RolePermissionsDetailPage';
-import TaskDetailsPage from './components/TaskDetailsPage';
-import LeadDetailsPage from './components/LeadDetailsPage';
-import LeadDistributionPage from './components/LeadDistributionPage';
-import DealsKanbanBoard from './components/DealsKanbanBoard';
-import DealDetailsPage from './components/DealDetailsPage';
-import QuotationsPage from './components/QuotationsPage';
-import CustomersPage from './components/CustomersPage';
-import SalesTargetsPage from './components/SalesTargetsPage';
-import PerformancePage from './components/PerformancePage';
-import CommissionPage from './components/CommissionPage';
-import ApprovalsPage from './components/ApprovalsPage';
-import SalesReportsPage from './components/SalesReportsPage';
-import NotificationsPage from './components/NotificationsPage';
-import ProfileSettingsPage from './components/ProfileSettingsPage';
-import DepartmentsPage from './components/DepartmentsPage';
-import AutomationRulesPage from './components/AutomationRulesPage';
-import SeoGmbPage from './components/SeoGmbPage';
-import RevenueForecastPage from './components/RevenueForecastPage';
-import ITChatPage from './components/ITChatPage';
-import ITTeamsPage from './components/ITTeamsPage';
-import ITManagerDashboard from './components/ITManagerDashboard';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import DepartmentRoute from './components/common/DepartmentRoute';
+import LoginPage from './components/common/LoginPage';
+import SignupPage from './components/common/SignupPage';
+import Layout from './components/common/Layout';
+import DealsDashboard from './components/sales/DealsDashboard';
+import LeadsDashboard from './components/sales/LeadsDashboard';
+import ProjectsDashboard from './components/common/ProjectsDashboard';
+import ProjectDetailsPage from './components/common/ProjectDetailsPage';
+import ContactsPage from './components/common/ContactsPage';
+import CrmCompaniesPage from './components/common/CrmCompaniesPage';
+import AddCompanyPage from './components/common/AddCompanyPage';
+import CrmDealsPage from './components/sales/CrmDealsPage';
+import CrmLeadsPage from './components/sales/CrmLeadsPage';
+import CrmPipelinePage from './components/sales/CrmPipelinePage';
+import CrmCampaignPage from './components/common/CrmCampaignPage';
+import CrmProjectsPage from './components/common/CrmProjectsPage';
+import CompanyDetailsPage from './components/common/CompanyDetailsPage';
+import ChatPage from './components/common/ChatPage';
+import VideoCallPage from './components/common/VideoCallPage';
+import ITTasksPage from './components/it/ITTasksPage';
+import ITKanbanPage from './components/it/ITKanbanPage';
+import ITAnalyticsPage from './components/it/ITAnalyticsPage';
+import ITActivitiesPage from './components/it/ITActivitiesPage';
+import ITUploadDocumentPage from './components/it/ITUploadDocumentPage';
+import ITFileManagerPage from './components/it/ITFileManagerPage';
+import ITCalendarPage from './components/it/ITCalendarPage';
+import ITNotesPage from './components/it/ITNotesPage';
+import CreateNotePage from './components/common/CreateNotePage';
+import ITChatPage from './components/it/ITChatPage';
+import AudioCallPage from './components/common/AudioCallPage';
+import CallHistoryPage from './components/common/CallHistoryPage';
+import CalendarPage from './components/common/CalendarPage';
+import EmailPage from './components/common/EmailPage';
+import TodoPage from './components/common/TodoPage';
+import TasksPage from './components/common/TasksPage';
+import ProposalsPage from './components/common/ProposalsPage';
+import ContractsPage from './components/common/ContractsPage';
+import NotesPage from './components/common/NotesPage';
+import FileManagerPage from './components/common/FileManagerPage';
+import SocialFeedPage from './components/common/SocialFeedPage';
+import KanbanPage from './components/common/KanbanPage';
+import InvoicesPage from './components/common/InvoicesPage';
+import PaymentsPage from './components/common/PaymentsPage';
+import PaymentDetailsPage from './components/common/PaymentDetailsPage';
+import SuperAdminDashboard from './components/super-admin/SuperAdminDashboard';
+import Companies from './components/common/Companies';
+import Subscriptions from './components/super-admin/Subscriptions';
+import Packages from './components/super-admin/Packages';
+import Domain from './components/super-admin/Domain';
+import PurchaseTransaction from './components/super-admin/PurchaseTransaction';
+import SalesDashboard from './components/sales/SalesDashboard';
+import EstimationsPage from './components/common/EstimationsPage';
+import ActivitiesPage from './components/common/ActivitiesPage';
+import FollowupsPage from './components/common/FollowupsPage';
+import AnalyticsPage from './components/common/AnalyticsPage';
+import LeadReport from './components/sales/LeadReport';
+import DealReport from './components/sales/DealReport';
+import ContactReportsPage from './components/common/ContactReportsPage';
+import CompanyReportsPage from './components/common/CompanyReportsPage';
+import ProjectReportsPage from './components/common/ProjectReportsPage';
+import TaskReportsPage from './components/common/TaskReportsPage';
+import ContactDetailsPage from './components/common/ContactDetailsPage';
+import RolesPermissionsPage from './components/common/RolesPermissionsPage';
+import DeleteAccountRequestPage from './components/common/DeleteAccountRequestPage';
+import MembershipPlansPage from './components/super-admin/MembershipPlansPage';
+import MembershipAddonsPage from './components/super-admin/MembershipAddonsPage';
+import MembershipTransactionsPage from './components/super-admin/MembershipTransactionsPage';
+import PagesPage from './components/common/PagesPage';
+import AllBlogsPage from './components/marketing/AllBlogsPage';
+import BlogCategoriesPage from './components/marketing/BlogCategoriesPage';
+import BlogCommentsPage from './components/marketing/BlogCommentsPage';
+import BlogTagsPage from './components/marketing/BlogTagsPage';
+import ManageUsersPage from './components/common/ManageUsersPage';
+import RolePermissionsDetailPage from './components/common/RolePermissionsDetailPage';
+import TaskDetailsPage from './components/common/TaskDetailsPage';
+import LeadDetailsPage from './components/sales/LeadDetailsPage';
+import LeadDistributionPage from './components/sales/LeadDistributionPage';
+import DealsKanbanBoard from './components/sales/DealsKanbanBoard';
+import DealDetailsPage from './components/sales/DealDetailsPage';
+import QuotationsPage from './components/sales/QuotationsPage';
+import CustomersPage from './components/common/CustomersPage';
+import SalesTargetsPage from './components/sales/SalesTargetsPage';
+import PerformancePage from './components/sales/PerformancePage';
+import CommissionPage from './components/sales/CommissionPage';
+import ApprovalsPage from './components/sales/ApprovalsPage';
+import SalesReportsPage from './components/sales/SalesReportsPage';
+import NotificationsPage from './components/common/NotificationsPage';
+import ProfileSettingsPage from './components/common/ProfileSettingsPage';
+import DepartmentsPage from './components/common/DepartmentsPage';
+import AutomationRulesPage from './components/common/AutomationRulesPage';
+import SeoGmbPage from './components/seo-gmb/SeoGmbPage';
+import RevenueForecastPage from './components/sales/RevenueForecastPage';
+import MarketingDashboard from './components/marketing/MarketingDashboard';
+import SeoGmbProjectsPage from './components/seo-gmb/SeoGmbProjectsPage';
+import SeoGmbProjectSetupPage from './components/seo-gmb/SeoGmbProjectSetupPage';
+import SeoGmbWebsiteAuditPage from './components/seo-gmb/SeoGmbWebsiteAuditPage';
+import SeoGmbKeywordManagementPage from './components/seo-gmb/SeoGmbKeywordManagementPage';
+import SeoGmbOnPageSeoPage from './components/seo-gmb/SeoGmbOnPageSeoPage';
+import SeoGmbContentMarketingPage from './components/seo-gmb/SeoGmbContentMarketingPage';
+import SeoGmbOffPageSeoPage from './components/seo-gmb/SeoGmbOffPageSeoPage';
+import SeoGmbGmbProfilePage from './components/seo-gmb/SeoGmbGmbProfilePage';
+import SeoGmbGoogleIntegrationsPage from './components/seo-gmb/SeoGmbGoogleIntegrationsPage';
+import SeoGmbRankTrackingPage from './components/seo-gmb/SeoGmbRankTrackingPage';
+import SeoGmbReportsPage from './components/seo-gmb/SeoGmbReportsPage';
+import SeoGmbDocumentsPage from './components/seo-gmb/SeoGmbDocumentsPage';
+import SeoGmbAutomationPage from './components/seo-gmb/SeoGmbAutomationPage';
+
+import ITTeamsPage from './components/it/ITTeamsPage';
+import ITManagerDashboard from './components/it/ITManagerDashboard';
 
 // Shared modules across departments
 const SHARED_MODULES = [
@@ -100,7 +125,7 @@ const SHARED_MODULES = [
   'notes', 'file-manager', 'social-feed', 'seo-gmb'
 ];
 
-const DEPARTMENTS = ['deals', 'leads', 'projects', 'sales', 'super-admin', 'marketing', 'it'];
+const DEPARTMENTS = ['deals', 'leads', 'projects', 'sales', 'super-admin', 'marketing', 'it', 'seo-gmb'];
 
 const routeMap = {
   '/': 'dashboard-router',
@@ -147,8 +172,27 @@ const routeMap = {
   '/it/chat': 'it-chat',
   '/it/teams': 'it-teams',
   '/it/it-manager-dashboard': 'it-manager-dashboard',
-  '/deals/analytics': 'revenue-forecast',
-  '/marketing/seo-gmb': 'seo-gmb',
+  '/seo-gmb/dashboard': 'dashboard',
+  '/seo-gmb/projects': 'projects',
+  '/seo-gmb/project-setup': 'project-setup',
+  '/seo-gmb/website-audit': 'website-audit',
+  '/seo-gmb/keyword-management': 'keyword-management',
+  '/seo-gmb/on-page-seo': 'on-page-seo',
+  '/seo-gmb/content-marketing': 'content-marketing',
+  '/seo-gmb/off-page-seo': 'off-page-seo',
+  '/seo-gmb/gmb-profile': 'gmb-profile',
+  '/seo-gmb/google-posts': 'google-posts',
+  '/seo-gmb/customer-engagement': 'customer-engagement',
+  '/seo-gmb/media-management': 'media-management',
+  '/seo-gmb/local-seo': 'local-seo',
+  '/seo-gmb/google-integrations': 'google-integrations',
+  '/seo-gmb/rank-tracking': 'rank-tracking',
+  '/seo-gmb/tasks': 'tasks',
+  '/seo-gmb/reports': 'reports',
+  '/seo-gmb/documents': 'documents',
+  '/seo-gmb/automation': 'automation',
+  '/seo-gmb/profile-settings': 'profile-settings',
+
   '/video-call': 'video-call',
   '/audio-call': 'audio-call',
   '/call-history': 'call-history',
@@ -213,8 +257,12 @@ const DashboardRouter = () => {
       navigate('/super-admin');
     } else if (user.role === 'Admin' || user.department === 'Sales Department' || user.department === 'Leads Management' || user.department === 'Deals Management') {
       navigate('/sales/dashboard');
-    } else if (user.department === 'Marketing Department' || user.department === 'IT Department') {
-      navigate('/projects/dashboard');
+    } else if (user.department === 'Marketing Department') {
+      navigate('/marketing/dashboard');
+    } else if (user.department === 'SEO & GMB Department') {
+      navigate('/seo-gmb/dashboard');
+    } else if (user.department === 'IT Department') {
+      navigate('/it/dashboard');
     } else if (user.department === 'Accounting Department') {
       navigate('/invoices');
     } else {
@@ -227,7 +275,14 @@ const DashboardRouter = () => {
 
 const NavigateToLead = () => {
   const { id } = useParams();
-  return <Navigate to={`/leads/lead/${id}`} replace />;
+  const { user } = useAuth();
+  
+  if (!user) return <Navigate to="/login" replace />;
+  
+  const designation = user.designation ? user.designation.toLowerCase().replace(/\s+/g, '-') : 'employee';
+  const username = user.name ? user.name.toLowerCase().replace(/\s+/g, '-') : 'user';
+  
+  return <Navigate to={`/leads/${designation}/${username}/lead/${id}`} replace />;
 };
 
 function AppContent() {
@@ -315,40 +370,51 @@ function AppContent() {
     >
       <Routes>
         <Route path="/" element={<DashboardRouter />} />
-        <Route path="/deals/dashboard" element={<DealsDashboard />} />
-        <Route path="/deals/kanban" element={<DealsKanbanBoard onDealClick={handleViewDealDetails} />} />
-        <Route path="/deals/analytics" element={<RevenueForecastPage />} />
-        <Route path="/deals/deal/:id" element={<LeadDetailsPage />} />
-        <Route path="/sales/dashboard" element={<SalesDashboard />} />
+        <Route path="/deals/:designation/:username/dashboard" element={<DealsDashboard />} />
+        <Route path="/deals/:designation/:username/kanban" element={<DealsKanbanBoard onDealClick={handleViewDealDetails} />} />
+        <Route path="/deals/:designation/:username/analytics" element={<RevenueForecastPage />} />
+        <Route path="/deals/:designation/:username/deal/:id" element={<LeadDetailsPage />} />
+        <Route path="/sales/:designation/:username/dashboard" element={<SalesDashboard />} />
         <Route path="/sales/quotations" element={<QuotationsPage />} />
-        <Route path="/sales/customers" element={<CustomersPage />} />
-        <Route path="/sales/targets" element={<SalesTargetsPage />} />
-        <Route path="/sales/performance" element={<PerformancePage />} />
-        <Route path="/sales/commission" element={<CommissionPage />} />
-        <Route path="/sales/approvals" element={<ApprovalsPage />} />
-        <Route path="/sales/reports" element={<SalesReportsPage />} />
+        <Route path="/sales/:designation/:username/quotations" element={<QuotationsPage />} />
+        <Route path="/sales/:designation/:username/customers" element={<CustomersPage />} />
+        <Route path="/sales/:designation/:username/targets" element={<SalesTargetsPage />} />
+        <Route path="/sales/:designation/:username/performance" element={<PerformancePage />} />
+        <Route path="/sales/:designation/:username/commission" element={<CommissionPage />} />
+        <Route path="/sales/:designation/:username/approvals" element={<ApprovalsPage />} />
+        <Route path="/sales/:designation/:username/reports" element={<SalesReportsPage />} />
+        <Route path="/sales/:designation/:username/leads" element={<CrmLeadsPage />} />
+        <Route path="/sales/:designation/:username/deals-list" element={<CrmDealsPage />} />
+        <Route path="/sales/:designation/:username/contacts" element={<ContactsPage />} />
+        <Route path="/sales/:designation/:username/distribution" element={<LeadDistributionPage />} />
+        <Route path="/sales/:designation/:username/followups" element={<FollowupsPage />} />
+        <Route path="/sales/:designation/:username/activities" element={<ActivitiesPage />} />
+        <Route path="/sales/:designation/:username/chat" element={<ChatPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile-settings" element={<ProfileSettingsPage />} />
         <Route path="/departments" element={<DepartmentsPage />} />
         <Route path="/automation-rules" element={<AutomationRulesPage />} />
-        <Route path="/leads/dashboard" element={<LeadsDashboard />} />
-        <Route path="/projects/dashboard" element={<ProjectsDashboard onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
-        <Route path="/projects/details" element={<ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />} />
-        <Route path="/deals/list" element={<CrmDealsPage />} />
+        <Route path="/leads/:designation/:username/dashboard" element={<LeadsDashboard />} />
+        <Route path="/projects/:designation/:username/dashboard" element={<ProjectsDashboard onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
+        <Route path="/projects/:designation/:username/details" element={<ProjectDetailsPage projectId={selectedProjectId} onBack={handleBackFromProjectDetails} />} />
+        <Route path="/deals/:designation/:username/list" element={<CrmDealsPage />} />
         <Route path="/contacts" element={<ContactsPage />} />
         <Route path="/contact-details" element={<ContactDetailsPage contactId={selectedContactId} onBack={handleBackFromContactDetails} />} />
         <Route path="/companies" element={<CrmCompaniesPage />} />
         <Route path="/add-company" element={<AddCompanyPage />} />
         <Route path="/company-details" element={<CompanyDetailsPage company={selectedCompany} onBack={handleBackFromCompanyDetails} />} />
-        <Route path="/leads/list" element={<CrmLeadsPage />} />
-        <Route path="/leads/leads-distribution" element={<LeadDistributionPage />} />
-        <Route path="/leads/lead/:id" element={<LeadDetailsPage />} />
+        <Route path="/leads/:designation/:username/list" element={<CrmLeadsPage />} />
+        <Route path="/leads/:designation/:username/leads-distribution" element={<LeadDistributionPage />} />
+        <Route path="/leads/:designation/:username/lead/:id" element={<LeadDetailsPage />} />
         <Route path="/lead/:id" element={<NavigateToLead />} />
+        <Route path="/leads/lead/:id" element={<LeadDetailsPage />} />
+        <Route path="/deals/deal/:id" element={<LeadDetailsPage />} />
         <Route path="/task/:taskId" element={<TaskDetailsPage />} />
         <Route path="/pipeline" element={<CrmPipelinePage />} />
         <Route path="/campaign" element={<CrmCampaignPage />} />
-        <Route path="/projects/list" element={<CrmProjectsPage />} />
+        <Route path="/projects/:designation/:username/list" element={<CrmProjectsPage />} />
         <Route path="/estimations" element={<EstimationsPage />} />
+        <Route path="/sales/:designation/:username/estimations" element={<EstimationsPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/video-call" element={<VideoCallPage />} />
         <Route path="/video-call/:code" element={<VideoCallPage />} />
@@ -356,98 +422,128 @@ function AppContent() {
         <Route path="/call-history" element={<CallHistoryPage />} />
         
         {/* Dynamic calendar routes based on department */}
-        <Route path="/deals/calendar" element={<CalendarPage />} />
-        <Route path="/leads/calendar" element={<CalendarPage />} />
-        <Route path="/projects/calendar" element={<CalendarPage />} />
-        <Route path="/sales/calendar" element={<CalendarPage />} />
+        <Route path="/deals/:designation/:username/calendar" element={<CalendarPage />} />
+        <Route path="/leads/:designation/:username/calendar" element={<CalendarPage />} />
+        <Route path="/projects/:designation/:username/calendar" element={<CalendarPage />} />
+        <Route path="/sales/:designation/:username/calendar" element={<CalendarPage />} />
         <Route path="/calendar" element={<CalendarPage />} />
         
-        <Route path="/projects/seo-gmb" element={<SeoGmbPage />} />
+        <Route path="/projects/:designation/:username/seo-gmb" element={<SeoGmbPage />} />
         
         {/* Marketing Routes */}
-        <Route path="/marketing/dashboard" element={<ProjectsDashboard department="Marketing" onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
-        <Route path="/marketing/list" element={<CrmProjectsPage department="Marketing" />} />
-        <Route path="/marketing/tasks" element={<TasksPage department="Marketing" />} />
-        <Route path="/marketing/seo-gmb" element={<SeoGmbPage />} />
-        <Route path="/marketing/campaign" element={<CrmCampaignPage department="Marketing" />} />
-        <Route path="/marketing/calendar" element={<CalendarPage department="Marketing" />} />
-        <Route path="/marketing/all-blogs" element={<AllBlogsPage />} />
-        <Route path="/marketing/file-manager" element={<FileManagerPage department="Marketing" />} />
-        <Route path="/marketing/analytics" element={<AnalyticsPage department="Marketing" />} />
-        <Route path="/marketing/activities" element={<ActivitiesPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/dashboard" element={<MarketingDashboard />} />
+        <Route path="/marketing/:designation/:username/list" element={<CrmProjectsPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/tasks" element={<TasksPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/seo-gmb" element={<SeoGmbPage />} />
+        <Route path="/marketing/:designation/:username/campaign" element={<CrmCampaignPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/calendar" element={<CalendarPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/all-blogs" element={<AllBlogsPage />} />
+        <Route path="/marketing/:designation/:username/file-manager" element={<FileManagerPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/analytics" element={<AnalyticsPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/activities" element={<ActivitiesPage department="Marketing" />} />
+
+        {/* SEO & GMB Department Routes */}
+        <Route path="/seo-gmb/:designation/:username/dashboard" element={<SeoGmbPage mode="seo" tab="dashboard" />} />
+        <Route path="/seo-gmb/:designation/:username/projects" element={<SeoGmbProjectsPage />} />
+        <Route path="/seo-gmb/:designation/:username/project-setup" element={<SeoGmbProjectSetupPage />} />
+        <Route path="/seo-gmb/:designation/:username/website-audit" element={<SeoGmbWebsiteAuditPage />} />
+        <Route path="/seo-gmb/:designation/:username/keyword-management" element={<SeoGmbKeywordManagementPage />} />
+        <Route path="/seo-gmb/:designation/:username/on-page-seo" element={<SeoGmbOnPageSeoPage />} />
+        <Route path="/seo-gmb/:designation/:username/content-marketing" element={<SeoGmbContentMarketingPage />} />
+        <Route path="/seo-gmb/:designation/:username/off-page-seo" element={<SeoGmbOffPageSeoPage />} />
+        <Route path="/seo-gmb/:designation/:username/gmb-profile" element={<SeoGmbGmbProfilePage />} />
+        <Route path="/seo-gmb/:designation/:username/google-posts" element={<SeoGmbPage mode="gmb" tab="google-posts" />} />
+        <Route path="/seo-gmb/:designation/:username/customer-engagement" element={<SeoGmbPage mode="gmb" tab="customer-engagement" />} />
+        <Route path="/seo-gmb/:designation/:username/media-management" element={<SeoGmbPage mode="gmb" tab="media-management" />} />
+        <Route path="/seo-gmb/:designation/:username/local-seo" element={<SeoGmbPage mode="gmb" tab="local-seo" />} />
+        <Route path="/seo-gmb/:designation/:username/google-integrations" element={<SeoGmbGoogleIntegrationsPage />} />
+        <Route path="/seo-gmb/:designation/:username/rank-tracking" element={<SeoGmbRankTrackingPage />} />
+        <Route path="/seo-gmb/:designation/:username/tasks" element={<TasksPage department="SEO" />} />
+        <Route path="/seo-gmb/:designation/:username/calendar" element={<CalendarPage department="SEO" />} />
+        <Route path="/seo-gmb/:designation/:username/reports" element={<SeoGmbReportsPage />} />
+        <Route path="/seo-gmb/:designation/:username/documents" element={<SeoGmbDocumentsPage />} />
+        <Route path="/seo-gmb/:designation/:username/automation" element={<SeoGmbAutomationPage />} />
+        <Route path="/seo-gmb/:designation/:username/profile-settings" element={<ProfileSettingsPage />} />
         
         {/* IT Routes */}
-        <Route path="/it/dashboard" element={<ProjectsDashboard department="IT" onViewProjectDetails={handleViewProjectDetails} onViewCompanyDetails={handleViewCompanyDetails} />} />
-        <Route path="/it/list" element={<CrmProjectsPage department="IT" />} />
-        <Route path="/it/tasks" element={<TasksPage department="IT" />} />
-        <Route path="/it/kanban" element={<KanbanPage department="IT" />} />
-        <Route path="/it/analytics" element={<AnalyticsPage department="IT" />} />
-        <Route path="/it/activities" element={<ActivitiesPage department="IT" />} />
-        <Route path="/it/file-manager" element={<FileManagerPage department="IT" />} />
-        <Route path="/it/calendar" element={<CalendarPage department="IT" />} />
-        <Route path="/it/chat" element={<ITChatPage />} />
-        <Route path="/it/notes" element={<NotesPage department="IT" />} />
-        <Route path="/it/teams" element={<ITTeamsPage />} />
-        <Route path="/it/it-manager-dashboard" element={<ITManagerDashboard />} />
+        <Route path="/it/:designation/:username/dashboard" element={<ITManagerDashboard />} />
+        <Route path="/it/:designation/:username/projects" element={<CrmProjectsPage department="IT" />} />
+        <Route path="/it/:designation/:username/tasks" element={<ITTasksPage />} />
+        <Route path="/it/:designation/:username/kanban" element={<ITKanbanPage />} />
+        <Route path="/it/:designation/:username/analytics" element={<ITAnalyticsPage />} />
+        <Route path="/it/:designation/:username/reports" element={<ITAnalyticsPage />} />
+        <Route path="/it/:designation/:username/activities" element={<ITActivitiesPage />} />
+        <Route path="/it/:designation/:username/documents" element={<SeoGmbDocumentsPage />} />
+        <Route path="/it/:designation/:username/documents/upload" element={<ITUploadDocumentPage />} />
+        <Route path="/it/:designation/:username/calendar" element={<ITCalendarPage />} />
+        <Route path="/it/:designation/:username/chat" element={<ITChatPage />} />
+        <Route path="/it/:designation/:username/notes" element={<ITNotesPage />} />
+        <Route path="/:dept/:designation/:username/notes/create" element={<CreateNotePage />} />
+        <Route path="/it/:designation/:username/teams" element={<ITTeamsPage />} />
+        <Route path="/it/:designation/:username/manager-dashboard" element={<ITManagerDashboard />} />
         
         {/* Dynamic tasks routes based on department */}
-        <Route path="/deals/tasks" element={<TasksPage />} />
-        <Route path="/leads/tasks" element={<TasksPage />} />
-        <Route path="/projects/tasks" element={<TasksPage />} />
-        <Route path="/sales/tasks" element={<TasksPage />} />
+        <Route path="/deals/:designation/:username/tasks" element={<TasksPage />} />
+        <Route path="/leads/:designation/:username/tasks" element={<TasksPage />} />
+        <Route path="/projects/:designation/:username/tasks" element={<TasksPage />} />
+        <Route path="/sales/:designation/:username/tasks" element={<TasksPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         
         {/* Dynamic followups routes based on department */}
-        <Route path="/deals/followups" element={<FollowupsPage />} />
-        <Route path="/leads/followups" element={<FollowupsPage />} />
-        <Route path="/projects/followups" element={<FollowupsPage />} />
-        <Route path="/sales/followups" element={<FollowupsPage />} />
+        <Route path="/deals/:designation/:username/followups" element={<FollowupsPage />} />
+        <Route path="/leads/:designation/:username/followups" element={<FollowupsPage />} />
+        <Route path="/projects/:designation/:username/followups" element={<FollowupsPage />} />
+        <Route path="/sales/:designation/:username/followups" element={<FollowupsPage />} />
         <Route path="/followups" element={<FollowupsPage />} />
         
         {/* Dynamic analytics/reports routes based on department */}
-        <Route path="/leads/analytics" element={<AnalyticsPage />} />
-        <Route path="/projects/analytics" element={<AnalyticsPage />} />
-        <Route path="/sales/analytics" element={<AnalyticsPage />} />
-        <Route path="/deals/reports" element={<AnalyticsPage />} />
-        <Route path="/leads/reports" element={<AnalyticsPage />} />
-        <Route path="/projects/reports" element={<AnalyticsPage />} />
-        <Route path="/sales/reports" element={<SalesReportsPage />} />
+        <Route path="/leads/:designation/:username/analytics" element={<AnalyticsPage />} />
+        <Route path="/projects/:designation/:username/analytics" element={<AnalyticsPage />} />
+        <Route path="/sales/:designation/:username/analytics" element={<AnalyticsPage />} />
+        <Route path="/deals/:designation/:username/reports" element={<AnalyticsPage />} />
+        <Route path="/leads/:designation/:username/reports" element={<AnalyticsPage />} />
+        <Route path="/projects/:designation/:username/reports" element={<AnalyticsPage />} />
+        <Route path="/sales/:designation/:username/reports" element={<SalesReportsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         
         {/* Dynamic routes for shared modules across departments */}
-        {['deals', 'leads', 'projects', 'sales', 'super-admin'].map(dept => (
+        {DEPARTMENTS.map(dept => (
           <React.Fragment key={dept}>
-            <Route path={`/${dept}/contacts`} element={<ContactsPage />} />
-            <Route path={`/${dept}/companies`} element={<CrmCompaniesPage />} />
-            <Route path={`/${dept}/campaign`} element={<CrmCampaignPage />} />
-            <Route path={`/${dept}/proposals`} element={<ProposalsPage />} />
-            <Route path={`/${dept}/contracts`} element={<ContractsPage />} />
-            <Route path={`/${dept}/estimations`} element={<EstimationsPage />} />
-            <Route path={`/${dept}/invoices`} element={<InvoicesPage />} />
-            <Route path={`/${dept}/payments`} element={<PaymentsPage />} />
-            <Route path={`/${dept}/activities`} element={<ActivitiesPage />} />
-            <Route path={`/${dept}/chat`} element={<ChatPage />} />
-            <Route path={`/${dept}/video-call`} element={<VideoCallPage />} />
-            <Route path={`/${dept}/audio-call`} element={<AudioCallPage />} />
-            <Route path={`/${dept}/call-history`} element={<CallHistoryPage />} />
-            <Route path={`/${dept}/email`} element={<EmailPage />} />
-            <Route path={`/${dept}/todo`} element={<TodoPage />} />
-            <Route path={`/${dept}/notes`} element={<NotesPage />} />
-            <Route path={`/${dept}/file-manager`} element={<FileManagerPage />} />
-            <Route path={`/${dept}/social-feed`} element={<SocialFeedPage />} />
-            <Route path={`/${dept}/kanban`} element={<KanbanPage />} />
-            <Route path={`/${dept}/list`} element={
-              dept === 'leads' ? <CrmLeadsPage /> : 
-              dept === 'projects' ? <CrmProjectsPage /> : 
-              <CrmDealsPage />
-            } />
-            <Route path={`/${dept}/details`} element={<ProjectDetailsPage />} />
-            <Route path={`/${dept}/customers`} element={<CustomersPage />} />
-            <Route path={`/${dept}/quotations`} element={<QuotationsPage />} />
-            <Route path={`/${dept}/targets`} element={<SalesTargetsPage />} />
-            <Route path={`/${dept}/performance`} element={<PerformancePage />} />
-            <Route path={`/${dept}/commission`} element={<CommissionPage />} />
-            <Route path={`/${dept}/distribution`} element={<LeadDistributionPage />} />
+            <Route path={`/${dept}/:designation/:username/*`} element={<DepartmentRoute>
+              <Routes>
+                <Route path="contacts" element={<ContactsPage />} />
+                <Route path="companies" element={<CrmCompaniesPage />} />
+                <Route path="campaign" element={<CrmCampaignPage />} />
+                <Route path="proposals" element={<ProposalsPage />} />
+                <Route path="contracts" element={<ContractsPage />} />
+                <Route path="estimations" element={<EstimationsPage />} />
+                <Route path="invoices" element={<InvoicesPage />} />
+                <Route path="payments" element={<PaymentsPage />} />
+                <Route path="activities" element={<ActivitiesPage />} />
+                <Route path="chat" element={<ChatPage />} />
+                <Route path="video-call" element={<VideoCallPage />} />
+                <Route path="audio-call" element={<AudioCallPage />} />
+                <Route path="call-history" element={<CallHistoryPage />} />
+                <Route path="email" element={<EmailPage />} />
+                <Route path="todo" element={<TodoPage />} />
+                <Route path="notes" element={<NotesPage />} />
+                <Route path="file-manager" element={<FileManagerPage />} />
+                <Route path="social-feed" element={<SocialFeedPage />} />
+                <Route path="kanban" element={<KanbanPage />} />
+                <Route path="list" element={
+                  dept === 'leads' ? <CrmLeadsPage /> :
+                  dept === 'projects' ? <CrmProjectsPage /> :
+                  <CrmDealsPage />
+                } />
+                <Route path="details/:id" element={<ProjectDetailsPage />} />
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="quotations" element={<QuotationsPage />} />
+                <Route path="targets" element={<SalesTargetsPage />} />
+                <Route path="performance" element={<PerformancePage />} />
+                <Route path="commission" element={<CommissionPage />} />
+                <Route path="distribution" element={<LeadDistributionPage />} />
+              </Routes>
+            </DepartmentRoute>} />
           </React.Fragment>
         ))}
         
@@ -465,6 +561,7 @@ function AppContent() {
         <Route path="/payment/:invoiceId" element={<PaymentDetailsPage />} />
         <Route path="/activities" element={<ActivitiesPage />} />
         <Route path="/followups" element={<FollowupsPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/lead-report" element={<LeadReport />} />
         <Route path="/deal-report" element={<DealReport />} />

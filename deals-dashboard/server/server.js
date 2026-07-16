@@ -152,6 +152,9 @@ authRouter.post('/signup', async (req, res) => {
       const [roles] = await connection.query('SELECT id FROM roles WHERE name = ?', [req.body.role_name]);
       if (roles.length > 0) {
         role_id = roles[0].id;
+      } else {
+        const [insertRole] = await connection.query('INSERT INTO roles (name, description) VALUES (?, ?)', [req.body.role_name, `Dynamically created role for ${req.body.role_name}`]);
+        role_id = insertRole.insertId;
       }
     }
 
@@ -215,6 +218,7 @@ authRouter.post('/check-permission', async (req, res) => {
 
 // Register Auth Router
 app.use('/api/auth', authRouter);
+app.use('/api/it-documents', require('./routes/it-documents-routes'));
 
 app.get('/api/roles', async (req, res) => {
   let connection;
@@ -295,6 +299,7 @@ const setupLeadsDealsRolesRoutes = require('./routes/leads-deals-roles-routes');
 const setupInvoicesCampaignsCallsRoutes = require('./routes/invoices-campaigns-calls-routes');
 const setupFilesConversationsRoutes = require('./routes/files-conversations-routes');
 const setupAutomationRoutes = require('./routes/automation-routes');
+const setupItKanbanRoutes = require('./routes/it-kanban-routes');
 const setupApprovalRoutes = require('./routes/approval-routes');
 const setupPerformanceRoutes = require('./routes/performance-routes');
 const setupReminderRoutes = require('./routes/reminder-routes');
@@ -303,6 +308,7 @@ const setupReportingRoutes = require('./routes/reporting-routes');
 const setupDepartmentDashboardRoutes = require('./routes/department-dashboard-routes');
 const setupMarketingITWorkflowRoutes = require('./routes/marketing-it-workflow-routes');
 const setupFollowupsRoutes = require('./routes/followups-routes');
+const setupGithubRoutes = require('./routes/github-routes');
 
 setupEntitiesRoutes(app, pool);
 setupActivitiesNotesRoutes(app, pool);
@@ -312,6 +318,7 @@ setupLeadsDealsRolesRoutes(app, pool);
 setupInvoicesCampaignsCallsRoutes(app, pool);
 setupFilesConversationsRoutes(app, pool);
 setupAutomationRoutes(app, pool);
+setupItKanbanRoutes(app, pool);
 setupApprovalRoutes(app, pool);
 setupPerformanceRoutes(app, pool);
 setupReminderRoutes(app, pool);
@@ -320,6 +327,7 @@ setupReportingRoutes(app, pool);
 setupDepartmentDashboardRoutes(app, pool);
 setupMarketingITWorkflowRoutes(app, pool);
 setupFollowupsRoutes(app, pool);
+setupGithubRoutes(app, pool);
 
 // Root route serves the React app index.html
 app.get('/', (req, res) => {
@@ -331,7 +339,7 @@ app.get('/', (req, res) => {
 });
 
 // SPA fallback for all other non-API routes
-app.get('/:path*', (req, res, next) => {
+app.get(/.*/, (req, res, next) => {
   // If it's an API route or looks like a static asset request (has an extension), fall through
   if (req.path.startsWith('/api') || req.path.includes('.')) {
     return next();

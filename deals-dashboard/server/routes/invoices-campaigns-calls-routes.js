@@ -878,10 +878,14 @@ module.exports = function(app, pool) {
       connection = await getConnection();
 
       let query = `
-        SELECT e.*, c.company_name as client_name, l.lead_name 
+        SELECT e.*, c.company_name as client_name, l.lead_name,
+               u.first_name as creator_first_name, u.last_name as creator_last_name,
+               p.name as project_name
         FROM estimations e 
         LEFT JOIN companies c ON e.client_id = c.id 
         LEFT JOIN leads l ON e.lead_id = l.id
+        LEFT JOIN users u ON e.estimate_by = u.id
+        LEFT JOIN projects p ON e.project_id = p.id
         WHERE 1=1
       `;
       const params = [];

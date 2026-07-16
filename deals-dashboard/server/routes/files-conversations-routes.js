@@ -1,4 +1,24 @@
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
 module.exports = function setupFilesConversationsRoutes(app, pool) {
+
+  // Configure storage
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadDir = path.join(__dirname, '..', 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueSuffix + '-' + file.originalname);
+    }
+  });
+  const upload = multer({ storage: storage });
 
   async function getConnection() {
     return pool.getConnection();
@@ -15,7 +35,12 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
       const { userId, lead_id, contact_id, company_id, deal_id, project_id, task_id, skip = 0, limit = 50 } = req.query;
       connection = await getConnection();
 
-      let query = 'SELECT f.* FROM files f WHERE 1=1';
+      let query = `
+        SELECT f.*, u.first_name, u.last_name 
+        FROM files f 
+        LEFT JOIN users u ON f.user_id = u.id 
+        WHERE 1=1
+      `;
       const params = [];
 
       if (userId) {
@@ -87,6 +112,47 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
       res.status(201).json(file[0]);
     } catch (error) {
       responseError(res, 500, 'Failed to create file record', error);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  // Physical file upload endpoint
+  app.post('/api/files/upload', upload.single('file'), async (req, res) => {
+    let connection;
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const { userId, project_id, lead_id, contact_id, company_id, deal_id, task_id, folderId } = req.body;
+      const filePath = `/uploads/${req.file.filename}`;
+
+      connection = await getConnection();
+      const [result] = await connection.query(`
+        INSERT INTO files (
+          user_id, folder_id, name, file_type, size_bytes, mime_type, storage_type, file_path,
+          lead_id, contact_id, company_id, deal_id, project_id, task_id
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        userId ? parseInt(userId) : 1, 
+        folderId ? parseInt(folderId) : null, 
+        req.file.originalname, 
+        path.extname(req.file.originalname).substring(1).toUpperCase() || 'FILE', 
+        req.file.size, req.file.mimetype, 'Internal', filePath,
+        lead_id ? parseInt(lead_id) : null, 
+        contact_id ? parseInt(contact_id) : null, 
+        company_id ? parseInt(company_id) : null, 
+        deal_id ? parseInt(deal_id) : null, 
+        project_id ? parseInt(project_id) : null, 
+        task_id ? parseInt(task_id) : null
+      ]);
+
+      const [file] = await connection.query('SELECT * FROM files WHERE id = ?', [result.insertId]);
+      res.status(201).json(file[0]);
+    } catch (error) {
+      responseError(res, 500, 'Failed to upload file', error);
     } finally {
       if (connection) connection.release();
     }
@@ -351,6 +417,48 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
       if (connection) connection.release();
     }
   });
+
+  app.post('/api/chat-groups/:groupId/members', async (req, res) => {
+    let connection;
+    try {
+      const { groupId } = req.params;
+      const { members = [] } = req.body;
+      
+      if (!members || members.length === 0) {
+        return res.status(400).json({ error: 'No members provided' });
+      }
+
+      connection = await getConnection();
+      await connection.beginTransaction();
+
+      // Get existing members to avoid duplicates
+      const [existing] = await connection.query(
+        'SELECT user_id FROM chat_group_members WHERE group_id = ?',
+        [groupId]
+      );
+      const existingUserIds = existing.map(row => row.user_id.toString());
+
+      let addedCount = 0;
+      for (const userId of members) {
+        if (!existingUserIds.includes(userId.toString())) {
+          await connection.query(
+            'INSERT INTO chat_group_members (group_id, user_id) VALUES (?, ?)',
+            [groupId, userId]
+          );
+          addedCount++;
+        }
+      }
+
+      await connection.commit();
+      res.status(201).json({ message: `Added ${addedCount} new members to group` });
+    } catch (error) {
+      if (connection) await connection.rollback();
+      responseError(res, 500, 'Failed to add group members', error);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
 
   app.post('/api/messages', async (req, res) => {
     let connection;

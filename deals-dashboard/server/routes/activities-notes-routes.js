@@ -382,8 +382,9 @@ module.exports = function setupActivitiesNotesRoutes(app, pool) {
         };
       };
 
-      try {
-        const { clause, params } = buildUnifiedWhere('a', { lead_id, contact_id, company_id, deal_id, project_id, task_id });
+      console.log('Starting block');
+try {
+const { clause, params } = buildUnifiedWhere('a', { lead_id, contact_id, company_id, deal_id, project_id, task_id });
         const activitiesQuery = `
           SELECT 'Activity' as activity_source, a.id, a.activity_type as type, a.title,
                  a.description, a.status, a.priority, a.created_at, a.scheduled_date, a.scheduled_time, a.meeting_link,
@@ -415,8 +416,9 @@ module.exports = function setupActivitiesNotesRoutes(app, pool) {
       }
 
       // Add Notes to the feed
-      try {
-        const { clause, params } = buildUnifiedWhere('n', { lead_id, contact_id, company_id, deal_id, project_id, task_id });
+      console.log('Starting block');
+try {
+const { clause, params } = buildUnifiedWhere('n', { lead_id, contact_id, company_id, deal_id, project_id, task_id });
         const notesQuery = `
           SELECT 'Note' as activity_source, n.id, 'Note' as type, n.title,
                  n.description, 'Completed' as status, n.priority, n.created_at, n.created_at as scheduled_date,
@@ -447,8 +449,9 @@ module.exports = function setupActivitiesNotesRoutes(app, pool) {
       }
 
       // Add Followups to the feed
-      try {
-        const { clause, params } = buildUnifiedWhere('f', { lead_id, contact_id, company_id, deal_id, project_id, task_id });
+      console.log('Starting block');
+try {
+const { clause, params } = buildUnifiedWhere('f', { lead_id, contact_id, company_id, deal_id, project_id, task_id });
         const followupsQuery = `
           SELECT 'Followup' as activity_source, f.id, f.type, f.subject as title,
                  COALESCE(f.remarks, f.description) as description, f.status, f.priority, f.created_at, f.scheduled_date, f.scheduled_time, f.meeting_link,
@@ -709,8 +712,9 @@ module.exports = function setupActivitiesNotesRoutes(app, pool) {
         console.warn('⚠️ Invoices table query failed:', e.message);
       }
 
-      try {
-        const { clause, params } = buildUnifiedWhere('f', { lead_id, contact_id, company_id, deal_id, project_id, task_id });
+      console.log('Starting block');
+try {
+const { clause, params } = buildUnifiedWhere('f', { lead_id, contact_id, company_id, deal_id, project_id, task_id });
         const followupsQuery = `
           SELECT 'Activity' as activity_source, f.id, f.type, f.subject as title,
                  f.description, f.status, f.priority, f.created_at, f.scheduled_date, f.scheduled_time, f.meeting_link,

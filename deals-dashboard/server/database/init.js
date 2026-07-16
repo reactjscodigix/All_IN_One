@@ -1877,6 +1877,7 @@ async function initializeDatabase() {
       { table: 'deals', column: 'discount_approved_by', definition: "INT" },
       { table: 'deals', column: 'discount_status', definition: "ENUM('None', 'Pending', 'Approved', 'Rejected') DEFAULT 'None'" },
       { table: 'projects', column: 'workflow_type', definition: "ENUM('Standard', 'Marketing', 'IT') DEFAULT 'Standard'" },
+      { table: 'projects', column: 'priority', definition: "VARCHAR(50) DEFAULT 'Medium'" },
       { table: 'general_tasks', column: 'sprint_id', definition: "INT" },
       { table: 'general_tasks', column: 'department_id', definition: "INT" },
       { table: 'general_tasks', column: 'task_type', definition: "VARCHAR(100)" },

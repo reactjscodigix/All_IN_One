@@ -6,7 +6,7 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
 
   app.get('/api/leads', async (req, res) => {
     try {
-      const { status, source, owner_id, skip = 0, limit = 50 } = req.query;
+      const { status, source, owner_id, skip = 0, limit = 50, user_id, role, department } = req.query;
       
       let query = `SELECT 
         l.*,
@@ -14,8 +14,23 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
         u.last_name AS owner_last_name
       FROM leads l
       LEFT JOIN users u ON u.id = l.owner_id
+      LEFT JOIN service_categories sc ON l.service_category_id = sc.id
+      LEFT JOIN departments d ON sc.suggested_department_id = d.id
       WHERE 1=1`;
       const params = [];
+
+      // Filter by role/department
+      if (role && role !== 'Admin' && role !== 'Super Admin') {
+         if (role.includes('Manager')) {
+             if (department) {
+                 query += ` AND (d.name = ? OR d.name IS NULL) `;
+                 params.push(department);
+             }
+         } else {
+             query += ` AND l.owner_id = ? `;
+             params.push(user_id);
+         }
+      }
       
       if (status) {
         query += ' AND l.lead_status = ?';

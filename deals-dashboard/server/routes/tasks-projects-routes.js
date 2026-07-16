@@ -35,6 +35,9 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
       const { projectId } = req.params;
       const [tasks] = await db.query(`
         SELECT t.*,
+               u1.first_name,
+               u1.last_name,
+               u1.avatar,
                u1.first_name as assigned_to_name,
                u2.first_name as created_by_name
         FROM project_tasks t
@@ -45,6 +48,65 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
       `, [projectId]);
 
       res.json(tasks);
+    } catch (error) {
+      responseError(res, 500, 'Failed to fetch tasks', error);
+    }
+  });
+
+  app.get('/api/tasks', async (req, res) => {
+    try {
+      const { department, user_id, role } = req.query;
+      let sql = `
+        SELECT t.*, 
+               u1.first_name as assigned_to_name, 
+               u1.avatar as assigned_to_avatar
+        FROM project_tasks t
+        LEFT JOIN users u1 ON t.assigned_to = u1.id
+        LEFT JOIN projects p ON t.project_id = p.id
+        LEFT JOIN departments d ON p.department_id = d.id
+        WHERE 1=1
+      `;
+      const params = [];
+
+      if (role && role !== 'Admin' && role !== 'Super Admin') {
+         if (role.includes('Manager')) {
+             // Managers see tasks for their department
+             if (department) {
+                 sql += ` AND (d.name = ? OR d.name IS NULL) `;
+                 params.push(department);
+             }
+         } else {
+             // Regular employees only see tasks assigned to them
+             sql += ` AND t.assigned_to = ? `;
+             params.push(user_id);
+         }
+      }
+
+      sql += ` ORDER BY t.created_at DESC`;
+      
+      const [tasks] = await db.query(sql, params);
+
+      // Format tasks to match the UI expectations (LIST_DATA / INITIAL_KANBAN_DATA)
+      const formattedTasks = tasks.map((t, index) => {
+        const key = t.task_key || `TASK-${t.id}`;
+        return {
+          id: t.id.toString(),
+          key: key,
+          title: t.title,
+          description: t.description || '',
+          type: t.priority === 'High' ? 'Bug' : 'Task', // Map priority to type for now, or add type column later
+          status: t.status ? t.status.toUpperCase() : 'TO DO',
+          assignee: t.assigned_to_name || 'Unassigned',
+          assignee_avatar: t.assigned_to_avatar,
+          priority: t.priority || 'Medium',
+          labels: t.priority === 'High' ? ['Frontend', 'Bug'] : ['Task'], // Placeholder labels
+          sprint: 'Sprint 1',
+          due: t.due_date ? new Date(t.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'No Due Date',
+          points: 3,
+        };
+      });
+
+      res.json(formattedTasks);
     } catch (error) {
       responseError(res, 500, 'Failed to fetch tasks', error);
     }
@@ -586,10 +648,31 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
       const [deal] = await db.query('SELECT * FROM deals WHERE id = ?', [dealId]);
       if (deal.length === 0) return res.status(404).json({ error: 'Deal not found' });
 
+      const userId = req.headers['x-user-id'] || deal[0].assignee_id || null;
+      
+      let finalDeptId = department_id;
+      let finalWorkflowType = workflow_type || 'Standard';
+      
+      if (!finalDeptId && deal[0].service_category_id) {
+        const [cat] = await db.query('SELECT name, suggested_department_id FROM service_categories WHERE id = ?', [deal[0].service_category_id]);
+        if (cat.length > 0) {
+          finalDeptId = cat[0].suggested_department_id;
+          
+          // Also check department name to possibly set workflow_type
+          if (finalDeptId) {
+            const [dept] = await db.query('SELECT name FROM departments WHERE id = ?', [finalDeptId]);
+            if (dept.length > 0) {
+              if (dept[0].name.includes('IT')) finalWorkflowType = 'IT';
+              if (dept[0].name.includes('Marketing')) finalWorkflowType = 'Marketing';
+            }
+          }
+        }
+      }
+
       const [projectResult] = await db.query(`
-        INSERT INTO projects (name, deal_id, company_id, budget, status, start_date, end_date, workflow_type, department_id, created_at)
-        VALUES (?, ?, ?, ?, 'Planning', ?, ?, ?, ?, NOW())
-      `, [name || deal[0].deal_name, dealId, deal[0].company_id, budget || deal[0].deal_value, start_date || null, end_date || null, workflow_type || 'Standard', department_id || null]);
+        INSERT INTO projects (name, deal_id, company_id, budget, status, start_date, end_date, workflow_type, department_id, created_by, created_at)
+        VALUES (?, ?, ?, ?, 'Planning', ?, ?, ?, ?, ?, NOW())
+      `, [name || deal[0].deal_name, dealId, deal[0].company_id, budget || deal[0].deal_value, start_date || null, end_date || null, finalWorkflowType, finalDeptId || null, userId]);
 
       const projectId = projectResult.insertId;
 
