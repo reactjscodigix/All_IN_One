@@ -28,6 +28,33 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// Fallback for resolving uploads matching original filenames
+app.get('/uploads/:filename', async (req, res, next) => {
+  const fs = require('fs');
+  const path = require('path');
+  const uploadsDir = path.join(__dirname, 'uploads');
+  const exactPath = path.join(uploadsDir, req.params.filename);
+  
+  if (fs.existsSync(exactPath)) {
+    return res.sendFile(exactPath);
+  }
+  
+  try {
+    if (fs.existsSync(uploadsDir)) {
+      const files = await fs.promises.readdir(uploadsDir);
+      const suffix = '-' + req.params.filename;
+      const matchedFile = files.find(f => f.endsWith(suffix));
+      if (matchedFile) {
+        return res.sendFile(path.join(uploadsDir, matchedFile));
+      }
+    }
+  } catch (err) {
+    console.error('Uploads fallback error:', err);
+  }
+  next();
+});
 
 // Serve React build assets (production mode)
 const clientBuildPath = path.join(__dirname, '..', 'client', 'build');

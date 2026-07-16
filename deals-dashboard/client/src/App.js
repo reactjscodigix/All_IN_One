@@ -253,20 +253,23 @@ const DashboardRouter = () => {
       return;
     }
 
+    const username = user.name ? user.name.toLowerCase().replace(/\s+/g, '-') : 'user';
+    const designation = user.role ? user.role.toLowerCase().replace(/\s+/g, '-') : 'employee';
+
     if (user.role === 'Super Admin') {
       navigate('/super-admin');
     } else if (user.role === 'Admin' || user.department === 'Sales Department' || user.department === 'Leads Management' || user.department === 'Deals Management') {
-      navigate('/sales/dashboard');
+      navigate(`/sales/${designation}/${username}/dashboard`);
     } else if (user.department === 'Marketing Department') {
-      navigate('/marketing/dashboard');
+      navigate(`/marketing/${designation}/${username}/dashboard`);
     } else if (user.department === 'SEO & GMB Department') {
-      navigate('/seo-gmb/dashboard');
+      navigate(`/seo-gmb/${designation}/${username}/dashboard`);
     } else if (user.department === 'IT Department') {
-      navigate('/it/dashboard');
+      navigate(`/it/${designation}/${username}/dashboard`);
     } else if (user.department === 'Accounting Department') {
       navigate('/invoices');
     } else {
-      navigate('/deals/dashboard');
+      navigate(`/deals/${designation}/${username}/dashboard`);
     }
   }, [user, navigate]);
 
@@ -279,7 +282,7 @@ const NavigateToLead = () => {
   
   if (!user) return <Navigate to="/login" replace />;
   
-  const designation = user.designation ? user.designation.toLowerCase().replace(/\s+/g, '-') : 'employee';
+  const designation = user.role ? user.role.toLowerCase().replace(/\s+/g, '-') : 'employee';
   const username = user.name ? user.name.toLowerCase().replace(/\s+/g, '-') : 'user';
   
   return <Navigate to={`/leads/${designation}/${username}/lead/${id}`} replace />;

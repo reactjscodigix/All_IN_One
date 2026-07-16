@@ -1268,6 +1268,19 @@ async function initializeDatabase() {
       console.warn('Could not update messages table for groups:', err.message);
     }
 
+    try {
+      const [fileCols] = await connection.query('SHOW COLUMNS FROM messages LIKE "file_name"');
+      if (fileCols.length === 0) {
+        await connection.query('ALTER TABLE messages ADD COLUMN file_name VARCHAR(100) NULL AFTER message_text');
+        await connection.query('ALTER TABLE messages ADD COLUMN file_size INT NULL AFTER file_name');
+        await connection.query('ALTER TABLE messages ADD COLUMN file_type VARCHAR(50) NULL AFTER file_size');
+        await connection.query('ALTER TABLE messages ADD COLUMN file_path VARCHAR(255) NULL AFTER file_type');
+        console.log('✓ Added file attachment columns to messages table');
+      }
+    } catch (err) {
+      console.warn('Could not add file columns to messages table:', err.message);
+    }
+
     await connection.query('CREATE TABLE IF NOT EXISTS activities (' +
       'id INT AUTO_INCREMENT PRIMARY KEY,' +
       'activity_type VARCHAR(100) NOT NULL DEFAULT "Note",' +

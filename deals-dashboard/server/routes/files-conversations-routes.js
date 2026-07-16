@@ -294,9 +294,9 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
       const { userId } = req.params;
       connection = await getConnection();
 
-      // Combined query to get both private conversations and group chats
-      const [conversations] = await connection.query(`
-        (SELECT 
+      // Query 1: Direct conversations
+      const query1 = `
+        SELECT 
           c.id,
           'private' as chat_type,
           c.participant1_id,
@@ -326,11 +326,12 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
         FROM conversations c
         LEFT JOIN users u1 ON c.participant1_id = u1.id
         LEFT JOIN users u2 ON c.participant2_id = u2.id
-        WHERE c.participant1_id = ? OR c.participant2_id = ?)
-        
-        UNION ALL
-        
-        (SELECT 
+        WHERE c.participant1_id = ? OR c.participant2_id = ?
+      `;
+
+      // Query 2: Group chats
+      const query2 = `
+        SELECT 
           g.id,
           'group' as chat_type,
           NULL as participant1_id,
@@ -347,12 +348,19 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
           DATE_FORMAT(g.created_at, '%M %d, %Y %H:%i') as timestamp
         FROM chat_groups g
         INNER JOIN chat_group_members gm ON g.id = gm.group_id
-        WHERE gm.user_id = ?)
-        
-        ORDER BY updated_at DESC
-      `, [userId, userId, userId, userId, userId, userId, userId]);
+        WHERE gm.user_id = ?
+      `;
 
-      res.json(conversations);
+      const [directConvs] = await connection.query(query1, [userId, userId, userId, userId, userId, userId]);
+      const [groupConvs] = await connection.query(query2, [userId]);
+
+      const mergedConversations = [...directConvs, ...groupConvs].sort((a, b) => {
+        const dateA = new Date(a.updated_at || a.created_at);
+        const dateB = new Date(b.updated_at || b.created_at);
+        return dateB - dateA;
+      });
+
+      res.json(mergedConversations);
     } catch (error) {
       responseError(res, 500, 'Failed to fetch conversations', error);
     } finally {
@@ -463,10 +471,10 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
   app.post('/api/messages', async (req, res) => {
     let connection;
     try {
-      const { sender_id, receiver_id, group_id, message_text } = req.body;
+      const { sender_id, receiver_id, group_id, message_text, file_name, file_size, file_type, file_path } = req.body;
 
-      if (!sender_id || (!receiver_id && !group_id) || !message_text) {
-        return res.status(400).json({ error: 'Sender ID, (Receiver ID or Group ID), and message text required' });
+      if (!sender_id || (!receiver_id && !group_id) || (!message_text && !file_name)) {
+        return res.status(400).json({ error: 'Sender ID, (Receiver ID or Group ID), and message text or file required' });
       }
 
       connection = await getConnection();
@@ -490,14 +498,24 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
         }
       }
 
-      const insertMsgQuery = 'INSERT INTO messages (sender_id, receiver_id, conversation_id, group_id, message_text) ' +
-                             'VALUES (?, ?, ?, ?, ?)';
-      const [result] = await connection.query(insertMsgQuery, [sender_id, receiver_id || null, conversation_id, group_id || null, message_text]);
+      const insertMsgQuery = 'INSERT INTO messages (sender_id, receiver_id, conversation_id, group_id, message_text, file_name, file_size, file_type, file_path) ' +
+                             'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      const [result] = await connection.query(insertMsgQuery, [
+        sender_id, 
+        receiver_id || null, 
+        conversation_id, 
+        group_id || null, 
+        message_text || '', 
+        file_name || null, 
+        file_size || null, 
+        file_type || null,
+        file_path || null
+      ]);
 
       if (conversation_id) {
         await connection.query(
           'UPDATE conversations SET last_message_text = ?, last_message_timestamp = CURRENT_TIMESTAMP WHERE id = ?',
-          [message_text, conversation_id]
+          [message_text || '[Attachment]', conversation_id]
         );
       }
 

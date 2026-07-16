@@ -4,12 +4,16 @@ import {
   Search, Send, Phone, Video, MoreHorizontal, X, Plus, Filter,
   Star, Paperclip, Smile, AtSign, Hash, Calendar, FileText,
   ThumbsUp, Download, ChevronRight, Bell, Users, Settings,
-  Mic, Image, Link, Check, CheckCheck, Pin, Edit3, LogOut
+  Mic, Image, Link, Check, CheckCheck, Pin, Edit3, LogOut, Trash2
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import Swal from 'sweetalert2';
 
-const CURRENT_USER_ID = 1;
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export default function ITChatPage() {
+  const { user } = useAuth();
+  const currentUserId = user?.id || 1;
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
   const fileInputRef = useRef(null);
@@ -33,6 +37,127 @@ export default function ITChatPage() {
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
   const [teamMemberSearch, setTeamMemberSearch] = useState('');
+  const [tasksState, setTasksState] = useState({});
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
+  const [mentionSearchTerm, setMentionSearchTerm] = useState('');
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setInput(value);
+
+    const cursorPosition = e.target.selectionStart || 0;
+    const textBeforeCursor = value.slice(0, cursorPosition);
+    const words = textBeforeCursor.split(/\s+/);
+    const lastWord = words[words.length - 1] || '';
+
+    if (lastWord.startsWith('@')) {
+      setShowMentionSuggestions(true);
+      setMentionSearchTerm(lastWord.slice(1));
+    } else {
+      setShowMentionSuggestions(false);
+      setMentionSearchTerm('');
+    }
+  };
+
+  const handleSelectMention = (member) => {
+    const fullName = `${member.first_name} ${member.last_name}`;
+    const inputElement = document.getElementById('chat-input');
+    const cursorPosition = inputElement?.selectionStart || input.length;
+    const textBeforeCursor = input.slice(0, cursorPosition);
+    const textAfterCursor = input.slice(cursorPosition);
+
+    const words = textBeforeCursor.split(/\s+/);
+    words[words.length - 1] = `@${fullName}`;
+    const newTextBeforeCursor = words.join(' ') + ' ';
+
+    setInput(newTextBeforeCursor + textAfterCursor);
+    setShowMentionSuggestions(false);
+    setMentionSearchTerm('');
+    setTimeout(() => {
+      if (inputElement) {
+        inputElement.focus();
+        const newCursorPos = newTextBeforeCursor.length;
+        inputElement.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 50);
+  };
+
+  const getMentionSuggestions = () => {
+    const list = selectedChat?.chat_type === 'group' ? groupMembers : availableUsers;
+    return list.filter(member => {
+      const fullName = `${member.first_name || ''} ${member.last_name || ''}`.toLowerCase();
+      return fullName.includes(mentionSearchTerm.toLowerCase());
+    });
+  };
+
+  const getChatTasks = () => {
+    if (!selectedChat) return [];
+    const chatId = selectedChat.id;
+    if (tasksState[chatId]) {
+      return tasksState[chatId];
+    }
+    // Initialize mock tasks for this chat
+    const name = selectedChat.name.toLowerCase();
+    let initial = [];
+    if (name.includes('bug') || name.includes('issue') || name.includes('it')) {
+      initial = [
+        { id: 1, title: 'Investigate memory leak in production server', completed: false },
+        { id: 2, title: 'Upgrade staging environment to version 2.4', completed: true },
+        { id: 3, title: 'Review network firewall policies', completed: false }
+      ];
+    } else if (name.includes('design') || name.includes('creative')) {
+      initial = [
+        { id: 1, title: 'Create wireframes for new login flow', completed: false },
+        { id: 2, title: 'Update style guide color palettes', completed: true },
+        { id: 3, title: 'Prepare assets for marketing campaign', completed: false }
+      ];
+    } else {
+      initial = [
+        { id: 1, title: 'Schedule sprint planning meeting', completed: false },
+        { id: 2, title: 'Publish meeting notes to Wiki', completed: true },
+        { id: 3, title: 'Review weekly progress reports', completed: false }
+      ];
+    }
+    return initial;
+  };
+
+  const handleAddTask = (e) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim() || !selectedChat) return;
+    const chatId = selectedChat.id;
+    const currentTasks = getChatTasks();
+    const newTask = {
+      id: Date.now(),
+      title: newTaskTitle.trim(),
+      completed: false
+    };
+    setTasksState(prev => ({
+      ...prev,
+      [chatId]: [...currentTasks, newTask]
+    }));
+    setNewTaskTitle('');
+  };
+
+  const handleToggleTask = (taskId) => {
+    if (!selectedChat) return;
+    const chatId = selectedChat.id;
+    const currentTasks = getChatTasks();
+    setTasksState(prev => ({
+      ...prev,
+      [chatId]: currentTasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t)
+    }));
+  };
+
+  const handleDeleteTask = (taskId) => {
+    if (!selectedChat) return;
+    const chatId = selectedChat.id;
+    const currentTasks = getChatTasks();
+    setTasksState(prev => ({
+      ...prev,
+      [chatId]: currentTasks.filter(t => t.id !== taskId)
+    }));
+  };
 
   const FILTER_TABS = ['All', 'Unread', 'Direct', 'Groups'];
   const TABS = ['Messages', 'Files', 'Links', 'Tasks'];
@@ -45,7 +170,7 @@ export default function ITChatPage() {
 
   const fetchConversations = async () => {
     try {
-      const res = await axios.get(`/api/conversations/${CURRENT_USER_ID}`);
+      const res = await axios.get(`${API_BASE_URL}/conversations/${currentUserId}`);
       setConversations(res.data);
     } catch (err) {
       console.error('Failed to fetch conversations', err);
@@ -54,7 +179,7 @@ export default function ITChatPage() {
 
   const fetchAvailableUsers = async () => {
     try {
-      const res = await axios.get(`/api/available-users/${CURRENT_USER_ID}`);
+      const res = await axios.get(`${API_BASE_URL}/available-users/${currentUserId}`);
       setAvailableUsers(res.data);
     } catch (err) {
       console.error('Failed to fetch users', err);
@@ -62,21 +187,23 @@ export default function ITChatPage() {
   };
 
   useEffect(() => {
-    fetchConversations();
-    fetchAvailableUsers();
-  }, []);
+    if (currentUserId) {
+      fetchConversations();
+      fetchAvailableUsers();
+    }
+  }, [currentUserId]);
 
   const fetchMessages = async (chat) => {
     try {
       const isGroup = chat.chat_type === 'group';
       const endpoint = isGroup
-        ? `/api/messages/${CURRENT_USER_ID}?groupId=${chat.id}`
-        : `/api/messages/${CURRENT_USER_ID}?conversationWith=${chat.other_user_id}`;
+        ? `${API_BASE_URL}/messages/${currentUserId}?groupId=${chat.id}`
+        : `${API_BASE_URL}/messages/${currentUserId}?conversationWith=${chat.other_user_id}`;
       const res = await axios.get(endpoint);
       setMessages(res.data);
 
       if (isGroup) {
-        const membersRes = await axios.get(`/api/chat-groups/${chat.id}/members`);
+        const membersRes = await axios.get(`${API_BASE_URL}/chat-groups/${chat.id}/members`);
         setGroupMembers(membersRes.data);
       } else {
         setGroupMembers([]);
@@ -108,7 +235,12 @@ export default function ITChatPage() {
     if (action === 'smile') setShowEmojiPicker(!showEmojiPicker);
     if (action === 'paperclip') fileInputRef.current?.click();
     if (action === 'image') imageInputRef.current?.click();
-    if (action === 'atsign') { setInput(prev => prev + '@'); document.getElementById('chat-input')?.focus(); }
+    if (action === 'atsign') {
+      setInput(prev => prev + '@');
+      setShowMentionSuggestions(true);
+      setMentionSearchTerm('');
+      setTimeout(() => document.getElementById('chat-input')?.focus(), 50);
+    }
     if (action === 'hash') { setInput(prev => prev + '#'); document.getElementById('chat-input')?.focus(); }
     if (action === 'calendar') { setInput(prev => prev + '📅 [Schedule a meeting] '); document.getElementById('chat-input')?.focus(); }
     if (action === 'mic') { setInput(prev => prev + '🎤 [Voice note] '); document.getElementById('chat-input')?.focus(); }
@@ -122,25 +254,41 @@ export default function ITChatPage() {
   };
 
   const handleSend = async () => {
-    let textToSend = input.trim();
-    if (attachedFile) {
-      textToSend += (textToSend ? '\n' : '') + `[Attached File: ${attachedFile.name}]`;
-    }
-    if (!textToSend && !attachedFile) return;
+    if (!input.trim() && !attachedFile) return;
     if (!selectedChat) return;
     try {
+      let uploadedFileDetails = null;
+      if (attachedFile) {
+        const formData = new FormData();
+        formData.append('file', attachedFile);
+        formData.append('userId', currentUserId);
+        
+        const uploadRes = await axios.post(`${API_BASE_URL}/files/upload`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        uploadedFileDetails = uploadRes.data;
+      }
+
       const isGroup = selectedChat.chat_type === 'group';
       const payload = {
-        sender_id: CURRENT_USER_ID,
-        message_text: textToSend,
+        sender_id: currentUserId,
+        message_text: input.trim(),
       };
       if (isGroup) {
         payload.group_id = selectedChat.id;
       } else {
         payload.receiver_id = selectedChat.other_user_id;
       }
+      if (uploadedFileDetails) {
+        payload.file_name = uploadedFileDetails.name;
+        payload.file_size = uploadedFileDetails.size_bytes;
+        payload.file_type = uploadedFileDetails.file_type.toLowerCase();
+        payload.file_path = uploadedFileDetails.file_path;
+      }
 
-      await axios.post('/api/messages', payload);
+      await axios.post(`${API_BASE_URL}/messages`, payload);
       setInput(''); setAttachedFile(null); setShowEmojiPicker(false);
       fetchMessages(selectedChat);
       fetchConversations();
@@ -155,10 +303,10 @@ export default function ITChatPage() {
       const payload = {
         name: newTeamName,
         description: newTeamDesc,
-        created_by: CURRENT_USER_ID,
+        created_by: currentUserId,
         members: selectedUserIds
       };
-      await axios.post('/api/chat-groups', payload);
+      await axios.post(`${API_BASE_URL}/chat-groups`, payload);
       setIsCreateTeamOpen(false);
       setNewTeamName('');
       setNewTeamDesc('');
@@ -172,7 +320,7 @@ export default function ITChatPage() {
   const handleAddMembers = async () => {
     if (!selectedChat || selectedChat.chat_type !== 'group' || selectedUserIds.length === 0) return;
     try {
-      await axios.post(`/api/chat-groups/${selectedChat.id}/members`, {
+      await axios.post(`${API_BASE_URL}/chat-groups/${selectedChat.id}/members`, {
         members: selectedUserIds
       });
       setIsAddMemberOpen(false);
@@ -224,6 +372,16 @@ export default function ITChatPage() {
     const senderName = isMine ? 'You' : `${msg.first_name} ${msg.last_name}`;
     const avatarUrl = msg.sender_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=random`;
 
+    const file = msg.file || (msg.file_name ? {
+      name: msg.file_name,
+      size: msg.file_size ? `${(msg.file_size / 1024).toFixed(1)} KB` : '0 KB',
+      icon: (msg.file_type || 'pdf').toLowerCase(),
+      path: msg.file_path
+    } : null);
+
+    const backendUrl = API_BASE_URL.replace('/api', '');
+    const fileUrl = file ? (file.path ? `${backendUrl}${file.path}` : `${backendUrl}/uploads/${file.name}`) : '';
+
     return (
       <React.Fragment key={msg.id || idx}>
         {msg.date && (
@@ -243,18 +401,28 @@ export default function ITChatPage() {
                 <span className="text-xs text-gray-400 font-medium">{msg.timestamp}</span>
               </div>
             )}
-            <div className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap
-              ${isMine ? 'bg-red-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm shadow-sm'}`}>
-              {msg.text}
-            </div>
-            {msg.file && (
+            {msg.text && (
+              <div className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap
+                ${isMine ? 'bg-red-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm shadow-sm'}`}>
+                {msg.text}
+              </div>
+            )}
+            {file && (
               <div className={`mt-2 flex items-center gap-2.5 p-3 rounded border border-gray-100 bg-white shadow-sm`}>
-                {FILE_ICONS[msg.file.icon] || <FileText size={22} className="text-gray-400" />}
+                {FILE_ICONS[file.icon] || <FileText size={22} className="text-gray-400" />}
                 <div>
-                  <p className="text-[12px] text-gray-800">{msg.file.name}</p>
-                  <p className="text-xs text-gray-400 font-medium">{msg.file.size}</p>
+                  <p className="text-[12px] text-gray-800 font-medium">{file.name}</p>
+                  <p className="text-xs text-gray-400 font-medium">{file.size}</p>
                 </div>
-                <button className="ml-4 text-gray-400 hover:text-blue-600 transition-colors"><Download size={15} /></button>
+                <a 
+                  href={fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="ml-4 text-gray-400 hover:text-blue-600 transition-colors p-1"
+                >
+                  <Download size={15} />
+                </a>
               </div>
             )}
             {isMine && (
@@ -274,7 +442,7 @@ export default function ITChatPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] font-sans text-gray-900 overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex bg-[#f8fafc] font-sans text-gray-900 overflow-hidden" style={{ fontFamily: "'Inter', sans-serif", height: 'calc(100vh - 64px)' }}>
 
       {/* ── Left Panel: Chat List ─────────────────────────────────────────── */}
       <div className="w-[280px] shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-hidden">
@@ -355,9 +523,9 @@ export default function ITChatPage() {
       </div>
 
       {/* ── Middle: Messages ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         {selectedChat && (
-          <div className="bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between shrink-0">
+          <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between shrink-0 z-10">
             <div className="flex items-center gap-3">
               <div className="relative">
                 {selectedChat.chat_type === 'group'
@@ -382,7 +550,7 @@ export default function ITChatPage() {
           </div>
         )}
 
-        <div className="bg-white border-b border-gray-100 p-2 flex items-center gap-4">
+        <div className="sticky top-[64px] bg-white border-b border-gray-100 p-2 flex items-center gap-4 z-10">
           {TABS.map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`p-2 text-sm border-b-2 transition-colors
@@ -401,23 +569,227 @@ export default function ITChatPage() {
               <div ref={messagesEndRef} />
             </>
           )}
-          {activeTab !== 'Messages' && (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              <div className="text-center">
-                <Hash size={36} className="mx-auto mb-3 opacity-30" />
-                <p className="text-xs">No {activeTab.toLowerCase()} yet</p>
-                <p className="text-xs mt-1">Share {activeTab.toLowerCase()} in this channel</p>
+          
+          {activeTab === 'Files' && (
+            <div className="p-6 bg-white m-4 rounded shadow-sm border border-gray-100 min-h-[300px]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-semibold text-gray-800">Shared Files</h3>
+                <span className="text-xs text-gray-500">
+                  {messages.filter(m => m.file || m.file_name).length} items
+                </span>
               </div>
+              {messages.filter(m => m.file || m.file_name).length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <FileText size={48} className="mx-auto mb-3 opacity-20" />
+                  <p className="text-xs">No files shared in this chat yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-gray-500">
+                    <thead className="bg-gray-50 text-gray-700 uppercase tracking-wider text-[10px]">
+                      <tr>
+                        <th className="p-3">Name</th>
+                        <th className="p-3">Shared By</th>
+                        <th className="p-3">Size</th>
+                        <th className="p-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {messages.filter(m => m.file || m.file_name).map(m => {
+                        const file = m.file || {
+                          name: m.file_name,
+                          size: m.file_size ? `${(m.file_size / 1024).toFixed(1)} KB` : '0 KB',
+                          icon: (m.file_type || 'pdf').toLowerCase(),
+                          path: m.file_path
+                        };
+                        const senderName = m.sender === 'user' ? 'You' : `${m.first_name} ${m.last_name}`;
+                        const fileUrl = file.path 
+                          ? `${API_BASE_URL.replace('/api', '')}${file.path}`
+                          : `${API_BASE_URL.replace('/api', '')}/uploads/${file.name}`;
+                        return (
+                          <tr key={m.id} className="hover:bg-gray-50/50">
+                            <td className="p-3 flex items-center gap-2 font-medium text-gray-900">
+                              {FILE_ICONS[file.icon] || <FileText size={18} className="text-gray-400" />}
+                              <span>{file.name}</span>
+                            </td>
+                            <td className="p-3">{senderName}</td>
+                            <td className="p-3">{file.size}</td>
+                            <td className="p-3">
+                              <a 
+                                href={fileUrl} 
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 font-medium"
+                              >
+                                <Download size={12} /> Download
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'Links' && (
+            <div className="p-6 bg-white m-4 rounded shadow-sm border border-gray-100 min-h-[300px]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-semibold text-gray-800">Shared Links</h3>
+                <span className="text-xs text-gray-500">
+                  {(() => {
+                    let count = 0;
+                    messages.forEach(m => {
+                      const matches = m.text?.match(/(https?:\/\/[^\s]+)/g);
+                      if (matches) count += matches.length;
+                    });
+                    return count;
+                  })()} items
+                </span>
+              </div>
+              {(() => {
+                const links = [];
+                messages.forEach(m => {
+                  const urlRegex = /(https?:\/\/[^\s]+)/g;
+                  const matches = m.text?.match(urlRegex);
+                  if (matches) {
+                    matches.forEach(url => {
+                      links.push({
+                        id: m.id + url,
+                        sender: m.sender === 'user' ? 'You' : `${m.first_name} ${m.last_name}`,
+                        url: url,
+                        timestamp: m.timestamp
+                      });
+                    });
+                  }
+                });
+
+                if (links.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-gray-400">
+                      <Link size={48} className="mx-auto mb-3 opacity-20" />
+                      <p className="text-xs">No links shared in this chat yet</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {links.map(l => (
+                      <div key={l.id} className="p-3.5 border border-gray-100 rounded-lg hover:shadow-sm transition bg-gray-50/50 flex flex-col justify-between">
+                        <div className="mb-3">
+                          <p className="text-[10px] text-gray-400 font-medium mb-1">Shared by {l.sender} at {l.timestamp}</p>
+                          <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-600 hover:underline break-all flex items-center gap-1.5">
+                            <Link size={12} className="shrink-0" />
+                            {l.url}
+                          </a>
+                        </div>
+                        <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1 mt-1">
+                          Open Link <ChevronRight size={12} />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {activeTab === 'Tasks' && (
+            <div className="p-6 bg-white m-4 rounded shadow-sm border border-gray-100 min-h-[300px]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-sm font-semibold text-gray-800">Chat Tasks</h3>
+                <span className="text-xs text-gray-500">{getChatTasks().filter(t => !t.completed).length} remaining</span>
+              </div>
+
+              {/* Add Task Form */}
+              <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  placeholder="Add a new task..."
+                  value={newTaskTitle}
+                  onChange={e => setNewTaskTitle(e.target.value)}
+                  className="flex-1 border rounded px-3 py-1.5 text-xs focus:outline-blue-500 focus:border-transparent transition-all"
+                />
+                <button type="submit" className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 font-medium shadow-sm">
+                  <Plus size={14} /> Add Task
+                </button>
+              </form>
+
+              {getChatTasks().length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Check size={48} className="mx-auto mb-3 opacity-20" />
+                  <p className="text-xs">No tasks created yet. Use the input above to create one!</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {getChatTasks().map(t => (
+                    <div key={t.id} className="flex items-center justify-between p-3 border border-gray-100 rounded hover:bg-gray-50/50 transition">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={t.completed}
+                          onChange={() => handleToggleTask(t.id)}
+                          className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                        />
+                        <span className={`text-xs ${t.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>{t.title}</span>
+                      </div>
+                      <button onClick={() => handleDeleteTask(t.id)} className="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-gray-100 transition-colors">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        <div className="bg-white border-t border-gray-100 p-4">
+        <div className="bg-white border-t border-gray-100 p-4 relative">
+          {showMentionSuggestions && getMentionSuggestions().length > 0 && (
+            <div className="absolute bottom-[100%] left-4 mb-2 bg-white border border-gray-200 shadow-xl rounded-lg max-h-[200px] overflow-y-auto w-[240px] z-50 py-1.5">
+              <div className="px-3 py-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider border-b border-gray-50 mb-1">
+                Mention Team Members
+              </div>
+              {getMentionSuggestions().map(member => {
+                const name = `${member.first_name} ${member.last_name}`;
+                const avatar = member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+                return (
+                  <button
+                    key={member.id}
+                    onClick={() => handleSelectMention(member)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors"
+                  >
+                    <img src={avatar} className="w-6 h-6 rounded-full object-cover shrink-0" alt={name} />
+                    <span className="font-medium text-gray-700">{name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {attachedFile && (
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 p-2 rounded mb-2 w-fit">
+              <FileText size={16} className="text-blue-500 shrink-0" />
+              <span className="text-xs text-gray-700 truncate max-w-[200px] font-medium">{attachedFile.name}</span>
+              <span className="text-[10px] text-gray-400 font-medium">({(attachedFile.size / 1024).toFixed(1)} KB)</span>
+              <button 
+                onClick={() => setAttachedFile(null)} 
+                className="text-gray-400 hover:text-red-500 rounded hover:bg-gray-200/50 p-0.5 transition-colors"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+          
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded p-2.5 focus-within:border-blue-300 focus-within:bg-white transition-all">
             <input
               id="chat-input"
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder="Type a message..."
               className="flex-1 bg-transparent text-xs text-gray-700 outline-none placeholder-gray-400"
@@ -425,7 +797,7 @@ export default function ITChatPage() {
           </div>
           <div className="flex items-center justify-between mt-2 px-1">
             <div className="flex items-center gap-1 text-gray-400">
-                            <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
+              <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
               <input type="file" className="hidden" accept="image/*" ref={imageInputRef} onChange={handleFileSelect} />
               <button onClick={() => handleIconClick('paperclip')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Paperclip size={15} /></button>
               <div className="relative">
@@ -445,9 +817,12 @@ export default function ITChatPage() {
               <button onClick={() => handleIconClick('mic')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Mic size={15} /></button>
               <button onClick={() => handleIconClick('plus')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Plus size={15} /></button>
             </div>
-            <button onClick={handleSend}
+            <button 
+              onClick={handleSend}
+              disabled={!(input.trim() || attachedFile)}
               className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors shadow-sm
-                ${(input.trim() || attachedFile) ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                ${(input.trim() || attachedFile) ? 'bg-red-600 text-white hover:bg-red-700 cursor-pointer' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+            >
               <Send size={14} />
             </button>
           </div>
