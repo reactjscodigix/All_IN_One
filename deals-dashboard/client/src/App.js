@@ -49,7 +49,6 @@ import InvoicesPage from './components/common/InvoicesPage';
 import PaymentsPage from './components/common/PaymentsPage';
 import PaymentDetailsPage from './components/common/PaymentDetailsPage';
 import SuperAdminDashboard from './components/super-admin/SuperAdminDashboard';
-import Companies from './components/common/Companies';
 import Subscriptions from './components/super-admin/Subscriptions';
 import Packages from './components/super-admin/Packages';
 import Domain from './components/super-admin/Domain';

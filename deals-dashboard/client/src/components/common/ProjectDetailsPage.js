@@ -48,7 +48,7 @@ const ProjectDetailsPage = () => {
 
       let res;
       if (editingTask) {
-        res = await fetch(`http://localhost:5000/api/tasks/${editingTask.id}`, {
+        res = await fetch(`http://localhost:5000/api/project-tasks/${editingTask.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(taskData)
@@ -77,7 +77,7 @@ const ProjectDetailsPage = () => {
   const handleTaskDelete = async (taskId) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/tasks/${taskId}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:5000/api/project-tasks/${taskId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete task');
       
       const tRes = await fetch(`http://localhost:5000/api/projects/${id}/tasks`);

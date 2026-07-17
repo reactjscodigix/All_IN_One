@@ -115,13 +115,22 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
   app.put('/api/project-tasks/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { status, description, assigned_to, completed_date } = req.body;
+      const { title, description, status, priority, assigned_to, due_date, completed_date } = req.body;
 
       await db.query(`
         UPDATE project_tasks 
-        SET status = ?, description = ?, assigned_to = ?, completed_date = ?, updated_at = NOW()
+        SET title = ?, description = ?, status = ?, priority = ?, assigned_to = ?, due_date = ?, completed_date = ?, updated_at = NOW()
         WHERE id = ?
-      `, [status || null, description || null, assigned_to || null, completed_date || null, id]);
+      `, [
+        title || null,
+        description || null,
+        status || 'Open',
+        priority || 'Medium',
+        assigned_to || null,
+        due_date || null,
+        completed_date || null,
+        id
+      ]);
 
       res.json({ message: 'Task updated successfully' });
     } catch (error) {

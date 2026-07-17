@@ -1545,6 +1545,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
     }
   });
 
+  /*
   app.get('/api/projects/:projectId/tasks', async (req, res) => {
     try {
       const { projectId } = req.params;
@@ -1561,5 +1562,6 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       responseError(res, 500, 'Failed to fetch project tasks', err);
     }
   });
+  */
 
 };
