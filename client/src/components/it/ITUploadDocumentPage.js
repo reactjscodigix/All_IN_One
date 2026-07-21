@@ -97,7 +97,7 @@ export default function ITUploadDocumentPage() {
         {/* MAIN FORM */}
         <div className="flex-1 space-y-6">
           {/* Document Information Box */}
-          <div className="bg-white rounded-xl  border border-gray-100 p-6">
+          <div className="bg-white rounded  border border-gray-100 p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-[15px] font-semibold text-gray-900">Document Information</h2>
               <span className="text-xs text-blue-600 font-medium">* Required Fields</span>
@@ -335,7 +335,7 @@ export default function ITUploadDocumentPage() {
         {/* RIGHT PANEL */}
         <div className="w-[320px] shrink-0 space-y-6">
           {/* Supported File Types */}
-          <div className="bg-white rounded-xl  border border-gray-100 p-2">
+          <div className="bg-white rounded  border border-gray-100 p-2">
             <h3 className="text-[14px] font-semibold text-gray-900 mb-4">Supported File Types</h3>
             <div className="space-y-4">
               <div className="flex gap-3 items-start">
@@ -396,7 +396,7 @@ export default function ITUploadDocumentPage() {
           </div>
 
           {/* Document Guidelines */}
-          <div className="bg-white rounded-xl  border border-gray-100 p-2">
+          <div className="bg-white rounded  border border-gray-100 p-2">
             <h3 className="text-[14px] font-semibold text-gray-900 mb-4">Document Guidelines</h3>
             <ul className="space-y-3">
               {[
@@ -416,7 +416,7 @@ export default function ITUploadDocumentPage() {
           </div>
 
           {/* Email Linking Information */}
-          <div className="bg-white rounded-xl  border border-gray-100 p-2">
+          <div className="bg-white rounded  border border-gray-100 p-2">
             <h3 className="text-[14px] font-semibold text-gray-900 mb-3">Email Linking Information</h3>
             <p className="text-[12px] text-gray-600 mb-3">This document will be linked to your registered email:</p>
             <div className="flex items-center gap-2 bg-indigo-50/50 p-2 rounded mb-3">
@@ -429,7 +429,7 @@ export default function ITUploadDocumentPage() {
           </div>
 
           {/* Need Help? */}
-          <div className="bg-white rounded-xl  border border-gray-100 p-2">
+          <div className="bg-white rounded  border border-gray-100 p-2">
             <h3 className="text-[14px] font-semibold text-gray-900 mb-2">Need Help?</h3>
             <p className="text-[12px] text-gray-600 leading-relaxed mb-4">
               For any assistance with uploading documents, please contact your system administrator or check our documentation.

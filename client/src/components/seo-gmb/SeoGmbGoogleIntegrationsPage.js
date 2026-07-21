@@ -13,50 +13,15 @@ import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
 // ── Chart Data ────────────────────────────────────────────────────────────
-const SEARCH_PERF_DATA = [
-  { date: 'May 8', clicks: 1800, impressions: 34000 },
-  { date: 'May 9', clicks: 2200, impressions: 38000 },
-  { date: 'May 10', clicks: 2600, impressions: 42000 },
-  { date: 'May 11', clicks: 3100, impressions: 39000 },
-  { date: 'May 12', clicks: 2800, impressions: 44000 },
-  { date: 'May 13', clicks: 3400, impressions: 47000 },
-  { date: 'May 14', clicks: 3200, impressions: 45000 },
-  { date: 'May 15', clicks: 3800, impressions: 50000 },
-];
+const SEARCH_PERF_DATA = [];
 
-const ORGANIC_DATA = [
-  { date: 'May 8', users: 1400 },
-  { date: 'May 9', users: 1800 },
-  { date: 'May 10', users: 2200 },
-  { date: 'May 11', users: 2600 },
-  { date: 'May 12', users: 2400 },
-  { date: 'May 13', users: 2900 },
-  { date: 'May 14', users: 2700 },
-  { date: 'May 15', users: 3100 },
-];
+const ORGANIC_DATA = [];
 
-const USER_BEHAVIOR = [
-  { name: 'New Users', value: 14862, pct: '60.5%', color: '#3B82F6' },
-  { name: 'Returning Users', value: 8245, pct: '33.6%', color: '#10B981' },
-  { name: 'Engaged Users', value: 6987, pct: '28.5%', color: '#8B5CF6' },
-  { name: 'Other', value: 768, pct: '3.1%', color: '#94A3B8' },
-];
+const USER_BEHAVIOR = [];
 
-const FUNNEL_DATA = [
-  { name: 'Sessions', value: 32195, fill: '#3B82F6' },
-  { name: 'Engaged Sessions', value: 21234, fill: '#6366F1' },
-  { name: 'Conversions', value: 1296, fill: '#8B5CF6' },
-  { name: 'Qualified Leads', value: 842, fill: '#A78BFA' },
-  { name: 'Customers', value: 312, fill: '#C4B5FD' },
-];
+const FUNNEL_DATA = [];
 
-const INTEGRATION_STATUS = [
-  { name: 'Google Search Console', status: 'Connected', synced: '2 hours ago', color: '#4285F4', icon: '🔍' },
-  { name: 'Google Analytics (GA4)', status: 'Connected', synced: '1 hour ago', color: '#F9AB00', icon: '📊' },
-  { name: 'Google Business Profile', status: 'Connected', synced: '3 hours ago', color: '#34A853', icon: '📍' },
-  { name: 'Google Tag Manager', status: 'Connected', synced: '4 hours ago', color: '#4285F4', icon: '🏷️' },
-  { name: 'Conversion Tracking', status: 'Active', synced: '1 hour ago', color: '#EA4335', icon: '🎯' },
-];
+const INTEGRATION_STATUS = [];
 
 // ── Column Definitions ────────────────────────────────────────────────────
 const searchConsoleCols = [

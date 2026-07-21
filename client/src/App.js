@@ -114,6 +114,10 @@ import SeoGmbRankTrackingPage from './components/seo-gmb/SeoGmbRankTrackingPage'
 import SeoGmbReportsPage from './components/seo-gmb/SeoGmbReportsPage';
 import SeoGmbDocumentsPage from './components/seo-gmb/SeoGmbDocumentsPage';
 import SeoGmbAutomationPage from './components/seo-gmb/SeoGmbAutomationPage';
+import SeoGmbGeoOptimizationPage from './components/seo-gmb/SeoGmbGeoOptimizationPage';
+import SeoGmbAiContentGenerationPage from './components/seo-gmb/SeoGmbAiContentGenerationPage';
+import SeoGmbPredictiveAnalysisPage from './components/seo-gmb/SeoGmbPredictiveAnalysisPage';
+import SeoGmbLocationIntelligencePage from './components/seo-gmb/SeoGmbLocationIntelligencePage';
 
 import ITTeamsPage from './components/it/ITTeamsPage';
 import ITManagerDashboard from './components/it/ITManagerDashboard';
@@ -200,6 +204,10 @@ const routeMap = {
   '/seo-gmb/documents': 'documents',
   '/seo-gmb/automation': 'automation',
   '/seo-gmb/profile-settings': 'profile-settings',
+  '/seo-gmb/geo-optimization': 'geo-optimization',
+  '/seo-gmb/ai-content-generation': 'ai-content-generation',
+  '/seo-gmb/predictive-analysis': 'predictive-analysis',
+  '/seo-gmb/location-intelligence': 'location-intelligence',
 
   '/video-call': 'video-call',
   '/audio-call': 'audio-call',
@@ -261,21 +269,38 @@ const DashboardRouter = () => {
       return;
     }
 
-    const username = user.name ? user.name.toLowerCase().replace(/\s+/g, '-') : 'user';
-    const designation = user.role ? user.role.toLowerCase().replace(/\s+/g, '-') : 'employee';
+    const userNameValue = user.username || user.first_name || user.name || 'user';
+    const username = userNameValue.toLowerCase().replace(/\s+/g, '-');
+    
+    const formatUrlSlug = (str) => {
+      if (!str) return 'employee';
+      return str.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    };
+    const designation = user.role ? formatUrlSlug(user.role) : 'employee';
 
-    if (user.role === 'Super Admin') {
+    const role = user.role || '';
+    const dept = user.department || '';
+
+    if (role === 'Super Admin') {
       navigate('/super-admin');
-    } else if (user.role === 'Admin' || user.department === 'Sales Department' || user.department === 'Leads Management' || user.department === 'Deals Management') {
-      navigate(`/sales/${designation}/${username}/dashboard`);
-    } else if (user.department === 'Marketing Department') {
+    } else if (dept.includes('Marketing')) {
       navigate(`/marketing/${designation}/${username}/dashboard`);
-    } else if (user.department === 'SEO & GMB Department') {
+    } else if (dept.includes('SEO') || dept.includes('GMB')) {
       navigate(`/seo-gmb/${designation}/${username}/dashboard`);
-    } else if (user.department === 'IT Department') {
+    } else if (dept.includes('IT')) {
       navigate(`/it/${designation}/${username}/dashboard`);
-    } else if (user.department === 'Accounting Department') {
+    } else if (dept.includes('Account')) {
       navigate('/invoices');
+    } else if (dept.includes('Sales') || dept.includes('Lead') || dept.includes('Deal')) {
+      navigate(`/sales/${designation}/${username}/dashboard`);
+    } else if (role === 'Admin' || role.includes('Sales') || role.includes('Lead') || role.includes('Deal')) {
+      navigate(`/sales/${designation}/${username}/dashboard`);
+    } else if (role.includes('SEO') || role.includes('GMB')) {
+      navigate(`/seo-gmb/${designation}/${username}/dashboard`);
+    } else if (role.includes('Marketing')) {
+      navigate(`/marketing/${designation}/${username}/dashboard`);
+    } else if (role.includes('IT')) {
+      navigate(`/it/${designation}/${username}/dashboard`);
     } else {
       navigate(`/deals/${designation}/${username}/dashboard`);
     }
@@ -445,7 +470,7 @@ function AppContent() {
         <Route path="/projects/:designation/:username/seo-gmb" element={<SeoGmbPage />} />
         
         {/* Marketing Routes */}
-        <Route path="/marketing/seo-&-gmb/:username/dashboard" element={<SeoGmbPage />} />
+        <Route path="/marketing/seo-gmb/:username/dashboard" element={<SeoGmbPage />} />
         <Route path="/marketing/:designation/:username/dashboard" element={<MarketingDashboard />} />
         <Route path="/marketing/:designation/:username/list" element={<CrmProjectsPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/tasks" element={<TasksPage department="Marketing" />} />
@@ -479,6 +504,10 @@ function AppContent() {
         <Route path="/seo-gmb/:designation/:username/documents" element={<SeoGmbDocumentsPage />} />
         <Route path="/seo-gmb/:designation/:username/automation" element={<SeoGmbAutomationPage />} />
         <Route path="/seo-gmb/:designation/:username/profile-settings" element={<ProfileSettingsPage />} />
+        <Route path="/seo-gmb/:designation/:username/geo-optimization" element={<SeoGmbGeoOptimizationPage />} />
+        <Route path="/seo-gmb/:designation/:username/ai-content-generation" element={<SeoGmbAiContentGenerationPage />} />
+        <Route path="/seo-gmb/:designation/:username/predictive-analysis" element={<SeoGmbPredictiveAnalysisPage />} />
+        <Route path="/seo-gmb/:designation/:username/location-intelligence" element={<SeoGmbLocationIntelligencePage />} />
         
         {/* IT Routes */}
         <Route path="/it/tester/:username/dashboard" element={<ITTesterDashboard />} />

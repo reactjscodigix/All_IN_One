@@ -41,18 +41,18 @@ content = content.replace(
 
 // Wrap Project Health Overview
 content = content.replace(
-  /\{\/\* Project Health Overview \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">/,
-  `{/* Project Health Overview */}\n        {widgets.projectHealth && (\n        <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">`
+  /\{\/\* Project Health Overview \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">/,
+  `{/* Project Health Overview */}\n        {widgets.projectHealth && (\n        <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">`
 );
 content = content.replace(
-  /(\s*)<\/div>\n\n(\s*)<div className="col-span-6 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">/,
-  `\n        </div>\n        )}\n\n        {widgets.timeline && (\n        <div className="col-span-6 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">`
+  /(\s*)<\/div>\n\n(\s*)<div className="col-span-6 bg-white p-2 rounded border border-gray-100  flex flex-col">/,
+  `\n        </div>\n        )}\n\n        {widgets.timeline && (\n        <div className="col-span-6 bg-white p-2 rounded border border-gray-100  flex flex-col">`
 );
 
 // Wrap Projects Timeline
 content = content.replace(
-  /(\s*)<\/div>\n\n(\s*)<div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">\n(\s*)<h3 className="text-sm  text-gray-900 mb-6">Activity Feed<\/h3>/,
-  `\n        </div>\n        )}\n\n        {widgets.activity && (\n        <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">\n          <h3 className="text-sm  text-gray-900 mb-6">Activity Feed</h3>`
+  /(\s*)<\/div>\n\n(\s*)<div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">\n(\s*)<h3 className="text-sm  text-gray-900 mb-6">Activity Feed<\/h3>/,
+  `\n        </div>\n        )}\n\n        {widgets.activity && (\n        <div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">\n          <h3 className="text-sm  text-gray-900 mb-6">Activity Feed</h3>`
 );
 
 // Wrap Activity Feed
@@ -63,24 +63,24 @@ content = content.replace(
 
 // Wrap Task Summary
 content = content.replace(
-  /\{\/\* Task Summary \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">/,
-  `{/* Task Summary */}\n        {widgets.taskSummary && (\n        <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">`
+  /\{\/\* Task Summary \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">/,
+  `{/* Task Summary */}\n        {widgets.taskSummary && (\n        <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">`
 );
 content = content.replace(
-  /(\s*)<\/div>\n\n(\s*)\{\/\* Team Workload \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">/,
-  `\n        </div>\n        )}\n\n        {/* Team Workload */}\n        {widgets.workload && (\n        <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">`
+  /(\s*)<\/div>\n\n(\s*)\{\/\* Team Workload \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">/,
+  `\n        </div>\n        )}\n\n        {/* Team Workload */}\n        {widgets.workload && (\n        <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">`
 );
 
 // Wrap Team Workload
 content = content.replace(
-  /(\s*)<\/div>\n\n(\s*)\{\/\* Time Tracking \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">/,
-  `\n        </div>\n        )}\n\n        {/* Time Tracking */}\n        {widgets.timeTracking && (\n        <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">`
+  /(\s*)<\/div>\n\n(\s*)\{\/\* Time Tracking \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">/,
+  `\n        </div>\n        )}\n\n        {/* Time Tracking */}\n        {widgets.timeTracking && (\n        <div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">`
 );
 
 // Wrap Time Tracking
 content = content.replace(
-  /(\s*)<\/div>\n\n(\s*)\{\/\* Top Open Tasks \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">/,
-  `\n        </div>\n        )}\n\n        {/* Top Open Tasks */}\n        {widgets.openTasks && (\n        <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">`
+  /(\s*)<\/div>\n\n(\s*)\{\/\* Top Open Tasks \*\/\}\n(\s*)<div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">/,
+  `\n        </div>\n        )}\n\n        {/* Top Open Tasks */}\n        {widgets.openTasks && (\n        <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">`
 );
 
 // Wrap Top Open Tasks

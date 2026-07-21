@@ -177,7 +177,7 @@ const ITAnalyticsPage = () => {
             { title: 'Logged Hours', val: '1,248h', trend: '', trendUp: true, icon: Clock, color: 'text-purple-600', bg: 'bg-purple-50' },
             { title: 'Billable Hours', val: '$ 872h', trend: '', trendUp: true, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           ].map((k, i) => (
-            <div key={i} className="bg-white p-3 rounded-xl border border-gray-100  flex flex-col justify-between">
+            <div key={i} className="bg-white p-3 rounded border border-gray-100  flex flex-col justify-between">
               <div className="flex items-center gap-2 mb-2">
                 <div className={`p-1.5 rounded ${k.bg} ${k.color}`}><k.icon size={14} /></div>
                 <div className="text-xs font-medium text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">{k.title}</div>
@@ -195,7 +195,7 @@ const ITAnalyticsPage = () => {
 
         {/* ROW 1: CHARTS */}
         <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-[13px]  text-gray-900">Projects Overview</h3>
               <span className="text-xs text-indigo-600 font-medium cursor-pointer hover:underline">View Details</span>
@@ -232,7 +232,7 @@ const ITAnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="col-span-6 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+          <div className="col-span-6 bg-white p-2 rounded border border-gray-100  flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-[13px]  text-gray-900">Task Completion Trend</h3>
               <div className="flex items-center gap-6">
@@ -261,7 +261,7 @@ const ITAnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-[13px]  text-gray-900">Logged Hours Overview</h3>
               <div className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-100">
@@ -303,7 +303,7 @@ const ITAnalyticsPage = () => {
 
         {/* ROW 2: TABLES & TASK SUMMARY */}
         <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-6 bg-white p-2 rounded-xl border border-gray-100 ">
+          <div className="col-span-6 bg-white p-2 rounded border border-gray-100 ">
             <h3 className="text-[13px]  text-gray-900 mb-5">Project Performance Summary</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -342,7 +342,7 @@ const ITAnalyticsPage = () => {
             <div className="mt-4 text-sm  text-indigo-600 cursor-pointer hover:underline">View All Projects &rarr;</div>
           </div>
 
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">
             <h3 className="text-[13px]  text-gray-900 mb-5">Team Performance</h3>
             <table className="w-full text-left">
               <thead>
@@ -375,7 +375,7 @@ const ITAnalyticsPage = () => {
             <div className="mt-4 text-sm  text-indigo-600 cursor-pointer hover:underline">View All Team Members &rarr;</div>
           </div>
 
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-[13px]  text-gray-900">Task Summary</h3>
               <div className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-100">
@@ -410,7 +410,7 @@ const ITAnalyticsPage = () => {
 
         {/* ROW 3: BUGS, DEPLOYMENTS, TIMELINE */}
         <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">
             <h3 className="text-[13px]  text-gray-900 mb-5">Top Open Bugs</h3>
             <table className="w-full text-left">
               <thead>
@@ -442,7 +442,7 @@ const ITAnalyticsPage = () => {
             <div className="mt-4 text-sm  text-indigo-600 cursor-pointer hover:underline">View All Bugs &rarr;</div>
           </div>
 
-          <div className="col-span-5 bg-white p-2 rounded-xl border border-gray-100 ">
+          <div className="col-span-5 bg-white p-2 rounded border border-gray-100 ">
             <h3 className="text-[13px]  text-gray-900 mb-5">Recent Deployments</h3>
             <table className="w-full text-left">
               <thead>
@@ -473,7 +473,7 @@ const ITAnalyticsPage = () => {
             <div className="mt-4 text-sm  text-indigo-600 cursor-pointer hover:underline">View All Deployments &rarr;</div>
           </div>
 
-          <div className="col-span-4 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+          <div className="col-span-4 bg-white p-2 rounded border border-gray-100  flex flex-col">
             <div className="flex justify-between items-center mb-5">
               <h3 className="text-[13px]  text-gray-900">Project Timeline Overview</h3>
               <div className="flex items-center gap-1 px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded text-xs font-medium text-gray-600 cursor-pointer hover:bg-gray-100">

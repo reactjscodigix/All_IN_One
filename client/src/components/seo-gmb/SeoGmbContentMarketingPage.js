@@ -12,30 +12,11 @@ import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
 // ── Static chart data ──────────────────────────────────────────────────────
-const PERFORMANCE_DATA = [
-  { date: 'May 9', views: 3200, engagement: 1800 },
-  { date: 'May 11', views: 4100, engagement: 2400 },
-  { date: 'May 13', views: 3800, engagement: 2100 },
-  { date: 'May 15', views: 5600, engagement: 3200 },
-  { date: 'May 17', views: 4900, engagement: 2800 },
-  { date: 'May 19', views: 6100, engagement: 3600 },
-];
+const PERFORMANCE_DATA = [];
 
-const DUPLICATE_PIE = [
-  { name: 'High Risk', value: 6, color: '#EF4444' },
-  { name: 'Medium Risk', value: 8, color: '#F59E0B' },
-  { name: 'Low Risk', value: 10, color: '#10B981' },
-];
+const DUPLICATE_PIE = [];
 
-const CLUSTER_BUBBLE_DATA = [
-  { name: 'Keyword Research', x: 75, y: 70, size: 90 },
-  { name: 'On-Page SEO', x: 55, y: 55, size: 110 },
-  { name: 'Local SEO', x: 30, y: 65, size: 80 },
-  { name: 'Content Optimization', x: 55, y: 30, size: 75 },
-  { name: 'Link Building', x: 75, y: 35, size: 85 },
-  { name: 'Technical SEO', x: 85, y: 55, size: 70 },
-  { name: 'Complete SEO Guide (Pillar)', x: 55, y: 55, size: 130 },
-];
+const CLUSTER_BUBBLE_DATA = [];
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const statusBadge = (status) => {
@@ -132,53 +113,15 @@ const clusterCols = [
 ];
 
 // ── Default data ──────────────────────────────────────────────────────────
-const initPlanner = [
-  { id: 1, title: 'The Future of AI in Digital Marketing', type: 'Blog Post', keyword: 'ai in marketing', priority: 'High', author: 'John Smith', due: 'May 20, 2026', status: 'In Progress' },
-  { id: 2, title: 'SEO Best Practices for 2026', type: 'Blog Post', keyword: 'seo best practices', priority: 'High', author: 'Sarah Johnson', due: 'May 18, 2026', status: 'Planned' },
-  { id: 3, title: 'How to Create Content That Ranks', type: 'Guide', keyword: 'content that ranks', priority: 'Medium', author: 'Mike Brown', due: 'May 22, 2026', status: 'Draft' },
-  { id: 4, title: 'Social Media Content Strategy', type: 'Article', keyword: 'social media strategy', priority: 'Medium', author: 'Emily Davis', due: 'May 21, 2026', status: 'Planned' },
-  { id: 5, title: 'Content Marketing Metrics That Matter', type: 'Blog Post', keyword: 'content marketing metrics', priority: 'Low', author: 'David Wilson', due: 'May 26, 2026', status: 'Planned' },
-];
-const initCalendar = [
-  { id: 1, title: 'AI in Marketing Trends', date: 'May 10, 2026', type: 'Blog Post', status: 'Published' },
-  { id: 2, title: 'Content Marketing Guide', date: 'May 8, 2026', type: 'Guide', status: 'Published' },
-  { id: 3, title: 'How to Increase Website Traffic', date: 'May 15, 2026', type: 'Article', status: 'Draft' },
-];
-const initAiGenerator = [
-  { id: 1, topic: 'Benefits of content marketing for businesses', type: 'Blog Post', tone: 'Professional', createdAt: 'May 10, 2026' },
-  { id: 2, topic: 'Top 10 SEO tips for 2026', type: 'List Article', tone: 'Friendly', createdAt: 'May 12, 2026' },
-];
-const initBlogs = [
-  { id: 1, title: 'Understanding SEO in 2026', author: 'Sarah Johnson', published: 'May 10, 2026', status: 'Published' },
-  { id: 2, title: 'Content Marketing Strategy Guide', author: 'Mike Brown', published: 'May 8, 2026', status: 'Published' },
-  { id: 3, title: 'How to Increase Website Traffic', author: 'Emily Davis', published: 'May 15, 2026', status: 'Draft' },
-];
-const initApprovals = [
-  { id: 1, title: 'AI in Marketing Trends', author: 'Sarah Johnson', submitted: 'May 18, 2026', status: 'Pending' },
-  { id: 2, title: 'SEO Tools Comparison', author: 'Mike Brown', submitted: 'May 19, 2026', status: 'Pending' },
-  { id: 3, title: 'Ultimate Guide to Backlinks', author: 'Emily Davis', submitted: 'May 20, 2026', status: 'Approved' },
-];
-const initPerformance = [
-  { id: 1, page: '/blog/ai-digital-marketing', views: '6,100', engagement: '3,600', avgTime: '4m 12s' },
-  { id: 2, page: '/blog/seo-best-practices-2026', views: '4,900', engagement: '2,800', avgTime: '3m 45s' },
-  { id: 3, page: '/guides/content-that-ranks', views: '3,800', engagement: '2,100', avgTime: '5m 20s' },
-];
-const initDuplicate = [
-  { id: 1, url: '/blog/seo-tips', duplicateOf: '/guide/seo-complete', risk: 'High Risk', action: 'Canonical Tag' },
-  { id: 2, url: '/services/content', duplicateOf: '/blog/content-marketing', risk: 'Medium Risk', action: 'Rewrite' },
-  { id: 3, url: '/about/team-seo', duplicateOf: '/about/experts', risk: 'Low Risk', action: 'Monitor' },
-];
-const initPillar = [
-  { id: 1, page: 'Complete SEO Guide', clusters: '8', posts: '24', status: 'Published' },
-  { id: 2, page: 'Content Marketing Guide', clusters: '6', posts: '18', status: 'Published' },
-  { id: 3, page: 'Digital Marketing Fundamentals', clusters: '7', posts: '21', status: 'Draft' },
-];
-const initCluster = [
-  { id: 1, name: 'Keyword Research', pillar: 'Complete SEO Guide', posts: '5', status: 'Published' },
-  { id: 2, name: 'On-Page SEO', pillar: 'Complete SEO Guide', posts: '6', status: 'Published' },
-  { id: 3, name: 'Link Building', pillar: 'Complete SEO Guide', posts: '4', status: 'Draft' },
-  { id: 4, name: 'Technical SEO', pillar: 'Complete SEO Guide', posts: '4', status: 'In Progress' },
-];
+const initPlanner = [];
+const initCalendar = [];
+const initAiGenerator = [];
+const initBlogs = [];
+const initApprovals = [];
+const initPerformance = [];
+const initDuplicate = [];
+const initPillar = [];
+const initCluster = [];
 
 // ═══════════════════════════════════════════════════════════════════════════
 export default function SeoGmbContentMarketingPage() {

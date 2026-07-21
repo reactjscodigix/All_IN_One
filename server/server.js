@@ -246,6 +246,7 @@ authRouter.post('/check-permission', async (req, res) => {
 // Register Auth Router
 app.use('/api/auth', authRouter);
 app.use('/api/it-documents', require('./routes/it-documents-routes'));
+app.use('/api/seo-gmb', require('./routes/seo-gmb-routes')(pool));
 
 app.get('/api/roles', async (req, res) => {
   let connection;

@@ -10,14 +10,7 @@ import {
 import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
-const ON_PAGE_HEALTH_DATA = [
-  { subject: 'Meta Tags', A: 88, fullMark: 100 },
-  { subject: 'Content', A: 81, fullMark: 100 },
-  { subject: 'Images', A: 79, fullMark: 100 },
-  { subject: 'Links', A: 84, fullMark: 100 },
-  { subject: 'Schema', A: 85, fullMark: 100 },
-  { subject: 'URLs', A: 90, fullMark: 100 },
-];
+const ON_PAGE_HEALTH_DATA = [];
 
 export default function SeoGmbOnPageSeoPage() {
   const [activeTab, setActiveTab] = useState('Landing Pages');

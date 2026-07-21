@@ -23,7 +23,7 @@ pageContent = pageContent.replace(
 
 // Revert the overlay divs
 pageContent = pageContent.replace(
-  /<div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900\/50 p-4 sm:p-6 lg:p-8">\n\s*<div className="bg-gray-50 flex flex-col font-sans rounded-xl overflow-hidden w-full max-w-7xl max-h-\[95vh\] shadow-2xl relative">/g,
+  /<div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900\/50 p-4 sm:p-6 lg:p-8">\n\s*<div className="bg-gray-50 flex flex-col font-sans rounded overflow-hidden w-full max-w-7xl max-h-\[95vh\] shadow-2xl relative">/g,
   `<div className="min-h-screen bg-gray-50 flex flex-col font-sans">`
 );
 

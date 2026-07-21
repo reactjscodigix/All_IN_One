@@ -40,12 +40,7 @@ const PIPELINE_STAGE_ORDER = [
   'Lost'
 ];
 
-const STAGES = [
-  { name: 'Converted Lead', color: 'bg-blue-600' },
-  { name: 'Quotation', color: 'bg-blue-600' },
-  { name: 'Won', color: 'bg-green-600' },
-  { name: 'Lost', color: 'bg-red-600' }
-];
+const STAGES = [];
 
 const CrmDealsPage = () => {
   const { user } = useAuth();

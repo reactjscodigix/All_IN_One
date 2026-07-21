@@ -108,7 +108,7 @@ const CreateNotePage = () => {
           <div className="flex-1 space-y-6">
 
             {/* 1. Basic Information */}
-            <div className="bg-white rounded-xl  border border-gray-100 p-6">
+            <div className="bg-white rounded  border border-gray-100 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-5">1. Basic Information</h2>
 
               <div className="grid grid-cols-2 gap-2 mb-5">
@@ -189,7 +189,7 @@ const CreateNotePage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Attachments</label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center text-center bg-gray-50/50 hover:bg-indigo-50/30 transition-colors cursor-pointer">
+                <div className="border-2 border-dashed border-gray-200 rounded p-8 flex flex-col items-center justify-center text-center bg-gray-50/50 hover:bg-indigo-50/30 transition-colors cursor-pointer">
                   <CloudUpload size={28} className="text-indigo-500 mb-3" />
                   <p className="text-sm text-gray-600 mb-1">Drag & drop files here or <span className="text-indigo-600 font-medium">click to browse</span></p>
                   <p className="text-xs text-gray-400">Supports: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR, PNG, JPG, GIF (Max. 50 MB per file)</p>
@@ -199,7 +199,7 @@ const CreateNotePage = () => {
             </div>
 
             {/* 2. Link to Registered Email */}
-            <div className="bg-white rounded-xl  border border-gray-100 p-6">
+            <div className="bg-white rounded  border border-gray-100 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">2. Link to Registered Email</h2>
 
               <div className="bg-indigo-50/50 border border-indigo-100 rounded p-3 flex items-start gap-2 text-indigo-700 text-xs mb-4">
@@ -225,7 +225,7 @@ const CreateNotePage = () => {
           <div className="w-full lg:w-[320px] space-y-6">
 
             {/* 3. Additional Settings */}
-            <div className="bg-white rounded-xl  border border-gray-100 p-6">
+            <div className="bg-white rounded  border border-gray-100 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-5">3. Additional Settings</h2>
 
               <div className="space-y-5">
@@ -259,7 +259,7 @@ const CreateNotePage = () => {
             </div>
 
             {/* 4. Team Access */}
-            <div className="bg-white rounded-xl  border border-gray-100 p-6">
+            <div className="bg-white rounded  border border-gray-100 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-1">4. Team Access</h2>
               <p className="text-xs text-gray-500 mb-4">Select team members or roles who can access this content</p>
 
@@ -284,7 +284,7 @@ const CreateNotePage = () => {
             </div>
 
             {/* 5. Preview */}
-            <div className="bg-white rounded-xl  border border-gray-100 p-6">
+            <div className="bg-white rounded  border border-gray-100 p-6">
               <h2 className="text-sm font-semibold text-gray-900 mb-4">5. Preview</h2>
 
               <div className="bg-indigo-50/50 border border-indigo-100 rounded p-4 flex items-start gap-3 text-indigo-600">

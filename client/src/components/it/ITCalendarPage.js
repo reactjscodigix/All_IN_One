@@ -6,18 +6,7 @@ import {
 } from 'lucide-react';
 
 // ─── Event Data ───────────────────────────────────────────────────────────────
-const CATEGORY_DEFS = [
-  { label: 'Client Call', color: '#22c55e', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', Icon: Phone },
-  { label: 'Client Meeting', color: '#3b82f6', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', Icon: Users },
-  { label: 'Project Deadline', color: '#ef4444', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', Icon: Flag },
-  { label: 'System Maintenance', color: '#f59e0b', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', Icon: Settings },
-  { label: 'Internal Task', color: '#8b5cf6', bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200', Icon: ClipboardList },
-  { label: 'Team Meeting', color: '#06b6d4', bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', Icon: Users },
-  { label: 'Training', color: '#f97316', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', Icon: BookOpen },
-  { label: 'Release/Deployment', color: '#10b981', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', Icon: GitBranch },
-  { label: 'Review & Planning', color: '#ec4899', bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200', Icon: Briefcase },
-  { label: 'Other', color: '#94a3b8', bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', Icon: Circle },
-];
+const CATEGORY_DEFS = [];
 
 const getCat = (label) => CATEGORY_DEFS.find(c => c.label === label) || CATEGORY_DEFS[9];
 

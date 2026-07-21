@@ -29,7 +29,7 @@ modalContent = modalContent.replace(
 modalContent = modalContent.replace(
   /<div className="min-h-screen bg-gray-50 flex flex-col font-sans">/g,
   `<div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 p-4 sm:p-6 lg:p-8">
-      <div className="bg-gray-50 flex flex-col font-sans rounded-xl overflow-hidden w-full max-w-7xl max-h-[95vh] shadow-2xl relative">`
+      <div className="bg-gray-50 flex flex-col font-sans rounded overflow-hidden w-full max-w-7xl max-h-[95vh] shadow-2xl relative">`
 );
 
 // Export CreateNoteModal

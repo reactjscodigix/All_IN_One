@@ -259,8 +259,8 @@ const ITTeamsPage = () => {
             { title: 'Available Capacity', val: '32.5%', sub: 'Team Availability', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
             { title: 'Utilization Rate', val: '67.5%', sub: 'Average Overall', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
           ].map((k, i) => (
-            <div key={i} className="bg-white p-2 rounded-xl border border-gray-100  flex items-center gap-2">
-              <div className={`p-3 rounded-xl ${k.bg} ${k.color} shrink-0`}><k.icon size={20} /></div>
+            <div key={i} className="bg-white p-2 rounded border border-gray-100  flex items-center gap-2">
+              <div className={`p-3 rounded ${k.bg} ${k.color} shrink-0`}><k.icon size={20} /></div>
               <div>
                 <div className="text-sm font-medium text-gray-500 mb-0.5">{k.title}</div>
                 <div className="text-xl  text-gray-900 mb-0.5">{k.val}</div>
@@ -312,7 +312,7 @@ const ITTeamsPage = () => {
           <div className="space-y-6">
             <div className="grid grid-cols-12 gap-6">
               {/* TEAMS LIST - Left column (4 cols) */}
-              <div className="col-span-4 bg-white rounded-xl border border-gray-100  flex flex-col p-4">
+              <div className="col-span-4 bg-white rounded border border-gray-100  flex flex-col p-4">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
                   <h2 className="text-[13px] font-semibold text-gray-900">Active Teams</h2>
                   <button
@@ -404,7 +404,7 @@ const ITTeamsPage = () => {
               </div>
 
               {/* MEMBERS DETAILS - Right column (8 cols) */}
-              <div className="col-span-8 bg-white rounded-xl border border-gray-100  flex flex-col">
+              <div className="col-span-8 bg-white rounded border border-gray-100  flex flex-col">
                 <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-xl">
                   <div>
                     <h2 className="text-[13px] font-semibold text-gray-900">
@@ -516,7 +516,7 @@ const ITTeamsPage = () => {
 
             {/* Workload graph details */}
             <div className="grid grid-cols-4 gap-6">
-              <div className="bg-white p-2 rounded-xl border border-gray-100  flex flex-col col-span-2">
+              <div className="bg-white p-2 rounded border border-gray-100  flex flex-col col-span-2">
                 <h3 className="text-[13px] font-semibold text-gray-900 mb-6">Team Workload Overview</h3>
                 <div className="flex items-center justify-center gap-6 flex-1">
                   <div className="w-24 h-24 relative">
@@ -546,7 +546,7 @@ const ITTeamsPage = () => {
                 </div>
               </div>
 
-              <div className="bg-white p-2 rounded-xl border border-gray-100  flex flex-col col-span-2">
+              <div className="bg-white p-2 rounded border border-gray-100  flex flex-col col-span-2">
                 <h3 className="text-[13px] font-semibold text-gray-900 mb-4">Core Focus Area Allocation</h3>
                 <p className="text-sm text-gray-500 mb-4">Distribution of engineering resources across system layers</p>
                 <div className="space-y-3">
@@ -580,7 +580,7 @@ const ITTeamsPage = () => {
         )}
 
         {activeTab === 'Project Wise Team' && (
-          <div className="bg-white rounded-xl border border-gray-100  flex flex-col mb-6">
+          <div className="bg-white rounded border border-gray-100  flex flex-col mb-6">
             <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-xl">
               <div>
                 <h2 className="text-[13px] font-semibold text-gray-900">Project Wise Team Allocation</h2>
@@ -651,7 +651,7 @@ const ITTeamsPage = () => {
 
         {activeTab === 'Role Management' && (
           <div className="grid grid-cols-12 gap-6 mb-6">
-            <div className="col-span-4 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+            <div className="col-span-4 bg-white p-2 rounded border border-gray-100  flex flex-col">
               <h3 className="text-[13px] font-semibold text-gray-900 mb-4">Allocation by Role</h3>
               <div className="space-y-3 flex-1 overflow-y-auto pr-1">
                 {dynamicRoleAllocations.map((r, i) => (
@@ -669,7 +669,7 @@ const ITTeamsPage = () => {
               </div>
             </div>
 
-            <div className="col-span-8 bg-white rounded-xl border border-gray-100  flex flex-col">
+            <div className="col-span-8 bg-white rounded border border-gray-100  flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
                 <h2 className="text-[13px] font-semibold text-gray-900">Role Breakdown Registry</h2>
               </div>
@@ -703,7 +703,7 @@ const ITTeamsPage = () => {
 
         {activeTab === 'Skills Matrix' && (
           <div className="grid grid-cols-12 gap-6 mb-6">
-            <div className="col-span-4 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+            <div className="col-span-4 bg-white p-2 rounded border border-gray-100  flex flex-col">
               <h3 className="text-[13px] font-semibold text-gray-900 mb-4">Top Skills in Team</h3>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -722,7 +722,7 @@ const ITTeamsPage = () => {
               </div>
             </div>
 
-            <div className="col-span-8 bg-white rounded-xl border border-gray-100  flex flex-col">
+            <div className="col-span-8 bg-white rounded border border-gray-100  flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
                 <h2 className="text-[13px] font-semibold text-gray-900">Skills Matrix Matrix</h2>
               </div>
@@ -759,7 +759,7 @@ const ITTeamsPage = () => {
         )}
 
         {activeTab === 'Availability Calendar' && (
-          <div className="bg-white rounded-xl border border-gray-100  flex flex-col mb-6">
+          <div className="bg-white rounded border border-gray-100  flex flex-col mb-6">
             <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
               <h2 className="text-[13px] font-semibold text-gray-900">Resource Capacity & Calendar</h2>
             </div>
@@ -792,7 +792,7 @@ const ITTeamsPage = () => {
 
         {activeTab === 'Leave & Attendance' && (
           <div className="grid grid-cols-12 gap-6 mb-6">
-            <div className="col-span-5 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+            <div className="col-span-5 bg-white p-2 rounded border border-gray-100  flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-[13px] font-semibold text-gray-900">Upcoming leaves schedule</h3>
               </div>
@@ -819,7 +819,7 @@ const ITTeamsPage = () => {
               </div>
             </div>
 
-            <div className="col-span-7 bg-white rounded-xl border border-gray-100  flex flex-col">
+            <div className="col-span-7 bg-white rounded border border-gray-100  flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
                 <h2 className="text-[13px] font-semibold text-gray-900">Attendance Log</h2>
               </div>

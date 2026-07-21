@@ -13,50 +13,16 @@ import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
 // ── Chart / Status Data ───────────────────────────────────────────────────
-const ACTIVITY_TREND = [
-  { date: 'May 9', tasks: 18, alerts: 12, emails: 28 },
-  { date: 'May 10', tasks: 22, alerts: 18, emails: 32 },
-  { date: 'May 11', tasks: 26, alerts: 22, emails: 38 },
-  { date: 'May 12', tasks: 32, alerts: 28, emails: 42 },
-  { date: 'May 13', tasks: 28, alerts: 24, emails: 36 },
-  { date: 'May 14', tasks: 36, alerts: 30, emails: 44 },
-  { date: 'May 15', tasks: 40, alerts: 34, emails: 48 },
-];
+const ACTIVITY_TREND = [];
 
-const AUTOMATION_STATUS = [
-  { name: 'Active', value: 16, pct: '66.7%', color: '#10B981' },
-  { name: 'Scheduled', value: 5, pct: '20.8%', color: '#3B82F6' },
-  { name: 'Paused', value: 2, pct: '8.3%', color: '#F59E0B' },
-  { name: 'Failed', value: 1, pct: '4.2%', color: '#EF4444' },
-];
+const AUTOMATION_STATUS = [];
 
 // ── Category Config ───────────────────────────────────────────────────────
-const CATEGORIES = [
-  { id: 'Scheduled Audits', label: 'Scheduled Audits', desc: 'Automatically run site audits and get reports', icon: Shield, color: '#3B82F6', bg: 'bg-blue-50', active: 3, paused: 1, badge: 'bg-blue-50 text-blue-700 border border-blue-200' },
-  { id: 'Scheduled Reports', label: 'Scheduled Reports', desc: 'Automate SEO reports and deliver to clients', icon: FileText, color: '#8B5CF6', bg: 'bg-purple-50', active: 5, paused: 1, badge: 'bg-purple-50 text-purple-700 border border-purple-200' },
-  { id: 'Keyword Alerts', label: 'Keyword Alerts', desc: 'Get alerts for keyword rank changes', icon: Bell, color: '#F59E0B', bg: 'bg-amber-50', active: 6, paused: 0, badge: 'bg-amber-50 text-amber-700 border border-amber-200' },
-  { id: 'Ranking Alerts', label: 'Ranking Alerts', desc: 'Monitor ranking changes and get notified', icon: BarChart2, color: '#10B981', bg: 'bg-emerald-50', active: 6, paused: 1, badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-  { id: 'Broken Link Alerts', label: 'Broken Link Alerts', desc: 'Get notified about broken links on your site', icon: Link2, color: '#EF4444', bg: 'bg-rose-50', active: 1, paused: 0, badge: 'bg-rose-50 text-rose-700 border border-rose-200' },
-  { id: 'Review Alerts', label: 'Review Alerts', desc: 'Get alerts for new customer reviews', icon: Star, color: '#F97316', bg: 'bg-orange-50', active: 1, paused: 0, badge: 'bg-orange-50 text-orange-700 border border-orange-200' },
-  { id: 'Content Workflow', label: 'Content Workflow', desc: 'Automate content approval and publishing', icon: Zap, color: '#06B6D4', bg: 'bg-cyan-50', active: 1, paused: 0, badge: 'bg-cyan-50 text-cyan-700 border border-cyan-200' },
-  { id: 'Email Notifications', label: 'Email Notifications', desc: 'Manage automated email notifications', icon: Mail, color: '#6366F1', bg: 'bg-indigo-50', active: 5, paused: 0, badge: 'bg-indigo-50 text-indigo-700 border border-indigo-200' },
-];
+const CATEGORIES = [];
 
-const UPCOMING = [
-  { name: 'Technical SEO Audit', client: 'Site: abc digital solutions', when: 'Today', time: '02:00 AM', color: '#3B82F6' },
-  { name: 'Weekly SEO Report', client: 'Client: Growth Marketing Co.', when: 'Today', time: '09:00 AM', color: '#8B5CF6' },
-  { name: 'Keyword Ranking Check', client: 'Project: SEO Campaign', when: 'Today', time: '12:00 PM', color: '#F59E0B' },
-  { name: 'Broken Link Check', client: 'Site: abc digital solutions', when: 'Tomorrow', time: '01:00 AM', color: '#EF4444' },
-  { name: 'Monthly SEO Report', client: 'Client: Tech Solutions Inc.', when: 'May 16, 2026', time: '09:00 AM', color: '#10B981' },
-];
+const UPCOMING = [];
 
-const RECENT_ACTIVITY = [
-  { name: 'Technical SEO Audit completed', detail: 'Site: abc digital solutions', time: 'May 15, 2026 02:05 AM', icon: CheckCircle, color: '#10B981' },
-  { name: 'Weekly SEO Report generated', detail: 'Client: Growth Marketing Co.', time: 'May 15, 2026 09:02 AM', icon: FileText, color: '#8B5CF6' },
-  { name: 'Keyword Alert triggered', detail: 'Keyword: "digital marketing services"', time: 'May 15, 2026 12:16 PM', icon: Bell, color: '#F59E0B' },
-  { name: 'Broken Link Alert triggered', detail: 'Found 12 broken links', time: 'May 15, 2026 01:30 PM', icon: Link2, color: '#EF4444' },
-  { name: 'New Review Alert', detail: '5-star review received', time: 'May 15, 2026 04:00 PM', icon: Star, color: '#F97316' },
-];
+const RECENT_ACTIVITY = [];
 
 // ── Column Definitions ─────────────────────────────────────────────────────
 const automationCols = [

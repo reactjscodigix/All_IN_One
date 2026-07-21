@@ -311,10 +311,7 @@ const EstimationsPage = () => {
     if (!isOpen || !estimation) return null;
 
     // Mock data for extended fields not in current model
-    const mockItems = [
-      { id: 1, description: 'UX Strategy', qty: 1, price: 500, discount: 100, total: 500 },
-      { id: 2, description: 'Design System', qty: 1, price: 5000, discount: 100, total: 5000 },
-    ];
+    const mockItems = [];
 
     const subTotal = 5500;
     const discount = 400;

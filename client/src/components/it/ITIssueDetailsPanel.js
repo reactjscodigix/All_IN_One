@@ -22,15 +22,7 @@ const TYPE_ICONS = {
   Test: <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-purple-500 fill-purple-100" fill="currentColor"><rect x="9" y="3" width="6" height="3" rx="1" /><path d="M10 6v11a2 2 0 004 0V6" /></svg>
 };
 
-const USERS = [
-  { name: 'sonalicodigix', initial: 'S', color: 'bg-orange-500 text-white' },
-  { name: 'sanika mote', initial: 'SM', color: 'bg-slate-800 text-white' },
-  { name: 'Dinesh Dhage', initial: 'DD', color: 'bg-teal-500 text-white' },
-  { name: 'Abhijit Khedekar', initial: 'AK', color: 'bg-blue-600 text-white' },
-  { name: 'wpdevelopercodigix', initial: 'W', color: 'bg-green-600 text-white' },
-  { name: 'sanika mote ', initial: 'SM', color: 'bg-emerald-600 text-white' },
-  { name: 'codigix infotech', initial: 'CI', color: 'bg-[#5b21b6] text-white' }
-];
+const USERS = [];
 
 const SPRINTS = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog'];
 

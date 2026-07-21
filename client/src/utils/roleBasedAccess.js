@@ -448,7 +448,7 @@ const ROLE_UI_VISIBILITY = {
 export const getVisibility = (role, category, key) => {
   if (!role || !category || !key) return false;
   
-  const roleVisibility = ROLE_UI_VISIBILITY[role];
+  const roleVisibility = ROLE_UI_VISIBILITY[role] || ROLE_UI_VISIBILITY['Employee'];
   if (!roleVisibility) return false;
   
   const categoryData = roleVisibility[category];
@@ -494,7 +494,7 @@ export const isViewOnly = (role, menuItem) => {
 };
 
 export const getVisibleModules = (role) => {
-  const roleVisibility = ROLE_UI_VISIBILITY[role];
+  const roleVisibility = ROLE_UI_VISIBILITY[role] || ROLE_UI_VISIBILITY['Employee'];
   if (!roleVisibility || !roleVisibility.modules) return [];
   
   return Object.keys(roleVisibility.modules).filter(
@@ -503,7 +503,7 @@ export const getVisibleModules = (role) => {
 };
 
 export const getVisibleSidebarSections = (role) => {
-  const roleVisibility = ROLE_UI_VISIBILITY[role];
+  const roleVisibility = ROLE_UI_VISIBILITY[role] || ROLE_UI_VISIBILITY['Employee'];
   if (!roleVisibility || !roleVisibility.sidebar) return [];
   
   return Object.keys(roleVisibility.sidebar).filter(
@@ -519,5 +519,5 @@ export const getDataAccessLevel = (role) => {
     'Project Manager': 'assigned_projects',
     'Employee': 'assigned_only',
   };
-  return levelMap[role] || 'none';
+  return levelMap[role] || 'assigned_only';
 };

@@ -15,29 +15,7 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const CONVERSION_OPTIONS = [
-    {
-      type: 'project',
-      title: 'Convert to Project',
-      description: 'Create a new project from this deal',
-      icon: '📋',
-      color: 'bg-blue-50 border-blue-200'
-    },
-    {
-      type: 'invoice',
-      title: 'Convert to Invoice',
-      description: 'Create an invoice for this deal',
-      icon: '💰',
-      color: 'bg-green-50 border-green-200'
-    },
-    {
-      type: 'estimate',
-      title: 'Convert to Estimate',
-      description: 'Create an estimate for this deal',
-      icon: '📊',
-      color: 'bg-purple-50 border-purple-200'
-    }
-  ];
+  const CONVERSION_OPTIONS = [];
 
   if (!isOpen) return null;
 

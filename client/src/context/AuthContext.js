@@ -204,7 +204,14 @@ const ROLE_PERMISSIONS = {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('currentUser');
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (savedUser) {
+      const parsedUser = JSON.parse(savedUser);
+      if (parsedUser.role_name && !parsedUser.role) {
+        parsedUser.role = parsedUser.role_name;
+      }
+      return parsedUser;
+    }
+    return null;
   });
 
   const [loading] = useState(false);
@@ -218,6 +225,9 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const login = useCallback((userData) => {
+    if (userData.role_name && !userData.role) {
+      userData.role = userData.role_name;
+    }
     setUser(userData);
   }, []);
 
@@ -228,7 +238,7 @@ export const AuthProvider = ({ children }) => {
   const hasPermission = useCallback((module, action) => {
     if (!user) return false;
     
-    const rolePermissions = ROLE_PERMISSIONS[user.role];
+    const rolePermissions = ROLE_PERMISSIONS[user.role] || ROLE_PERMISSIONS['Employee'];
     if (!rolePermissions) return false;
 
     const modulePerms = rolePermissions[module];

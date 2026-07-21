@@ -71,21 +71,23 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       const getDepartmentPrefix = () => {
         // Super Admin gets their own prefix
         if (user?.role === 'Super Admin') return '/super-admin';
+        
+        const role = user?.role || '';
+        const dept = user?.department || '';
 
         // Prioritize explicit Department matches first
-        const dept = user?.department || '';
+        if (dept.includes('Marketing')) return '/marketing';
         if (dept.includes('IT')) return '/it';
         if (dept.includes('SEO') || dept.includes('GMB')) return '/seo-gmb';
-        if (dept.includes('Marketing')) return '/marketing';
         if (dept.includes('Sales') || dept.includes('Leads') || dept.includes('Deals')) return '/sales';
+        if (dept.includes('Account')) return '/invoices';
 
-        // Fallback to Role-based mapping if department didn't match
-        const role = user?.role || '';
-        if (role === 'Admin') return '/sales'; // Default fallback for Admin
-        if (role.includes('Sales') || role.includes('Lead') || role.includes('Deal')) return '/sales';
-        if (role.includes('SEO') || role.includes('GMB')) return '/seo-gmb';
+        // Check if role strongly implies a department if department didn't match
         if (role.includes('Marketing')) return '/marketing';
         if (role.includes('IT')) return '/it';
+        if (role.includes('SEO') || role.includes('GMB')) return '/seo-gmb';
+        if (role === 'Admin' || role.includes('Sales') || role.includes('Lead') || role.includes('Deal')) return '/sales';
+        if (role.includes('Account')) return '/invoices';
 
         return '';
       };
@@ -105,8 +107,14 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
         'documents', 'projects', 'leads', 'bugs', 'test-cases', 'repositories'
       ];
 
-      const username = user?.name ? user.name.toLowerCase().replace(/\s+/g, '-') : 'user';
-      const designation = user?.role ? user.role.toLowerCase().replace(/\s+/g, '-') : 'employee';
+      const userNameValue = user?.username || user?.first_name || user?.name || 'user';
+      const username = userNameValue.toLowerCase().replace(/\s+/g, '-');
+      
+      const formatUrlSlug = (str) => {
+        if (!str) return 'employee';
+        return str.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      };
+      const designation = user?.role ? formatUrlSlug(user.role) : 'employee';
       const userPath = `${designation}/${username}`;
 
       if (prefix === '/super-admin') {
@@ -376,6 +384,12 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       <SubmenuItem label="Media Management" page="media-management" icon={Image} prefix="/seo-gmb" />
       <SubmenuItem label="Local SEO" page="local-seo" icon={Map} prefix="/seo-gmb" />
       <SubmenuItem label="Google Integrations" page="google-integrations" icon={Globe} prefix="/seo-gmb" />
+
+      <div className="p-2 text-xs  text-[#1F2020]  tracking-wider bg-gray-50/50 mt-2">GEO/AI</div>
+      <SubmenuItem label="GEO Optimization" page="geo-optimization" icon={Map} prefix="/seo-gmb" />
+      <SubmenuItem label="AI Content Generation" page="ai-content-generation" icon={Zap} prefix="/seo-gmb" />
+      <SubmenuItem label="Predictive Analysis" page="predictive-analysis" icon={TrendingUp} prefix="/seo-gmb" />
+      <SubmenuItem label="Location Intelligence" page="location-intelligence" icon={MapPin} prefix="/seo-gmb" />
 
       {isManager && (
         <>

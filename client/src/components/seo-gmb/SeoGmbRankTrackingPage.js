@@ -12,35 +12,11 @@ import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
 // ── Chart Data ────────────────────────────────────────────────────────────
-const RANKING_TREND = [
-  { date: 'May 8', top3: 280, top10: 640, top20: 880, top100: 1150 },
-  { date: 'May 9', top3: 285, top10: 652, top20: 896, top100: 1165 },
-  { date: 'May 10', top3: 290, top10: 668, top20: 912, top100: 1178 },
-  { date: 'May 11', top3: 295, top10: 678, top20: 928, top100: 1192 },
-  { date: 'May 12', top3: 300, top10: 690, top20: 944, top100: 1210 },
-  { date: 'May 13', top3: 305, top10: 700, top20: 958, top100: 1224 },
-  { date: 'May 14', top3: 308, top10: 708, top20: 972, top100: 1236 },
-  { date: 'May 15', top3: 312, top10: 712, top20: 980, top100: 1248 },
-];
+const RANKING_TREND = [];
 
-const AVG_POSITION_TREND = [
-  { date: 'May 8', pos: 21.2 },
-  { date: 'May 9', pos: 20.6 },
-  { date: 'May 10', pos: 20.1 },
-  { date: 'May 11', pos: 19.8 },
-  { date: 'May 12', pos: 19.4 },
-  { date: 'May 13', pos: 19.1 },
-  { date: 'May 14', pos: 18.9 },
-  { date: 'May 15', pos: 18.7 },
-];
+const AVG_POSITION_TREND = [];
 
-const RANKING_DIST = [
-  { name: 'Top 1-3', value: 312, pct: '25.0%', color: '#3B82F6' },
-  { name: 'Top 4-10', value: 400, pct: '32.1%', color: '#10B981' },
-  { name: 'Top 11-20', value: 268, pct: '21.5%', color: '#F59E0B' },
-  { name: 'Top 21-50', value: 180, pct: '14.4%', color: '#8B5CF6' },
-  { name: 'Top 51-100', value: 88, pct: '7.0%', color: '#94A3B8' },
-];
+const RANKING_DIST = [];
 
 // ── Column Definitions ────────────────────────────────────────────────────
 const keywordCols = [

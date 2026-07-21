@@ -28,116 +28,7 @@ const NOTIF_TYPE_CONFIG = {
   Team: { color: 'bg-green-100 text-green-600', badge: 'bg-green-50 text-green-600 border border-green-100', icon: <Users size={15} /> },
 };
 
-const NOTIFICATIONS = [
-  {
-    id: 1, type: 'Tasks', title: 'Task Assigned',
-    message: 'You have been assigned a new task "Fix login issue on staging" in project Website Redesign.',
-    sender: 'Emma Johnson', time: '10:30 AM', date: 'Today', unread: true, important: false,
-    details: {
-      project: 'Website Redesign', task: 'Fix login issue on staging',
-      assignedBy: { name: 'Emma Johnson', role: 'Project Manager' },
-      priority: 'High', dueDate: '25 May 2026', status: 'To Do',
-      taskId: 'TASK-456', module: 'Authentication', estimatedTime: '4h',
-      labels: ['bug', 'login', 'frontend'],
-    },
-  },
-  {
-    id: 2, type: 'Tasks', title: 'Task Completed',
-    message: 'Michael Brown completed the task "Database backup setup".',
-    sender: 'System', time: '09:45 AM', date: 'Today', unread: false, important: false,
-    details: {
-      project: 'Infrastructure', task: 'Database backup setup',
-      assignedBy: { name: 'Michael Brown', role: 'DevOps Engineer' },
-      priority: 'Medium', dueDate: '20 May 2026', status: 'Done',
-      taskId: 'TASK-389', module: 'Database', estimatedTime: '2h',
-      labels: ['database', 'backup'],
-    },
-  },
-  {
-    id: 3, type: 'Issues', title: 'New Issue Created',
-    message: 'New issue "API response delay" has been created in project Mobile App.',
-    sender: 'Daniel Martinez', time: '09:20 AM', date: 'Today', unread: true, important: true,
-    details: {
-      project: 'Mobile App', task: 'API response delay',
-      assignedBy: { name: 'Daniel Martinez', role: 'Tech Lead' },
-      priority: 'Critical', dueDate: '22 May 2026', status: 'Open',
-      taskId: 'ISS-201', module: 'API Gateway', estimatedTime: '6h',
-      labels: ['api', 'performance', 'mobile'],
-    },
-  },
-  {
-    id: 4, type: 'Comments', title: 'New Comment',
-    message: 'Sophia Davis commented on issue "Server crash on high load".',
-    sender: 'Sophia Davis', time: '08:55 AM', date: 'Today', unread: true, important: false,
-    details: {
-      project: 'Cloud Migration', task: 'Server crash on high load',
-      assignedBy: { name: 'Sophia Davis', role: 'System Analyst' },
-      priority: 'High', dueDate: '21 May 2026', status: 'In Progress',
-      taskId: 'ISS-198', module: 'Server', estimatedTime: '8h',
-      labels: ['server', 'crash', 'cloud'],
-    },
-  },
-  {
-    id: 5, type: 'Deployments', title: 'Deployment Successful',
-    message: 'Production deployment v2.4.1 has been completed successfully.',
-    sender: 'CI/CD Pipeline', time: '08:30 AM', date: 'Today', unread: false, important: true,
-    details: {
-      project: 'Website Redesign', task: 'v2.4.1 Production Release',
-      assignedBy: { name: 'Michael Brown', role: 'DevOps Engineer' },
-      priority: 'Low', dueDate: '20 May 2026', status: 'Done',
-      taskId: 'DEP-114', module: 'CI/CD', estimatedTime: '1h',
-      labels: ['deployment', 'production', 'release'],
-    },
-  },
-  {
-    id: 6, type: 'Calendar', title: 'Event Reminder',
-    message: 'Reminder: "Team Meeting at 02:00 PM (Conference Room 2)".',
-    sender: 'System', time: '01:00 PM', date: 'Yesterday', unread: false, important: false,
-    details: {
-      project: 'Global', task: 'Team Meeting – Conference Room 2',
-      assignedBy: { name: 'IT Manager', role: 'Administrator' },
-      priority: 'Medium', dueDate: '19 May 2026', status: 'Scheduled',
-      taskId: 'EVT-045', module: 'Calendar', estimatedTime: '1.5h',
-      labels: ['meeting', 'team'],
-    },
-  },
-  {
-    id: 7, type: 'Files', title: 'File Shared',
-    message: 'Emma Johnson shared a file "Project_Requirements_v2.pdf" with you.',
-    sender: 'Emma Johnson', time: '11:15 AM', date: 'Yesterday', unread: false, important: false,
-    details: {
-      project: 'Project Alpha', task: 'Project_Requirements_v2.pdf',
-      assignedBy: { name: 'Emma Johnson', role: 'Project Manager' },
-      priority: 'Low', dueDate: 'N/A', status: 'Shared',
-      taskId: 'FILE-078', module: 'Documents', estimatedTime: 'N/A',
-      labels: ['document', 'requirements'],
-    },
-  },
-  {
-    id: 8, type: 'Mentions', title: 'You were mentioned',
-    message: 'Daniel Martinez mentioned you in a comment.',
-    sender: 'Daniel Martinez', time: '10:20 AM', date: 'Yesterday', unread: false, important: false,
-    details: {
-      project: 'CRM Integration', task: 'Data migration script review',
-      assignedBy: { name: 'Daniel Martinez', role: 'Tech Lead' },
-      priority: 'Medium', dueDate: '22 May 2026', status: 'In Review',
-      taskId: 'TASK-502', module: 'Database', estimatedTime: '3h',
-      labels: ['mention', 'review'],
-    },
-  },
-  {
-    id: 9, type: 'Team', title: 'New Team Member',
-    message: 'Olivia Taylor has joined the project Website Redesign.',
-    sender: 'System', time: '09:30 AM', date: 'Yesterday', unread: false, important: false,
-    details: {
-      project: 'Website Redesign', task: 'Team Member Added',
-      assignedBy: { name: 'IT Manager', role: 'Administrator' },
-      priority: 'Low', dueDate: 'N/A', status: 'Active',
-      taskId: 'TEAM-023', module: 'HR', estimatedTime: 'N/A',
-      labels: ['team', 'onboarding'],
-    },
-  },
-];
+const NOTIFICATIONS = [];
 
 const PRIORITY_COLORS = {
   High: 'text-orange-600 bg-orange-50 border border-orange-100',
@@ -200,12 +91,7 @@ export default function NotificationsPage() {
     markRead(notif.id);
   };
 
-  const KPIS = [
-    { label: 'All Notifications', count: 128, sub: 'View all', icon: <Bell size={22} className="text-blue-500" />, bg: 'bg-blue-50', tab: 'All' },
-    { label: 'Unread', count: unreadCount, sub: 'View unread', icon: <Bell size={22} className="text-red-500" />, bg: 'bg-red-50', tab: 'Unread' },
-    { label: 'Important', count: importantCount, sub: 'View important', icon: <AlertCircle size={22} className="text-orange-500" />, bg: 'bg-orange-50', tab: 'Important' },
-    { label: 'Mentions', count: mentionCount, sub: 'View mentions', icon: <AtSign size={22} className="text-purple-500" />, bg: 'bg-purple-50', tab: 'Mentions' },
-  ];
+  const KPIS = [];
 
   return (
     <div className="bg-[#f8fafc] min-h-screen font-sans text-gray-900 relative" style={{ fontFamily: "'Inter', sans-serif" }} onClick={() => { }}>

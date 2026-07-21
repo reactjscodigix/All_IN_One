@@ -141,12 +141,12 @@ const SeoGmbPage = () => {
           <>
             {/* KPI Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-              <KPICard title="Total Keywords Ranked" value={kpis.totalKeywords} change={8.6} icon={Search} colorClass="text-indigo-600" />
-              <KPICard title="Top 3 Rankings" value={kpis.top3Rankings} change={12.4} icon={Zap} colorClass="text-green-500" />
-              <KPICard title="Top 10 Rankings" value={kpis.top10Rankings} change={9.7} icon={Users} colorClass="text-blue-500" />
-              <KPICard title="Organic Traffic" value={kpis.organicTraffic} change={15.3} icon={Eye} colorClass="text-orange-500" />
-              <KPICard title="Organic Clicks" value={kpis.organicClicks} change={13.6} icon={MousePointer2} colorClass="text-red-500" />
-              <KPICard title="Avg. Position" value={kpis.avgPosition} change={2.4} icon={Shield} colorClass="text-indigo-500" />
+              <KPICard title="Total Keywords Ranked" value={kpis.totalKeywords} change={0} icon={Search} colorClass="text-indigo-600" />
+              <KPICard title="Top 3 Rankings" value={kpis.top3Rankings} change={0} icon={Zap} colorClass="text-green-500" />
+              <KPICard title="Top 10 Rankings" value={kpis.top10Rankings} change={0} icon={Users} colorClass="text-blue-500" />
+              <KPICard title="Organic Traffic" value={kpis.organicTraffic} change={0} icon={Eye} colorClass="text-orange-500" />
+              <KPICard title="Organic Clicks" value={kpis.organicClicks} change={0} icon={MousePointer2} colorClass="text-red-500" />
+              <KPICard title="Avg. Position" value={kpis.avgPosition} change={0} icon={Shield} colorClass="text-indigo-500" />
             </div>
 
             {/* Main Row 1 */}
@@ -445,13 +445,13 @@ const SeoGmbPage = () => {
         {activeTab === 'GMB / GBP' && (
           <>
             {/* KPI Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-              <KPICard title="Total Views" value={kpis.gmbViews?.toLocaleString() || '9,438'} change={18.7} icon={Eye} colorClass="text-indigo-600" />
-              <KPICard title="Search Views" value={kpis.gmbSearchViews?.toLocaleString() || '5,302'} change={20.4} icon={Search} colorClass="text-blue-500" />
-              <KPICard title="Map Views" value={kpis.gmbMapViews?.toLocaleString() || '2,481'} change={16.3} icon={MapPin} colorClass="text-orange-500" />
-              <KPICard title="Website Clicks" value={kpis.gmbWebsiteClicks?.toLocaleString() || '532'} change={14.3} icon={MousePointer2} colorClass="text-purple-500" />
-              <KPICard title="Direction Requests" value={kpis.gmbDirectionRequests?.toLocaleString() || '196'} change={12.8} icon={CornerUpRight} colorClass="text-red-500" />
-              <KPICard title="Business Profile Interactions" value={kpis.gmbProfileInteractions?.toLocaleString() || '1,276'} change={16.2} icon={Users} colorClass="text-indigo-500" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
+              <KPICard title="Total Views" value={kpis.gmbViews?.toLocaleString() || '0'} change={0} icon={Eye} colorClass="text-indigo-600" />
+              <KPICard title="Search Views" value={kpis.gmbSearchViews?.toLocaleString() || '0'} change={0} icon={Search} colorClass="text-blue-500" />
+              <KPICard title="Map Views" value={kpis.gmbMapViews?.toLocaleString() || '0'} change={0} icon={MapPin} colorClass="text-orange-500" />
+              <KPICard title="Website Clicks" value={kpis.gmbWebsiteClicks?.toLocaleString() || '0'} change={0} icon={MousePointer2} colorClass="text-purple-500" />
+              <KPICard title="Direction Requests" value={kpis.gmbDirectionRequests?.toLocaleString() || '0'} change={0} icon={CornerUpRight} colorClass="text-red-500" />
+              <KPICard title="Business Profile Interactions" value={kpis.gmbProfileInteractions?.toLocaleString() || '0'} change={0} icon={Users} colorClass="text-indigo-500" />
             </div>
 
             {/* Main Row 1 */}
@@ -745,23 +745,26 @@ const SeoGmbPage = () => {
             </div>
 
             {/* KPI Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-              <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex flex-col justify-between h-full relative overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
+              <div className="bg-white rounded border border-gray-100 p-4 shadow-sm flex flex-col justify-between h-full relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-2 bg-gradient-to-bl from-indigo-50 to-transparent w-16 h-16 rounded-bl-3xl"></div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-900 text-sm font-bold z-10">AI Visibility Score</span>
-                  <div className={`p-2 rounded-lg text-indigo-600 bg-indigo-50 z-10`}><Star size={18}/></div>
+                  <span className="text-gray-900 text-sm z-10">AI Visibility Score</span>
+                  <div className={`p-2 rounded-lg text-indigo-600 bg-indigo-50 z-10`}><Star size={18} className="text-indigo-600" /></div>
                 </div>
                 <div className="flex items-end gap-2 mt-auto z-10">
-                  <span className="text-3xl font-black text-gray-900">{kpis.aiVisibilityScore || 78}<span className="text-sm font-medium text-gray-400">/100</span></span>
-                  <span className={`text-xs font-semibold text-green-500 flex items-center mb-1`}><TrendingUp size={12} className="mr-1"/>↑ 12.4% vs last 7 days</span>
+                  <span className="text-2xl text-gray-900">{widgets.geoVisibilityScore?.score || '0'}/100</span>
+                  <span className="text-xs font-semibold text-green-500 flex items-center mb-1">
+                    <TrendingUp size={12} className="mr-1" />
+                    0%
+                  </span>
                 </div>
               </div>
-              <KPICard title="Brand Mentions" value={kpis.geoBrandMentions?.toLocaleString() || '1,842'} change={18.6} icon={Megaphone} colorClass="text-green-500" />
-              <KPICard title="AI Citations" value={kpis.geoAiCitations?.toLocaleString() || '642'} change={15.2} icon={Quote} colorClass="text-blue-500" />
-              <KPICard title="Prompt Rankings" value={kpis.geoPromptRankings?.toLocaleString() || '286'} change={10.8} icon={MessageSquare} colorClass="text-indigo-500" />
-              <KPICard title="AI Backlinks" value={kpis.geoAiBacklinks?.toLocaleString() || '74'} change={8.3} icon={Link} colorClass="text-purple-500" />
-              <KPICard title="Share of Voice" value={`${kpis.geoShareOfVoice || '12.6'}%`} change={2.4} icon={Share2} colorClass="text-blue-600" />
+              <KPICard title="AI Overviews Presence" value={`${widgets.geoVisibilityScore?.categories?.[0]?.value || 0}%`} change={0} icon={Search} colorClass="text-blue-500" />
+              <KPICard title="Brand Mentions" value={kpis.geoBrandMentions || 0} change={0} icon={MessageCircle} colorClass="text-orange-500" />
+              <KPICard title="Prompt Rankings" value={`${widgets.geoVisibilityScore?.categories?.[3]?.value || 0}/100`} change={0} icon={Target} colorClass="text-purple-500" />
+              <KPICard title="AI Citations" value={kpis.geoCitations || 0} change={0} icon={Link} colorClass="text-green-500" />
+              <KPICard title="Sentiment Score" value={`${widgets.geoVisibilityScore?.categories?.[4]?.value || 0}/100`} change={0} icon={Activity} colorClass="text-red-500" />
             </div>
 
             {/* Main Row 1 */}

@@ -12,38 +12,12 @@ import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
 // ── Chart Data ─────────────────────────────────────────────────────────────
-const OVERVIEW_TREND = [
-  { date: 'Apr 16', generated: 28, scheduled: 38, sent: 18 },
-  { date: 'Apr 23', generated: 32, scheduled: 35, sent: 24 },
-  { date: 'Apr 30', generated: 38, scheduled: 42, sent: 30 },
-  { date: 'May 7', generated: 34, scheduled: 40, sent: 28 },
-  { date: 'May 14', generated: 42, scheduled: 48, sent: 36 },
-];
+const OVERVIEW_TREND = [];
 
-const REPORTS_BY_TYPE = [
-  { name: 'SEO Reports', value: 28, pct: '19.7%', color: '#3B82F6' },
-  { name: 'Audit Reports', value: 20, pct: '14.1%', color: '#10B981' },
-  { name: 'Keyword Reports', value: 22, pct: '15.5%', color: '#F59E0B' },
-  { name: 'Ranking Reports', value: 18, pct: '12.7%', color: '#8B5CF6' },
-  { name: 'Backlink Reports', value: 14, pct: '9.9%', color: '#EF4444' },
-  { name: 'Others', value: 40, pct: '28.2%', color: '#94A3B8' },
-];
+const REPORTS_BY_TYPE = [];
 
 // ── Report Type Cards ──────────────────────────────────────────────────────
-const REPORT_TYPES = [
-  { name: 'SEO Reports', desc: 'Overview of overall SEO performance', reports: 12, scheduled: 4, icon: BarChart2, color: 'text-indigo-500 bg-indigo-50', key: 'seo' },
-  { name: 'Website Audit Reports', desc: 'Technical SEO audit and analysis', reports: 8, scheduled: 2, icon: Target, color: 'text-emerald-500 bg-emerald-50', key: 'audit' },
-  { name: 'Keyword Reports', desc: 'Keyword rankings and performance', reports: 10, scheduled: 5, icon: Search, color: 'text-amber-500 bg-amber-50', key: 'keyword' },
-  { name: 'Ranking Reports', desc: 'Track keyword rankings over time', reports: 15, scheduled: 6, icon: TrendingUp, color: 'text-blue-500 bg-blue-50', key: 'ranking' },
-  { name: 'Backlink Reports', desc: 'Backlink profile and analysis', reports: 10, scheduled: 3, icon: Globe, color: 'text-purple-500 bg-purple-50', key: 'backlink' },
-  { name: 'Traffic Reports', desc: 'Website traffic and analytics', reports: 10, scheduled: 3, icon: Users, color: 'text-sky-500 bg-sky-50', key: 'traffic' },
-  { name: 'GMB Reports', desc: 'Google Business Profile insights', reports: 7, scheduled: 2, icon: MapPin, color: 'text-rose-500 bg-rose-50', key: 'gmb' },
-  { name: 'Review Reports', desc: 'Customer reviews and ratings', reports: 9, scheduled: 2, icon: Star, color: 'text-orange-500 bg-orange-50', key: 'review' },
-  { name: 'Monthly Reports', desc: 'Monthly performance overview', reports: 24, scheduled: 6, icon: Calendar, color: 'text-teal-500 bg-teal-50', key: 'monthly' },
-  { name: 'Quarterly Reports', desc: 'Quarterly performance summary', reports: 8, scheduled: 2, icon: BarChart2, color: 'text-cyan-500 bg-cyan-50', key: 'quarterly' },
-  { name: 'Client Reports', desc: 'Client specific reports', reports: 18, scheduled: 5, icon: FileText, color: 'text-violet-500 bg-violet-50', key: 'client' },
-  { name: 'Executive Reports', desc: 'High level executive summary', reports: 6, scheduled: 2, icon: BarChart2, color: 'text-pink-500 bg-pink-50', key: 'executive' },
-];
+const REPORT_TYPES = [];
 
 // ── Column Definitions ─────────────────────────────────────────────────────
 const recentReportCols = [
@@ -185,14 +159,7 @@ const INIT = {
 };
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
-const MAIN_TABS = [
-  { id: 'All Reports', icon: BarChart2 },
-  { id: 'SEO Reports', icon: TrendingUp },
-  { id: 'Client Reports', icon: Users },
-  { id: 'Executive Reports', icon: FileText },
-  { id: 'Templates', icon: Target },
-  { id: 'Schedules', icon: Clock },
-];
+const MAIN_TABS = [];
 
 // Each "All Reports" sub-section maps to a report type card key
 const TYPE_TO_KEY = {

@@ -27,30 +27,13 @@ const ROLES = {
   'Olivia Taylor': 'Business Analyst',
 };
 
-const CATEGORIES = [
-  { label: 'IT Policies & Procedures', count: 12, color: 'text-blue-500' },
-  { label: 'System Documentation', count: 18, color: 'text-purple-500' },
-  { label: 'Project Documentation', count: 24, color: 'text-green-500' },
-  { label: 'Technical Guides', count: 16, color: 'text-orange-500' },
-  { label: 'Troubleshooting', count: 14, color: 'text-red-500' },
-  { label: 'Meeting Notes', count: 10, color: 'text-cyan-500' },
-  { label: 'Knowledge Base', count: 20, color: 'text-amber-500' },
-  { label: 'Onboarding', count: 8, color: 'text-pink-500' },
-  { label: 'Others', count: 6, color: 'text-gray-500' },
-];
+const CATEGORIES = [];
 
 const TAGS = ['#Policy', '#Server', '#Database', '#Security', '#Deployment', '#API', '#Manual', '#Guide', '#Incident', '#Meeting'];
 
 
 
-const NAV_ITEMS = [
-  { label: 'All Notes', count: 128, icon: <FileText size={14} /> },
-  { label: 'My Notes', count: 24, icon: <BookOpen size={14} /> },
-  { label: 'Favorites', count: 18, icon: <Heart size={14} /> },
-  { label: 'Shared with Me', count: 32, icon: <Users size={14} /> },
-  { label: 'Recent', count: 10, icon: <Clock size={14} /> },
-  { label: 'Trash', count: 4, icon: <Trash2 size={14} /> },
-];
+const NAV_ITEMS = [];
 
 const FILE_ICON_COLORS = {
   pdf: { bg: 'bg-red-100', text: 'text-red-600', label: 'PDF' },

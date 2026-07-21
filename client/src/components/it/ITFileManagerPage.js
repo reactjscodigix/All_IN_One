@@ -6,45 +6,13 @@ import {
   X, Check
 } from 'lucide-react';
 
-const ALL_FILES = [
-  { id: 1, name: '01. Project Documents', subtitle: '12 files', type: 'Folder', size: '-', date: '20 May 2024', time: '10:30 AM', location: 'All Files', user: { name: 'Emma Johnson', role: 'Project Manager', avatar: 'https://i.pravatar.cc/150?u=emma' } },
-  { id: 2, name: '02. Technical Documents', subtitle: '34 files', type: 'Folder', size: '-', date: '19 May 2024', time: '04:15 PM', location: 'All Files', user: { name: 'Daniel Martinez', role: 'Tech Lead', avatar: 'https://i.pravatar.cc/150?u=daniel' } },
-  { id: 3, name: '03. System Architecture', subtitle: '18 files', type: 'Folder', size: '-', date: '18 May 2024', time: '11:20 AM', location: 'All Files', user: { name: 'Michael Brown', role: 'System Architect', avatar: 'https://i.pravatar.cc/150?u=michael' } },
-  { id: 4, name: '04. Deployment Files', subtitle: '27 files', type: 'Folder', size: '-', date: '17 May 2024', time: '09:45 AM', location: 'All Files', user: { name: 'Sophia Davis', role: 'DevOps Engineer', avatar: 'https://i.pravatar.cc/150?u=sophia' } },
-  { id: 5, name: '05. Meeting Notes', subtitle: '15 files', type: 'Folder', size: '-', date: '16 May 2024', time: '02:30 PM', location: 'All Files', user: { name: 'Olivia Taylor', role: 'Business Analyst', avatar: 'https://i.pravatar.cc/150?u=olivia' } },
-  { id: 6, name: 'IT_Policy_2024.pdf', subtitle: 'v2.1', type: 'PDF', typeColor: 'text-red-500', size: '2.4 MB', date: '20 May 2024', time: '09:10 AM', location: 'Google Drive', user: { name: 'Emma Johnson', role: 'Project Manager', avatar: 'https://i.pravatar.cc/150?u=emma' } },
-  { id: 7, name: 'Network_Diagram.vsdx', subtitle: 'v1.0', type: 'Visio', typeColor: 'text-blue-600', size: '1.8 MB', date: '19 May 2024', time: '03:40 PM', location: 'Google Drive', user: { name: 'Michael Brown', role: 'System Architect', avatar: 'https://i.pravatar.cc/150?u=michael' } },
-  { id: 8, name: 'Server_Configuration.xlsx', subtitle: 'v3.2', type: 'Excel', typeColor: 'text-green-600', size: '852 KB', date: '19 May 2024', time: '01:15 PM', location: 'Dropbox', user: { name: 'Daniel Martinez', role: 'Tech Lead', avatar: 'https://i.pravatar.cc/150?u=daniel' } },
-  { id: 9, name: 'Backup_Schedule.docx', subtitle: 'v1.5', type: 'Word', typeColor: 'text-blue-500', size: '645 KB', date: '18 May 2024', time: '11:05 AM', location: 'OneDrive', user: { name: 'Sophia Davis', role: 'DevOps Engineer', avatar: 'https://i.pravatar.cc/150?u=sophia' } },
-  { id: 10, name: 'Release_Notes_v2.3.txt', subtitle: 'v2.3', type: 'Text', typeColor: 'text-gray-500', size: '18 KB', date: '17 May 2024', time: '10:20 AM', location: 'AWS S3', user: { name: 'Olivia Taylor', role: 'Business Analyst', avatar: 'https://i.pravatar.cc/150?u=olivia' } },
-  { id: 11, name: 'CI_CD_Pipeline.yaml', subtitle: 'v4.0', type: 'YAML', typeColor: 'text-purple-600', size: '32 KB', date: '15 May 2024', time: '08:00 AM', location: 'AWS S3', user: { name: 'Daniel Martinez', role: 'Tech Lead', avatar: 'https://i.pravatar.cc/150?u=daniel' } },
-  { id: 12, name: 'Database_Schema.sql', subtitle: 'v2.9', type: 'SQL', typeColor: 'text-orange-500', size: '214 KB', date: '14 May 2024', time: '05:30 PM', location: 'Internal Storage', user: { name: 'Michael Brown', role: 'System Architect', avatar: 'https://i.pravatar.cc/150?u=michael' } },
-];
+const ALL_FILES = [];
 
-const STORAGE_LOCATIONS = [
-  { label: 'All Files', count: '1,248 files', iconType: 'folder-red' },
-  { label: 'Google Drive', count: '245 files', iconType: 'gdrive' },
-  { label: 'Dropbox', count: '182 files', iconType: 'dropbox' },
-  { label: 'OneDrive', count: '153 files', iconType: 'onedrive' },
-  { label: 'AWS S3', count: '98 files', iconType: 'aws' },
-  { label: 'Internal Storage', count: '570 files', iconType: 'hdd' },
-];
+const STORAGE_LOCATIONS = [];
 
-const QUICK_ACCESS = [
-  { label: 'My Files', iconType: 'folder' },
-  { label: 'Shared with Me', iconType: 'users' },
-  { label: 'Recent Files', iconType: 'clock' },
-  { label: 'Important', iconType: 'star' },
-  { label: 'Recycle Bin', iconType: 'trash', count: '3' },
-];
+const QUICK_ACCESS = [];
 
-const STORAGE_DETAILS = [
-  { label: 'Documents', size: '24.5 GB', color: 'bg-green-500', pct: '24%' },
-  { label: 'Images', size: '12.8 GB', color: 'bg-yellow-500', pct: '13%' },
-  { label: 'Videos', size: '8.5 GB', color: 'bg-blue-400', pct: '8%' },
-  { label: 'Software', size: '16.2 GB', color: 'bg-purple-500', pct: '16%' },
-  { label: 'Others', size: '15.2 GB', color: 'bg-orange-500', pct: '15%' },
-];
+const STORAGE_DETAILS = [];
 
 function LocationIcon({ type, active }) {
   const cls = 'w-4 h-4 shrink-0';

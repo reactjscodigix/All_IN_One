@@ -2,43 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MoreVertical, Download, ChevronDown } from 'lucide-react';
 
-const dummyRolesData = [
-  {
-    id: 1,
-    name: 'Admin',
-    created: '25 Sep 2025, 12:12 pm'
-  },
-  {
-    id: 2,
-    name: 'Company Owner',
-    created: '27 Sep 2025, 07:40 am'
-  },
-  {
-    id: 3,
-    name: 'Deal Owner',
-    created: '29 Sep 2025, 08:20 am'
-  },
-  {
-    id: 4,
-    name: 'Project Manager',
-    created: '25 Sep 2025, 12:12 pm'
-  },
-  {
-    id: 5,
-    name: 'Client',
-    created: '15 Oct 2025, 06:18 pm'
-  },
-  {
-    id: 6,
-    name: 'Lead',
-    created: '29 Oct 2025, 03:10 pm'
-  },
-  {
-    id: 7,
-    name: 'Employee',
-    created: '08 Dec 2025, 04:03 pm'
-  }
-];
+const dummyRolesData = [];
 
 const RolesPermissionsPage = () => {
   const [query, setQuery] = useState('');

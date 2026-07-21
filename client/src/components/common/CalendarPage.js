@@ -6,43 +6,12 @@ import {
 } from 'lucide-react';
 
 // ─── Event Data ───────────────────────────────────────────────────────────────
-const CATEGORY_DEFS = [
-  { label: 'Client Call', color: '#22c55e', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', Icon: Phone },
-  { label: 'Client Meeting', color: '#3b82f6', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', Icon: Users },
-  { label: 'Project Deadline', color: '#ef4444', bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', Icon: Flag },
-  { label: 'System Maintenance', color: '#f59e0b', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', Icon: Settings },
-  { label: 'Internal Task', color: '#8b5cf6', bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-200', Icon: ClipboardList },
-  { label: 'Team Meeting', color: '#06b6d4', bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', Icon: Users },
-  { label: 'Training', color: '#f97316', bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', Icon: BookOpen },
-  { label: 'Release/Deployment', color: '#10b981', bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', Icon: GitBranch },
-  { label: 'Review & Planning', color: '#ec4899', bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200', Icon: Briefcase },
-  { label: 'Other', color: '#94a3b8', bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', Icon: Circle },
-];
+const CATEGORY_DEFS = [];
 
 const getCat = (label) => CATEGORY_DEFS.find(c => c.label === label) || CATEGORY_DEFS[9];
 
 // Events keyed by YYYY-MM-DD
-const INITIAL_EVENTS = [
-  { id: 1, date: '2026-07-01', startTime: '11:00 AM', endTime: '12:00 PM', title: 'Client Call – ABC Ltd.', category: 'Client Call', location: 'Google Meet', meetingLink: 'https://meet.google.com/abc-defg-hij', attendees: ['Emma Johnson', 'Michael Brown'], description: 'Quarterly review call with ABC Ltd stakeholders.' },
-  { id: 2, date: '2026-07-02', startTime: '02:00 PM', endTime: '03:00 PM', title: 'Team Meeting', category: 'Team Meeting', location: 'Meeting Room 1', attendees: ['Olivia Taylor', 'Daniel Martinez', 'Sophia Davis'], description: 'Weekly team sync – roadmap updates.' },
-  { id: 3, date: '2026-07-03', startTime: '10:30 AM', endTime: '11:00 AM', title: 'System Check', category: 'System Maintenance', location: 'Server Room', attendees: ['James Wilson'], description: 'Routine system health check.' },
-  { id: 4, date: '2026-07-06', startTime: '10:00 AM', endTime: '11:30 AM', title: 'Sprint Planning', category: 'Team Meeting', location: 'Meeting Room 2', attendees: ['Emma Johnson', 'Michael Brown', 'Olivia Taylor', 'Daniel Martinez'], description: 'Sprint 14 planning and task assignment.' },
-  { id: 5, date: '2026-07-07', startTime: '03:00 PM', endTime: '04:00 PM', title: 'UI/UX Review', category: 'Review & Planning', location: 'Design Lab', attendees: ['Sophia Davis', 'Emma Johnson'], description: 'Review latest Figma designs for dashboard v2.' },
-  { id: 6, date: '2026-07-08', startTime: '02:00 PM', endTime: '03:00 PM', title: 'Client Meeting', category: 'Client Meeting', location: 'Zoom', meetingLink: 'https://zoom.us/j/9876543210', attendees: ['Michael Brown', 'James Wilson'], description: 'Product walkthrough with client.' },
-  { id: 7, date: '2026-07-13', startTime: '11:00 PM', endTime: '12:00 AM', title: 'Server Maintenance', category: 'System Maintenance', location: 'Data Center', attendees: ['James Wilson', 'Daniel Martinez'], description: 'Scheduled downtime for server OS patching.' },
-  { id: 8, date: '2026-07-14', startTime: '04:00 PM', endTime: '05:00 PM', title: 'Internal Task', category: 'Internal Task', location: 'Remote', attendees: ['Olivia Taylor'], description: 'Complete documentation for API v3.' },
-  { id: 9, date: '2026-07-10', startTime: '09:00 AM', endTime: '10:00 AM', title: 'Project Deadline', category: 'Project Deadline', location: 'N/A', attendees: ['Emma Johnson', 'Sophia Davis'], description: 'Website Redesign – final assets due.' },
-  { id: 10, date: '2026-07-10', startTime: '09:00 AM', endTime: '10:00 AM', title: 'Website Redesign', category: 'Project Deadline', location: 'N/A', attendees: ['Emma Johnson'], description: 'Final handoff for website redesign project.' },
-  { id: 11, date: '2026-07-16', startTime: '03:30 PM', endTime: '04:30 PM', title: 'Team Sync', category: 'Team Meeting', location: 'Meeting Room 1', attendees: ['All Team'], description: 'Cross-department sync before product launch.' },
-  { id: 12, date: '2026-07-20', startTime: '10:00 AM', endTime: '11:30 AM', title: 'Sprint Planning', category: 'Team Meeting', location: 'Meeting Room 2', attendees: ['Emma Johnson', 'Michael Brown', 'Olivia Taylor'], description: 'Sprint 15 kickoff.' },
-  { id: 13, date: '2026-07-20', startTime: '04:30 PM', endTime: '05:30 PM', title: 'Client Call – Codigix', category: 'Client Call', location: 'Google Meet', meetingLink: 'https://meet.google.com/zxc-vbnm-asd', attendees: ['Daniel Martinez', 'Sophia Davis'], description: 'Progress update call with Codigix.' },
-  { id: 14, date: '2026-07-21', startTime: '02:00 PM', endTime: '03:00 PM', title: 'Client Call', category: 'Client Call', location: 'Zoom', meetingLink: 'https://zoom.us/j/5551234567', attendees: ['Emma Johnson'], description: 'Contract renewal discussion.' },
-  { id: 15, date: '2026-07-22', startTime: '01:30 PM', endTime: '03:00 PM', title: 'Training Session', category: 'Training', location: 'Training Room', attendees: ['All Team'], description: 'New DevOps tools onboarding.' },
-  { id: 16, date: '2026-07-23', startTime: '04:30 PM', endTime: '05:30 PM', title: 'Project Review', category: 'Review & Planning', location: 'Meeting Room 3', attendees: ['Michael Brown', 'Sophia Davis', 'James Wilson'], description: 'Mid-sprint review of all active projects.' },
-  { id: 17, date: '2026-07-24', startTime: '09:00 AM', endTime: '10:00 AM', title: 'Release v2.4 Deployment', category: 'Release/Deployment', location: 'Production Server', attendees: ['James Wilson', 'Daniel Martinez'], description: 'Deploy v2.4 to production environment.' },
-  { id: 18, date: '2026-07-28', startTime: '11:00 PM', endTime: '12:00 AM', title: 'Database Backup', category: 'System Maintenance', location: 'Remote', attendees: ['James Wilson'], description: 'Full DB backup before major migration.' },
-  { id: 19, date: '2026-07-30', startTime: '02:30 PM', endTime: '03:30 PM', title: 'Team Meeting', category: 'Team Meeting', location: 'Meeting Room 1', attendees: ['All Team'], description: 'End-of-month debrief and retrospective.' },
-];
+const INITIAL_EVENTS = [];
 
 const AVATARS = {
   'Emma Johnson': 'https://i.pravatar.cc/150?u=emma',

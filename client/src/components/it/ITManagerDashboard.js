@@ -237,7 +237,7 @@ const ITManagerDashboard = () => {
       {widgets.kpi && (
         <div className="grid grid-cols-6 gap-2 mb-6">
           {kpiData.map((kpi, idx) => (
-            <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100  flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer">
+            <div key={idx} className="bg-white p-4 rounded border border-gray-100  flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer">
               <div className="flex items-center gap-3 mb-3">
                 <div className={`p-2 rounded ${kpi.bg} ${kpi.color}`}>
                   <kpi.icon size={20} />
@@ -259,7 +259,7 @@ const ITManagerDashboard = () => {
       <div className="grid grid-cols-12 gap-6 mb-6">
         {/* Project Health Overview */}
         {widgets.projectHealth && (
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">
             <h3 className="text-sm  text-gray-900 mb-6">Project Health Overview</h3>
             <div className="relative h-48 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -309,7 +309,7 @@ const ITManagerDashboard = () => {
         )}
 
         {widgets.timeline && (
-          <div className="col-span-6 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+          <div className="col-span-6 bg-white p-2 rounded border border-gray-100  flex flex-col">
             <h3 className="text-sm  text-gray-900 mb-6">Projects Timeline</h3>
             <div className="flex-1 flex flex-col gap-2 relative">
               {projectsTimeline.map((proj, idx) => (
@@ -328,7 +328,7 @@ const ITManagerDashboard = () => {
         )}
 
         {widgets.activity && (
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">
             <h3 className="text-sm  text-gray-900 mb-6">Activity Feed</h3>
             <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
               {activityFeed.map((activity, idx) => (
@@ -354,7 +354,7 @@ const ITManagerDashboard = () => {
       <div className="grid grid-cols-12 gap-6 mb-6">
         {/* Task Summary */}
         {widgets.taskSummary && (
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-sm  text-gray-900">Task Summary</h3>
               <span onClick={() => navigate(urlPrefix + '/tasks')} className="text-xs text-indigo-600 font-medium hover:underline cursor-pointer">View All</span>
@@ -386,7 +386,7 @@ const ITManagerDashboard = () => {
 
         {/* Team Workload */}
         {widgets.workload && (
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-sm  text-gray-900">Team Workload</h3>
               <span onClick={() => navigate(urlPrefix + '/teams')} className="text-xs text-indigo-600 font-medium hover:underline cursor-pointer">View All</span>
@@ -418,7 +418,7 @@ const ITManagerDashboard = () => {
 
         {/* Time Tracking */}
         {widgets.timeTracking && (
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100  flex flex-col">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100  flex flex-col">
             <div className="mb-4">
               <h3 className="text-sm  text-gray-900 inline-block">Time Tracking</h3>
               <span className="text-xs text-gray-400 ml-2">(This Week)</span>
@@ -471,7 +471,7 @@ const ITManagerDashboard = () => {
 
         {/* Top Open Tasks */}
         {widgets.openTasks && (
-          <div className="col-span-3 bg-white p-2 rounded-xl border border-gray-100 ">
+          <div className="col-span-3 bg-white p-2 rounded border border-gray-100 ">
             <div className="flex justify-between items-center mb-5">
               <h3 className="text-sm  text-gray-900">Top Open Tasks</h3>
               <span onClick={() => navigate(urlPrefix + '/tasks')} className="text-xs text-indigo-600 font-medium hover:underline cursor-pointer">View All</span>
@@ -496,7 +496,7 @@ const ITManagerDashboard = () => {
       </div>
 
       {/* FOOTER BAR */}
-      <div className="bg-white p-4 rounded-xl border border-gray-100  flex items-center justify-between overflow-x-auto gap-8 whitespace-nowrap">
+      <div className="bg-white p-4 rounded border border-gray-100  flex items-center justify-between overflow-x-auto gap-8 whitespace-nowrap">
         <div className="flex items-center gap-3 min-w-[120px]">
           <div className="p-1.5 rounded bg-indigo-50 text-indigo-600"><Activity size={16} /></div>
           <div>

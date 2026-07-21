@@ -11,24 +11,9 @@ import {
 } from 'lucide-react';
 import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 
-const TREND_CHART_DATA = [
-  { date: 'May 8', volume: 80000 },
-  { date: 'May 9', volume: 88000 },
-  { date: 'May 10', volume: 86000 },
-  { date: 'May 11', volume: 105000 },
-  { date: 'May 12', volume: 92000 },
-  { date: 'May 13', volume: 108000 },
-  { date: 'May 14', volume: 102000 },
-  { date: 'May 15', volume: 112000 },
-];
+const TREND_CHART_DATA = [];
 
-const DIFFICULTY_DIST_DATA = [
-  { name: 'Very Easy (0-10)', count: 1100, color: '#10B981' },
-  { name: 'Easy (11-30)', count: 1550, color: '#10B981' },
-  { name: 'Possible (31-50)', count: 1600, color: '#F59E0B' },
-  { name: 'Difficult (51-70)', count: 1200, color: '#F97316' },
-  { name: 'Very Difficult (71-100)', count: 600, color: '#EF4444' },
-];
+const DIFFICULTY_DIST_DATA = [];
 
 const INTENT_COLORS = {
   'Informational': '#3B82F6',

@@ -12,21 +12,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } 
 // We fetch repositories from the backend, so we no longer need the hardcoded MOCK_REPOS
 // But we keep the static widgets and charts the same for now.
 
-const RECENT_ACTIVITY = [
-  { id: 1, type: 'push', message: 'Push to main', user: 'Akshay More', hash: 'a1b2c3d', time: '2 hours ago', icon: GitCommit, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { id: 2, type: 'pr_new', message: 'New Pull Request #45', user: 'Sneha Joshi', hash: '', time: '4 hours ago', icon: GitPullRequest, color: 'text-purple-500', bg: 'bg-purple-50' },
-  { id: 3, type: 'pr_merged', message: 'Merged Pull Request #44', user: 'Rahul Patil', hash: '', time: '8 hours ago', icon: GitMerge, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  { id: 4, type: 'push', message: 'Push to develop', user: 'Priya Sharma', hash: 'd4e5f5g', time: '1 day ago', icon: GitCommit, color: 'text-blue-500', bg: 'bg-blue-50' },
-  { id: 5, type: 'issue', message: 'New Issue #78', user: 'Akshay More', hash: '', time: '1 day ago', icon: CircleDot, color: 'text-red-500', bg: 'bg-red-50' }
-];
+const RECENT_ACTIVITY = [];
 
-const LANG_DATA = [
-  { name: 'TypeScript', value: 45.2, color: '#3178C6' },
-  { name: 'JavaScript', value: 20.1, color: '#F7DF1E' },
-  { name: 'React', value: 15.8, color: '#61DAFB' },
-  { name: 'Other', value: 10.3, color: '#9CA3AF' },
-  { name: 'Shell', value: 8.6, color: '#89e051' },
-];
+const LANG_DATA = [];
 
 const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#F43F5E', '#8B5CF6'];
 
@@ -222,7 +210,7 @@ export default function ITRepositoriesPage() {
       {/* Top Header Section */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10 ">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Repositories</h1>
+          <h1 className="text-2xl  text-gray-900 tracking-tight">Repositories</h1>
           <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
             <span className="hover:text-blue-600 cursor-pointer">Dashboard</span>
             <ChevronRight size={12} />
@@ -267,7 +255,7 @@ export default function ITRepositoriesPage() {
                 </div>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setShowConnectionModal(true)}
               className="mt-3 w-full py-1.5 text-xs font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-md transition-colors"
             >
@@ -276,13 +264,13 @@ export default function ITRepositoriesPage() {
           </div>
 
           <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded bg-purple-50 flex items-center justify-center flex-shrink-0">
               <FolderGit2 size={24} className="text-purple-600" />
             </div>
             <div>
               <p className="text-xs text-gray-500 font-medium mb-1">Total Repositories</p>
               <div className="flex items-end gap-2">
-                <h3 className="text-2xl font-bold text-gray-900 leading-none">{totalRepos}</h3>
+                <h3 className="text-2xl  text-gray-900 leading-none">{totalRepos}</h3>
                 <span className="flex items-center text-[11px] font-medium text-emerald-600 mb-0.5">
                   <ArrowUp size={12} /> 12% <span className="text-gray-400 ml-1">vs last month</span>
                 </span>
@@ -291,39 +279,39 @@ export default function ITRepositoriesPage() {
           </div>
 
           <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded bg-amber-50 flex items-center justify-center flex-shrink-0">
               <Lock size={24} className="text-amber-600" />
             </div>
             <div>
               <p className="text-xs text-gray-500 font-medium mb-1">Private</p>
               <div className="flex items-end gap-2">
-                <h3 className="text-2xl font-bold text-gray-900 leading-none">{privateRepos}</h3>
+                <h3 className="text-2xl  text-gray-900 leading-none">{privateRepos}</h3>
               </div>
               <p className="text-[11px] text-gray-500 mt-1">{totalRepos > 0 ? ((privateRepos / totalRepos) * 100).toFixed(1) : 0}% of total</p>
             </div>
           </div>
 
           <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded bg-emerald-50 flex items-center justify-center flex-shrink-0">
               <Globe size={24} className="text-emerald-600" />
             </div>
             <div>
               <p className="text-xs text-gray-500 font-medium mb-1">Public</p>
               <div className="flex items-end gap-2">
-                <h3 className="text-2xl font-bold text-gray-900 leading-none">{publicRepos}</h3>
+                <h3 className="text-2xl  text-gray-900 leading-none">{publicRepos}</h3>
               </div>
               <p className="text-[11px] text-gray-500 mt-1">{totalRepos > 0 ? ((publicRepos / totalRepos) * 100).toFixed(1) : 0}% of total</p>
             </div>
           </div>
 
           <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+            <div className="w-12 h-12 rounded bg-blue-50 flex items-center justify-center flex-shrink-0">
               <ActivitySquare size={24} className="text-blue-600" />
             </div>
             <div>
               <p className="text-xs text-gray-500 font-medium mb-1">Active Repositories</p>
               <div className="flex items-end gap-2">
-                <h3 className="text-2xl font-bold text-gray-900 leading-none">{activeRepos}</h3>
+                <h3 className="text-2xl  text-gray-900 leading-none">{activeRepos}</h3>
                 <span className="flex items-center text-[11px] font-medium text-emerald-600 mb-0.5">
                   <ArrowUp size={12} /> 8% <span className="text-gray-400 ml-1">vs last month</span>
                 </span>
@@ -332,12 +320,12 @@ export default function ITRepositoriesPage() {
           </div>
 
           <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100">
+            <div className="w-12 h-12 rounded bg-gray-50 flex items-center justify-center flex-shrink-0 border border-gray-100">
               <RefreshCw size={24} className="text-gray-600" />
             </div>
             <div>
               <p className="text-xs text-gray-500 font-medium mb-1">Last Sync</p>
-              <h3 className="text-lg font-bold text-gray-900 leading-none mb-1">2 mins ago</h3>
+              <h3 className="text-lg  text-gray-900 leading-none mb-1">2 mins ago</h3>
               <p className="text-[10px] text-gray-400">May 30, 2026 10:45 AM</p>
             </div>
           </div>
@@ -453,7 +441,7 @@ export default function ITRepositoriesPage() {
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <span className="w-3 h-3 rounded text-[10px] flex items-center justify-center font-bold text-white " style={{ backgroundColor: repo.language_color || repo.languageColor || '#999' }}>
+                            <span className="w-3 h-3 rounded text-[10px] flex items-center justify-center  text-white " style={{ backgroundColor: repo.language_color || repo.languageColor || '#999' }}>
                               {(repo.language || 'U').charAt(0)}
                             </span>
                             <span className="text-[#3178C6] font-medium text-xs">{repo.language}</span>
@@ -513,7 +501,7 @@ export default function ITRepositoriesPage() {
 
               {/* Recent Activity */}
               <div className="bg-white border border-gray-200 rounded  p-5">
-                <h3 className="text-sm font-bold text-gray-900 mb-4">Recent Activity</h3>
+                <h3 className="text-sm  text-gray-900 mb-4">Recent Activity</h3>
                 <div className="space-y-4">
                   {RECENT_ACTIVITY.map(act => (
                     <div key={act.id} className="flex items-start gap-3">
@@ -535,7 +523,7 @@ export default function ITRepositoriesPage() {
 
               {/* Top Languages */}
               <div className="bg-white border border-gray-200 rounded  p-5 flex flex-col">
-                <h3 className="text-sm font-bold text-gray-900 mb-4">Top Languages</h3>
+                <h3 className="text-sm  text-gray-900 mb-4">Top Languages</h3>
                 <div className="flex-1 flex items-center justify-center relative">
                   <div className="w-32 h-32 absolute left-4">
                     <ResponsiveContainer width="100%" height="100%">
@@ -574,11 +562,11 @@ export default function ITRepositoriesPage() {
 
               {/* Repository Health */}
               <div className="bg-white border border-gray-200 rounded  p-5 flex flex-col">
-                <h3 className="text-sm font-bold text-gray-900 mb-4">Repository Health</h3>
+                <h3 className="text-sm  text-gray-900 mb-4">Repository Health</h3>
                 <div className="flex items-center gap-6 mb-4">
                   <div className="relative w-20 h-20 flex-shrink-0 flex items-center justify-center rounded-full border-[6px] border-emerald-500 border-r-emerald-100">
                     <div className="text-center">
-                      <span className="text-xl font-bold text-emerald-600 leading-none">92</span>
+                      <span className="text-xl  text-emerald-600 leading-none">92</span>
                       <p className="text-[10px] text-emerald-600 font-medium">Excellent</p>
                     </div>
                   </div>
@@ -610,7 +598,7 @@ export default function ITRepositoriesPage() {
 
           {/* Right Column (Repository Details Panel) */}
           <div className="w-full xl:w-80 bg-white border border-gray-200 rounded  p-5 flex-shrink-0">
-            <h3 className="text-sm font-bold text-gray-900 mb-4 border-b border-gray-100 pb-3">Repository Details</h3>
+            <h3 className="text-sm  text-gray-900 mb-4 border-b border-gray-100 pb-3">Repository Details</h3>
 
             {!selectedRepo && !loading && (
               <p className="text-sm text-gray-500">Select a repository to view details.</p>
@@ -621,7 +609,7 @@ export default function ITRepositoriesPage() {
                 <div className="flex gap-3 mb-4">
                   <Github size={32} className="text-gray-900 mt-1" />
                   <div>
-                    <h4 className="text-sm font-bold text-[#4F46E5] hover:underline cursor-pointer break-all leading-tight mb-1" onClick={openInGitHub}>
+                    <h4 className="text-sm  text-[#4F46E5] hover:underline cursor-pointer break-all leading-tight mb-1" onClick={openInGitHub}>
                       {selectedRepo.name}
                     </h4>
                     <p className="text-[10px] text-gray-500 mb-2 break-all">{selectedRepo.full_name || selectedRepo.fullName}</p>
@@ -669,12 +657,12 @@ export default function ITRepositoriesPage() {
                     {selectedRepo.contributors && selectedRepo.contributors.length > 0 ? (
                       <>
                         {selectedRepo.contributors.slice(0, 4).map((c, idx) => (
-                          <div key={idx} className={`w-7 h-7 rounded-full ${c.color || 'bg-gray-100 text-gray-700'} border-2 border-white flex items-center justify-center text-[10px] font-bold z-${40 - idx * 10} transition-colors`} title={`${c.name} (${c.commits} commits)`}>
+                          <div key={idx} className={`w-7 h-7 rounded-full ${c.color || 'bg-gray-100 text-gray-700'} border-2 border-white flex items-center justify-center text-[10px]  z-${40 - idx * 10} transition-colors`} title={`${c.name} (${c.commits} commits)`}>
                             {c.name ? c.name.substring(0, 2).toUpperCase() : 'U'}
                           </div>
                         ))}
                         {selectedRepo.contributors.length > 4 && (
-                          <div className="w-7 h-7 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-600 z-0 hover:bg-gray-200 transition-colors">
+                          <div className="w-7 h-7 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-[10px]  text-gray-600 z-0 hover:bg-gray-200 transition-colors">
                             +{selectedRepo.contributors.length - 4}
                           </div>
                         )}
@@ -723,7 +711,7 @@ export default function ITRepositoriesPage() {
       {/* Add Repository Modal (GitHub Standard Format) */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded shadow-xl w-full max-w-2xl border border-gray-200 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-2 text-gray-900 font-semibold text-lg">
                 Create a new repository
@@ -841,7 +829,7 @@ export default function ITRepositoriesPage() {
       {/* Import Repository Modal */}
       {showImportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-gray-200 overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded shadow-xl w-full max-w-lg border border-gray-200 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
               <div className="flex items-center gap-2 text-gray-900 font-semibold">
                 <Download size={18} className="text-[#4F46E5]" />
@@ -862,12 +850,12 @@ export default function ITRepositoriesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">GitHub Clone URL <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <Github size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input 
-                    type="url" 
+                  <input
+                    type="url"
                     value={importUrl}
                     onChange={(e) => setImportUrl(e.target.value)}
-                    placeholder="https://github.com/username/repository.git" 
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md  focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] text-sm" 
+                    placeholder="https://github.com/username/repository.git"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md  focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] text-sm"
                   />
                 </div>
               </div>
@@ -895,12 +883,12 @@ export default function ITRepositoriesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Personal Access Token (For Private Repos)</label>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={importToken}
                   onChange={(e) => setImportToken(e.target.value)}
-                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" 
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md  focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] text-sm" 
+                  placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md  focus:outline-none focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] text-sm"
                 />
                 <p className="text-[11px] text-gray-500 mt-1">Leave blank if the repository is public or if global GitHub App auth is enabled.</p>
               </div>
@@ -908,7 +896,7 @@ export default function ITRepositoriesPage() {
 
             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
               <button onClick={() => setShowImportModal(false)} className="px-4 py-2 border border-gray-300 rounded-md  text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
-              <button 
+              <button
                 onClick={handleImport}
                 disabled={importing}
                 className={`px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#4F46E5] hover:bg-indigo-600 transition-colors flex items-center gap-2 ${importing ? 'opacity-70 cursor-not-allowed' : ''}`}
@@ -924,7 +912,7 @@ export default function ITRepositoriesPage() {
       {/* Settings Modal */}
       {showSettingsModal && selectedRepo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl border border-gray-200 overflow-hidden flex flex-col">
+          <div className="bg-white rounded shadow-xl w-full max-w-xl border border-gray-200 overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
               <div className="flex items-center gap-2 text-gray-900 font-semibold">
                 <Settings size={18} className="text-[#4F46E5]" />
@@ -943,7 +931,7 @@ export default function ITRepositoriesPage() {
                 <label className="block text-sm font-medium text-gray-900 mb-1">Default Branch</label>
                 <CustomSelect
                   value="main"
-                  onChange={() => {}}
+                  onChange={() => { }}
                   options={['main', 'master', 'develop']}
                   className="w-full"
                 />
@@ -958,7 +946,7 @@ export default function ITRepositoriesPage() {
                     </div>
                     <button className="px-3 py-1.5 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-md text-sm font-medium transition-colors">Archive</button>
                   </div>
-                  
+
                   <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50/50">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Delete this repository</p>
@@ -982,7 +970,7 @@ export default function ITRepositoriesPage() {
       {/* Webhook Modal */}
       {showWebhookModal && selectedRepo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl border border-gray-200 overflow-hidden flex flex-col">
+          <div className="bg-white rounded shadow-xl w-full max-w-xl border border-gray-200 overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
               <div className="flex items-center gap-2 text-gray-900 font-semibold">
                 <Webhook size={18} className="text-[#4F46E5]" />
@@ -1031,7 +1019,7 @@ export default function ITRepositoriesPage() {
       {/* Contributors Modal */}
       {showContributorsModal && selectedRepo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm border border-gray-200 overflow-hidden flex flex-col">
+          <div className="bg-white rounded shadow-xl w-full max-w-sm border border-gray-200 overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center gap-2 text-gray-900 font-semibold">
                 Contributors
@@ -1046,7 +1034,7 @@ export default function ITRepositoriesPage() {
                   selectedRepo.contributors.map((user, idx) => (
                     <div key={idx} className="flex items-center justify-between px-6 py-3 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${user.color || 'bg-gray-100 text-gray-700'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs  ${user.color || 'bg-gray-100 text-gray-700'}`}>
                           {user.name ? user.name.substring(0, 2).toUpperCase() : 'U'}
                         </div>
                         <div>
@@ -1075,9 +1063,9 @@ export default function ITRepositoriesPage() {
       {/* Connection Modal */}
       {showConnectionModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <div className="bg-white rounded shadow-xl w-full max-w-md overflow-hidden flex flex-col">
             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900">Manage GitHub Connection</h3>
+              <h3 className="text-lg  text-gray-900">Manage GitHub Connection</h3>
               <button onClick={() => setShowConnectionModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
                 <X size={20} />
               </button>

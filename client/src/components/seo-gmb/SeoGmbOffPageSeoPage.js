@@ -12,35 +12,13 @@ import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
 // ── Static Chart Data ─────────────────────────────────────────────────────
-const BACKLINK_TREND = [
-  { date: 'Apr 16', newLinks: 3200, lostLinks: 1200 },
-  { date: 'Apr 23', newLinks: 4800, lostLinks: 1800 },
-  { date: 'Apr 30', newLinks: 6200, lostLinks: 2100 },
-  { date: 'May 7', newLinks: 7100, lostLinks: 2400 },
-  { date: 'May 14', newLinks: 8400, lostLinks: 2600 },
-];
+const BACKLINK_TREND = [];
 
-const BACKLINK_SOURCES = [
-  { name: 'Blogs', value: 5240, pct: '42.3%', color: '#3B82F6' },
-  { name: 'News', value: 2196, pct: '11.3%', color: '#10B981' },
-  { name: 'Directories', value: 1842, pct: '14.8%', color: '#F59E0B' },
-  { name: 'Forums', value: 1256, pct: '10.1%', color: '#8B5CF6' },
-  { name: 'Other', value: 1956, pct: '15.7%', color: '#94A3B8' },
-];
+const BACKLINK_SOURCES = [];
 
-const BACKLINK_HEALTH = [
-  { name: 'High Quality Links', value: 8942, pct: 71.8, color: '#10B981' },
-  { name: 'Medium Quality Links', value: 2456, pct: 19.7, color: '#F59E0B' },
-  { name: 'Low Quality Links', value: 1060, pct: 8.5, color: '#EF4444' },
-];
+const BACKLINK_HEALTH = [];
 
-const TOP_ANCHORS = [
-  { text: 'digital marketing', backlinks: 1218, pct: 12.6 },
-  { text: 'best seo tools', backlinks: 1102, pct: 11.1 },
-  { text: 'learn more', backlinks: 982, pct: 9.9 },
-  { text: 'click here', backlinks: 754, pct: 7.6 },
-  { text: 'visit website', backlinks: 664, pct: 6.5 },
-];
+const TOP_ANCHORS = [];
 
 // ── Column Definitions ────────────────────────────────────────────────────
 const backlinkCols = [
@@ -111,59 +89,15 @@ const competitorCols = [
 ];
 
 // ── Default Data ──────────────────────────────────────────────────────────
-const initBacklinks = [
-  { id: 1, title: 'Top 10 Digital Marketing Strategies for 2026', source: 'https://marketingblog.com/digital-marketing', da: '62', pa: '48', anchor: 'digital marketing', type: 'Blog', status: 'Active', date: 'May 14, 2026' },
-  { id: 2, title: 'The Ultimate Guide to SEO Tools', source: 'https://techtoolsreview.net/guide', da: '58', pa: '44', anchor: 'best seo tools', type: 'Blog', status: 'Active', date: 'May 13, 2026' },
-  { id: 3, title: 'Digital Marketing News & Updates', source: 'https://yournewsite.com/blog', da: '71', pa: '55', anchor: 'learn more', type: 'News', status: 'Active', date: 'May 12, 2026' },
-  { id: 4, title: 'Top Marketing Forums', source: 'https://marketingforum.com/thread/12345', da: '48', pa: '35', anchor: 'click here', type: 'Forum', status: 'Active', date: 'May 11, 2026' },
-  { id: 5, title: 'Business Directory - Your Website', source: 'https://businessdirectory.com/listing', da: '43', pa: '30', anchor: 'visit website', type: 'Directory', status: 'Active', date: 'May 10, 2026' },
-];
-const initOutreach = [
-  { id: 1, site: 'techblog.io', email: 'editor@techblog.io', status: 'Replied', sent: 'May 10, 2026', followup: 'May 13, 2026' },
-  { id: 2, site: 'marketinghub.com', email: 'contact@marketinghub.com', status: 'In Progress', sent: 'May 11, 2026', followup: 'May 14, 2026' },
-  { id: 3, site: 'seoblog.net', email: 'team@seoblog.net', status: 'Converted', sent: 'May 8, 2026', followup: 'May 12, 2026' },
-  { id: 4, site: 'digitalpress.co', email: 'info@digitalpress.co', status: 'Sent', sent: 'May 12, 2026', followup: 'May 16, 2026' },
-];
-const initGuestPosts = [
-  { id: 1, site: 'searchenginejournal.com', topic: 'Advanced Link Building Techniques for 2026', status: 'Published', da: '83', published: 'May 10, 2026' },
-  { id: 2, site: 'moz.com/blog', topic: 'How to Build a Sustainable Backlink Profile', status: 'In Progress', da: '92', published: '—' },
-  { id: 3, site: 'ahrefs.com/blog', topic: 'Content Marketing for Off-Page SEO', status: 'Rejected', da: '88', published: '—' },
-  { id: 4, site: 'semrush.com/blog', topic: 'Local Citation Building Strategy', status: 'Pending', da: '85', published: '—' },
-];
-const initDigitalPr = [
-  { id: 1, name: 'Brand Awareness Q2 2026', publication: 'TechCrunch', status: 'In Progress', mentions: '42', links: '23' },
-  { id: 2, name: 'Product Launch PR Campaign', publication: 'Forbes Digital', status: 'Approved', mentions: '16', links: '8' },
-  { id: 3, name: 'Thought Leadership Series', publication: 'Entrepreneur.com', status: 'In Progress', mentions: '28', links: '14' },
-];
-const initDirectories = [
-  { id: 1, name: 'Yelp Business', url: 'yelp.com/biz/your-business', status: 'Approved', da: '93', submitted: 'May 5, 2026' },
-  { id: 2, name: 'Google Business Profile', url: 'business.google.com', status: 'Approved', da: '99', submitted: 'May 1, 2026' },
-  { id: 3, name: 'Clutch.co', url: 'clutch.co/profile/your-agency', status: 'Pending', da: '72', submitted: 'May 8, 2026' },
-  { id: 4, name: 'Manta.com', url: 'manta.com/c/your-business', status: 'Rejected', da: '61', submitted: 'May 6, 2026' },
-];
-const initBookmarks = [
-  { id: 1, platform: 'Reddit', page: '/blog/seo-tips-2026', status: 'Approved', votes: '248', date: 'May 9, 2026' },
-  { id: 2, platform: 'Pinterest', page: '/infographic/link-building', status: 'Approved', votes: '156', date: 'May 10, 2026' },
-  { id: 3, platform: 'Digg', page: '/blog/digital-marketing', status: 'Pending', votes: '64', date: 'May 11, 2026' },
-  { id: 4, platform: 'StumbleUpon', page: '/guides/content-marketing', status: 'Rejected', votes: '28', date: 'May 12, 2026' },
-];
-const initForums = [
-  { id: 1, forum: 'Warrior Forum', url: 'warriorforum.com/thread/12345', status: 'Approved', replies: '14', date: 'May 8, 2026' },
-  { id: 2, forum: 'BlackHatWorld', url: 'blackhatworld.com/post/67890', status: 'Approved', replies: '22', date: 'May 9, 2026' },
-  { id: 3, forum: 'Reddit /r/SEO', url: 'reddit.com/r/SEO/comments/abc', status: 'Pending', replies: '8', date: 'May 10, 2026' },
-  { id: 4, forum: 'Quora', url: 'quora.com/question/seo-best-practices', status: 'Approved', replies: '36', date: 'May 11, 2026' },
-];
-const initProfiles = [
-  { id: 1, platform: 'LinkedIn Company', url: 'linkedin.com/company/your-agency', status: 'Created', da: '98', created: 'Jan 10, 2026' },
-  { id: 2, platform: 'Twitter / X', url: 'twitter.com/youragency', status: 'Created', da: '94', created: 'Jan 10, 2026' },
-  { id: 3, platform: 'Crunchbase', url: 'crunchbase.com/org/your-agency', status: 'Pending', da: '80', created: 'May 5, 2026' },
-  { id: 4, platform: 'AngelList', url: 'wellfound.com/company/your-agency', status: 'Pending', da: '75', created: 'May 6, 2026' },
-];
-const initCompetitors = [
-  { id: 1, domain: 'competitorone.com', backlinks: '24,156', domains: '3,248', da: '62', anchors: '742' },
-  { id: 2, domain: 'competitortwo.com', backlinks: '18,420', domains: '2,104', da: '58', anchors: '513' },
-  { id: 3, domain: 'seorivalbrand.net', backlinks: '9,832', domains: '1,045', da: '51', anchors: '298' },
-];
+const initBacklinks = [];
+const initOutreach = [];
+const initGuestPosts = [];
+const initDigitalPr = [];
+const initDirectories = [];
+const initBookmarks = [];
+const initForums = [];
+const initProfiles = [];
+const initCompetitors = [];
 
 // ── Tab List ──────────────────────────────────────────────────────────────
 const TABS = [

@@ -80,12 +80,7 @@ const LoginPage = () => {
     }
   };
 
-  const DEMO_USERS = [
-    { email: 'admin@example.com', password: 'admin123', role: 'Super Admin' },
-    { email: 'rohityadav@gmail.com', password: 'admin123', role: 'Super Admin' },
-    { email: 'leads@gmail.com', password: '123456', role: 'Leads Manager' },
-    { email: 'sales@gmail.com', password: '123456', role: 'Sales Manager' },
-  ];
+  const DEMO_USERS = [];
 
   const handleDemoLogin = async (demoUser) => {
     setError('');

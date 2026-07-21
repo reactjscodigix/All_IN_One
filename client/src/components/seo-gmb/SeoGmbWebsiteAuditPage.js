@@ -19,40 +19,11 @@ const Phone = ({ size, className }) => (
 );
 
 /* ── Static Data ── */
-const HISTORY_DATA = [
-  { date: 'May 9', Critical: 28, Warnings: 160, Passed: 980, Total: 348 },
-  { date: 'May 10', Critical: 26, Warnings: 155, Passed: 1010, Total: 336 },
-  { date: 'May 11', Critical: 27, Warnings: 158, Passed: 1020, Total: 343 },
-  { date: 'May 12', Critical: 25, Warnings: 150, Passed: 1045, Total: 325 },
-  { date: 'May 13', Critical: 24, Warnings: 148, Passed: 1060, Total: 320 },
-  { date: 'May 14', Critical: 24, Warnings: 147, Passed: 1070, Total: 318 },
-  { date: 'May 15', Critical: 23, Warnings: 145, Passed: 1077, Total: 312 },
-];
+const HISTORY_DATA = [];
 
-const CRAWL_STATUS_DATA = [
-  { name: 'Successful', value: 1077, pct: '86.6%', color: '#10B981' },
-  { name: 'Redirected', value: 98, pct: '7.9%', color: '#3B82F6' },
-  { name: 'Broken', value: 48, pct: '3.9%', color: '#EF4444' },
-  { name: 'Blocked', value: 22, pct: '1.7%', color: '#F59E0B' },
-];
+const CRAWL_STATUS_DATA = [];
 
-const CATEGORIES_DATA = [
-  { id: 'technical', title: 'Technical Audit', desc: 'Site performance, indexing and errors.', issues: '12 issues', isGood: false, score: 90, icon: Activity, color: 'text-blue-500 bg-blue-50 border-blue-100', circleColor: '#3B82F6' },
-  { id: 'on-page', title: 'On-Page Audit', desc: 'Content, titles, keywords and meta data.', issues: '28 issues', isGood: false, score: 85, icon: FileText, color: 'text-green-500 bg-green-50 border-green-100', circleColor: '#10B981' },
-  { id: 'seo-tech', title: 'Technical SEO', desc: 'Structured data, hreflang, breadcrumbs.', issues: '16 issues', isGood: false, score: 88, icon: Globe, color: 'text-indigo-500 bg-indigo-50 border-indigo-100', circleColor: '#6366F1' },
-  { id: 'mobile', title: 'Mobile Usability', desc: 'Mobile friendly, responsive layouts.', issues: '8 issues', isGood: false, score: 92, icon: Phone, color: 'text-purple-500 bg-purple-50 border-purple-100', circleColor: '#8B5CF6' },
-  { id: 'core-vitals', title: 'Core Web Vitals', desc: 'User experience and core web vitals speed.', issues: '15 issues', isGood: false, score: 75, icon: Zap, color: 'text-pink-500 bg-pink-50 border-pink-100', circleColor: '#EC4899' },
-  { id: 'speed', title: 'Page Speed', desc: 'Page load speeds and assets loading.', issues: '14 issues', isGood: false, score: 78, icon: Sliders, color: 'text-orange-500 bg-orange-50 border-orange-100', circleColor: '#F97316' },
-  { id: 'ssl', title: 'HTTPS & SSL', desc: 'SSL certificate and security parameters.', issues: 'All Good', isGood: true, score: 100, icon: Shield, color: 'text-emerald-500 bg-emerald-50 border-emerald-100', circleColor: '#10B981' },
-  { id: 'robots', title: 'Robots.txt', desc: 'Robots file status validation checks.', issues: '1 issue', isGood: false, score: 95, icon: FileText, color: 'text-cyan-500 bg-cyan-50 border-cyan-100', circleColor: '#06B6D4' },
-  { id: 'sitemap', title: 'XML Sitemap', desc: 'Sitemap status and validation checks.', issues: 'All Good', isGood: true, score: 100, icon: Link, color: 'text-teal-500 bg-teal-50 border-teal-100', circleColor: '#14B8A6' },
-  { id: 'canonical', title: 'Canonical URLs', desc: 'Canonical tag implementations check.', issues: '5 issues', isGood: false, score: 90, icon: Link, color: 'text-sky-500 bg-sky-50 border-sky-100', circleColor: '#0EA5E9' },
-  { id: 'index', title: 'Index Coverage', desc: 'Indexed vs non-indexed status details.', issues: '24 issues', isGood: false, score: 82, icon: Search, color: 'text-blue-500 bg-blue-50 border-blue-100', circleColor: '#3B82F6' },
-  { id: 'crawl-errors', title: 'Crawl Errors', desc: 'Crawl errors and server issues log.', issues: '18 issues', isGood: false, score: 80, icon: AlertCircle, color: 'text-red-500 bg-red-50 border-red-100', circleColor: '#EF4444' },
-  { id: 'broken-links', title: 'Broken Links', desc: 'Broken links and suggestions index.', issues: '31 issues', isGood: false, score: 85, icon: Link, color: 'text-violet-500 bg-violet-50 border-violet-100', circleColor: '#8B5CF6' },
-  { id: 'redirects', title: 'Redirect Manager', desc: 'Redirects, redirect chains and loops.', issues: '13 issues', isGood: false, score: 88, icon: RefreshCw, color: 'text-indigo-500 bg-indigo-50 border-indigo-100', circleColor: '#6366F1' },
-  { id: 'schema', title: 'Schema Validation', desc: 'Structured data validation logs.', issues: '7 issues', isGood: false, score: 91, icon: CheckCircle, color: 'text-teal-500 bg-teal-50 border-teal-100', circleColor: '#14B8A6' },
-];
+const CATEGORIES_DATA = [];
 
 const INITIAL_ISSUES = {
   technical: [

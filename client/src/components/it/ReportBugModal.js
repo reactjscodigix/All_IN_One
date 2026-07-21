@@ -144,7 +144,7 @@ const ReportBugModal = ({ isOpen, onClose, onBugCreated }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl my-8 relative flex flex-col">
+      <div className="bg-white rounded shadow-2xl w-full max-w-5xl my-8 relative flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -403,7 +403,7 @@ const ReportBugModal = ({ isOpen, onClose, onBugCreated }) => {
             <div className="flex gap-4 items-stretch">
 
               {/* Drag Drop Area */}
-              <label className="w-[300px] border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-xl flex flex-col items-center justify-center p-6 text-center hover:bg-blue-50 cursor-pointer transition-colors shrink-0">
+              <label className="w-[300px] border-2 border-dashed border-blue-200 bg-blue-50/50 rounded flex flex-col items-center justify-center p-6 text-center hover:bg-blue-50 cursor-pointer transition-colors shrink-0">
                 <input type="file" className="hidden" onChange={handleFileUpload} />
                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center  mb-3">
                   <CloudUpload className="text-blue-500" size={20} />
@@ -418,7 +418,7 @@ const ReportBugModal = ({ isOpen, onClose, onBugCreated }) => {
               <div className="flex-1 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
 
                 {attachments.map((file, i) => (
-                  <div key={i} className="w-[160px] border border-gray-200 rounded-xl p-2 bg-white flex flex-col shrink-0 group relative">
+                  <div key={i} className="w-[160px] border border-gray-200 rounded p-2 bg-white flex flex-col shrink-0 group relative">
                     <button onClick={() => removeAttachment(i)} className="absolute top-1 right-1 p-1 bg-white rounded-full shadow hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity z-10 text-gray-500">
                       <X size={12} />
                     </button>

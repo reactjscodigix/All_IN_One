@@ -14,51 +14,12 @@ import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
 // ── Chart Data ─────────────────────────────────────────────────────────────
-const PROFILE_TREND = [
-  { date: 'Apr 16', views: 3200, actions: 1800 },
-  { date: 'Apr 23', views: 4800, actions: 2200 },
-  { date: 'Apr 30', views: 5600, actions: 2600 },
-  { date: 'May 7', views: 6400, actions: 3100 },
-  { date: 'May 14', views: 7800, actions: 3800 },
-];
-const TOP_ACTIONS = [
-  { name: 'Website Clicks', value: 2396, pct: '52.3%', color: '#3B82F6' },
-  { name: 'Calls', value: 1253, pct: '27.3%', color: '#F59E0B' },
-  { name: 'Direction Requests', value: 933, pct: '20.4%', color: '#10B981' },
-];
-const COMPLETENESS_ITEMS = [
-  { label: 'Business Information', done: true },
-  { label: 'Categories', done: true },
-  { label: 'Services', done: true },
-  { label: 'Business Hours', done: true },
-  { label: 'Photos', done: true },
-  { label: 'Posts', done: false },
-];
+const PROFILE_TREND = [];
+const TOP_ACTIONS = [];
+const COMPLETENESS_ITEMS = [];
 
 // ── Main tabs + sub-tabs ──────────────────────────────────────────────────
-const MAIN_TABS = [
-  { id: 'Overview', icon: BarChart2, subs: [] },
-  {
-    id: 'Business Management', icon: Building2,
-    subs: ['Business Profiles', 'Locations', 'Business Information', 'Categories', 'Services', 'Products', 'Service Areas', 'Business Hours', 'Holiday Hours'],
-  },
-  {
-    id: 'Google Posts', icon: FileText,
-    subs: ['Posts', 'Offers', 'Events', 'Updates', 'Promotions'],
-  },
-  {
-    id: 'Customer Engagement', icon: Heart,
-    subs: ['Reviews', 'Review Replies', 'Review Templates', 'Review Analytics', 'Questions & Answers', 'Messages', 'Calls', 'Bookings', 'Direction Requests'],
-  },
-  {
-    id: 'Media Management', icon: Camera,
-    subs: ['Photos', 'Videos', 'Logo & Cover Images'],
-  },
-  {
-    id: 'Local SEO', icon: MapPin,
-    subs: ['Citation Management', 'NAP Management', 'Local Keywords', 'Geo Rankings', 'Local Competitors', 'Local Backlinks'],
-  },
-];
+const MAIN_TABS = [];
 
 // ── Column definitions ────────────────────────────────────────────────────
 const COLS = {

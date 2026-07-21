@@ -29,65 +29,9 @@ function TestTubeIcon(props) {
   return <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}><rect x="9" y="3" width="6" height="3" rx="1" /><path d="M10 6v11a2 2 0 004 0V6" /></svg>;
 }
 
-const LIST_DATA = [
-  { key: 'WR-101', title: 'Create wireframes for homepage', type: 'Task', status: 'TO DO', assignee: 'Emma Johnson', priority: 'High', labels: ['Design', 'UI/UX'], sprint: 'Sprint 1', due: '28 May 2024' },
-  { key: 'WR-105', title: 'Design homepage UI', type: 'Task', status: 'IN PROGRESS', assignee: 'Olivia Taylor', priority: 'High', labels: ['Design', 'UI'], sprint: 'Sprint 1', due: '31 May 2024' },
-  { key: 'WR-109', title: 'Review homepage design', type: 'Task', status: 'IN REVIEW', assignee: 'Michael Brown', priority: 'High', labels: ['Review'], sprint: 'Sprint 1', due: '02 Jun 2024' },
-  { key: 'WR-113', title: 'Test login functionality', type: 'Test', status: 'TESTING', assignee: 'Sophia Davis', priority: 'High', labels: ['Testing'], sprint: 'Sprint 2', due: '06 Jun 2024' },
-  { key: 'WR-117', title: 'Project kickoff meeting', type: 'Task', status: 'DONE', assignee: 'Emma Johnson', priority: 'Low', labels: ['Management'], sprint: '-', due: '01 May 2024' },
-  { key: 'WR-102', title: 'Setup development environment', type: 'Task', status: 'TO DO', assignee: 'James Wilson', priority: 'Medium', labels: ['DevOps', 'Setup'], sprint: 'Sprint 1', due: '29 May 2024' },
-  { key: 'WR-106', title: 'Implement authentication API', type: 'Story', status: 'IN PROGRESS', assignee: 'Daniel Martinez', priority: 'High', labels: ['Backend', 'API'], sprint: 'Sprint 1', due: '03 Jun 2024' },
-  { key: 'WR-114', title: 'Cross-browser testing', type: 'Test', status: 'TESTING', assignee: 'Ava Thomas', priority: 'Medium', labels: ['Testing'], sprint: 'Sprint 2', due: '06 Jun 2024' },
-];
+const LIST_DATA = [];
 
-const ALL_COLUMNS = [
-  { key: 'workType', label: 'Work type', defaultChecked: true },
-  { key: 'key', label: 'Work item key', defaultChecked: true },
-  { key: 'summary', label: 'Summary', defaultChecked: true },
-  { key: 'assignee', label: 'Assignee', defaultChecked: true },
-  { key: 'reporter', label: 'Reporter', defaultChecked: true },
-  { key: 'priority', label: 'Priority', defaultChecked: true },
-  { key: 'status', label: 'Status', defaultChecked: true },
-  { key: 'resolution', label: 'Resolution', defaultChecked: true },
-  { key: 'created', label: 'Created', defaultChecked: true },
-  { key: 'updated', label: 'Updated', defaultChecked: true },
-  { key: 'dueDate', label: 'Due date', defaultChecked: true },
-  { key: 'actions', label: 'Actions', defaultChecked: true },
-
-  { key: 'progress', label: 'Progress', defaultChecked: false },
-  { key: 'remainingEstimate', label: 'Remaining Estimate', defaultChecked: false },
-  { key: 'originalEstimate', label: 'Original Estimate', defaultChecked: false },
-  { key: 'timeSpent', label: 'Time Spent', defaultChecked: false },
-  { key: 'comments', label: 'Comments', defaultChecked: false },
-  { key: 'components', label: 'Components', defaultChecked: false },
-  { key: 'confluenceItems', label: 'Confluence items', defaultChecked: false },
-  { key: 'creator', label: 'Creator', defaultChecked: false },
-  { key: 'development', label: 'Development', defaultChecked: false },
-  { key: 'issueColor', label: 'Issue color', defaultChecked: false },
-  { key: 'rank', label: 'Rank', defaultChecked: false },
-  { key: 'vulnerability', label: 'Vulnerability', defaultChecked: false },
-  { key: 'description', label: 'Description', defaultChecked: false },
-  { key: 'environment', label: 'Environment', defaultChecked: false },
-  { key: 'fixVersions', label: 'Fix versions', defaultChecked: false },
-  { key: 'flagged', label: 'Flagged', defaultChecked: false },
-  { key: 'linkedWorkItems', label: 'Linked work items', defaultChecked: false },
-  { key: 'labels', label: 'Labels', defaultChecked: false },
-  { key: 'lastViewed', label: 'Last Viewed', defaultChecked: false },
-  { key: 'parent', label: 'Parent', defaultChecked: false },
-  { key: 'space', label: 'Space', defaultChecked: false },
-  { key: 'resolved', label: 'Resolved', defaultChecked: false },
-  { key: 'securityLevel', label: 'Security Level', defaultChecked: false },
-  { key: 'startDate', label: 'Start date', defaultChecked: false },
-  { key: 'statusCategory', label: 'Status Category', defaultChecked: false },
-  { key: 'statusCategoryChanged', label: 'Status Category Changed', defaultChecked: false },
-  { key: 'subTasks', label: 'Sub-tasks', defaultChecked: false },
-  { key: 'team', label: 'Team', defaultChecked: false },
-  { key: 'images', label: 'Images', defaultChecked: false },
-  { key: 'affectsVersions', label: 'Affects versions', defaultChecked: false },
-  { key: 'votes', label: 'Votes', defaultChecked: false },
-  { key: 'watchers', label: 'Watchers', defaultChecked: false },
-  { key: 'workRatio', label: 'Work Ratio', defaultChecked: false }
-];
+const ALL_COLUMNS = [];
 
 const ITTasksPage = () => {
   const { username } = useParams();

@@ -114,7 +114,7 @@ const NewTestCaseModal = ({ isOpen, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl my-8 relative flex flex-col">
+      <div className="bg-white rounded shadow-2xl w-full max-w-6xl my-8 relative flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -472,7 +472,7 @@ const NewTestCaseModal = ({ isOpen, onClose, onSuccess }) => {
               <h3 className="text-[13px]  text-gray-900 mb-4 flex items-center gap-2">
                 6. Attachments (Optional)
               </h3>
-              <div className="border border-gray-200 bg-gray-50 rounded-xl p-4 flex gap-4">
+              <div className="border border-gray-200 bg-gray-50 rounded p-4 flex gap-4">
 
                 {/* Drag Drop Area */}
                 <div className="flex-1 min-w-[200px] relative border-2 border-dashed border-blue-200 bg-white rounded flex flex-col items-center justify-center p-4 text-center hover:bg-blue-50 cursor-pointer transition-colors">
