@@ -234,7 +234,7 @@ const LoginPage = () => {
             </button>
           </form>
           <div className=" border-t border-gray-50 mt-2 text-center">
-            <p className="text-sm text-gray-500 ">
+            <p className="text-sm text-gray-500">
               New to the platform?{' '}
               <Link to="/signup" className="text-red    hover:underline">
                 Create Account
