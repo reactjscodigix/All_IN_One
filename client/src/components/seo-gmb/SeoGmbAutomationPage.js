@@ -12,6 +12,9 @@ import {
 import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 // ── Chart / Status Data ───────────────────────────────────────────────────
 const ACTIVITY_TREND = [];
 
@@ -190,7 +193,7 @@ export default function SeoGmbAutomationPage() {
   const makeDel = (k) => (id) => setTableData(prev => ({ ...prev, [k]: prev[k].filter(i => i.id !== id) }));
 
   const loadProject = async (p) => {
-    try { const r = await fetch(`http://localhost:5000/api/projects/${p.id}`); if (r.ok) setProject(await r.json()); } catch { }
+    try { const r = await fetch(`${API_BASE_URL}/projects/${p.id}`); if (r.ok) setProject(await r.json()); } catch { }
   };
 
   const filteredAll = useMemo(() => {

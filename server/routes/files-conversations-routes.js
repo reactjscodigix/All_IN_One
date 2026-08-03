@@ -529,8 +529,12 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
         }
       }
 
-      const insertMsgQuery = 'INSERT INTO messages (sender_id, receiver_id, conversation_id, group_id, message_text, file_name, file_size, file_type, file_path) ' +
-                             'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      const reply_to_id = parseId(body.reply_to_id);
+      const reply_to_text = body.reply_to_text || null;
+      const reply_to_sender = body.reply_to_sender || null;
+
+      const insertMsgQuery = 'INSERT INTO messages (sender_id, receiver_id, conversation_id, group_id, message_text, file_name, file_size, file_type, file_path, reply_to_id, reply_to_text, reply_to_sender) ' +
+                             'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
       const [result] = await connection.query(insertMsgQuery, [
         sender_id, 
         receiver_id || null, 
@@ -540,7 +544,10 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
         file_name || null, 
         file_size || null, 
         file_type || null,
-        file_path || null
+        file_path || null,
+        reply_to_id || null,
+        reply_to_text || null,
+        reply_to_sender || null
       ]);
 
       if (conversation_id) {
@@ -555,6 +562,73 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
     } catch (error) {
       console.error('Error in POST /api/messages:', error);
       responseError(res, 500, 'Failed to send message', error);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.put('/api/messages/:id', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      const { message_text } = req.body;
+      if (!message_text) return res.status(400).json({ error: 'message_text required' });
+
+      connection = await getConnection();
+      await connection.query(
+        'UPDATE messages SET message_text = ?, is_edited = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [message_text, id]
+      );
+      const [updated] = await connection.query('SELECT * FROM messages WHERE id = ?', [id]);
+      res.json(updated[0]);
+    } catch (error) {
+      responseError(res, 500, 'Failed to edit message', error);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.delete('/api/messages/:id', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      connection = await getConnection();
+      await connection.query(
+        'UPDATE messages SET is_deleted = 1, message_text = "This message was deleted", updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [id]
+      );
+      res.json({ success: true, id: parseInt(id, 10) });
+    } catch (error) {
+      responseError(res, 500, 'Failed to delete message', error);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.post('/api/messages/:id/reactions', async (req, res) => {
+    let connection;
+    try {
+      const { id } = req.params;
+      const { emoji } = req.body;
+      if (!emoji) return res.status(400).json({ error: 'emoji required' });
+
+      connection = await getConnection();
+      const [rows] = await connection.query('SELECT reactions FROM messages WHERE id = ?', [id]);
+      if (rows.length === 0) return res.status(404).json({ error: 'Message not found' });
+
+      let currentReactions = {};
+      try {
+        currentReactions = typeof rows[0].reactions === 'string' ? JSON.parse(rows[0].reactions || '{}') : (rows[0].reactions || {});
+      } catch (e) {
+        currentReactions = {};
+      }
+
+      currentReactions[emoji] = (currentReactions[emoji] || 0) + 1;
+
+      await connection.query('UPDATE messages SET reactions = ? WHERE id = ?', [JSON.stringify(currentReactions), id]);
+      res.json({ success: true, reactions: currentReactions });
+    } catch (error) {
+      responseError(res, 500, 'Failed to update reaction', error);
     } finally {
       if (connection) connection.release();
     }

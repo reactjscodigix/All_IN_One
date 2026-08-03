@@ -8,6 +8,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } 
 import { teamsAPI, usersAPI, projectAPI, projectTeamAPI } from '../../services/api';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const ITTeamsPage = () => {
   const navigate = useNavigate();
   const { designation, username } = useParams();
@@ -86,7 +88,7 @@ const ITTeamsPage = () => {
         teamsAPI.getAll(),
         usersAPI.getAll(),
         projectAPI.getAll(),
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/departments`).then(res => res.json())
+        fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/departments`).then(res => res.json())
       ]);
 
       const itDept = departmentsData.find(d => d.name === 'IT Department');
@@ -124,7 +126,7 @@ const ITTeamsPage = () => {
   const handleCreateTeam = async (e) => {
     e.preventDefault();
     try {
-      const departmentsData = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/departments`).then(res => res.json());
+      const departmentsData = await fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/departments`).then(res => res.json());
       const itDept = departmentsData.find(d => d.name === 'IT Department');
       const itDeptId = itDept ? itDept.id : 4;
 

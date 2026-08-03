@@ -9,6 +9,9 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Swal from 'sweetalert2';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const SearchableDropdown = ({ value, options, onSelect, placeholder, labelRenderer, iconRenderer, searchPlaceholder, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -240,7 +243,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
   useEffect(() => {
     if (isOpen) {
       // Fetch Real Teams
-      fetch('http://localhost:5000/api/teams')
+      fetch(API_BASE_URL + '/teams')
         .then(res => res.json())
         .then(data => {
           const rawTeams = Array.isArray(data) ? data : (data.data || []);
@@ -253,7 +256,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
         .catch(err => console.error('Error fetching teams:', err));
 
       // Fetch Real Users
-      fetch('http://localhost:5000/api/users')
+      fetch(API_BASE_URL + '/users')
         .then(res => res.json())
         .then(data => {
           const userList = Array.isArray(data?.value) ? data.value : (Array.isArray(data) ? data : []);
@@ -284,7 +287,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
         .catch(err => console.error('Error fetching users:', err));
 
       // Fetch Real Projects (Spaces/Parents)
-      fetch('http://localhost:5000/api/projects')
+      fetch(API_BASE_URL + '/projects')
         .then(res => res.json())
         .then(data => {
           if (data && data.data) {
@@ -300,7 +303,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
   // Fetch Team Members whenever selected Team changes to filter Reporter and Assignee
   useEffect(() => {
     if (formData.team && formData.team.id) {
-      fetch(`http://localhost:5000/api/teams/${formData.team.id}/members`)
+      fetch(`${API_BASE_URL}/teams/${formData.team.id}/members`)
         .then(res => res.json())
         .then(data => {
           const membersList = Array.isArray(data) ? data : [];
@@ -413,7 +416,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
     }
     setIsImprovingDescription(true);
     try {
-      const res = await fetch('http://localhost:5000/api/it-kanban/ai/improve-description-draft', {
+      const res = await fetch(API_BASE_URL + '/it-kanban/ai/improve-description-draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -500,7 +503,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
           linked_id: parseInt(projectId)
         };
 
-        res = await fetch(`http://localhost:5000/api/projects/${projectId}/tasks`, {
+        res = await fetch(`${API_BASE_URL}/projects/${projectId}/tasks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(projectPayload)
@@ -550,7 +553,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
           project_id: selectedProjId
         };
 
-        res = await fetch('http://localhost:5000/api/it-kanban/issues', {
+        res = await fetch(API_BASE_URL + '/it-kanban/issues', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -573,10 +576,10 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
             if (createdTaskId) fd.append('task_id', createdTaskId);
             if (projectId) fd.append('project_id', projectId);
             fd.append('userId', '1');
-            await fetch('http://localhost:5000/api/files/upload', { method: 'POST', body: fd });
+            await fetch(API_BASE_URL + '/files/upload', { method: 'POST', body: fd });
 
             if (issueKey) {
-              await fetch(`http://localhost:5000/api/it-kanban/issues/${issueKey}/attachments`, {
+              await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}/attachments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -4,6 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AddNewDealModal from '../sales/AddNewDealModal';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddCompanyPage = () => {
   const fileInputRef = useRef(null);
   const dealDropdownRef = useRef(null);
@@ -121,7 +123,7 @@ const AddCompanyPage = () => {
   const fetchBackendData = async () => {
     setLoadingData(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const [contactsRes, usersRes, sourcesRes, industriesRes, dealsRes] = await Promise.all([
         fetch(`${apiUrl}/contacts`),
         fetch(`${apiUrl}/users`),
@@ -303,7 +305,7 @@ const AddCompanyPage = () => {
 
   const handleDealSubmit = async (dealData) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const payload = {
         deal_name: dealData.deal_name,
         company_id: editingCompanyId || null,
@@ -387,7 +389,7 @@ const AddCompanyPage = () => {
         logo: formData.logoPreview || null,
       };
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const url = isEditMode
         ? `${apiUrl}/companies/${editingCompanyId}`
         : `${apiUrl}/companies`;

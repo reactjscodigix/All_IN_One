@@ -36,6 +36,8 @@ import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { formatINR } from '../../utils/currencyUtils';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const CrmLeadsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -234,7 +236,7 @@ const CrmLeadsPage = () => {
 
         // Create a task for the owner if assigned
         if (response && response.owner_id) {
-          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+          const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
           await fetch(`${apiUrl}/tasks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

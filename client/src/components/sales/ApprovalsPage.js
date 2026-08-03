@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Clock, Info, User, Loader2 } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const ApprovalsPage = () => {
   const [approvals, setApprovals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ const ApprovalsPage = () => {
   const fetchApprovals = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/approvals?status=all`);
       if (response.ok) {
         const data = await response.json();
@@ -29,7 +31,7 @@ const ApprovalsPage = () => {
 
   const handleAction = async (id, action, type, itemId) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/approvals/${id}/${action.toLowerCase()}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

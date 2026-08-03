@@ -3,6 +3,8 @@ import { Upload, Plus } from 'lucide-react';
 import AddNewDealModal from '../sales/AddNewDealModal';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEditMode = false, autoFillCompanyId = null, autoFillCompanyName = null }) => {
   const [companies, setCompanies] = useState([]);
   const [deals, setDeals] = useState([]);
@@ -78,7 +80,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
   const fetchCompanies = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/companies`);
       let data = await response.json();
 
@@ -95,7 +97,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
   const fetchDeals = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/deals`);
       const data = await response.json();
       setDeals(Array.isArray(data) ? data : []);
@@ -107,7 +109,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
   const fetchProjects = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/projects`);
       const data = await response.json();
       setProjects(Array.isArray(data) ? data : []);
@@ -119,7 +121,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
   const fetchContacts = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts`);
       const data = await response.json();
       setContacts(Array.isArray(data) ? data : []);
@@ -131,7 +133,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
   const fetchUsers = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/users`);
       const data = await response.json();
       setUsers(Array.isArray(data) ? data : []);
@@ -213,7 +215,7 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
 
   const handleCreateDeal = async (dealData) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
 
       const response = await fetch(`${apiUrl}/deals`, {
         method: 'POST',

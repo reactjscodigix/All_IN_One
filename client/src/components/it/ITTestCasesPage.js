@@ -8,6 +8,8 @@ import { useParams } from 'react-router-dom';
 import NewTestCaseModal from './NewTestCaseModal';
 import SearchableSelect from '../common/SearchableSelect';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const PriorityBadge = ({ priority }) => {
   let colors = '';
   switch (priority) {
@@ -63,8 +65,8 @@ const ITTestCasesPage = () => {
   const fetchTestCases = async () => {
     try {
       const [tcRes, projRes] = await Promise.all([
-        fetch('http://localhost:5000/api/tester/test-cases'),
-        fetch('http://localhost:5000/api/projects')
+        fetch(API_BASE_URL + '/tester/test-cases'),
+        fetch(API_BASE_URL + '/projects')
       ]);
       const tcData = await tcRes.json();
       const pData = await projRes.json();
@@ -141,7 +143,7 @@ const ITTestCasesPage = () => {
           let type = cols[5] || cols[3] || 'Functional';
           let status = cols[6] || cols[4] || 'Draft';
 
-          await fetch('http://localhost:5000/api/tester/test-cases', {
+          await fetch(API_BASE_URL + '/tester/test-cases', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -161,6 +163,7 @@ const ITTestCasesPage = () => {
     } catch (err) {
       console.error('Import error:', err);
       alert('Failed to import test cases.');
+
     } finally {
       setIsImporting(false);
       e.target.value = '';

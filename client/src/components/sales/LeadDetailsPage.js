@@ -13,6 +13,8 @@ import { leadsAPI, companiesAPI, activitiesAPI, estimationsAPI, notesAPI, filesA
 import ConvertLeadModal from './ConvertLeadModal';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const LeadDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -730,7 +732,7 @@ const LeadDetailsPage = () => {
 
   const handleConvert = async (data) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const realLeadId = lead.is_virtual_deal ? lead.lead_id : id;
 
       if (convertType === 'contact') {
@@ -1799,7 +1801,7 @@ const LeadDetailsPage = () => {
                           <div className="flex flex-col gap-2 mt-2 p-2 bg-gray-50 rounded border border-gray-100">
                             <div className="flex items-center gap-4">
                               <button
-                                onClick={() => window.open(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${call.recording_url}`, '_blank')}
+                                onClick={() => window.open(`${process.env.REACT_APP_API_URL || API_BASE_URL.replace(/\/api\/?$/, '') + ''}${call.recording_url}`, '_blank')}
                                 className="text-xs text-red-600 hover:underline flex items-center gap-1 font-medium"
                               >
                                 <Play size={10} /> Listen to Recording

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, ChevronDown } from 'lucide-react';
 import AddNewCompanyForm from '../common/AddNewCompanyForm';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyAdded, leadToEdit }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -192,7 +194,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
   const fetchUsers = async () => {
     setLoadingData(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/users`);
       if (response.ok) {
         const data = await response.json();
@@ -208,7 +210,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
 
   const fetchCompaniesData = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/companies`);
       if (response.ok) {
         const data = await response.json();
@@ -284,7 +286,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
 
   const handleCreateCompany = async (companyData) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
 
       const apiPayload = {
         company_name: companyData.companyName,
@@ -431,7 +433,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
           fileData.append('lead_id', response.id);
           fileData.append('userId', formData.owner || '1');
 
-          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+          const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
           await fetch(`${apiUrl}/files/upload`, {
             method: 'POST',
             body: fileData

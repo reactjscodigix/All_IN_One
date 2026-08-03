@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const AddTimeLogModal = ({ isOpen, onClose, projectId, onAdd }) => {
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState('');
@@ -11,7 +14,7 @@ const AddTimeLogModal = ({ isOpen, onClose, projectId, onAdd }) => {
 
   useEffect(() => {
     if (isOpen) {
-      fetch('http://localhost:5000/api/users')
+      fetch(API_BASE_URL + '/users')
         .then(res => res.json())
         .then(data => setUsers(data))
         .catch(err => console.error(err));
@@ -24,7 +27,7 @@ const AddTimeLogModal = ({ isOpen, onClose, projectId, onAdd }) => {
 
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/projects/${projectId}/timesheets`, {
+      const res = await fetch(`${API_BASE_URL}/projects/${projectId}/timesheets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

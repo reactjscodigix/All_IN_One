@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, Trash2, Phone, Mail, Video } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 export default function CallHistoryPage() {
   const [callData, setCallData] = useState([]);
   const [selectedCaller, setSelectedCaller] = useState(null);
@@ -29,7 +31,7 @@ export default function CallHistoryPage() {
   const fetchCallHistory = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/call-history?limit=50`);
       if (!response.ok) {
         throw new Error('Failed to fetch call history');
@@ -69,7 +71,7 @@ export default function CallHistoryPage() {
 
   const handleDeleteCall = async (callId) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/call-history/${callId}`, {
         method: 'DELETE'
       });
@@ -130,7 +132,7 @@ export default function CallHistoryPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/call-history', {
+      const response = await fetch(API_BASE_URL + '/call-history', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -180,7 +182,7 @@ export default function CallHistoryPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/call-history/${editingCallId}`, {
+      const response = await fetch(`${API_BASE_URL}/call-history/${editingCallId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -206,7 +208,7 @@ export default function CallHistoryPage() {
 
   const handleSaveMeetingLinkDirect = async (callId, link) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/call-history/${callId}`, {
+      const response = await fetch(`${API_BASE_URL}/call-history/${callId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

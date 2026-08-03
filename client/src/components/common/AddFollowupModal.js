@@ -6,6 +6,8 @@ import {
 import { leadsAPI, dealsAPI, contactsAPI, invoicesAPI, usersAPI, followupsAPI, projectAPI } from '../../services/api';
 import { generateMeetingCode, generateMeetingLink } from '../../utils/meetingUtils';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -211,7 +213,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
     const fetchExistingFiles = async () => {
       if (isOpen && formData.related_id && formData.related_type) {
         try {
-          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+          const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
           let paramName = '';
           switch (formData.related_type) {
             case 'Lead': paramName = 'lead_id'; break;
@@ -934,7 +936,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                             {existingFiles.filter(file => !['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(file.file_type?.toUpperCase())).map(file => (
                               <a
                                 key={file.id}
-                                href={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5000'}${file.file_path}`}
+                                href={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : API_BASE_URL.replace(/\/api\/?$/, '') + ''}${file.file_path}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-1.5 p-1 bg-gray-50 rounded hover:bg-gray-100 transition text-[9px] text-blue-600 hover:text-blue-800 border border-gray-100 truncate"
@@ -977,7 +979,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                             {existingFiles.filter(file => ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(file.file_type?.toUpperCase())).map(file => (
                               <a
                                 key={file.id}
-                                href={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5000'}${file.file_path}`}
+                                href={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : API_BASE_URL.replace(/\/api\/?$/, '') + ''}${file.file_path}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex items-center gap-1.5 p-1 bg-gray-50 rounded hover:bg-gray-100 transition text-[9px] text-blue-600 hover:text-blue-800 border border-gray-100 truncate"

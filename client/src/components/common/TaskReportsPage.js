@@ -20,6 +20,8 @@ import {
   Legend,
 } from 'recharts';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const TaskReportsPage = () => {
   const [query, setQuery] = useState('');
   const [year, setYear] = useState('2025');
@@ -77,7 +79,7 @@ const TaskReportsPage = () => {
     const fetchTasks = async () => {
       try {
         setLoading(true);
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
         const response = await fetch(`${apiUrl}/tasks`);
         if (!response.ok) throw new Error('Failed to fetch tasks');
         let data = await response.json();

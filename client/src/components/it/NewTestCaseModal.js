@@ -6,6 +6,9 @@ import {
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import SearchableSelect from '../common/SearchableSelect';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const NewTestCaseModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     project: '',
@@ -42,10 +45,10 @@ const NewTestCaseModal = ({ isOpen, onClose, onSuccess }) => {
   const fetchProjectsAndUsers = async () => {
     try {
       const [projRes, usersRes, bugsRes, tcRes] = await Promise.all([
-        fetch('http://localhost:5000/api/projects'),
-        fetch('http://localhost:5000/api/users'),
-        fetch('http://localhost:5000/api/tester/bugs'),
-        fetch('http://localhost:5000/api/tester/test-cases')
+        fetch(API_BASE_URL + '/projects'),
+        fetch(API_BASE_URL + '/users'),
+        fetch(API_BASE_URL + '/tester/bugs'),
+        fetch(API_BASE_URL + '/tester/test-cases')
       ]);
       const pData = await projRes.json();
       const uData = await usersRes.json();
@@ -77,7 +80,7 @@ const NewTestCaseModal = ({ isOpen, onClose, onSuccess }) => {
       const selectedProjectObj = projectsData.find(p => p.name === formData.project);
       const projectId = selectedProjectObj ? selectedProjectObj.id : 1;
 
-      const res = await fetch('http://localhost:5000/api/tester/test-cases', {
+      const res = await fetch(API_BASE_URL + '/tester/test-cases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

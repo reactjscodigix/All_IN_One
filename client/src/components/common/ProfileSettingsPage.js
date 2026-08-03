@@ -14,6 +14,9 @@ import {
 } from 'recharts';
 import { showSuccessToast, showInfoToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 // Mock Data Definitions
 
 
@@ -244,11 +247,11 @@ const ProfileSettingsPage = () => {
     const fetchData = async () => {
       try {
         const [projRes, tasksRes, issuesRes, activitiesRes, invoicesRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/projects').catch(() => ({ data: [] })),
-          axios.get('http://localhost:5000/api/tasks').catch(() => ({ data: [] })),
-          axios.get('http://localhost:5000/api/it-kanban/issues').catch(() => ({ data: [] })),
-          axios.get('http://localhost:5000/api/activities').catch(() => ({ data: [] })),
-          axios.get('http://localhost:5000/api/invoices').catch(() => ({ data: [] }))
+          axios.get(API_BASE_URL + '/projects').catch(() => ({ data: [] })),
+          axios.get(API_BASE_URL + '/tasks').catch(() => ({ data: [] })),
+          axios.get(API_BASE_URL + '/it-kanban/issues').catch(() => ({ data: [] })),
+          axios.get(API_BASE_URL + '/activities').catch(() => ({ data: [] })),
+          axios.get(API_BASE_URL + '/invoices').catch(() => ({ data: [] }))
         ]);
 
         setProjects(projRes.data.map(p => ({
@@ -311,7 +314,7 @@ const ProfileSettingsPage = () => {
     e.preventDefault();
     try {
       if (user && user.id) {
-        await axios.put(`http://localhost:5000/api/users/${user.id}`, {
+        await axios.put(`${API_BASE_URL}/users/${user.id}`, {
           ...user,
           first_name: editForm.firstName,
           last_name: editForm.lastName,

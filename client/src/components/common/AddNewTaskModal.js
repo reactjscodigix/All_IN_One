@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Paperclip, Image as ImageIcon, Bell, FileText, UserPlus, Layout } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddNewTaskModal = ({ isOpen, onClose, onSubmit, initialData = null, deals = [], projects = [], users = [], department = '' }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -111,7 +113,7 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, initialData = null, deals 
   const fetchData = async () => {
     setLoadingData(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const [usersRes, dealsRes, projectsRes, leadsRes, estimationsRes, confirmedRes, confirmedClientsRes] = await Promise.all([
         fetch(`${apiUrl}/contacts`).then(r => r.json()),
         fetch(`${apiUrl}/deals`).then(r => r.json()),
@@ -145,7 +147,7 @@ const AddNewTaskModal = ({ isOpen, onClose, onSubmit, initialData = null, deals 
       return;
     }
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/projects/${projectId}/team`);
       const data = await response.json();
       setProjectTeam(Array.isArray(data) ? data : []);

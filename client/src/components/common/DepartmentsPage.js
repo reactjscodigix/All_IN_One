@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Search, MoreVertical, Edit2, Trash2 } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const DepartmentsPage = () => {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +16,7 @@ const DepartmentsPage = () => {
   const fetchDepartments = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/entities/departments`);
       if (response.ok) {
         const data = await response.json();

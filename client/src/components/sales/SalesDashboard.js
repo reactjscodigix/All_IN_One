@@ -34,6 +34,8 @@ import {
 import UpcomingEvents from '../common/UpcomingEvents';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const SalesDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -42,7 +44,7 @@ const SalesDashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
         const response = await fetch(`${apiUrl}/dashboard/sales?userId=${user?.id}&viewType=${user?.role?.includes('Manager') ? 'manager' : 'executive'}`);
         if (!response.ok) throw new Error('Failed to fetch dashboard data');
         const data = await response.json();

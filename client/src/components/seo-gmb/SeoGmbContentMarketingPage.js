@@ -11,6 +11,9 @@ import {
 import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 // ── Static chart data ──────────────────────────────────────────────────────
 const PERFORMANCE_DATA = [];
 
@@ -149,7 +152,7 @@ export default function SeoGmbContentMarketingPage() {
 
   const loadProject = async (proj) => {
     try {
-      const r = await fetch(`http://localhost:5000/api/projects/${proj.id}`);
+      const r = await fetch(`${API_BASE_URL}/projects/${proj.id}`);
       if (r.ok) setProject(await r.json());
     } catch { }
   };

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const RolePermissionsDetailPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -15,7 +17,7 @@ const RolePermissionsDetailPage = () => {
 
   const fetchRolePermissions = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/permissions/role/${roleId}`);
+      const response = await fetch(`${API_BASE_URL}/permissions/role/${roleId}`);
       if (!response.ok) throw new Error('Failed to fetch permissions');
       const data = await response.json();
 
@@ -37,7 +39,7 @@ const RolePermissionsDetailPage = () => {
 
   const fetchModules = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/modules`);
       if (!response.ok) throw new Error('Failed to fetch modules');
       const data = await response.json();
@@ -117,7 +119,7 @@ const RolePermissionsDetailPage = () => {
         can_delete: permissions[module.name]?.can_delete || false
       }));
 
-      const response = await fetch(`http://localhost:5000/api/permissions/role/${roleId}`, {
+      const response = await fetch(`${API_BASE_URL}/permissions/role/${roleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

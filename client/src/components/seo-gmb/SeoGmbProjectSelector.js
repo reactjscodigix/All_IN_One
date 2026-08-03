@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Globe, Folder, Plus, Award } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 export default function SeoGmbProjectSelector({ onProjectChange }) {
   const [projects, setProjects] = useState([]);
   const [activeProject, setActiveProject] = useState(null);
@@ -22,7 +25,7 @@ export default function SeoGmbProjectSelector({ onProjectChange }) {
 
   const fetchProjects = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/projects?department=SEO+%26+GMB+Department');
+      const response = await fetch(API_BASE_URL + '/projects?department=SEO+%26+GMB+Department');
       if (response.ok) {
         const data = await response.json();
         setProjects(data);

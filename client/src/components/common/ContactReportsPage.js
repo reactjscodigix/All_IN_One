@@ -24,6 +24,8 @@ import {
   Legend,
 } from 'recharts';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const generateMonthlyData = () => {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return months.map((month) => ({
@@ -522,7 +524,7 @@ const ContactReportsPage = () => {
     const fetchContacts = async () => {
       try {
         setLoading(true);
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
         const response = await fetch(`${apiUrl}/contacts`);
         if (!response.ok) throw new Error('Failed to fetch contacts');
         let data = await response.json();

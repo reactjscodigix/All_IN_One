@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import AdvancedDateRangePicker from '../common/AdvancedDateRangePicker';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 
 
 const TYPE_COLORS = {
@@ -43,7 +46,7 @@ export default function ITActivitiesPage() {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/activities');
+        const res = await axios.get(API_BASE_URL + '/activities');
 
         // Map raw data to UI format
         const formatted = res.data.map(act => {

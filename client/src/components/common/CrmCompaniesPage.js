@@ -3,6 +3,8 @@ import { Mail, Phone, MapPin, MoreVertical, Plus, Search, ChevronDown } from 'lu
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const CrmCompaniesPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,7 +30,7 @@ const CrmCompaniesPage = () => {
   const fetchCompanies = async () => {
     setIsLoading(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/companies`);
       if (response.ok) {
         let data = await response.json();
@@ -82,7 +84,7 @@ const CrmCompaniesPage = () => {
 
   const seedMockCompanies = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/seed-mock-companies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -111,7 +113,7 @@ const CrmCompaniesPage = () => {
     if (deleteConfirm === companyId) {
       setIsDeleting(true);
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
         const response = await fetch(`${apiUrl}/companies/${companyId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }

@@ -5,6 +5,8 @@ import AddNewContractModal from './AddNewContractModal';
 import ContractDetailsPage from './ContractDetailsPage';
 import { contractsAPI, createContract } from '../../services/api';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const ContractsPage = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,7 +45,7 @@ const ContractsPage = () => {
   const fetchCompanies = async () => {
     setIsLoadingCompanies(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/companies`);
       if (response.ok) {
         const data = await response.json();

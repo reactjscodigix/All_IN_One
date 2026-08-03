@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { projectAPI } from '../../services/api';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
@@ -36,7 +38,7 @@ const AddNewProjectModal = ({ isOpen, onClose, onSuccess }) => {
   const fetchRequiredData = async () => {
     setIsFetching(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const [usersRes, companiesRes, confirmedRes] = await Promise.all([
         fetch(`${apiUrl}/contacts`),
         fetch(`${apiUrl}/confirmed-it-clients`),

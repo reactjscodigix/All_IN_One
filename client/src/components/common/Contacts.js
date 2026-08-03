@@ -6,6 +6,8 @@ import ContactActionDropdown from './ContactActionDropdown';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 import { projectTeamAPI, usersAPI, teamsAPI } from '../../services/api';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const ProjectTeamModal = ({ isOpen, onClose, projectId, currentTeam, users, teams, onAssign, onAssignTeam }) => {
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('');
@@ -406,7 +408,7 @@ const Contacts = () => {
 
   const fetchContacts = useCallback(async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       // Fetch all contacts
       const response = await fetch(`${apiUrl}/contacts`);
       if (!response.ok) {
@@ -469,7 +471,7 @@ const Contacts = () => {
 
   const handleAddContact = async (formData) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts`, {
         method: 'POST',
         headers: {
@@ -504,7 +506,7 @@ const Contacts = () => {
   const handleDelete = async (contactId) => {
     try {
       const contactToDelete = contacts.find(c => c.id === contactId);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts/${contactId}`, {
         method: 'DELETE',
       });
@@ -529,7 +531,7 @@ const Contacts = () => {
 
   const handleUpdateContact = async (formData) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts/${selectedContact.id}`, {
         method: 'PUT',
         headers: {

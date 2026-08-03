@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 // We fetch repositories from the backend, so we no longer need the hardcoded MOCK_REPOS
 // But we keep the static widgets and charts the same for now.
 
@@ -94,7 +96,7 @@ export default function ITRepositoriesPage() {
 
   const fetchRepositories = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/github/repositories');
+      const response = await axios.get(API_BASE_URL + '/github/repositories');
       // If topics is a string, parse it
       const processedRepos = response.data.map(repo => ({
         ...repo,
@@ -123,7 +125,7 @@ export default function ITRepositoriesPage() {
     }
     setDeleting(true);
     try {
-      await axios.delete(`http://localhost:5000/api/github/repositories/${id}`);
+      await axios.delete(`${API_BASE_URL}/github/repositories/${id}`);
       setSelectedRepo(null);
       setShowSettingsModal(false);
       await fetchRepositories();
@@ -137,7 +139,7 @@ export default function ITRepositoriesPage() {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      await axios.post('http://localhost:5000/api/github/sync');
+      await axios.post(API_BASE_URL + '/github/sync');
       await fetchRepositories();
     } catch (error) {
       console.error('Error syncing:', error);
@@ -152,7 +154,7 @@ export default function ITRepositoriesPage() {
     }
     setImporting(true);
     try {
-      await axios.post('http://localhost:5000/api/github/import', {
+      await axios.post(API_BASE_URL + '/github/import', {
         url: importUrl,
         project: importProject !== 'None' ? importProject : null,
         isPrivate: importVisibility === 'Private',
@@ -168,6 +170,7 @@ export default function ITRepositoriesPage() {
     } catch (error) {
       console.error('Error importing:', error);
       alert(error.response?.data?.error || "Failed to import repository");
+
     }
     setImporting(false);
   };

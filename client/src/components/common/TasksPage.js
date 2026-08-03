@@ -8,6 +8,9 @@ import ITCreateIssueDrawer from '../it/ITCreateIssueDrawer';
 import ITIssueDetailsPanel from '../it/ITIssueDetailsPanel';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const PRIORITY_ICONS = {
   High: <ArrowUp size={14} className="text-red-500" />,
   Medium: <ArrowUp size={14} className="text-orange-500" />,
@@ -50,7 +53,7 @@ const TasksPage = ({ department }) => {
         user_id: user?.id || '',
         role: user?.role || ''
       });
-      const res = await fetch(`http://localhost:5000/api/tasks?${queryParams}`);
+      const res = await fetch(`${API_BASE_URL}/tasks?${queryParams}`);
       if (res.ok) {
         const data = await res.json();
         setTasks(data);

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MoreVertical, Plus, Search, GripVertical, Calendar, Clock, ChevronDown, User, CornerDownLeft, CheckSquare } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const TasksKanban = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ const TasksKanban = () => {
   const loadTasks = async () => {
     setLoading(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/tasks`);
       if (response.ok) {
         const data = await response.json();
@@ -59,7 +61,7 @@ const TasksKanban = () => {
     setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -105,7 +107,7 @@ const TasksKanban = () => {
     setActiveAddStatus(null);
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

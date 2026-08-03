@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const DeleteRequestModal = ({ isOpen, onClose, userId, onSuccess }) => {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ const DeleteRequestModal = ({ isOpen, onClose, userId, onSuccess }) => {
     setError('');
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/delete-requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

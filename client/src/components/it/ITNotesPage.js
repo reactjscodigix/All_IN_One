@@ -2,11 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import {
+
   Search, Plus, Star, MoreVertical, X, Filter, ChevronRight,
   FileText, BookOpen, Trash2, Clock, Users, Heart, ChevronDown,
   LayoutGrid, List, Download, Edit3, Eye, Paperclip, Tag, Folder,
   Hash, AlertCircle, Calendar, CheckSquare
 } from 'lucide-react';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // ─── Mock Data ──────────────────────────────────────────────────────────────
 const AVATARS = {
@@ -97,7 +100,7 @@ export default function ITNotesPage() {
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/notes');
+        const res = await axios.get(API_BASE_URL + '/notes');
         const formatted = res.data.map(n => {
           let extra = {};
           try {

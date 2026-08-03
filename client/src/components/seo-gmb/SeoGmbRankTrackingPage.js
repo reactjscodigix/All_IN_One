@@ -11,6 +11,9 @@ import {
 import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 // ── Chart Data ────────────────────────────────────────────────────────────
 const RANKING_TREND = [];
 
@@ -194,7 +197,7 @@ export default function SeoGmbRankTrackingPage() {
   const makeDel = (key) => (id) => setTableData(prev => ({ ...prev, [key]: prev[key].filter(i => i.id !== id) }));
 
   const loadProject = async (proj) => {
-    try { const r = await fetch(`http://localhost:5000/api/projects/${proj.id}`); if (r.ok) setProject(await r.json()); } catch { }
+    try { const r = await fetch(`${API_BASE_URL}/projects/${proj.id}`); if (r.ok) setProject(await r.json()); } catch { }
   };
 
   const filteredKeywords = tableData.keywords.filter(k =>

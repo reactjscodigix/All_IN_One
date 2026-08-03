@@ -20,6 +20,8 @@ import DeleteConfirmationModal from './DeleteConfirmationModal';
 import FilterPanel from './FilterPanel';
 import DateRangePicker from './DateRangePicker';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const dummyUsersData = [];
 
 const ManageUsersPage = () => {
@@ -73,7 +75,7 @@ const ManageUsersPage = () => {
 
   const fetchRoles = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/roles`);
       if (!response.ok) throw new Error('Failed to fetch roles');
       const data = await response.json();
@@ -85,7 +87,7 @@ const ManageUsersPage = () => {
 
   const fetchUsers = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/users`);
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
@@ -231,7 +233,7 @@ const ManageUsersPage = () => {
         const userIds = Array.from(selectedUsers);
         // Assuming the API supports multiple delete or we loop
         for (const userId of userIds) {
-          const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+          const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' }
           });
@@ -241,7 +243,7 @@ const ManageUsersPage = () => {
         showMessage('success', `${selectedUsers.size} users deleted successfully!`);
         setSelectedUsers(new Set());
       } else {
-        const response = await fetch(`http://localhost:5000/api/users/${userToDelete.id}`, {
+        const response = await fetch(`${API_BASE_URL}/users/${userToDelete.id}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         });

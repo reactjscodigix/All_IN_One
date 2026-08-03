@@ -4,10 +4,13 @@ import { useAuth } from '../../hooks/useAuth';
 import axios from 'axios';
 import { showSuccessToast } from '../../utils/toast';
 import {
+
   X, Bold, Italic, Underline, Strikethrough, Code, List, ListOrdered,
   Quote, Link as LinkIcon, Image, Type, Table, Undo, Redo, CloudUpload,
   Mail, Calendar, BookOpen, FileText, Check, Star, Heart
 } from 'lucide-react';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const CreateNotePage = () => {
   const navigate = useNavigate();
@@ -59,7 +62,7 @@ const CreateNotePage = () => {
         teamAccess: formData.teamAccess
       });
 
-      await axios.post('http://localhost:5000/api/notes', {
+      await axios.post(API_BASE_URL + '/notes', {
         title: formData.title,
         description: enrichedDescription,
         is_important: formData.isImportant ? 1 : 0,

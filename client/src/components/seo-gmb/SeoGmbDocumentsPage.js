@@ -13,6 +13,9 @@ import { filesAPI } from '../../services/api';
 import SearchableSelect from '../common/SearchableSelect';
 import AdvancedDateRangePicker from '../common/AdvancedDateRangePicker';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const SeoGmbDocumentsPage = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -44,7 +47,7 @@ const SeoGmbDocumentsPage = () => {
       try {
         setLoading(true);
         if (isIT) {
-          const res = await axios.get('http://localhost:5000/api/it-documents');
+          const res = await axios.get(API_BASE_URL + '/it-documents');
           const formattedFiles = res.data.map(f => {
             const dateObj = new Date(f.created_at);
             return {

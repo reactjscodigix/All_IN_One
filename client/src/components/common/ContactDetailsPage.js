@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, Mail, Phone, MapPin, Plus, MoreVertical, Calendar, Heart, Tag, Globe, Download } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const ContactDetailsPage = ({ contactId, onBack }) => {
   const [contact, setContact] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
         return;
       }
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts/${contactIdFromState}`);
       if (response.ok) {
         const data = await response.json();
@@ -40,7 +42,7 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
   const fetchNotes = useCallback(async () => {
     try {
       if (!contactIdFromState) return;
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts/${contactIdFromState}/notes`);
       if (response.ok) {
         const data = await response.json();
@@ -54,7 +56,7 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
   const fetchActivities = useCallback(async () => {
     try {
       if (!contactIdFromState) return;
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts/${contactIdFromState}/activities`);
       if (response.ok) {
         const data = await response.json();
@@ -72,7 +74,7 @@ const ContactDetailsPage = ({ contactId, onBack }) => {
     }
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts/${contactIdFromState}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

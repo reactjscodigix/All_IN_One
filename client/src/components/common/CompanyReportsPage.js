@@ -17,6 +17,8 @@ import {
   Legend,
 } from 'recharts';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const COLORS = ['#4F46E5', '#DC2626', '#059669', '#7C3AED', '#1F2937', '#06B6D4', '#8B5CF6', '#EA580C', '#DB2777', '#3B82F6'];
 
 const generateMonthlyData = (companies) => {
@@ -233,7 +235,7 @@ export default function CompanyReportsPage() {
     const fetchCompanies = async () => {
       try {
         setLoading(true);
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
 
         const companiesRes = await fetch(`${apiUrl}/companies`);
 

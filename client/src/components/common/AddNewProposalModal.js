@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Plus, X, CheckCircle, Upload } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contacts = [], deals = [] }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,7 +69,7 @@ const AddNewProposalModal = ({ isOpen, onClose, onSubmit, companies = [], contac
   const fetchUsersAndProjects = async () => {
     setLoadingData(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const [usersRes, projectsRes] = await Promise.all([
         fetch(`${apiUrl}/contacts`),
         fetch(`${apiUrl}/projects`)

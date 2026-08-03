@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MoreVertical, Download, ChevronDown } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const dummyRolesData = [];
 
 const RolesPermissionsPage = () => {
@@ -22,7 +24,7 @@ const RolesPermissionsPage = () => {
 
   const fetchRoles = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/roles`);
       if (!response.ok) throw new Error('Failed to fetch roles');
       const data = await response.json();
@@ -66,7 +68,7 @@ const RolesPermissionsPage = () => {
     }
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/roles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,7 +96,7 @@ const RolesPermissionsPage = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/roles/${selectedRole.id}`, {
+      const response = await fetch(`${API_BASE_URL}/roles/${selectedRole.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: roleName, description: roleDescription })
@@ -115,7 +117,7 @@ const RolesPermissionsPage = () => {
   const handleDeleteRole = async (roleId) => {
     if (window.confirm('Are you sure you want to delete this role?')) {
       try {
-        const response = await fetch(`http://localhost:5000/api/roles/${roleId}`, {
+        const response = await fetch(`${API_BASE_URL}/roles/${roleId}`, {
           method: 'DELETE'
         });
 

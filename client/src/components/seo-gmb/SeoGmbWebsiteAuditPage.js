@@ -5,11 +5,14 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import {
+
   CheckCircle, ChevronRight, Edit3, MoreHorizontal, ArrowUpRight, ArrowDownRight,
   Search, Bell, Calendar, MessageSquare, Plus, FileText, Globe, Sliders, ChevronDown,
   Check, Target, Zap, Link, MapPin, Users, Lock, Server, Trash2, ClipboardList, Info, Shield, HelpCircle,
   Activity, TrendingUp, AlertTriangle, AlertCircle, RefreshCw, X
 } from 'lucide-react';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const Phone = ({ size, className }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
@@ -1177,7 +1180,7 @@ export default function SeoGmbWebsiteAuditPage() {
 
   const loadProjectData = async (proj) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/${proj.id}`);
+      const response = await fetch(`${API_BASE_URL}/projects/${proj.id}`);
       if (response.ok) {
         const pData = await response.json();
         setProject(pData);

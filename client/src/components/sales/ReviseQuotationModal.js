@@ -4,6 +4,8 @@ import { estimationsAPI, usersAPI, dealsAPI, leadsAPI, taskAPI, projectAPI, acti
 import { showSuccessToast } from '../../utils/toast';
 import Swal from 'sweetalert2';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const ReviseQuotationModal = ({ isOpen, onClose, quotation, onUpdate }) => {
   const [formData, setFormData] = useState({
     quotationNumber: '',
@@ -404,7 +406,7 @@ const ReviseQuotationModal = ({ isOpen, onClose, quotation, onUpdate }) => {
           const email = formData.client_email || formData.email;
           console.log('📧 Attempting to send revision email to:', email, 'for result.id:', result.id);
           if (email && result.id) {
-            const sendEmailRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/estimations/${result.id}/send-email`, {
+            const sendEmailRes = await fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/estimations/${result.id}/send-email`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email })

@@ -8,6 +8,8 @@ import ReviseQuotationModal from './ReviseQuotationModal';
 import { estimationsAPI, dealsAPI, leadsAPI, activitiesAPI } from '../../services/api';
 import { showSuccessToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const QuotationsPage = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -225,7 +227,7 @@ const QuotationsPage = () => {
         const email = quotation.client_email || quotation.lead_email || quotation.email;
         if (email && result.id) {
           try {
-            await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/estimations/${result.id}/send-email`, {
+            await fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/estimations/${result.id}/send-email`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email })
@@ -367,7 +369,7 @@ const QuotationsPage = () => {
 
       if (email) {
         setIsUpdating(true);
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/estimations/${quotation.id}/send-email`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/estimations/${quotation.id}/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
@@ -722,7 +724,7 @@ const QuotationsPage = () => {
           try {
             const email = formData.client_email || formData.email;
             if (email) {
-              const sendEmailRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/estimations/${selectedQuotation.id}/send-email`, {
+              const sendEmailRes = await fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/estimations/${selectedQuotation.id}/send-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -805,7 +807,7 @@ const QuotationsPage = () => {
           try {
             const email = formData.client_email || formData.email;
             if (email) {
-              const sendEmailRes = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/estimations/${response.id}/send-email`, {
+              const sendEmailRes = await fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/estimations/${response.id}/send-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })

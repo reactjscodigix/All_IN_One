@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +32,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
 
   const fetchRoles = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/roles`);
       if (!response.ok) throw new Error('Failed to fetch roles');
       const data = await response.json();
@@ -121,7 +123,7 @@ const AddNewUserModal = ({ isOpen, onClose, onSuccess }) => {
 
     setIsLoading(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const selectedRole = roles.find(r => r.name === formData.role);
       const roleId = selectedRole?.id || 5;
 

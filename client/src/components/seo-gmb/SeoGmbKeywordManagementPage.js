@@ -11,6 +11,9 @@ import {
 } from 'lucide-react';
 import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const TREND_CHART_DATA = [];
 
 const DIFFICULTY_DIST_DATA = [];
@@ -154,13 +157,13 @@ export default function SeoGmbKeywordManagementPage() {
 
   const loadProjectData = async (proj) => {
     try {
-      const pRes = await fetch(`http://localhost:5000/api/projects/${proj.id}`);
+      const pRes = await fetch(`${API_BASE_URL}/projects/${proj.id}`);
       if (pRes.ok) {
         const pData = await pRes.json();
         setProject(pData);
       }
 
-      const sRes = await fetch(`http://localhost:5000/api/marketing/seo?project_id=${proj.id}`);
+      const sRes = await fetch(`${API_BASE_URL}/marketing/seo?project_id=${proj.id}`);
       if (sRes.ok) {
         const sData = await sRes.json();
         if (sData.success && sData.data.length > 0) {
@@ -191,7 +194,7 @@ export default function SeoGmbKeywordManagementPage() {
 
     try {
       const volumeNum = parseInt(newKeywordVolume.replace(/[^\d]/g, '')) || 1000;
-      const response = await fetch('http://localhost:5000/api/marketing/seo', {
+      const response = await fetch(API_BASE_URL + '/marketing/seo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

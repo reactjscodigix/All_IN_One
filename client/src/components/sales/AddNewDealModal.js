@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = [], companies = [], dealToEdit = null, isCompanyContext = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,7 +48,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
 
   const fetchUsers = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/users`);
       const data = await response.json();
       setUsers(Array.isArray(data) ? data : []);
@@ -59,7 +61,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
   const fetchLeads = async () => {
     setIsLoadingLeads(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/leads?status=Qualified`);
       const data = await response.json();
       setLeads(Array.isArray(data) ? data : []);
@@ -74,7 +76,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
   const fetchCompanies = async () => {
     setIsLoadingCompanies(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/companies`);
       const data = await response.json();
       setLocalCompanies(Array.isArray(data) ? data : []);
@@ -89,7 +91,7 @@ const AddNewDealModal = ({ isOpen, onClose, onSubmit, contacts = [], projects = 
   const fetchContacts = async () => {
     setIsLoadingContacts(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/contacts`);
       const data = await response.json();
       setLocalContacts(Array.isArray(data) ? data : []);

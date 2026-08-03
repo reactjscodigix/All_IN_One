@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Star, Trash2, MoreVertical, Download, Calendar, Plus, X, Edit2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const NotesPage = () => {
   const { user } = useAuth();
   const [notes, setNotes] = useState([]);
@@ -21,7 +23,7 @@ const NotesPage = () => {
     tag: 'Pending'
   });
 
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
 
   useEffect(() => {
     const fetchNotesAsync = async () => {

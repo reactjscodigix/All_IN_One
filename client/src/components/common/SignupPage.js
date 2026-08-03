@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { Mail, Lock, User, LogIn, Check, AlertCircle, Plus, X } from 'lucide-react';
 import AddNewDealModal from '../sales/AddNewDealModal';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const SignupPage = () => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -64,7 +66,7 @@ const SignupPage = () => {
 
   const fetchDeals = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/deals`);
       if (response.ok) {
         const data = await response.json();
@@ -132,7 +134,7 @@ const SignupPage = () => {
 
   const handleDealSubmit = async (dealData) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/deals`, {
         method: 'POST',
         headers: {
@@ -202,7 +204,7 @@ const SignupPage = () => {
     });
 
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
 
       const response = await fetch(`${apiUrl}/auth/signup`, {
         method: 'POST',

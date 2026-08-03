@@ -10,6 +10,9 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ITCreateIssueDrawer from './ITCreateIssueDrawer';
 import ITIssueDetailsPanel from './ITIssueDetailsPanel';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 function BookmarkIcon(props) {
   return <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}><path d="M5 3v18l7-4.5 7 4.5V3z" /></svg>;
 }
@@ -151,7 +154,7 @@ const ITKanbanPage = () => {
         }
         if (!Array.isArray(rawSt)) rawSt = [];
         const updatedSt = rawSt.map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st);
-        fetch(`http://localhost:5000/api/it-kanban/issues/${cardKey}`, {
+        fetch(`${API_BASE_URL}/it-kanban/issues/${cardKey}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ subtasks: JSON.stringify(updatedSt) })
@@ -176,7 +179,7 @@ const ITKanbanPage = () => {
         }
         if (!Array.isArray(rawSt)) rawSt = [];
         const updatedSt = [...rawSt, { id: Date.now(), title: newTitle, completed: false }];
-        fetch(`http://localhost:5000/api/it-kanban/issues/${cardKey}`, {
+        fetch(`${API_BASE_URL}/it-kanban/issues/${cardKey}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ subtasks: JSON.stringify(updatedSt) })
@@ -214,7 +217,7 @@ const ITKanbanPage = () => {
     setAllRawIssues(prev => prev.map(t => (t.issue_key === issueKey || t.key === issueKey) ? { ...t, assignee: newAssignee } : t));
     setOpenCardAssigneeDropdown(null);
     try {
-      await fetch(`http://localhost:5000/api/it-kanban/issues/${issueKey}`, {
+      await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assignee: newAssignee })
@@ -225,7 +228,7 @@ const ITKanbanPage = () => {
   };
 
   const fetchKanbanData = () => {
-    fetch('http://localhost:5000/api/it-kanban/issues')
+    fetch(API_BASE_URL + '/it-kanban/issues')
       .then(res => res.json())
       .then(data => {
         setAllRawIssues(Array.isArray(data) ? data : []);
@@ -237,7 +240,7 @@ const ITKanbanPage = () => {
     fetchKanbanData();
 
     // Fetch projects list for filter dropdown
-    fetch('http://localhost:5000/api/projects')
+    fetch(API_BASE_URL + '/projects')
       .then(res => res.json())
       .then(data => {
         const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
@@ -246,7 +249,7 @@ const ITKanbanPage = () => {
       .catch(err => console.error('Error fetching projects for kanban filter:', err));
 
     // Fetch users list for assignee filter
-    fetch('http://localhost:5000/api/users')
+    fetch(API_BASE_URL + '/users')
       .then(res => res.json())
       .then(data => {
         const list = Array.isArray(data?.value) ? data.value : (Array.isArray(data) ? data : []);
@@ -412,7 +415,7 @@ const ITKanbanPage = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/it-kanban/issues', {
+      const res = await fetch(API_BASE_URL + '/it-kanban/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -514,7 +517,7 @@ const ITKanbanPage = () => {
     });
 
     try {
-      await fetch(`http://localhost:5000/api/it-kanban/issues/${key}`, {
+      await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -526,7 +529,7 @@ const ITKanbanPage = () => {
 
   const deleteIssue = async (key) => {
     try {
-      await fetch(`http://localhost:5000/api/it-kanban/issues/${key}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, { method: 'DELETE' });
 
       setBoardData(prev => {
         const next = { ...prev };
@@ -566,7 +569,7 @@ const ITKanbanPage = () => {
         [destination.droppableId]: destCol
       });
       // Persist status change to DB
-      fetch(`http://localhost:5000/api/it-kanban/issues/${removed.key}`, {
+      fetch(`${API_BASE_URL}/it-kanban/issues/${removed.key}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: destination.droppableId })

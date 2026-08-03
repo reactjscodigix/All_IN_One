@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const EditUserModal = ({ isOpen, onClose, onSuccess, user, roles }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -140,7 +142,7 @@ const EditUserModal = ({ isOpen, onClose, onSuccess, user, roles }) => {
         updateData.password = formData.password;
       }
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/users/${user.id}`, {
         method: 'PUT',
         headers: {

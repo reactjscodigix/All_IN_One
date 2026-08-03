@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, ArrowRight } from 'lucide-react';
 import { projectAPI } from '../../services/api';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
   const [conversionType, setConversionType] = useState(null);
   const [formData, setFormData] = useState({
@@ -57,7 +59,7 @@ const DealConversionModal = ({ isOpen, onClose, deal, onSuccess }) => {
           ...formData
         };
 
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
         const response = await fetch(`${apiUrl}/deals/${deal.id}/convert-to-${conversionType}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

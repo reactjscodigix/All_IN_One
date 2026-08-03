@@ -11,6 +11,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { followupsAPI } from '../../services/api';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 export default function VideoCallPage() {
   const { code } = useParams();
   const { user } = useAuth();
@@ -100,7 +102,7 @@ export default function VideoCallPage() {
         avatar: `https://ui-avatars.com/api/?name=${clientName}&background=10B981&color=fff`
       });
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
 
       // Fetch associated Lead or Deal participants if available
       let assignedUserIds = [];
@@ -254,7 +256,7 @@ export default function VideoCallPage() {
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           const formData = new FormData();
           formData.append('recording', audioBlob, 'recording.webm');
-          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+          const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
           await fetch(`${apiUrl}/followups/${finalFollowupId}/upload-recording`, {
             method: 'POST',
             body: formData

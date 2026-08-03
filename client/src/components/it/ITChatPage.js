@@ -5,7 +5,8 @@ import {
   Search, Send, Phone, Video, MoreHorizontal, X, Plus, Filter,
   Star, Paperclip, Smile, AtSign, Hash, Calendar, FileText,
   ThumbsUp, Download, ChevronRight, Bell, Users, Settings,
-  Mic, Image, Link, Check, CheckCheck, Pin, Edit3, LogOut, Trash2, ArrowLeft
+  Mic, Image, Link, Check, CheckCheck, Pin, Edit3, LogOut, Trash2, ArrowLeft,
+  Reply, CornerUpLeft, Edit2, ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Swal from 'sweetalert2';
@@ -20,12 +21,10 @@ const formatMessageTime = (timeStr) => {
 
   const str = String(timeStr).trim();
 
-  // If already formatted like '10:10 AM' or '09:28 AM'
   if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(str)) {
     return str;
   }
 
-  // If formatted like '2026-08-01 10:10:00' or ISO date
   try {
     const dateObj = new Date(str.includes('T') ? str : str.replace(/-/g, '/'));
     if (!isNaN(dateObj.getTime())) {
@@ -33,7 +32,6 @@ const formatMessageTime = (timeStr) => {
     }
   } catch (e) {}
 
-  // Extract HH:MM AM/PM if present inside text
   const match = str.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
   if (match) {
     return match[1];
@@ -67,6 +65,8 @@ export default function ITChatPage() {
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const EMOJIS = ['😀', '😂', '😍', '👍', '🙏', '🔥', '🎉', '❤️', '🤔', '🙌', '😢', '👏', '👀', '💯', '✨'];
+  const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
   const [conversations, setConversations] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -77,6 +77,14 @@ export default function ITChatPage() {
   const [showDetails, setShowDetails] = useState(true);
   const messagesEndRef = useRef(null);
 
+  // Phase 1 Features States
+  const [replyingToMessage, setReplyingToMessage] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingText, setEditingText] = useState('');
+  const [showInChatSearch, setShowInChatSearch] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [activeHoverMessageId, setActiveHoverMessageId] = useState(null);
+
   const [availableUsers, setAvailableUsers] = useState([]);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
@@ -84,7 +92,7 @@ export default function ITChatPage() {
   const [newTeamDesc, setNewTeamDesc] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [groupMembers, setGroupMembers] = useState([]);
-  const [teamMemberSearch, setTeamMemberSearch] = useState('');
+
   const [tasksState, setTasksState] = useState({});
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
@@ -104,6 +112,17 @@ export default function ITChatPage() {
       setShowMentionSuggestions(true);
     } else {
       setShowMentionSuggestions(false);
+    }
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let item of items) {
+      if (item.type.indexOf('image') !== -1) {
+        const file = item.getAsFile();
+        if (file) setAttachedFile(file);
+      }
     }
   };
 
@@ -245,6 +264,8 @@ export default function ITChatPage() {
     setConversations(prev => prev.map(c => c.id === chat.id ? { ...c, unread: 0, unread_count: 0 } : c));
     setSelectedChat({ ...chat, unread: 0, unread_count: 0 });
     setActiveTab('Messages');
+    setReplyingToMessage(null);
+    setEditingMessageId(null);
   };
 
   const handleIconClick = (action) => {
@@ -287,6 +308,11 @@ export default function ITChatPage() {
         if (targetReceiverId) formData.append('receiver_id', targetReceiverId);
         formData.append('message_text', input.trim());
         formData.append('file', attachedFile);
+        if (replyingToMessage) {
+          formData.append('reply_to_id', replyingToMessage.id);
+          formData.append('reply_to_text', replyingToMessage.text);
+          formData.append('reply_to_sender', replyingToMessage.sender === 'user' ? 'You' : `${replyingToMessage.first_name || ''} ${replyingToMessage.last_name || ''}`.trim());
+        }
 
         res = await axios.post(`${API_BASE_URL}/messages`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -296,7 +322,10 @@ export default function ITChatPage() {
           sender_id: currentUserId,
           receiver_id: targetReceiverId ? parseInt(targetReceiverId, 10) : null,
           group_id: targetGroupId ? parseInt(targetGroupId, 10) : null,
-          message_text: input.trim()
+          message_text: input.trim(),
+          reply_to_id: replyingToMessage ? replyingToMessage.id : null,
+          reply_to_text: replyingToMessage ? replyingToMessage.text : null,
+          reply_to_sender: replyingToMessage ? (replyingToMessage.sender === 'user' ? 'You' : `${replyingToMessage.first_name || ''} ${replyingToMessage.last_name || ''}`.trim()) : null
         };
 
         res = await axios.post(`${API_BASE_URL}/messages`, payload);
@@ -312,6 +341,9 @@ export default function ITChatPage() {
         timestamp: formatMessageTime(),
         status: 'read',
         is_read: true,
+        reply_to_id: replyingToMessage ? replyingToMessage.id : null,
+        reply_to_text: replyingToMessage ? replyingToMessage.text : null,
+        reply_to_sender: replyingToMessage ? (replyingToMessage.sender === 'user' ? 'You' : `${replyingToMessage.first_name || ''} ${replyingToMessage.last_name || ''}`.trim()) : null,
         file: attachedFile ? {
           name: attachedFile.name,
           size: `${(attachedFile.size / 1024).toFixed(1)} KB`,
@@ -322,12 +354,54 @@ export default function ITChatPage() {
       setMessages(prev => [...prev, newMsg]);
       setInput('');
       setAttachedFile(null);
+      setReplyingToMessage(null);
       setShowEmojiPicker(false);
       setShowMentionSuggestions(false);
       fetchConversations();
     } catch (err) {
       console.error('Failed to send message', err);
       Swal.fire({ icon: 'error', title: 'Send Error', text: err?.response?.data?.error || 'Could not send message' });
+    }
+  };
+
+  // Phase 1 Action Handlers (Edit, Delete, Reaction)
+  const handleAddReaction = async (messageId, emoji) => {
+    try {
+      setMessages(prev => prev.map(m => {
+        if (m.id === messageId) {
+          let reactionsObj = {};
+          try {
+            reactionsObj = typeof m.reactions === 'string' ? JSON.parse(m.reactions || '{}') : (m.reactions || {});
+          } catch (e) { reactionsObj = {}; }
+          reactionsObj[emoji] = (reactionsObj[emoji] || 0) + 1;
+          return { ...m, reactions: reactionsObj };
+        }
+        return m;
+      }));
+      await axios.post(`${API_BASE_URL}/messages/${messageId}/reactions`, { emoji, userId: currentUserId });
+    } catch (err) {
+      console.error('Failed to react', err);
+    }
+  };
+
+  const handleSaveEdit = async (messageId) => {
+    if (!editingText.trim()) return;
+    try {
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, text: editingText.trim(), is_edited: 1 } : m));
+      setEditingMessageId(null);
+      setEditingText('');
+      await axios.put(`${API_BASE_URL}/messages/${messageId}`, { message_text: editingText.trim() });
+    } catch (err) {
+      console.error('Failed to edit message', err);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId) => {
+    try {
+      setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_deleted: 1, text: 'This message was deleted' } : m));
+      await axios.delete(`${API_BASE_URL}/messages/${messageId}`);
+    } catch (err) {
+      console.error('Failed to delete message', err);
     }
   };
 
@@ -399,10 +473,21 @@ export default function ITChatPage() {
 
   const groupInitials = (name) => name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'GR';
 
+  const filteredActiveMessages = messages.filter(m => {
+    if (!chatSearchQuery.trim()) return true;
+    return (m.text || '').toLowerCase().includes(chatSearchQuery.toLowerCase());
+  });
+
   const renderMessage = (msg, idx) => {
     const isMine = msg.sender === 'user';
     const senderName = isMine ? 'You' : `${msg.first_name || ''} ${msg.last_name || ''}`.trim();
     const avatarUrl = msg.sender_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=random`;
+    const isDeleted = msg.is_deleted === 1 || msg.is_deleted === true;
+
+    let parsedReactions = {};
+    try {
+      parsedReactions = typeof msg.reactions === 'string' ? JSON.parse(msg.reactions || '{}') : (msg.reactions || {});
+    } catch (e) { parsedReactions = {}; }
 
     const file = msg.file || (msg.file_name ? {
       name: msg.file_name,
@@ -423,9 +508,14 @@ export default function ITChatPage() {
             <div className="flex-1 h-px bg-gray-100" />
           </div>
         )}
-        <div className={`flex gap-2.5 px-5 py-1 group ${isMine ? 'flex-row-reverse' : ''}`}>
+        <div
+          onMouseEnter={() => setActiveHoverMessageId(msg.id)}
+          onMouseLeave={() => setActiveHoverMessageId(null)}
+          className={`flex gap-2.5 px-5 py-1.5 group relative ${isMine ? 'flex-row-reverse' : ''}`}
+        >
           {!isMine && <Avatar name={senderName} src={avatarUrl} size={32} />}
-          <div className={`max-w-[70%] ${isMine ? 'items-end' : 'items-start'} flex flex-col`}>
+
+          <div className={`max-w-[70%] ${isMine ? 'items-end' : 'items-start'} flex flex-col relative`}>
             {!isMine && (
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[12px] font-semibold text-gray-900">{senderName}</span>
@@ -433,17 +523,69 @@ export default function ITChatPage() {
                 <span className="text-[10px] text-gray-400 font-medium">{formatMessageTime(msg.timestamp || msg.created_at)}</span>
               </div>
             )}
-            {msg.text && (
-              <div className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap flex flex-col
-                ${isMine ? 'bg-[#d9fdd3] text-gray-900 border border-[#bceab4] rounded-tr-xs self-end' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-xs self-start shadow-2xs'}`}>
-                <div>{msg.text}</div>
-                <div className="flex items-center gap-1 justify-end mt-1 text-[10px] text-gray-500 font-medium select-none">
-                  <span>{formatMessageTime(msg.timestamp || msg.created_at)}</span>
-                  <WhatsAppTicks status={msg.status || (msg.is_read ? 'read' : 'delivered')} isMine={isMine} />
+
+            {/* Quoted Reply Block */}
+            {msg.reply_to_text && !isDeleted && (
+              <div className={`mb-1 p-2 rounded border-l-4 text-xs ${isMine ? 'bg-emerald-100/70 border-emerald-700 text-gray-900 self-end' : 'bg-blue-50 border-blue-600 text-gray-900 self-start'} max-w-full`}>
+                <div className="flex items-center gap-1 font-bold text-[10px] text-emerald-900 mb-0.5">
+                  <CornerUpLeft size={10} />
+                  <span>{msg.reply_to_sender || 'Replied Message'}</span>
                 </div>
+                <div className="truncate text-[11px] italic opacity-90">{msg.reply_to_text}</div>
               </div>
             )}
-            {file && (
+
+            {/* Message Body / Inline Edit Mode */}
+            {editingMessageId === msg.id ? (
+              <div className="flex gap-2 items-center bg-white p-2 border border-blue-400 rounded-xl shadow-md w-full">
+                <input
+                  type="text"
+                  value={editingText}
+                  onChange={(e) => setEditingText(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSaveEdit(msg.id)}
+                  className="flex-1 text-xs outline-none px-2 py-1 bg-gray-50 border border-gray-200 rounded"
+                />
+                <button onClick={() => handleSaveEdit(msg.id)} className="px-2.5 py-1 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 cursor-pointer">
+                  Save
+                </button>
+                <button onClick={() => setEditingMessageId(null)} className="px-2 py-1 text-gray-500 hover:bg-gray-100 rounded text-xs cursor-pointer">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              msg.text && (
+                <div className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap flex flex-col relative
+                  ${isDeleted ? 'bg-gray-100 text-gray-400 italic border border-gray-200' : isMine ? 'bg-[#d9fdd3] text-gray-900 border border-[#bceab4] rounded-tr-xs self-end' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-xs self-start shadow-2xs'}`}>
+                  {isDeleted ? (
+                    <div className="flex items-center gap-1 text.gray-400">
+                      <ShieldAlert size={12} /> <span>This message was deleted</span>
+                    </div>
+                  ) : (
+                    <div>{msg.text}</div>
+                  )}
+
+                  <div className="flex items-center gap-1 justify-end mt-1 text-[10px] text-gray-500 font-medium select-none">
+                    {msg.is_edited ? <span className="italic mr-1 text-gray-400">(edited)</span> : null}
+                    <span>{formatMessageTime(msg.timestamp || msg.created_at)}</span>
+                    <WhatsAppTicks status={msg.status || (msg.is_read ? 'read' : 'delivered')} isMine={isMine} />
+                  </div>
+
+                  {/* Reaction Badges below message */}
+                  {Object.keys(parsedReactions).length > 0 && (
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      {Object.entries(parsedReactions).map(([emoji, count]) => (
+                        <span key={emoji} className="bg-white border border-gray-200 rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-xs flex items-center gap-0.5">
+                          <span>{emoji}</span>
+                          <span className="text-gray-600">{count}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            )}
+
+            {file && !isDeleted && (
               <div className="mt-1 flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 bg-white shadow-2xs">
                 {FILE_ICONS[file.icon] || <FileText size={22} className="text-gray-400" />}
                 <div>
@@ -462,10 +604,55 @@ export default function ITChatPage() {
               </div>
             )}
           </div>
-          <div className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 self-center ${isMine ? 'mr-2' : 'ml-2'}`}>
-            <button className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-400 cursor-pointer"><Smile size={12} /></button>
-            <button className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-400 cursor-pointer"><MoreHorizontal size={12} /></button>
-          </div>
+
+          {/* Hover Quick Action Bar (Reactions, Reply, Edit, Delete) */}
+          {activeHoverMessageId === msg.id && !isDeleted && (
+            <div className={`absolute top-0 ${isMine ? 'right-[72%]' : 'left-[72%]'} z-20 bg-white border border-gray-200 rounded-full shadow-lg px-2 py-1 flex items-center gap-1.5 animate-fadeIn`}>
+              {QUICK_REACTIONS.map(emoji => (
+                <button
+                  key={emoji}
+                  onClick={() => handleAddReaction(msg.id, emoji)}
+                  className="hover:scale-125 transition-transform text-sm cursor-pointer"
+                  title={`React ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+              <div className="w-px h-3 bg-gray-200 mx-0.5" />
+              <button
+                onClick={() => {
+                  setReplyingToMessage(msg);
+                  document.getElementById('chat-input')?.focus();
+                }}
+                className="text-gray-500 hover:text-blue-600 p-1 rounded-full hover:bg-gray-100 cursor-pointer"
+                title="Reply to message"
+              >
+                <Reply size={13} />
+              </button>
+
+              {isMine && (
+                <>
+                  <button
+                    onClick={() => {
+                      setEditingMessageId(msg.id);
+                      setEditingText(msg.text);
+                    }}
+                    className="text-gray-500 hover:text-amber-600 p-1 rounded-full hover:bg-gray-100 cursor-pointer"
+                    title="Edit message"
+                  >
+                    <Edit2 size={13} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteMessage(msg.id)}
+                    className="text-gray-500 hover:text-red-600 p-1 rounded-full hover:bg-gray-100 cursor-pointer"
+                    title="Delete message"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </React.Fragment>
     );
@@ -585,7 +772,25 @@ export default function ITChatPage() {
                 <p className="text-xs text-gray-400 font-medium">{(groupMembers.length || 0)} members • <span className="hover:text-blue-600 cursor-pointer">Add description</span></p>
               </div>
             </div>
+
             <div className="flex items-center gap-2">
+              {showInChatSearch ? (
+                <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 text-xs">
+                  <Search size={13} className="text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search in chat..."
+                    value={chatSearchQuery}
+                    onChange={(e) => setChatSearchQuery(e.target.value)}
+                    className="bg-transparent outline-none text-xs w-36 text-gray-800"
+                  />
+                  <button onClick={() => { setShowInChatSearch(false); setChatSearchQuery(''); }} className="text-gray-400 hover:text-gray-600 p-0.5">
+                    <X size={13} />
+                  </button>
+                </div>
+              ) : (
+                <ActionBtn icon={<Search size={15} />} onClick={() => setShowInChatSearch(true)} title="Search messages" />
+              )}
               <ActionBtn icon={<Phone size={15} />} />
               <ActionBtn icon={<Video size={15} />} />
               <ActionBtn icon={<MoreHorizontal size={15} />} onClick={() => setShowDetails(d => !d)} />
@@ -604,11 +809,11 @@ export default function ITChatPage() {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {activeTab === 'Messages' && (
-            messages.length > 0 ? (
-              messages.map((msg, idx) => renderMessage(msg, idx))
+            filteredActiveMessages.length > 0 ? (
+              filteredActiveMessages.map((msg, idx) => renderMessage(msg, idx))
             ) : (
               <div className="h-full flex items-center justify-center text-gray-400 text-xs">
-                No messages yet. Send a message to start conversation.
+                {chatSearchQuery ? 'No matching messages found.' : 'No messages yet. Send a message to start conversation.'}
               </div>
             )
           )}
@@ -679,6 +884,22 @@ export default function ITChatPage() {
 
         {/* Input Bar */}
         <div className="p-3 bg-white border-t border-gray-100 relative">
+
+          {/* Replying to Message Banner (WhatsApp/Teams style) */}
+          {replyingToMessage && (
+            <div className="mb-2 p-2 bg-emerald-50 border-l-4 border-emerald-600 rounded flex items-center justify-between text-xs text-gray-800">
+              <div className="min-w-0 pr-2">
+                <span className="font-bold text-emerald-800 text-[11px] block flex items-center gap-1">
+                  <Reply size={11} /> Replying to {replyingToMessage.sender === 'user' ? 'You' : `${replyingToMessage.first_name || ''}`}
+                </span>
+                <p className="truncate text-gray-600 text-[11px] italic">{replyingToMessage.text}</p>
+              </div>
+              <button onClick={() => setReplyingToMessage(null)} className="text-gray-400 hover:text-gray-600 p-1 cursor-pointer">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
           {showMentionSuggestions && (
             <div className="absolute bottom-full left-4 bg-white border border-gray-200 rounded-lg shadow-xl max-h-40 overflow-y-auto z-50 w-64 p-1 text-xs">
               <div className="text-[10px] font-bold text-gray-400 px-2 py-1 uppercase">Mention Team Member</div>
@@ -703,7 +924,7 @@ export default function ITChatPage() {
           {showEmojiPicker && (
             <div className="absolute bottom-full left-4 bg-white border border-gray-200 rounded-lg shadow-xl p-2 z-50 flex gap-2 flex-wrap max-w-xs mb-2">
               {EMOJIS.map(emoji => (
-                <button key={emoji} onClick={() => setInput(prev => prev + emoji)} className="text-lg hover:scale-125 transition-transform p-1">
+                <button key={emoji} onClick={() => setInput(prev => prev + emoji)} className="text-lg hover:scale-125 transition-transform p-1 cursor-pointer">
                   {emoji}
                 </button>
               ))}
@@ -721,9 +942,10 @@ export default function ITChatPage() {
             <input
               id="chat-input"
               type="text"
-              placeholder="Type a message... (Use @ to mention)"
+              placeholder="Type a message... (Paste screenshot or use @ to mention)"
               value={input}
               onChange={handleInputChange}
+              onPaste={handlePaste}
               onKeyPress={e => e.key === 'Enter' && handleSend()}
               className="w-full text-xs outline-none bg-transparent text-gray-800 placeholder-gray-400"
             />
@@ -763,9 +985,9 @@ export default function ITChatPage() {
   );
 }
 
-function ActionBtn({ icon, onClick }) {
+function ActionBtn({ icon, onClick, title }) {
   return (
-    <button onClick={onClick} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
+    <button onClick={onClick} title={title} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
       {icon}
     </button>
   );

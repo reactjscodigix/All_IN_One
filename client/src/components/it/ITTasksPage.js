@@ -9,6 +9,9 @@ import {
 import ITCreateIssueDrawer from './ITCreateIssueDrawer';
 import ITIssueDetailsPanel from './ITIssueDetailsPanel';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const PRIORITY_ICONS = {
   High: <ArrowUp size={14} className="text-red-500" />,
   Medium: <ArrowUp size={14} className="text-orange-500" />,
@@ -81,12 +84,12 @@ const ITTasksPage = () => {
 
   useEffect(() => {
     fetchTasks();
-    fetch('http://localhost:5000/api/projects')
+    fetch(API_BASE_URL + '/projects')
       .then(res => res.json())
       .then(data => { if (Array.isArray(data)) setProjectsList(data); })
       .catch(err => console.error('Error fetching projects:', err));
 
-    fetch('http://localhost:5000/api/users')
+    fetch(API_BASE_URL + '/users')
       .then(res => res.json())
       .then(data => { if (Array.isArray(data)) setUsersList(data); })
       .catch(err => console.error('Error fetching users:', err));
@@ -105,7 +108,7 @@ const ITTasksPage = () => {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/it-kanban/issues');
+      const res = await fetch(API_BASE_URL + '/it-kanban/issues');
       if (res.ok) {
         const data = await res.json();
         setTasks(data);
@@ -201,7 +204,7 @@ const ITTasksPage = () => {
     // Optimistic local update
     setTasks(prev => prev.map(t => t.issue_key === key || t.key === key ? { ...t, ...updates } : t));
     try {
-      await fetch(`http://localhost:5000/api/it-kanban/issues/${key}`, {
+      await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -213,7 +216,7 @@ const ITTasksPage = () => {
 
   const deleteIssue = async (key) => {
     try {
-      await fetch(`http://localhost:5000/api/it-kanban/issues/${key}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, { method: 'DELETE' });
       setTasks(prev => prev.filter(t => t.issue_key !== key && t.key !== key));
       setSelectedIssue(null);
     } catch (err) {

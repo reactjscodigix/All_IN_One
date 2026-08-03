@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [confirmedProjects, setConfirmedProjects] = useState([]);
@@ -34,7 +36,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
   const fetchRequiredData = async () => {
     setIsFetching(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const [companiesRes, confirmedRes, usersRes, catRes] = await Promise.all([
         fetch(`${apiUrl}/confirmed-it-clients`),
         fetch(`${apiUrl}/confirmed-it-projects`),

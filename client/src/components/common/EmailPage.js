@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Send, MessageCircle, Loader } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const EmailPage = () => {
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -107,7 +109,7 @@ const EmailPage = () => {
 
   const loadTasks = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/tasks`);
       if (response.ok) {
         const tasks = await response.json();
@@ -138,7 +140,7 @@ const EmailPage = () => {
 
   const loadDeals = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/deals`);
       if (response.ok) {
         const deals = await response.json();
@@ -169,7 +171,7 @@ const EmailPage = () => {
 
   const loadProjects = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/projects`);
       if (response.ok) {
         const projects = await response.json();
@@ -199,7 +201,7 @@ const EmailPage = () => {
 
   const loadCalls = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/call-history?limit=50`);
       if (response.ok) {
         const calls = await response.json();

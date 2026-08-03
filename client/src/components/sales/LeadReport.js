@@ -14,6 +14,8 @@ import {
   Legend,
 } from 'recharts';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const leadReportData = {
   yearBars: [
     { month: 'Jan', value: 400 },
@@ -258,7 +260,7 @@ const LeadReport = () => {
     const fetchLeads = async () => {
       try {
         setLoading(true);
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+        const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
         const response = await fetch(`${apiUrl}/leads`);
         if (!response.ok) throw new Error('Failed to fetch leads');
         let data = await response.json();

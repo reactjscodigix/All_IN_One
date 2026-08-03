@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import {
+
   CheckCircle, ChevronRight, Edit3, MoreHorizontal, ArrowUpRight, ArrowDownRight,
   Search, Bell, Calendar, MessageSquare, Plus, PlusCircle, FileText, Globe, Sliders, ChevronDown,
   Check, Target, Zap, Link, MapPin, Users, Lock, Server, Trash2, ClipboardList, Info, Shield, HelpCircle, Activity, TrendingUp,
   Folder, Laptop, Settings, Mail, Phone, Clock, AlertTriangle, UserCheck
 } from 'lucide-react';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export default function SeoGmbProjectSetupPage() {
   const [isCreateMode, setIsCreateMode] = useState(false);
@@ -145,7 +148,7 @@ export default function SeoGmbProjectSetupPage() {
 
   const loadProjectData = async (proj) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/${proj.id}`);
+      const response = await fetch(`${API_BASE_URL}/projects/${proj.id}`);
       if (response.ok) {
         const pData = await response.json();
         setProject(pData);
@@ -177,7 +180,7 @@ export default function SeoGmbProjectSetupPage() {
       const formattedStart = parseDate(startDate);
       const formattedEnd = parseDate(endDate);
 
-      await fetch(`http://localhost:5000/api/projects/${project.id}`, {
+      await fetch(`${API_BASE_URL}/projects/${project.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -221,7 +224,7 @@ export default function SeoGmbProjectSetupPage() {
         priority: 'Medium'
       };
 
-      const res = await fetch('http://localhost:5000/api/projects', {
+      const res = await fetch(API_BASE_URL + '/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reqBody)

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const UpgradePlanModal = ({ isOpen, onClose, company, onUpgrade }) => {
   const [selectedPlan, setSelectedPlan] = useState('');
   const [selectedType, setSelectedType] = useState('');
@@ -16,7 +18,7 @@ const UpgradePlanModal = ({ isOpen, onClose, company, onUpgrade }) => {
 
   const fetchPlans = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/plans`);
       const data = await response.json();
       
@@ -34,7 +36,7 @@ const UpgradePlanModal = ({ isOpen, onClose, company, onUpgrade }) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/companies/${company.id}/upgrade`, {
+      const response = await fetch(`${API_BASE_URL}/companies/${company.id}/upgrade`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

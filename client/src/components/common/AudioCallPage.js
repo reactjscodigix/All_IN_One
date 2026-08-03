@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Phone, Mic, MicOff, Volume2, X, PhoneOff } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 export default function AudioCallPage() {
   const { user } = useAuth();
   const [isMuted, setIsMuted] = useState(false);
@@ -36,7 +38,7 @@ export default function AudioCallPage() {
 
   const recordCall = async (phone) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       await fetch(`${apiUrl}/call-history`, {
         method: 'POST',
         headers: {

@@ -8,6 +8,9 @@ import ITCreateIssueDrawer from '../it/ITCreateIssueDrawer';
 import ITIssueDetailsPanel from '../it/ITIssueDetailsPanel';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const PRIORITY_ICONS = {
   High: <ArrowUp size={14} className="text-red-500" />,
   Medium: <ArrowUp size={14} className="text-orange-500" />,
@@ -108,7 +111,7 @@ const KanbanPage = ({ department }) => {
         user_id: user?.id || '',
         role: user?.role || ''
       });
-      const res = await fetch(`http://localhost:5000/api/tasks?${queryParams}`);
+      const res = await fetch(`${API_BASE_URL}/tasks?${queryParams}`);
       if (res.ok) {
         const tasks = await res.json();
 
@@ -199,7 +202,7 @@ const KanbanPage = ({ department }) => {
     setOpenInlineDropdown(null);
 
     // Persist to database
-    fetch('http://localhost:5000/api/tasks', {
+    fetch(API_BASE_URL + '/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -254,7 +257,7 @@ const KanbanPage = ({ department }) => {
       }));
 
       // Persist to backend
-      fetch(`http://localhost:5000/api/project-tasks/${removed.id}`, {
+      fetch(`${API_BASE_URL}/project-tasks/${removed.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: destination.droppableId })

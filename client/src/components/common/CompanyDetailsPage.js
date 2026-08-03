@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, AlertCircle, MoreHorizontal, MessageCircle, ChevronDown, Edit3, Trash2, X, MapPin, Mail, Phone, Globe, FolderOpen, Star, FileText, FileSpreadsheet, Send, Copy } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const fileBadgeStyles = {
   doc: { label: 'DOC', bg: 'bg-blue-50', text: 'text-white ' },
   pdf: { label: 'PDF', bg: 'bg-red-50', text: 'text-red ' },
@@ -429,7 +431,7 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
   const fetchCompanyContacts = async () => {
     setLoadingContacts(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/companies/${companyProfile.id}/contacts`);
       if (response.ok) {
         const data = await response.json();
@@ -445,7 +447,7 @@ const CompanyDetailsPage = ({ company = {}, onBack }) => {
   const fetchCompanyDeals = async () => {
     setLoadingDeals(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/companies/${companyProfile.id}/deals`);
       if (response.ok) {
         const data = await response.json();

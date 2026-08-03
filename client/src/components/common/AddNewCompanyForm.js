@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, ChevronDown } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AddNewCompanyForm = ({ isOpen, onClose, onSubmit }) => {
   const fileInputRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,7 +63,7 @@ const AddNewCompanyForm = ({ isOpen, onClose, onSubmit }) => {
   const fetchUsers = async () => {
     setLoadingUsers(true);
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/users`);
       if (response.ok) {
         const data = await response.json();

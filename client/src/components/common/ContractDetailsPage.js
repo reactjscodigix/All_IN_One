@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Edit2, Save, X, Send, Download, Trash2 } from 'lucide-react';
 import { contractsAPI } from '../../services/api';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +42,7 @@ const ContractDetailsPage = ({ contract, onBack, onUpdate }) => {
 
   const fetchCompanies = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/companies`);
       if (response.ok) {
         const data = await response.json();

@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import SearchableSelect from '../common/SearchableSelect';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const ReportBugModal = ({ isOpen, onClose, onBugCreated }) => {
   const [steps, setSteps] = useState(['']);
   const [attachments, setAttachments] = useState([]);
@@ -40,8 +43,8 @@ const ReportBugModal = ({ isOpen, onClose, onBugCreated }) => {
   const fetchUsersAndProjects = async () => {
     try {
       const [usersRes, projectsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/users'),
-        fetch('http://localhost:5000/api/projects')
+        fetch(API_BASE_URL + '/users'),
+        fetch(API_BASE_URL + '/projects')
       ]);
       const usersData = await usersRes.json();
       const pData = await projectsRes.json();
@@ -66,7 +69,7 @@ const ReportBugModal = ({ isOpen, onClose, onBugCreated }) => {
     fileData.append('file', file);
 
     try {
-      const res = await fetch('http://localhost:5000/api/files/upload', {
+      const res = await fetch(API_BASE_URL + '/files/upload', {
         method: 'POST',
         body: fileData
       });
@@ -107,7 +110,7 @@ const ReportBugModal = ({ isOpen, onClose, onBugCreated }) => {
       const selectedProjectObj = projectsData.find(p => p.name === formData.project);
       const projectId = selectedProjectObj ? selectedProjectObj.id : 1;
 
-      const res = await fetch('http://localhost:5000/api/tester/bugs', {
+      const res = await fetch(API_BASE_URL + '/tester/bugs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

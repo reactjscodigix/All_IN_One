@@ -13,6 +13,9 @@ import {
 import NewTestCaseModal from './NewTestCaseModal';
 import AdvancedDateRangePicker from '../common/AdvancedDateRangePicker';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 export default function ITTesterDashboard() {
   const { username: name } = useParams();
   const [data, setData] = useState(null);
@@ -24,7 +27,7 @@ export default function ITTesterDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/tester/dashboard/${name}`, {
+        const res = await axios.get(`${API_BASE_URL}/tester/dashboard/${name}`, {
           params: { start: dateRange.start, end: dateRange.end }
         });
         if (res.data.success) {
@@ -109,7 +112,7 @@ export default function ITTesterDashboard() {
           // Optional: re-fetch dashboard data
           const fetchData = async () => {
             try {
-              const res = await axios.get(`http://localhost:5000/api/tester/dashboard/${name}`);
+              const res = await axios.get(`${API_BASE_URL}/tester/dashboard/${name}`);
               if (res.data.success) {
                 setData(res.data.data);
               }

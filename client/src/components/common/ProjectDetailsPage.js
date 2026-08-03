@@ -14,6 +14,9 @@ import AddTimeLogModal from './AddTimeLogModal';
 import ITCreateIssueDrawer from '../it/ITCreateIssueDrawer';
 import ITIssueDetailsPanel from '../it/ITIssueDetailsPanel';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const TABS = ['Overview', 'Tasks', 'Milestones', 'Team', 'Documents', 'Discussions', 'Time Logs', 'Activity', 'Reports', 'Timeline', 'Calendar', 'Budget', 'Settings'];
 
 const ProjectDetailsPage = () => {
@@ -57,13 +60,13 @@ const ProjectDetailsPage = () => {
 
       let res;
       if (editingTask) {
-        res = await fetch(`http://localhost:5000/api/project-tasks/${editingTask.id}`, {
+        res = await fetch(`${API_BASE_URL}/project-tasks/${editingTask.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(taskData)
         });
       } else {
-        res = await fetch(`http://localhost:5000/api/projects/${id}/tasks`, {
+        res = await fetch(`${API_BASE_URL}/projects/${id}/tasks`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(taskData)
@@ -72,7 +75,7 @@ const ProjectDetailsPage = () => {
 
       if (!res.ok) throw new Error('Failed to save task');
 
-      const tRes = await fetch(`http://localhost:5000/api/projects/${id}/tasks`);
+      const tRes = await fetch(`${API_BASE_URL}/projects/${id}/tasks`);
       if (tRes.ok) {
         setProjectTasks(await tRes.json());
       }
@@ -86,10 +89,10 @@ const ProjectDetailsPage = () => {
   const handleTaskDelete = async (taskId) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/project-tasks/${taskId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/project-tasks/${taskId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete task');
 
-      const tRes = await fetch(`http://localhost:5000/api/projects/${id}/tasks`);
+      const tRes = await fetch(`${API_BASE_URL}/projects/${id}/tasks`);
       if (tRes.ok) {
         setProjectTasks(await tRes.json());
       }
@@ -134,7 +137,7 @@ const ProjectDetailsPage = () => {
         due_date: updates.due_date !== undefined ? updates.due_date : currentTask.due_date,
       };
 
-      const res = await fetch(`http://localhost:5000/api/project-tasks/${taskId}`, {
+      const res = await fetch(`${API_BASE_URL}/project-tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(taskData)
@@ -157,7 +160,7 @@ const ProjectDetailsPage = () => {
 
   const reloadTeam = async () => {
     try {
-      const teamRes = await fetch(`http://localhost:5000/api/projects/${id}/team`);
+      const teamRes = await fetch(`${API_BASE_URL}/projects/${id}/team`);
       if (teamRes.ok) {
         setTeamMembers(await teamRes.json());
       }
@@ -169,7 +172,7 @@ const ProjectDetailsPage = () => {
   const handleRemoveMember = async (userId) => {
     if (!window.confirm('Are you sure you want to remove this member?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/projects/${id}/team/${userId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/projects/${id}/team/${userId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to remove member');
       reloadTeam();
     } catch (err) {
@@ -179,7 +182,7 @@ const ProjectDetailsPage = () => {
 
   const reloadTimeLogs = async () => {
     try {
-      const timeRes = await fetch(`http://localhost:5000/api/projects/${id}/timesheets`);
+      const timeRes = await fetch(`${API_BASE_URL}/projects/${id}/timesheets`);
       if (timeRes.ok) {
         setTimeLogs(await timeRes.json());
       }
@@ -190,7 +193,7 @@ const ProjectDetailsPage = () => {
 
   const reloadDocuments = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/files?project_id=${id}`);
+      const res = await fetch(`${API_BASE_URL}/files?project_id=${id}`);
       if (res.ok) {
         setDocuments(await res.json());
       }
@@ -209,7 +212,7 @@ const ProjectDetailsPage = () => {
     formData.append('project_id', id);
 
     try {
-      const res = await fetch('http://localhost:5000/api/files/upload', {
+      const res = await fetch(API_BASE_URL + '/files/upload', {
         method: 'POST',
         body: formData
       });
@@ -223,7 +226,7 @@ const ProjectDetailsPage = () => {
   const handleFileDelete = async (fileId) => {
     if (!window.confirm('Are you sure you want to delete this document?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/files/${fileId}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/files/${fileId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete file');
       await reloadDocuments();
     } catch (err) {
@@ -236,14 +239,14 @@ const ProjectDetailsPage = () => {
       let combined = [];
 
       // 1. Fetch project_tasks
-      const tasksRes = await fetch(`http://localhost:5000/api/projects/${id}/tasks`);
+      const tasksRes = await fetch(`${API_BASE_URL}/projects/${id}/tasks`);
       if (tasksRes.ok) {
         const pTasks = await tasksRes.json();
         if (Array.isArray(pTasks)) combined.push(...pTasks);
       }
 
       // 2. Fetch IT Kanban issues for this project
-      const kanbanRes = await fetch('http://localhost:5000/api/it-kanban/issues');
+      const kanbanRes = await fetch(API_BASE_URL + '/it-kanban/issues');
       if (kanbanRes.ok) {
         const kIssues = await kanbanRes.json();
         if (Array.isArray(kIssues)) {
@@ -292,14 +295,14 @@ const ProjectDetailsPage = () => {
         manager_id: formData.manager_id
       };
 
-      const res = await fetch(`http://localhost:5000/api/projects/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(projectData)
       });
       if (!res.ok) throw new Error('Failed to update project');
 
-      const pRes = await fetch(`http://localhost:5000/api/projects/${id}`);
+      const pRes = await fetch(`${API_BASE_URL}/projects/${id}`);
       if (pRes.ok) {
         setProject(await pRes.json());
       }
@@ -313,7 +316,7 @@ const ProjectDetailsPage = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const pRes = await fetch(`http://localhost:5000/api/projects/${id}`);
+        const pRes = await fetch(`${API_BASE_URL}/projects/${id}`);
         if (!pRes.ok) throw new Error('Failed to fetch project details');
         const pData = await pRes.json();
         setProject(pData);
@@ -321,7 +324,7 @@ const ProjectDetailsPage = () => {
         if (pData.team_id) {
           try {
             // Fetch team details (includes manager_name from the GET /api/teams query)
-            const teamsRes = await fetch('http://localhost:5000/api/teams');
+            const teamsRes = await fetch(API_BASE_URL + '/teams');
             if (teamsRes.ok) {
               const teamsList = await teamsRes.json();
               const matchedTeam = teamsList.find(t => Number(t.id) === Number(pData.team_id));
@@ -335,7 +338,7 @@ const ProjectDetailsPage = () => {
             }
 
             // Fetch team roster for Overview card (from team_members table)
-            const teamRosterRes = await fetch(`http://localhost:5000/api/teams/${pData.team_id}/members`);
+            const teamRosterRes = await fetch(`${API_BASE_URL}/teams/${pData.team_id}/members`);
             if (teamRosterRes.ok) {
               setTeamRoster(await teamRosterRes.json());
             }
@@ -347,7 +350,7 @@ const ProjectDetailsPage = () => {
           setAssignedTeam(null);
         }
 
-        const msRes = await fetch(`http://localhost:5000/api/projects/${id}/milestones`);
+        const msRes = await fetch(`${API_BASE_URL}/projects/${id}/milestones`);
         if (msRes.ok) {
           setMilestones(await msRes.json());
         }
@@ -355,17 +358,17 @@ const ProjectDetailsPage = () => {
         await fetchTasks();
 
         // Fetch project_team members for Team tab
-        const teamTabRes = await fetch(`http://localhost:5000/api/projects/${id}/team`);
+        const teamTabRes = await fetch(`${API_BASE_URL}/projects/${id}/team`);
         if (teamTabRes.ok) {
           setTeamMembers(await teamTabRes.json());
         }
 
-        const timeRes = await fetch(`http://localhost:5000/api/projects/${id}/timesheets`);
+        const timeRes = await fetch(`${API_BASE_URL}/projects/${id}/timesheets`);
         if (timeRes.ok) {
           setTimeLogs(await timeRes.json());
         }
 
-        const docsRes = await fetch(`http://localhost:5000/api/files?project_id=${id}`);
+        const docsRes = await fetch(`${API_BASE_URL}/files?project_id=${id}`);
         if (docsRes.ok) {
           setDocuments(await docsRes.json());
         }
@@ -697,8 +700,8 @@ const ProjectDetailsPage = () => {
     e.preventDefault();
     try {
       const url = editingMilestone
-        ? `http://localhost:5000/api/projects/${id}/milestones/${editingMilestone.id}`
-        : `http://localhost:5000/api/projects/${id}/milestones`;
+        ? `${API_BASE_URL}/projects/${id}/milestones/${editingMilestone.id}`
+        : `${API_BASE_URL}/projects/${id}/milestones`;
       const method = editingMilestone ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -706,7 +709,7 @@ const ProjectDetailsPage = () => {
         body: JSON.stringify(milestoneForm)
       });
       if (!res.ok) throw new Error('Failed');
-      const msRes = await fetch(`http://localhost:5000/api/projects/${id}/milestones`);
+      const msRes = await fetch(`${API_BASE_URL}/projects/${id}/milestones`);
       if (msRes.ok) setMilestones(await msRes.json());
       setIsMilestoneModalOpen(false);
       setEditingMilestone(null);
@@ -719,7 +722,7 @@ const ProjectDetailsPage = () => {
   const handleMilestoneDelete = async (msId) => {
     if (!window.confirm('Delete this milestone?')) return;
     try {
-      await fetch(`http://localhost:5000/api/projects/${id}/milestones/${msId}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/projects/${id}/milestones/${msId}`, { method: 'DELETE' });
       setMilestones(prev => prev.filter(m => m.id !== msId));
     } catch (err) {
       console.error('Failed to delete milestone:', err);
@@ -976,7 +979,7 @@ const ProjectDetailsPage = () => {
                   : (doc.size_bytes / 1024).toFixed(0) + ' KB')
                 : '-';
 
-              const fileUrl = doc.file_path ? `http://localhost:5000${doc.file_path}` : '#';
+              const fileUrl = doc.file_path ? `${API_BASE_URL.replace(/\/api\/?$/, '')}${doc.file_path}` : '#';
 
               return (
                 <tr key={doc.id} className="hover:bg-gray-50">

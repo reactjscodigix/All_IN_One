@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { followupsAPI } from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const UpcomingEvents = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -37,7 +39,7 @@ const UpcomingEvents = () => {
 
         const [followupData, callRes] = await Promise.all([
           followupsAPI.getAll(filters),
-          fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/call-history?limit=100`)
+          fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/call-history?limit=100`)
         ]);
 
         const followupEvents = followupData.map((f) => ({

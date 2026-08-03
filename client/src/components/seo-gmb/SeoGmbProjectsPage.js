@@ -17,6 +17,9 @@ import {
 
 import AdvancedDateRangePicker from '../common/AdvancedDateRangePicker';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 export default function SeoGmbProjectsPage() {
   const [activeTab, setActiveTab] = useState('Project Overview');
   const [viewingProjectId, setViewingProjectId] = useState(null);
@@ -36,7 +39,7 @@ export default function SeoGmbProjectsPage() {
   const fetchProjectsList = async () => {
     setLoadingList(true);
     try {
-      const response = await fetch('http://localhost:5000/api/projects?department=SEO+%26+GMB+Department');
+      const response = await fetch(API_BASE_URL + '/projects?department=SEO+%26+GMB+Department');
       if (response.ok) {
         const data = await response.json();
         setProjectsList(data);
@@ -77,19 +80,19 @@ export default function SeoGmbProjectsPage() {
 
   const loadProjectData = async (projId) => {
     try {
-      const pRes = await fetch(`http://localhost:5000/api/projects/${projId}`);
+      const pRes = await fetch(`${API_BASE_URL}/projects/${projId}`);
       if (pRes.ok) {
         const pData = await pRes.json();
         setProject(pData);
       }
 
-      const sRes = await fetch(`http://localhost:5000/api/marketing/seo?project_id=${projId}`);
+      const sRes = await fetch(`${API_BASE_URL}/marketing/seo?project_id=${projId}`);
       if (sRes.ok) {
         const sData = await sRes.json();
         setKeywords(sData.success ? sData.data : []);
       }
 
-      const gRes = await fetch(`http://localhost:5000/api/marketing/gmb?project_id=${projId}`);
+      const gRes = await fetch(`${API_BASE_URL}/marketing/gmb?project_id=${projId}`);
       if (gRes.ok) {
         const gData = await gRes.json();
         if (gData.success && gData.data.length > 0) {
@@ -99,7 +102,7 @@ export default function SeoGmbProjectsPage() {
         }
       }
 
-      const tRes = await fetch(`http://localhost:5000/api/projects/${projId}/tasks`);
+      const tRes = await fetch(`${API_BASE_URL}/projects/${projId}/tasks`);
       if (tRes.ok) {
         const tData = await tRes.json();
         setTasks(tData);
@@ -125,7 +128,7 @@ export default function SeoGmbProjectsPage() {
     e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this project?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/projects/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/projects/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setProjectsList(prev => prev.filter(p => p.id !== id));
         if (viewingProjectId === id) setViewingProjectId(null);

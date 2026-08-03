@@ -10,6 +10,9 @@ import {
 import SeoGmbProjectSelector from './SeoGmbProjectSelector';
 import CrudTable from '../common/CrudTable';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 const ON_PAGE_HEALTH_DATA = [];
 
 export default function SeoGmbOnPageSeoPage() {
@@ -119,7 +122,7 @@ export default function SeoGmbOnPageSeoPage() {
 
   const loadProjectData = async (proj) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/projects/${proj.id}`);
+      const response = await fetch(`${API_BASE_URL}/projects/${proj.id}`);
       if (response.ok) setProject(await response.json());
     } catch (err) {
       console.error('Error loading project for on-page SEO:', err);

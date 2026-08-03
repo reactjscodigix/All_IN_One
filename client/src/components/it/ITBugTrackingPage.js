@@ -8,6 +8,9 @@ import { useParams } from 'react-router-dom';
 import ReportBugModal from './ReportBugModal';
 import SearchableSelect from '../common/SearchableSelect';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 // Removed MOCK_BUGS
 
 const PriorityBadge = ({ priority }) => {
@@ -71,9 +74,9 @@ const ITBugTrackingPage = () => {
   const fetchData = async () => {
     try {
       const [bugsRes, usersRes, projectsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/tester/bugs'),
-        fetch('http://localhost:5000/api/users'),
-        fetch('http://localhost:5000/api/projects')
+        fetch(API_BASE_URL + '/tester/bugs'),
+        fetch(API_BASE_URL + '/users'),
+        fetch(API_BASE_URL + '/projects')
       ]);
       const bugsData = await bugsRes.json();
       const usersData = await usersRes.json();

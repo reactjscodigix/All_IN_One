@@ -8,6 +8,9 @@ import {
 import axios from 'axios';
 import { useAuth } from '../../hooks/useAuth';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+
 export default function ITUploadDocumentPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -71,7 +74,7 @@ export default function ITUploadDocumentPage() {
         created_by: user?.name || username || 'Admin'
       };
 
-      await axios.post('http://localhost:5000/api/it-documents', payload);
+      await axios.post(API_BASE_URL + '/it-documents', payload);
       navigate(`/${deptPath}/${rolePath}/${username || user?.username}/documents`);
     } catch (err) {
       console.error('Failed to upload document:', err);

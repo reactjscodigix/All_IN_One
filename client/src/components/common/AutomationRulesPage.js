@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Zap, Plus, Search, MoreVertical, Edit2, Trash2, Power, PowerOff } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const AutomationRulesPage = () => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +17,7 @@ const AutomationRulesPage = () => {
     try {
       setLoading(true);
       // Using existing API for alerts but filtering/mapping for rules
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const response = await fetch(`${apiUrl}/automation/alerts`);
       if (response.ok) {
         const data = await response.json();
@@ -31,7 +33,7 @@ const AutomationRulesPage = () => {
 
   const toggleRule = async (id, isActive) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const endpoint = isActive ? 'disable' : 'enable';
       const response = await fetch(`${apiUrl}/automation/${endpoint}/${id}`, {
         method: 'POST'
