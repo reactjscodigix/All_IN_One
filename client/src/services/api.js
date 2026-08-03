@@ -402,8 +402,11 @@ export const filesAPI = {
 export const teamsAPI = {
   getAll: (departmentId) => apiService.get(`/teams${departmentId ? '?department_id=' + departmentId : ''}`),
   create: (data) => apiService.post('/teams', data),
+  update: (teamId, data) => apiService.put(`/teams/${teamId}`, data),
+  delete: (teamId) => apiService.delete(`/teams/${teamId}`),
   getMembers: (teamId) => apiService.get(`/teams/${teamId}/members`),
   addMember: (teamId, data) => apiService.post(`/teams/${teamId}/members`, data),
+  removeMember: (teamId, userId) => apiService.delete(`/teams/${teamId}/members/${userId}`),
 };
 
 export const itManagerAPI = {

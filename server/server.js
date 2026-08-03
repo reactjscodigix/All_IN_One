@@ -150,7 +150,7 @@ authRouter.post('/login', async (req, res) => {
 authRouter.post('/signup', async (req, res) => {
   let connection;
   try {
-    const { first_name, last_name, email, password, phone, company, department } = req.body;
+    const { first_name, last_name, email, password, phone, company, department, job_title } = req.body;
     let { username } = req.body;
 
     if (!email || !password) {
@@ -186,8 +186,8 @@ authRouter.post('/signup', async (req, res) => {
     }
 
     const [result] = await connection.query(
-      'INSERT INTO users (first_name, last_name, email, username, password, phone1, location, role_id, status, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [first_name || 'User', last_name || '', email, username, hashedPassword, phone || '', company || '', role_id, 'Active', department || null]
+      'INSERT INTO users (first_name, last_name, email, username, password, phone1, location, role_id, status, department, job_title) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [first_name || 'User', last_name || '', email, username, hashedPassword, phone || '', company || '', role_id, 'Active', department || null, job_title || null]
     );
 
     const [newUser] = await connection.query(

@@ -448,7 +448,7 @@ const ROLE_UI_VISIBILITY = {
 export const getVisibility = (role, category, key) => {
   if (!role || !category || !key) return false;
   
-  const roleVisibility = ROLE_UI_VISIBILITY[role] || ROLE_UI_VISIBILITY['Employee'];
+  const roleVisibility = ROLE_UI_VISIBILITY[role] || ROLE_UI_VISIBILITY['IT Specialist'] || ROLE_UI_VISIBILITY['Employee'];
   if (!roleVisibility) return false;
   
   const categoryData = roleVisibility[category];

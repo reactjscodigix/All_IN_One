@@ -43,7 +43,8 @@ module.exports = function setupItKanbanRoutes(app, pool) {
         }
       });
 
-      const link = `http://localhost:3001/it/employee/it/tasks?ticketKey=${ticketKey}`;
+      const clientBaseUrl = process.env.CLIENT_URL || process.env.CORS_ORIGIN || 'http://localhost:3001';
+      const link = `${clientBaseUrl}/it/employee/it/tasks?ticketKey=${ticketKey}`;
 
       const mailOptions = {
         from: `"CRM Notifications" <${SMTP_USER}>`,
@@ -113,7 +114,7 @@ module.exports = function setupItKanbanRoutes(app, pool) {
   if (aiProvider === 'deepseek') {
     aiClient = new OpenAI({
       baseURL: 'https://api.deepseek.com',
-      apiKey: process.env.DEEPSEEK_API_KEY
+      apiKey: process.env.DEEPSEEK_API_KEY || 'disabled-key'
     });
     aiModel = 'deepseek-chat';           // Fast general model
     aiModelReasoning = 'deepseek-reasoner'; // R1 deep reasoning model
@@ -121,14 +122,14 @@ module.exports = function setupItKanbanRoutes(app, pool) {
   } else if (aiProvider === 'gemini') {
     aiClient = new OpenAI({
       baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
-      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+      apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || 'disabled-key'
     });
     aiModel = 'gemini-1.5-flash';
     aiModelReasoning = 'gemini-1.5-flash';
     console.log('🤖 AI Provider: Gemini (gemini-1.5-flash via OpenAI SDK)');
   } else {
     aiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
+      apiKey: process.env.OPENAI_API_KEY || 'disabled-key'
     });
     aiModel = 'gpt-4o';
     aiModelReasoning = 'gpt-4o';
@@ -197,123 +198,159 @@ module.exports = function setupItKanbanRoutes(app, pool) {
     }
 
     if (fallbackType === 'description') {
-      // Dynamic Description Generator
-      const overview = `This task implements and delivers the required features, configurations, and bug fixes for the <strong>"${cleanTitle}"</strong> component within the IT module.`;
+      const plainText = (cleanDesc || '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/✨\s*AI Enterprise.*$/gm, '')
+        .trim();
 
-      const userStory = `As an active CRM system user, I want the feature <strong>"${cleanTitle}"</strong> to function correctly, so that I can perform my work tasks efficiently and avoid project bottlenecks.`;
+      // If user provided their own description text, format & preserve THEIR exact structure line by line!
+      if (plainText.length > 10) {
+        const knownHeaders = [
+          'summary', 'context', 'acceptance criteria', 'user roles', 'system flow',
+          'admin dashboard', 'client management', 'student (mentor) management', 'package management',
+          'reports & analytics', 'user management', 'student (mentor) dashboard', 'assigned client management',
+          'remedy assignment', 'follow-up tracking', 'notes management', 'progress monitoring',
+          'client activity tracking', 'client dashboard', 'profile management', 'remedy tracking',
+          'follow-up schedule', 'progress tracking', 'document upload', 'session history',
+          'remedies management', 'follow-up management', 'client pwa', 'push notifications',
+          'other information', 'major database tables', 'future enhancements', 'overview', 'user story'
+        ];
 
-      // Build dynamic functional requirements from sentences or defaults
-      const requirements = [];
-      if (sentences.length > 0) {
-        sentences.forEach(s => {
-          requirements.push(`Configure and implement system logic supporting: "${s}"`);
+        const isSubLabel = (line) => /^(features|information|supported packages|reports|filters|roles|fields|types|status|displays|view|supported files|proof types|frequency|package types|supported devices|notification types|examples|major database tables):/i.test(line);
+
+        const lines = plainText
+          .split('\n')
+          .map(l => l.trim())
+          .filter(l => l.length > 0);
+
+        const outputLines = [];
+
+        lines.forEach((line) => {
+          const lower = line.toLowerCase().replace(/[:\*\#]/g, '').trim();
+          const isHeader = knownHeaders.includes(lower) || line.startsWith('###') || (line.endsWith(':') && !isSubLabel(line) && line.length < 45);
+
+          if (isHeader) {
+            const cleanHeader = line.replace(/^#+\s*/, '').replace(/[\*:]+$/, '').trim();
+            const titleCased = cleanHeader.charAt(0).toUpperCase() + cleanHeader.slice(1);
+            outputLines.push(`\n${titleCased}`);
+          } else if (line.startsWith('•') || line.startsWith('-') || line.startsWith('*')) {
+            const bulletContent = line.replace(/^[•\-\*]\s*/, '').trim();
+            outputLines.push(`• ${bulletContent}`);
+          } else if (isSubLabel(line)) {
+            outputLines.push(`\n${line}`);
+          } else {
+            // Short feature item under section -> convert to bullet item
+            if (line.length < 50 && !line.endsWith('.') && !line.includes('Infotech') && !line.includes('System Owner')) {
+              outputLines.push(`• ${line}`);
+            } else {
+              outputLines.push(line);
+            }
+          }
         });
-      } else {
-        requirements.push(`Design the interactive interface and user workflow bindings for "${cleanTitle}".`);
-        requirements.push(`Configure backend services and database transactions to support "${cleanTitle}".`);
-        requirements.push(`Establish thorough model level schema constraints and business rule validations.`);
+
+        return outputLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
       }
 
-      // Build dynamic acceptance criteria
-      const acceptanceCriteria = [];
-      if (sentences.length > 0) {
-        acceptanceCriteria.push(`Given the "${cleanTitle}" dashboard panel is active, When a user actions "${sentences[0]}", Then the system state updates correctly.`);
-        if (sentences[1]) {
-          acceptanceCriteria.push(`Given validation rules are enforced, When input data does not satisfy: "${sentences[1]}", Then the system shows a friendly error message.`);
-        }
-      } else {
-        acceptanceCriteria.push(`Given the user is on the IT Kanban board page, When they view the details for "${cleanTitle}", Then the specific ticket details and status load immediately.`);
-        acceptanceCriteria.push(`Given changes are persisted, When the form is submitted with valid fields, Then the issue updates are saved successfully in the database.`);
-      }
+      // Default template only if description is completely empty
+      return `Summary
+Feature implementation for "${cleanTitle}".
 
-      const technicalNotes = [
-        `Component: Custom configurations mapping to "${cleanTitle}".`,
-        `Database: Schema verification checks in <code>it_kanban_issues</code> table.`,
-        `Validation: Ensure parameter validation logic is applied on incoming payloads.`
-      ];
+Context
+The system manages component workflows and database persistence for "${cleanTitle}".
 
-      const edgeCases = [
-        `Handle empty or invalid draft input values for "${cleanTitle}" gracefully without causing script crashes.`,
-        `Prevent multiple rapid button clicks from triggering duplicate actions.`
-      ];
+Key Specifications & Requirements
+• Design and configure user interface components supporting "${cleanTitle}"
+• Build REST API router endpoints, validation logic & error responses
+• Integrate database schema models & persistence checks for "${cleanTitle}"
+• Run automated unit tests & cross-browser QA assertions
 
-      const testingScenarios = [
-        `Verify UI elements for "${cleanTitle}" render correctly on mobile, tablet, and desktop screens.`,
-        `Confirm integration tests succeed for core workflows associated with: "${cleanTitle}".`
-      ];
-
-      return `
-        <p>${cleanDesc}</p>
-        <hr class="my-3 border-gray-200" />
-        <h3 class=" text-sm text-indigo-700">✨ AI Enterprise Improvements (Local Fallback Engine):</h3>
-        <h4 class=" text-xs mt-2 text-gray-800">📋 Overview</h4>
-        <p>${overview}</p>
-        <h4 class=" text-xs mt-2 text-gray-800">👤 User Story</h4>
-        <p><em>${userStory}</em></p>
-        <h4 class=" text-xs mt-2 text-gray-800">✅ Functional Requirements</h4>
-        <ul class="list-disc pl-4 space-y-1 text-gray-700">
-          ${requirements.map(req => `<li>${req}</li>`).join('')}
-        </ul>
-        <h4 class=" text-xs mt-2 text-gray-800">🎯 Acceptance Criteria</h4>
-        <ol class="list-decimal pl-4 space-y-1 text-gray-700">
-          ${acceptanceCriteria.map(ac => `<li>${ac}</li>`).join('')}
-        </ol>
-        <h4 class=" text-xs mt-2 text-gray-800">🔧 Technical Notes</h4>
-        <ul class="list-disc pl-4 space-y-1 text-gray-700">
-          ${technicalNotes.map(n => `<li>${n}</li>`).join('')}
-        </ul>
-        <h4 class=" text-xs mt-2 text-gray-800">⚠️ Edge Cases</h4>
-        <ul class="list-disc pl-4 space-y-1 text-gray-700">
-          ${edgeCases.map(ec => `<li>${ec}</li>`).join('')}
-        </ul>
-        <h4 class=" text-xs mt-2 text-gray-800">🧪 Testing Scenarios</h4>
-        <ul class="list-disc pl-4 space-y-1 text-gray-700">
-          ${testingScenarios.map(ts => `<li>${ts}</li>`).join('')}
-        </ul>
-        <p class="text-xs text-gray-400 mt-4"><em>(Generated dynamically based on "${cleanTitle}" using CRM local engine rules)</em></p>
-      `.trim();
+Acceptance Criteria
+1. Given the user opens ticket details for "${cleanTitle}", Then all parameters load cleanly.
+2. Given input values are valid, When saved, Then changes persist in database.`.trim();
     }
 
     if (fallbackType === 'subtasks') {
       const subtaskTitles = [];
 
-      // If sentences are found, convert each sentence into an actionable subtask title
-      if (sentences.length > 0) {
-        sentences.forEach(s => {
-          let cleanS = s.replace(/<\/?[^>]+(>|$)/g, "").trim();
-          if (cleanS) {
-            subtaskTitles.push(cleanS.charAt(0).toUpperCase() + cleanS.slice(1));
-          }
-        });
+      // 1. Extract actionable bullet points or list items from description
+      const plainDesc = cleanDesc
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/h[1-6]>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .trim();
+
+      const lines = plainDesc
+        .split(/\n+/)
+        .map(l => l.replace(/^[•\-\*\d\.\s]+/, '').trim())
+        .filter(l => l.length > 8 && !l.toLowerCase().includes('overview') && !l.toLowerCase().includes('user story') && !l.toLowerCase().includes('technical notes') && !l.toLowerCase().includes('acceptance criteria'));
+
+      lines.forEach(line => {
+        if (subtaskTitles.length < 6) {
+          subtaskTitles.push(line);
+        }
+      });
+
+      // 2. Keyword-based dynamic technical subtasks derived from title and description
+      const fullText = (cleanTitle + ' ' + plainDesc).toLowerCase();
+
+      if (fullText.includes('auth') || fullText.includes('login') || fullText.includes('permission') || fullText.includes('user')) {
+        subtaskTitles.push(`Configure authentication middleware & role-based access for ${cleanTitle}`);
       }
 
-      // Ensure we have a complete set of 4-5 customized subtasks
+      if (fullText.includes('db') || fullText.includes('database') || fullText.includes('schema') || fullText.includes('table') || fullText.includes('model')) {
+        subtaskTitles.push(`Design database table structures & schema migrations for ${cleanTitle}`);
+      }
+
+      if (fullText.includes('api') || fullText.includes('endpoint') || fullText.includes('router') || fullText.includes('backend') || fullText.includes('server')) {
+        subtaskTitles.push(`Build REST API router endpoints, validation logic & error handlers for ${cleanTitle}`);
+      }
+
+      if (fullText.includes('ui') || fullText.includes('component') || fullText.includes('view') || fullText.includes('form') || fullText.includes('frontend') || fullText.includes('page')) {
+        subtaskTitles.push(`Develop interactive UI components & frontend state logic for ${cleanTitle}`);
+      }
+
+      if (fullText.includes('test') || fullText.includes('qa') || fullText.includes('validation')) {
+        subtaskTitles.push(`Write unit & integration test suites for ${cleanTitle}`);
+      }
+
+      if (fullText.includes('doc') || fullText.includes('swagger') || fullText.includes('export') || fullText.includes('report')) {
+        subtaskTitles.push(`Create API technical documentation & user guide for ${cleanTitle}`);
+      }
+
+      // 3. Dynamic fallbacks derived specifically from cleanTitle
       if (subtaskTitles.length < 1) {
-        subtaskTitles.push(`Define user requirements & scope layout for "${cleanTitle}"`);
+        subtaskTitles.push(`Initialize core project architecture & module setup for ${cleanTitle}`);
       }
       if (subtaskTitles.length < 2) {
-        subtaskTitles.push(`Design UI screens and mock views for "${cleanTitle}"`);
+        subtaskTitles.push(`Build data structures & backend business logic handlers for ${cleanTitle}`);
       }
       if (subtaskTitles.length < 3) {
-        subtaskTitles.push(`Create database fields, schema index configs & tables supporting "${cleanTitle}"`);
+        subtaskTitles.push(`Create responsive user interface views & form controls for ${cleanTitle}`);
       }
       if (subtaskTitles.length < 4) {
-        subtaskTitles.push(`Develop API router logic, validation checks & endpoint integrations for "${cleanTitle}"`);
+        subtaskTitles.push(`Implement API routing, payload validation & error responses for ${cleanTitle}`);
       }
       if (subtaskTitles.length < 5) {
-        subtaskTitles.push(`Perform manual and automated QA verify assertions on mobile and desktop layout rules for "${cleanTitle}"`);
+        subtaskTitles.push(`Run QA test suite, edge-case validation & cross-device checks for ${cleanTitle}`);
       }
 
-      return subtaskTitles.map((stTitle, idx) => {
-        const categories = ['Design', 'Database', 'Backend API', 'Frontend UI', 'Testing'];
+      // Deduplicate subtask titles
+      const uniqueSubtasks = Array.from(new Set(subtaskTitles)).slice(0, 6);
+
+      return uniqueSubtasks.map((stTitle, idx) => {
+        const categories = ['Backend API', 'Frontend UI', 'Database', 'Testing', 'DevOps'];
         const selectedCat = categories[idx % categories.length];
         return {
-          title: stTitle.length > 80 ? stTitle.substring(0, 77) + '...' : stTitle,
-          description: `Implement, execute and verify the specifications regarding "${stTitle}" for the overall feature "${cleanTitle}".`,
+          title: stTitle,
+          description: `Implement, execute and verify the specifications regarding "${stTitle}".`,
           estimated_hours: [4, 6, 8, 4, 6][idx % 5],
           priority: ['High', 'Medium', 'Low'][idx % 3],
-          suggested_assignee: devList[idx % devList.length],
-          dependencies: idx === 0 ? 'None' : subtaskTitles[idx - 1].substring(0, 50),
+          suggested_assignee: 'Unassigned',
+          dependencies: idx === 0 ? 'None' : uniqueSubtasks[idx - 1].substring(0, 50),
           labels: [selectedCat],
           sprint: 'Sprint 1',
           complexity: [4, 6, 8, 4, 6][idx % 5] > 6 ? 'High' : ([4, 6, 8, 4, 6][idx % 5] > 4 ? 'Medium' : 'Low'),
@@ -408,7 +445,7 @@ module.exports = function setupItKanbanRoutes(app, pool) {
   // POST create a new issue
   app.post('/api/it-kanban/issues', async (req, res) => {
     try {
-      const { title, type, priority, status, assignee, description } = req.body;
+      const { title, type, priority, status, assignee, reporter, team, team_id, project_id, description } = req.body;
 
       // Generate a new key (e.g., WR-XXX). Simple logic: find max WR ID and increment
       const [maxKeyResult] = await db.query("SELECT issue_key FROM it_kanban_issues WHERE issue_key LIKE 'WR-%' ORDER BY id DESC LIMIT 1");
@@ -422,8 +459,8 @@ module.exports = function setupItKanbanRoutes(app, pool) {
       const newKey = `WR-${nextNum}`;
 
       const [result] = await db.query(`
-        INSERT INTO it_kanban_issues (issue_key, title, type, priority, status, assignee, description, subtasks, linked_issues, comments, progress, original_estimate, remaining_estimate, time_spent, components, environment, vulnerability)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '0h', '0h', '0h', '', '', '')
+        INSERT INTO it_kanban_issues (issue_key, title, type, priority, status, assignee, reporter, team, team_id, project_id, description, subtasks, linked_issues, comments, progress, original_estimate, remaining_estimate, time_spent, components, environment, vulnerability)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '0h', '0h', '0h', '', '', '')
       `, [
         newKey,
         title,
@@ -431,6 +468,10 @@ module.exports = function setupItKanbanRoutes(app, pool) {
         priority || 'Medium',
         status || 'TO DO',
         assignee || 'Unassigned',
+        reporter || 'Unassigned',
+        team || 'None',
+        team_id || null,
+        project_id || null,
         description || '',
         JSON.stringify([]),
         JSON.stringify([]),
@@ -456,6 +497,46 @@ module.exports = function setupItKanbanRoutes(app, pool) {
     }
   });
 
+  // GET attachments for an issue by key
+  app.get('/api/it-kanban/issues/:key/attachments', async (req, res) => {
+    try {
+      const { key } = req.params;
+      const [attachments] = await db.query(
+        'SELECT * FROM it_kanban_attachments WHERE issue_key = ? ORDER BY uploaded_at DESC',
+        [key]
+      );
+      res.json(attachments);
+    } catch (error) {
+      responseError(res, 500, 'Failed to fetch attachments', error);
+    }
+  });
+
+  // POST add attachment to issue
+  app.post('/api/it-kanban/issues/:key/attachments', async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { file_name, file_path, file_size, file_type } = req.body;
+      const [result] = await db.query(
+        'INSERT INTO it_kanban_attachments (issue_key, file_name, file_path, file_size, file_type) VALUES (?, ?, ?, ?, ?)',
+        [key, file_name, file_path || '', file_size || '0 KB', file_type || 'document']
+      );
+      res.status(201).json({ id: result.insertId, issue_key: key, file_name, file_path, file_size, file_type });
+    } catch (error) {
+      responseError(res, 500, 'Failed to save attachment', error);
+    }
+  });
+
+  // DELETE attachment by id
+  app.delete('/api/it-kanban/attachments/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      await db.query('DELETE FROM it_kanban_attachments WHERE id = ?', [id]);
+      res.json({ message: 'Attachment deleted successfully' });
+    } catch (error) {
+      responseError(res, 500, 'Failed to delete attachment', error);
+    }
+  });
+
   // PUT update an issue by key
   app.put('/api/it-kanban/issues/:key', async (req, res) => {
     try {
@@ -470,7 +551,7 @@ module.exports = function setupItKanbanRoutes(app, pool) {
       const updateValues = [];
 
       // Only allow updating these specific fields
-      const allowedFields = ['title', 'description', 'type', 'priority', 'status', 'assignee', 'reporter', 'sprint', 'due_date', 'start_date', 'progress', 'original_estimate', 'remaining_estimate', 'time_spent', 'components', 'environment', 'vulnerability'];
+      const allowedFields = ['title', 'description', 'type', 'priority', 'status', 'assignee', 'reporter', 'team', 'team_id', 'project_id', 'sprint', 'due_date', 'start_date', 'progress', 'original_estimate', 'remaining_estimate', 'time_spent', 'components', 'environment', 'vulnerability'];
       const jsonFields = ['subtasks', 'linked_issues', 'comments'];
 
       for (const [field, value] of Object.entries(updates)) {
@@ -838,13 +919,19 @@ Comment Summary for ${key} (Local Fallback):
     }
   });
 
-  // 6. Side-by-side description improvement
-  app.post('/api/it-kanban/issues/:key/ai/generate-improved-description', async (req, res) => {
+  // 6. Description improvement handler (supports both route aliases)
+  const handleImproveDescriptionReq = async (req, res) => {
     const { key } = req.params;
-    const { description } = req.body;
+    const { title: reqTitle, description } = req.body;
     try {
-      const [rows] = await db.query('SELECT title FROM it_kanban_issues WHERE issue_key = ?', [key]);
-      const title = rows.length > 0 ? rows[0].title : 'Issue';
+      let title = reqTitle;
+      if (!title && key && db) {
+        try {
+          const [rows] = await db.query('SELECT title FROM it_kanban_issues WHERE issue_key = ?', [key]);
+          if (rows && rows.length > 0) title = rows[0].title;
+        } catch (e) {}
+      }
+      if (!title) title = 'CRM Feature';
 
       let improved = '';
       try {
@@ -856,42 +943,28 @@ Comment Summary for ${key} (Local Fallback):
               role: "system",
               content: `You are a senior enterprise business analyst reviewing a task description for a CRM/Project Management system. Read the description WORD BY WORD and understand the EXACT feature, module, or bug being described.
 
-Your job is to improve THIS SPECIFIC description by:
-1. Fixing grammar, spelling, and sentence structure while keeping the original meaning.
-2. Adding SPECIFIC technical details that are implied but not written (e.g., if it mentions "add a form", specify what fields, validations, API calls are needed).
-3. Breaking vague requirements into CONCRETE, actionable specifications.
-4. Adding acceptance criteria that reference the ACTUAL feature described.
-5. Identifying missing requirements, security considerations, and edge cases SPECIFIC to this task.
-
-Structure the output as:
-- <h4>📋 Overview</h4> - What this task does (be specific, name the actual module/page/component)
-- <h4>👤 User Story</h4> - As a [role], I want [this specific thing], so that [this specific benefit]
-- <h4>✅ Functional Requirements</h4> - Detailed bullet list of EXACTLY what needs to be built
-- <h4>🎯 Acceptance Criteria</h4> - Numbered Given/When/Then scenarios
-- <h4>🔧 Technical Notes</h4> - API endpoints, DB tables, components involved
-- <h4>⚠️ Edge Cases</h4> - What could go wrong specific to THIS feature
-- <h4>🧪 Testing Scenarios</h4> - How to test THIS specific feature
-
-Do NOT produce generic boilerplate. Every line must relate to the actual task content.
-Format using clean HTML (<p>, <strong>, <ul>, <li>, <ol>, <h4>, <code>). Respond ONLY with the HTML.`
+Your job is to PRESERVE and ENHANCE the user's existing description. Take all points, lines, and specifications from the user's input, polish the grammar, and structure them into Summary, Context, Key Specifications & Requirements (with bullet points •), and Acceptance Criteria. Do NOT discard the user's original content.`
             },
             {
               role: "user",
-              content: `Task Title: ${title}\n\nCurrent Description to Improve:\n${description || 'No description provided - analyze the title and create a detailed specification.'}`
+              content: `Task Title: ${title}\n\nCurrent Description to Improve:\n${description || ''}`
             }
           ]
         });
         improved = response.choices[0].message.content.trim();
       } catch (err) {
-        console.warn('AI generate-improved-description failed, running fallback:', err.message);
-        improved = generateSmartFallback(title, description || '', 'description', key);
+        console.warn('AI generate-improved-description failed, running smart fallback:', err.message);
+        improved = generateSmartFallback(title, description || '', 'description', key || 'WR-101');
       }
 
-      res.json({ improvedDescription: improved });
+      res.json({ improvedDescription: improved, improved });
     } catch (error) {
       responseError(res, 500, 'AI Description analysis failed', error);
     }
-  });
+  };
+
+  app.post('/api/it-kanban/issues/:key/ai/generate-improved-description', handleImproveDescriptionReq);
+  app.post('/api/it-kanban/issues/:key/ai/improve-description', handleImproveDescriptionReq);
 
   // 6.5. Improve description draft (before ticket creation)
   app.post('/api/it-kanban/ai/improve-description-draft', async (req, res) => {

@@ -141,9 +141,9 @@ const LeadsKanban = () => {
 
   const columns = Object.entries(groupedLeads).map(([status, leads]) => {
     const totalValue = leads.reduce((sum, lead) => sum + (parseFloat(lead.value) || 0), 0);
-    const formattedValue = new Intl.NumberFormat('en-US', {
+    const formattedValue = new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'INR',
       maximumFractionDigits: 0
     }).format(totalValue);
 

@@ -87,19 +87,19 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
     if (initialData) {
       setFormData({
         name: initialData.name || initialData.title || '',
-        projectId: initialData.project_id || initialData.projectId || initialData.id || '',
+        projectId: initialData.project_id_code || initialData.project_id || initialData.projectId || initialData.id || '',
         projectType: initialData.project_type || initialData.projectType || '',
         client: initialData.company_name || initialData.company || initialData.client || '',
-        category: initialData.category || initialData.workflow_type || '',
-        projectTiming: initialData.projectTiming || '',
-        price: initialData.budget || initialData.price || '',
+        category: initialData.category || initialData.department_name || initialData.workflow_type || '',
+        projectTiming: initialData.project_timing || initialData.projectTiming || '',
+        price: initialData.budget !== undefined && initialData.budget !== null ? initialData.budget : (initialData.price || ''),
         responsiblePersons: Array.isArray(initialData.responsible_persons) ? initialData.responsible_persons :
           (Array.isArray(initialData.responsiblePersons) ? initialData.responsiblePersons : []),
-        teamLeader: initialData.team_leader || initialData.teamLeader || '',
+        teamLeader: initialData.manager_name || initialData.team_leader || initialData.teamLeader || '',
         startDate: formatDateForInput(initialData.start_date || initialData.startDate),
-        dueDate: formatDateForInput(initialData.due_date || initialData.dueDate),
-        priority: initialData.priority || '',
-        status: initialData.status || initialData.stage || '',
+        dueDate: formatDateForInput(initialData.due_date || initialData.dueDate || initialData.end_date),
+        priority: initialData.priority || 'Medium',
+        status: initialData.status || initialData.stage || 'Planning',
         description: initialData.description || '',
       });
     } else {
@@ -272,6 +272,9 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400 disabled:opacity-50"
             >
               <option value="">{isFetching ? 'Loading projects...' : 'Select IT Project'}</option>
+              {formData.name && !confirmedProjects.some(p => p.name === formData.name) && (
+                <option value={formData.name}>{formData.name}</option>
+              )}
               {confirmedProjects.map(project => (
                 <option key={project.id} value={project.name}>
                   {project.name} ({project.company_name})
@@ -310,6 +313,9 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
             >
               <option value="">Choose</option>
+              {formData.projectType && !projectTypes.includes(formData.projectType) && (
+                <option value={formData.projectType}>{formData.projectType}</option>
+              )}
               {projectTypes.map(type => (
                 <option key={type} value={type}>{type}</option>
               ))}
@@ -329,6 +335,9 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400 disabled:opacity-50"
             >
               <option value="">{isFetching ? 'Loading companies...' : 'Select'}</option>
+              {formData.client && !companies.some(c => c.company_name === formData.client) && (
+                <option value={formData.client}>{formData.client}</option>
+              )}
               {companies.map(company => (
                 <option key={company.id} value={company.company_name}>
                   {company.company_name}
@@ -349,6 +358,9 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
             >
               <option value="">Select</option>
+              {formData.category && !categories.includes(formData.category) && (
+                <option value={formData.category}>{formData.category}</option>
+              )}
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
@@ -445,6 +457,9 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
             >
               <option value="">Select</option>
+              {formData.teamLeader && !teams.some(t => t.name === formData.teamLeader) && (
+                <option value={formData.teamLeader}>{formData.teamLeader}</option>
+              )}
               {teams.map(team => (
                 <option key={team.id} value={team.name}>{team.name}</option>
               ))}

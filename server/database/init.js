@@ -24,6 +24,7 @@ async function initializeDatabase() {
         role_id INT,
         department VARCHAR(100),
         department_id INT,
+        job_title VARCHAR(100),
         status ENUM('Active', 'Inactive') DEFAULT 'Active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -197,6 +198,16 @@ async function initializeDatabase() {
         FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
       )
     `);
+
+    try {
+      const [columns] = await connection.query('SHOW COLUMNS FROM users LIKE "job_title"');
+      if (columns.length === 0) {
+        await connection.query('ALTER TABLE users ADD COLUMN job_title VARCHAR(100) DEFAULT NULL');
+        console.log('✓ Added job_title to users');
+      }
+    } catch (err) {
+      console.warn('Could not add job_title to users:', err.message);
+    }
 
     try {
       await connection.query(`

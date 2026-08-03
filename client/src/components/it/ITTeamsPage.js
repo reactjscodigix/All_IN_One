@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Users, Plus, UserPlus, Briefcase, Trash2, Search, Filter, Shield, MoreVertical,
+  Users, Plus, UserPlus, Briefcase, Trash2, Search, Filter, Shield, MoreVertical, X,
   ChevronDown, Folder, UserCheck, UserX, Clock, Calendar, Download, Eye, Edit3, ChevronRight, Activity, TrendingUp
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { teamsAPI, usersAPI, projectAPI } from '../../services/api';
+import { teamsAPI, usersAPI, projectAPI, projectTeamAPI } from '../../services/api';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
 const ITTeamsPage = () => {
+  const navigate = useNavigate();
+  const { designation, username } = useParams();
   const [teams, setTeams] = useState([]);
   const [users, setUsers] = useState([]);
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -17,16 +21,37 @@ const ITTeamsPage = () => {
   const [isAssignProjectModalOpen, setIsAssignProjectModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [activeTab, setActiveTab] = useState('Team Allocation');
+  const [expandedTeams, setExpandedTeams] = useState({});
+
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState(null);
+
+  const toggleTeamExpand = (teamId) => {
+    setExpandedTeams(prev => ({
+      ...prev,
+      [teamId]: !prev[teamId]
+    }));
+  };
 
   const [newTeam, setNewTeam] = useState({
     name: '',
     description: '',
     manager_id: '',
     manager_role: '',
-    members: [] // Array of { user_id: '', role: '', userName: '', roleSearch: '' }
+    members: [], // Array of { user_id: '', role: '', userName: '', roleSearch: '' }
+    project_ids: []
   });
   const [newMember, setNewMember] = useState({ user_id: '', role: '' });
   const [projectAssignment, setProjectAssignment] = useState({ project_id: '' });
+
+  // BOM-style member form local states
+  const [memberFormUserId, setMemberFormUserId] = useState('');
+  const [memberFormUserName, setMemberFormUserName] = useState('');
+  const [memberFormUserEmail, setMemberFormUserEmail] = useState('');
+  const [memberFormRole, setMemberFormRole] = useState('');
+  const [memberFormUserSearchActive, setMemberFormUserSearchActive] = useState(false);
+  const [memberFormRoleSearchActive, setMemberFormRoleSearchActive] = useState(false);
 
   // Search states for modals
   const [managerSearch, setManagerSearch] = useState('');
@@ -38,14 +63,18 @@ const ITTeamsPage = () => {
 
   const commonRoles = [
     'Frontend Developer', 'Backend Developer', 'Full Stack Developer',
-    'UI/UX Designer', 'Mobile Developer', 'QA Engineer',
+    'UI/UX Designer', 'Mobile Developer', 'QA   Engineer',
     'DevOps Engineer', 'Data Scientist', 'Project Manager',
     'Product Manager', 'Team Lead', 'IT Manager', 'CTO'
   ];
 
   useEffect(() => {
     fetchData();
-    const handleClickOutside = () => setActiveDropdown(null);
+    const handleClickOutside = () => {
+      setActiveDropdown(null);
+      setMemberFormUserSearchActive(false);
+      setMemberFormRoleSearchActive(false);
+    };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
@@ -78,7 +107,12 @@ const ITTeamsPage = () => {
 
       setTeams(teamsWithMembers);
       setUsers(usersData);
-      setProjects(projectsData.filter(p => p.category === 'IT' || p.projectType === 'IT'));
+      setProjects(projectsData.filter(p =>
+        p.workflow_type === 'IT' ||
+        p.project_type === 'IT' ||
+        p.category === 'IT' ||
+        p.department_id === itDeptId
+      ));
     } catch (error) {
       console.error('Failed to fetch teams data:', error);
       showErrorToast('Failed to load teams');
@@ -94,19 +128,33 @@ const ITTeamsPage = () => {
       const itDept = departmentsData.find(d => d.name === 'IT Department');
       const itDeptId = itDept ? itDept.id : 4;
 
-      const response = await teamsAPI.create({
+      const teamData = {
         name: newTeam.name,
         description: newTeam.description,
         department_id: itDeptId,
         manager_id: newTeam.manager_id,
-        manager_role: newTeam.manager_role
-      });
+        manager_role: newTeam.manager_role || 'Manager'
+      };
 
-      if (response.success && newTeam.members.length > 0) {
-        // Add members to the newly created team
+      let teamId;
+      if (isEditMode) {
+        teamId = selectedTeamId;
+        await teamsAPI.update(teamId, teamData);
+
+        // Remove all previous members of the team to overwrite them
+        const currentDbMembers = await teamsAPI.getMembers(teamId);
+        for (const m of currentDbMembers) {
+          await teamsAPI.removeMember(teamId, m.user_id);
+        }
+      } else {
+        const response = await teamsAPI.create(teamData);
+        teamId = response.id;
+      }
+
+      if (teamId && newTeam.members.length > 0) {
         for (const member of newTeam.members) {
           if (member.user_id && member.role) {
-            await teamsAPI.addMember(response.id, {
+            await teamsAPI.addMember(teamId, {
               user_id: member.user_id,
               role: member.role
             });
@@ -114,28 +162,82 @@ const ITTeamsPage = () => {
         }
       }
 
-      showSuccessToast('Team created successfully');
+      // Sync project assignments
+      if (teamId) {
+        const prevAssignedProjects = projects.filter(p => p.team_id === teamId);
+
+        // 1. Unassign team from any project that is no longer selected
+        for (const p of prevAssignedProjects) {
+          if (!newTeam.project_ids.includes(p.id)) {
+            await projectAPI.update(p.id, { team_id: null });
+          }
+        }
+
+        // 2. Assign team to any project that is newly selected
+        if (newTeam.project_ids && newTeam.project_ids.length > 0) {
+          for (const projectId of newTeam.project_ids) {
+            const p = prevAssignedProjects.find(prev => prev.id === projectId);
+            if (!p) {
+              await projectTeamAPI.assignTeam(projectId, teamId);
+            }
+          }
+        }
+      }
+
+      showSuccessToast(isEditMode ? 'Team updated successfully' : 'Team created successfully');
       setIsCreateModalOpen(false);
+      setIsEditMode(false);
+      setSelectedTeamId(null);
       setNewTeam({
         name: '',
         description: '',
         manager_id: '',
         manager_role: '',
-        members: []
+        members: [],
+        project_ids: []
       });
       setManagerSearch('');
       setManagerRoleSearch('');
       fetchData();
     } catch (error) {
-      showErrorToast('Failed to create team');
+      showErrorToast(isEditMode ? 'Failed to update team' : 'Failed to create team');
     }
   };
 
-  const addMemberField = () => {
-    setNewTeam({
-      ...newTeam,
-      members: [...newTeam.members, { user_id: '', role: '', userName: '', roleSearch: '', searchActive: false, roleSearchActive: false }]
-    });
+  const addMemberToList = () => {
+    if (!memberFormUserId) {
+      showErrorToast('Please select a team member.');
+      return;
+    }
+    if (!memberFormRole.trim()) {
+      showErrorToast('Please specify a role for the team member.');
+      return;
+    }
+
+    // Check if member already added
+    if (newTeam.members.some(m => m.user_id === memberFormUserId)) {
+      showErrorToast('This member is already added to the team.');
+      return;
+    }
+
+    setNewTeam(prev => ({
+      ...prev,
+      members: [
+        ...prev.members,
+        {
+          user_id: memberFormUserId,
+          userName: memberFormUserName,
+          email: memberFormUserEmail,
+          role: memberFormRole.trim(),
+        }
+      ]
+    }));
+
+    // Reset member form
+    setMemberFormUserId('');
+    setMemberFormUserName('');
+    setMemberFormUserEmail('');
+    setMemberFormRole('');
   };
 
   const removeMemberField = (index) => {
@@ -144,10 +246,31 @@ const ITTeamsPage = () => {
     setNewTeam({ ...newTeam, members: updatedMembers });
   };
 
-  const updateMemberField = (index, field, value) => {
-    const updatedMembers = [...newTeam.members];
-    updatedMembers[index][field] = value;
-    setNewTeam({ ...newTeam, members: updatedMembers });
+  const [projectFormId, setProjectFormId] = useState('');
+
+  const addProjectToList = () => {
+    if (!projectFormId) {
+      showErrorToast('Please select a project to assign.');
+      return;
+    }
+    const projIdNum = Number(projectFormId);
+    const alreadyExists = newTeam.project_ids?.includes(projIdNum);
+    if (alreadyExists) {
+      showErrorToast('This project is already assigned.');
+      return;
+    }
+    setNewTeam(prev => ({
+      ...prev,
+      project_ids: [...(prev.project_ids || []), projIdNum]
+    }));
+    setProjectFormId('');
+  };
+
+  const removeProjectFromList = (projectId) => {
+    setNewTeam(prev => ({
+      ...prev,
+      project_ids: (prev.project_ids || []).filter(id => id !== projectId)
+    }));
   };
 
   const handleAddMember = async (e) => {
@@ -167,11 +290,17 @@ const ITTeamsPage = () => {
 
   const handleAssignProject = async (e) => {
     e.preventDefault();
+    const teamId = selectedTeam?.id || projectAssignment.team_id;
+    if (!teamId) {
+      showErrorToast('Please select a team');
+      return;
+    }
     try {
-      await projectAPI.update(projectAssignment.project_id, { team_id: selectedTeam.id });
+      await projectTeamAPI.assignTeam(projectAssignment.project_id, teamId);
       showSuccessToast('Team assigned to project');
       setIsAssignProjectModalOpen(false);
-      setProjectAssignment({ project_id: '' });
+      setProjectAssignment({ project_id: '', team_id: '' });
+      setSelectedTeam(null);
       fetchData();
     } catch (error) {
       showErrorToast('Failed to assign project');
@@ -243,28 +372,25 @@ const ITTeamsPage = () => {
             <button className="p-2 bg-white border border-gray-200 text-gray-700 rounded-md text-sm font-medium flex items-center gap-2  hover:bg-gray-50 transition-colors">
               <Download size={14} /> Import Team
             </button>
-            <button onClick={() => setIsCreateModalOpen(true)} className="p-2 bg-indigo-600 text-white rounded-md text-sm font-medium flex items-center gap-2  hover:bg-indigo-700 transition-colors">
+            <button onClick={() => { setSelectedTeam(null); setIsAssignProjectModalOpen(true); }} className="p-2 bg-indigo-600 text-white rounded-md text-sm font-medium flex items-center gap-2  hover:bg-indigo-700 transition-colors">
               <Plus size={14} /> Assign Team
             </button>
           </div>
         </div>
 
         {/* TOP KPI CARDS */}
-        <div className="grid grid-cols-6 gap-2 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           {[
             { title: 'Total Team Members', val: totalUsers, sub: 'Active Employees', icon: Users, color: 'text-indigo-600', bg: 'bg-indigo-50' },
             { title: 'Total Projects', val: projects.length, sub: 'Projects Assigned', icon: Folder, color: 'text-emerald-500', bg: 'bg-emerald-50' },
             { title: 'Active Assignments', val: activeAssignments, sub: 'Across All Projects', icon: Calendar, color: 'text-blue-500', bg: 'bg-blue-50' },
-            { title: 'Overallocated', val: '6', sub: 'Members', icon: UserX, color: 'text-rose-500', bg: 'bg-rose-50' },
-            { title: 'Available Capacity', val: '32.5%', sub: 'Team Availability', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
-            { title: 'Utilization Rate', val: '67.5%', sub: 'Average Overall', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50' },
           ].map((k, i) => (
-            <div key={i} className="bg-white p-2 rounded border border-gray-100  flex items-center gap-2">
-              <div className={`p-3 rounded ${k.bg} ${k.color} shrink-0`}><k.icon size={20} /></div>
+            <div key={i} className="bg-white p-4 rounded-lg border border-gray-100 flex items-center gap-4 hover:shadow-sm transition-shadow">
+              <div className={`p-3.5 rounded-lg ${k.bg} ${k.color} shrink-0`}><k.icon size={22} /></div>
               <div>
-                <div className="text-sm font-medium text-gray-500 mb-0.5">{k.title}</div>
-                <div className="text-xl  text-gray-900 mb-0.5">{k.val}</div>
-                <div className="text-[9px] text-gray-400">{k.sub}</div>
+                <div className="text-sm font-semibold text-gray-500 mb-0.5">{k.title}</div>
+                <div className="text-2xl font-bold text-gray-900 mb-0.5">{k.val}</div>
+                <div className="text-[10px] text-gray-400">{k.sub}</div>
               </div>
             </div>
           ))}
@@ -310,271 +436,247 @@ const ITTeamsPage = () => {
         {/* TABS CONTENT CODES */}
         {activeTab === 'Team Allocation' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-12 gap-6">
-              {/* TEAMS LIST - Left column (4 cols) */}
-              <div className="col-span-4 bg-white rounded border border-gray-100  flex flex-col p-4">
-                <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
-                  <h2 className="text-[13px] font-semibold text-gray-900">Active Teams</h2>
-                  <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
-                  >
-                    <Plus size={12} /> New Team
-                  </button>
+            <div className="bg-white rounded border border-gray-100 p-6 flex flex-col">
+              <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-100">
+                <div>
+                  <h2 className="text-[14px] font-bold text-gray-900">Active Teams</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">Manage allocations, assign members, and monitor IT teams.</p>
                 </div>
-
-                <div className="space-y-3 overflow-y-auto max-h-[500px] pr-1">
-                  {teams.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400 text-xs">
-                      No teams found. Click "New Team" to create one!
-                    </div>
-                  ) : (
-                    teams.map(team => {
-                      const manager = users.find(u => u.id === team.manager_id);
-                      const isSelected = selectedTeam?.id === team.id;
-                      return (
-                        <div
-                          key={team.id}
-                          onClick={() => setSelectedTeam(team)}
-                          className={`p-3.5 rounded border cursor-pointer transition-all hover:shadow-md ${isSelected
-                            ? 'border-indigo-600 bg-indigo-50/30'
-                            : 'border-gray-100 hover:border-gray-200 bg-white'
-                            }`}
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="font-semibold text-xs text-gray-900">{team.name}</div>
-                            <span className="text-[9px] px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full ">
-                              {team.members?.length || 0} members
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-500 mb-3 line-clamp-2">{team.description || 'No description provided.'}</p>
-
-                          <div className="flex justify-between items-center border-t border-gray-50 pt-2.5">
-                            <div className="flex items-center gap-2">
-                              <div className="w-5 h-5 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-[9px]  ">
-                                {manager ? manager.first_name[0] : 'M'}
-                              </div>
-                              <div>
-                                <div className="text-[9px] text-gray-400">Manager</div>
-                                <div className="text-xs font-medium text-gray-800">
-                                  {manager ? `${manager.first_name} ${manager.last_name}` : 'Unassigned'}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                onClick={() => { setSelectedTeam(team); setIsAddMemberModalOpen(true); }}
-                                className="p-1 hover:bg-indigo-50 text-indigo-600 rounded transition-colors"
-                                title="Add Member"
-                              >
-                                <UserPlus size={13} />
-                              </button>
-                              <button
-                                onClick={() => { setSelectedTeam(team); setIsAssignProjectModalOpen(true); }}
-                                className="p-1 hover:bg-emerald-50 text-emerald-600 rounded transition-colors"
-                                title="Assign Project"
-                              >
-                                <Folder size={13} />
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  if (window.confirm(`Are you sure you want to delete the team "${team.name}"?`)) {
-                                    try {
-                                      await fetch(`http://localhost:5000/api/teams/${team.id}`, { method: 'DELETE' });
-                                      showSuccessToast('Team deleted successfully');
-                                      fetchData();
-                                    } catch (err) {
-                                      showErrorToast('Failed to delete team');
-                                    }
-                                  }
-                                }}
-                                className="p-1 hover:bg-red-50 text-red-600 rounded transition-colors"
-                                title="Delete Team"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
+                <button
+                  onClick={() => {
+                    setIsEditMode(false);
+                    setSelectedTeamId(null);
+                    setNewTeam({
+                      name: '',
+                      description: '',
+                      manager_id: '',
+                      manager_role: '',
+                      members: [],
+                      project_ids: []
+                    });
+                    setManagerSearch('');
+                    setManagerRoleSearch('');
+                    setIsCreateModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs font-semibold flex items-center gap-1.5 hover:bg-indigo-700 transition-colors"
+                >
+                  <Plus size={14} /> New Team
+                </button>
               </div>
 
-              {/* MEMBERS DETAILS - Right column (8 cols) */}
-              <div className="col-span-8 bg-white rounded border border-gray-100  flex flex-col">
-                <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-xl">
-                  <div>
-                    <h2 className="text-[13px] font-semibold text-gray-900">
-                      {selectedTeam ? `${selectedTeam.name} Members` : 'All Members'}
-                      <span className="text-gray-500 font-normal ml-1">
-                        ({selectedTeam ? selectedTeam.members?.length || 0 : users.length})
-                      </span>
-                    </h2>
-                    {selectedTeam && (
-                      <p className="text-xs text-gray-400 mt-0.5">{selectedTeam.description}</p>
-                    )}
-                  </div>
-                  {selectedTeam && (
-                    <button onClick={() => setIsAddMemberModalOpen(true)} className="p-2 bg-indigo-600 text-white rounded text-xs font-medium flex items-center gap-1.5  hover:bg-indigo-700 transition-colors">
-                      <Plus size={12} /> Add Member
-                    </button>
-                  )}
-                </div>
-                <div className="overflow-x-auto flex-1 max-h-[460px] custom-scrollbar">
-                  <table className="w-full text-left">
+              {teams.length > 0 ? (
+                <div className="overflow-x-auto border border-gray-100 rounded-lg shadow-sm">
+                  <table className="w-full text-left border-collapse bg-white">
                     <thead>
-                      <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500  bg-gray-50/50 sticky top-0 z-10">
-                        <th className="py-3 px-4">Name</th>
-                        <th className="p-2">Role</th>
-                        <th className="p-2">Email</th>
-                        <th className="p-2 text-center">Status</th>
-                        {selectedTeam && <th className="py-3 px-4 text-center">Action</th>}
+                      <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 bg-gray-50/50">
+                        <th className="py-3 px-4 w-10"></th>
+                        <th className="py-3 px-4">Team Name</th>
+                        <th className="py-3 px-4">Description</th>
+                        <th className="py-3 px-4">Manager</th>
+                        <th className="py-3 px-4 text-center">Members Count</th>
+                        <th className="py-3 px-4 text-right pr-6">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="text-sm">
-                      {selectedTeam ? (
-                        selectedTeam.members && selectedTeam.members.length > 0 ? (
-                          selectedTeam.members.map((member, i) => {
-                            const user = users.find(u => u.id === member.user_id);
-                            return (
-                              <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                                <td className="py-3 px-4">
-                                  <div className="flex items-center gap-3">
-                                    <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center  text-xs ">
-                                      {user ? user.first_name[0] : 'U'}
-                                    </div>
-                                    <div>
-                                      <div className="font-semibold text-gray-900">
-                                        {user ? `${user.first_name} ${user.last_name}` : `User ID: ${member.user_id}`}
-                                      </div>
-                                      <div className="text-[9px] text-gray-400">{user?.email || 'No email'}</div>
-                                    </div>
+                    <tbody className="text-xs">
+                      {teams.map(team => {
+                        const manager = users.find(u => u.id === team.manager_id);
+                        const isExpanded = !!expandedTeams[team.id];
+                        return (
+                          <React.Fragment key={team.id}>
+                            {/* Outer Row */}
+                            <tr
+                              onClick={() => toggleTeamExpand(team.id)}
+                              className="border-b border-gray-100 hover:bg-gray-50/30 cursor-pointer transition-colors"
+                            >
+                              <td className="py-3.5 px-4 text-center">
+                                {isExpanded ? (
+                                  <ChevronDown size={14} className="text-gray-400" />
+                                ) : (
+                                  <ChevronRight size={14} className="text-gray-400" />
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 font-bold text-gray-900">{team.name}</td>
+                              <td className="py-3.5 px-4 text-gray-500 max-w-xs truncate">{team.description || '—'}</td>
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-5 h-5 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-bold">
+                                    {manager ? manager.first_name[0].toUpperCase() : 'M'}
                                   </div>
-                                </td>
-                                <td className="p-2 text-gray-600 font-medium">{member.role}</td>
-                                <td className="p-2 text-gray-500">{user?.email || 'N/A'}</td>
-                                <td className="p-2 text-center">
-                                  <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full  text-[9px]">Active</span>
-                                </td>
-                                <td className="py-3 px-4 text-center">
+                                  <span className="font-semibold text-gray-800">
+                                    {manager ? `${manager.first_name} ${manager.last_name}` : 'Unassigned'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold">
+                                  {team.members?.length || 0} Members
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-right pr-6" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-end gap-1.5">
+                                  <button
+                                    onClick={() => { setSelectedTeam(team); setIsViewModalOpen(true); }}
+                                    className="p-1 hover:bg-blue-50 text-blue-600 rounded transition-colors"
+                                    title="View Team Info"
+                                  >
+                                    <Eye size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => { setSelectedTeam(team); setIsAddMemberModalOpen(true); }}
+                                    className="p-1 hover:bg-indigo-50 text-indigo-600 rounded transition-colors"
+                                    title="Add Member"
+                                  >
+                                    <UserPlus size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => { setSelectedTeam(team); setIsAssignProjectModalOpen(true); }}
+                                    className="p-1 hover:bg-emerald-50 text-emerald-600 rounded transition-colors"
+                                    title="Assign Project"
+                                  >
+                                    <Folder size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setIsEditMode(true);
+                                      setSelectedTeamId(team.id);
+                                      setNewTeam({
+                                        name: team.name,
+                                        description: team.description || '',
+                                        manager_id: team.manager_id || '',
+                                        manager_role: team.manager_role || '',
+                                        members: team.members ? team.members.map(m => {
+                                          const u = users.find(user => user.id === m.user_id);
+                                          return {
+                                            user_id: m.user_id,
+                                            role: m.role,
+                                            userName: u ? `${u.first_name} ${u.last_name}` : `User ID: ${m.user_id}`,
+                                            email: u?.email || ''
+                                          };
+                                        }) : [],
+                                        project_ids: projects.filter(p => p.team_id === team.id).map(p => p.id)
+                                      });
+                                      const manager = users.find(u => u.id === team.manager_id);
+                                      setManagerSearch(manager ? `${manager.first_name} ${manager.last_name}` : '');
+                                      setManagerRoleSearch(team.manager_role || '');
+                                      setIsCreateModalOpen(true);
+                                    }}
+                                    className="p-1 hover:bg-amber-50 text-amber-600 rounded transition-colors"
+                                    title="Edit Team"
+                                  >
+                                    <Edit3 size={14} />
+                                  </button>
                                   <button
                                     onClick={async () => {
-                                      if (window.confirm(`Remove member from ${selectedTeam.name}?`)) {
+                                      if (window.confirm(`Are you sure you want to delete the team "${team.name}"?`)) {
                                         try {
-                                          await fetch(`http://localhost:5000/api/teams/${selectedTeam.id}/members/${member.user_id}`, { method: 'DELETE' });
-                                          showSuccessToast('Member removed');
+                                          await teamsAPI.delete(team.id);
+                                          showSuccessToast('Team deleted successfully');
                                           fetchData();
                                         } catch (err) {
-                                          showErrorToast('Failed to remove member');
+                                          showErrorToast('Failed to delete team');
                                         }
                                       }
                                     }}
-                                    className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
-                                    title="Remove Member"
+                                    className="p-1 hover:bg-red-50 text-red-600 rounded transition-colors"
+                                    title="Delete Team"
                                   >
-                                    <UserX size={13} />
+                                    <Trash2 size={14} />
                                   </button>
+                                </div>
+                              </td>
+                            </tr>
+
+                            {/* Collapsible Inner Nested Table */}
+                            {isExpanded && (
+                              <tr className="bg-gray-50/30">
+                                <td colSpan="6" className="py-3 px-8">
+                                  <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden mb-2">
+                                    <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Allocated Team Members</span>
+                                      <button
+                                        onClick={() => { setSelectedTeam(team); setIsAddMemberModalOpen(true); }}
+                                        className="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1"
+                                      >
+                                        <Plus size={12} /> Add Member
+                                      </button>
+                                    </div>
+                                    <table className="w-full text-left text-xs">
+                                      <thead>
+                                        <tr className="border-b border-gray-100 text-gray-400 bg-gray-50/20">
+                                          <th className="py-2 px-4">Member Name</th>
+                                          <th className="py-2 px-4">Role</th>
+                                          <th className="py-2 px-4">Email</th>
+                                          <th className="py-2 px-4 text-center">Status</th>
+                                          <th className="py-2 px-4 text-right pr-6">Action</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {team.members && team.members.length > 0 ? (
+                                          team.members.map((member, i) => {
+                                            const user = users.find(u => u.id === member.user_id);
+                                            return (
+                                              <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                                                <td className="py-2 px-4 font-bold text-gray-800">
+                                                  {user ? `${user.first_name} ${user.last_name}` : `User ID: ${member.user_id}`}
+                                                </td>
+                                                <td className="py-2 px-4 text-gray-600 font-semibold">{member.role}</td>
+                                                <td className="py-2 px-4 text-gray-500">{user?.email || '—'}</td>
+                                                <td className="py-2 px-4 text-center">
+                                                  <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px] font-bold">Active</span>
+                                                </td>
+                                                <td className="py-2 px-4 text-right pr-6">
+                                                  <button
+                                                    onClick={async () => {
+                                                      if (window.confirm(`Remove member from ${team.name}?`)) {
+                                                        try {
+                                                          await teamsAPI.removeMember(team.id, member.user_id);
+                                                          showSuccessToast('Member removed');
+                                                          fetchData();
+                                                        } catch (err) {
+                                                          showErrorToast('Failed to remove member');
+                                                        }
+                                                      }
+                                                    }}
+                                                    className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                    title="Remove Member"
+                                                  >
+                                                    <UserX size={13} />
+                                                  </button>
+                                                </td>
+                                              </tr>
+                                            );
+                                          })
+                                        ) : (
+                                          <tr>
+                                            <td colSpan="5" className="py-6 text-center text-gray-400">
+                                              No members allocated to this team yet.
+                                            </td>
+                                          </tr>
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </td>
                               </tr>
-                            );
-                          })
-                        ) : (
-                          <tr>
-                            <td colSpan={5} className="py-12 text-center text-gray-400 text-xs">
-                              No members in this team yet. Click "Add Member" to invite someone!
-                            </td>
-                          </tr>
-                        )
-                      ) : (
-                        users.map((u, i) => (
-                          <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-3">
-                                <img src={u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.first_name || 'U')}&background=random`} alt={(`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User')} className="w-6 h-6 rounded-full object-cover" />
-                                <div>
-                                  <div className="font-semibold text-gray-900">{(`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User')}</div>
-                                  <div className="text-[9px] text-gray-400">{(u.job_title || u.role || 'Member')}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="p-2 text-gray-600 font-medium">{(u.job_title || u.role || 'Member')}</td>
-                            <td className="p-2 text-gray-500">{(`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User').toLowerCase().replace(' ', '')}@company.com</td>
-                            <td className="p-2 text-center">
-                              <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full  text-[9px]">Active</span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              </div>
-            </div>
-
-            {/* Workload graph details */}
-            <div className="grid grid-cols-4 gap-6">
-              <div className="bg-white p-2 rounded border border-gray-100  flex flex-col col-span-2">
-                <h3 className="text-[13px] font-semibold text-gray-900 mb-6">Team Workload Overview</h3>
-                <div className="flex items-center justify-center gap-6 flex-1">
-                  <div className="w-24 h-24 relative">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={dynamicWorkloadData} cx="50%" cy="50%" innerRadius={30} outerRadius={45} paddingAngle={2} dataKey="value" stroke="none">
-                          {dynamicWorkloadData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
-                        </Pie>
-                        <RechartsTooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="space-y-2 flex-1">
-                    {dynamicWorkloadData.map((d, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></div>
-                          <span className="text-gray-600">{d.name}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className="font-semibold text-gray-900">{d.value}</span>
-                          <span className="text-gray-400 w-8 text-right">({d.pct})</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              ) : (
+                <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-200">
+                  <Users size={40} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm text-gray-500 font-medium">No active teams found.</p>
+                  <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="mt-3 text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-md font-semibold hover:bg-indigo-700 transition-colors"
+                  >
+                    Create First Team
+                  </button>
                 </div>
-              </div>
-
-              <div className="bg-white p-2 rounded border border-gray-100  flex flex-col col-span-2">
-                <h3 className="text-[13px] font-semibold text-gray-900 mb-4">Core Focus Area Allocation</h3>
-                <p className="text-sm text-gray-500 mb-4">Distribution of engineering resources across system layers</p>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Frontend Development</span>
-                    <span className=" text-gray-800">40%</span>
-                  </div>
-                  <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-indigo-600 h-full" style={{ width: '40%' }}></div>
-                  </div>
-
-                  <div className="flex justify-between items-center text-sm mt-2">
-                    <span className="text-gray-600">Backend API Services</span>
-                    <span className=" text-gray-800">35%</span>
-                  </div>
-                  <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full" style={{ width: '35%' }}></div>
-                  </div>
-
-                  <div className="flex justify-between items-center text-sm mt-2">
-                    <span className="text-gray-600">Infrastructure & DevOps</span>
-                    <span className=" text-gray-800">25%</span>
-                  </div>
-                  <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-blue-500 h-full" style={{ width: '25%' }}></div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -619,17 +721,21 @@ const ITTeamsPage = () => {
                         </td>
                         <td className="p-2 text-gray-700">
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center  text-[9px]">P</div>
-                            <span>PM Admin</span>
+                            <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[9px]">
+                              {p.manager_first_name ? p.manager_first_name[0] : 'U'}
+                            </div>
+                            <span>
+                              {p.manager_first_name ? `${p.manager_first_name} ${p.manager_last_name || ''}` : 'System Admin'}
+                            </span>
                           </div>
                         </td>
                         <td className="p-2 text-center text-gray-600 font-medium">{p.start_date ? new Date(p.start_date).toLocaleDateString() : (p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Unknown')}</td>
                         <td className="p-2 text-center text-gray-600 font-medium">{p.end_date ? new Date(p.end_date).toLocaleDateString() : 'Ongoing'}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-700 w-6">65%</span>
+                            <span className="text-xs font-medium text-gray-700 w-6">{p.progress || 0}%</span>
                             <div className="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-indigo-600" style={{ width: `65%` }}></div>
+                              <div className="h-full bg-indigo-600" style={{ width: `${p.progress || 0}%` }}></div>
                             </div>
                           </div>
                         </td>
@@ -684,16 +790,26 @@ const ITTeamsPage = () => {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {commonRoles.map((role, i) => (
-                      <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-gray-900">{role}</td>
-                        <td className="p-2 text-gray-600">IT Department</td>
-                        <td className="p-2 text-center  text-indigo-600">
-                          {Math.floor(Math.random() * 5) + 1} Staff
-                        </td>
-                        <td className="p-2 text-center text-green-600 ">100% Active</td>
-                      </tr>
-                    ))}
+                    {commonRoles.map((role, i) => {
+                      const count = users.filter(u =>
+                        (u.job_title && u.job_title.toLowerCase() === role.toLowerCase()) ||
+                        (u.role && u.role.toLowerCase() === role.toLowerCase())
+                      ).length;
+                      return (
+                        <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
+                          <td className="py-3 px-4 font-semibold text-gray-900">{role}</td>
+                          <td className="p-2 text-gray-600">IT Department</td>
+                          <td className="p-2 text-center text-indigo-600 font-medium">
+                            {count} Staff
+                          </td>
+                          <td className="p-2 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${count > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
+                              {count > 0 ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -701,56 +817,62 @@ const ITTeamsPage = () => {
           </div>
         )}
 
+
         {activeTab === 'Skills Matrix' && (
           <div className="grid grid-cols-12 gap-6 mb-6">
-            <div className="col-span-4 bg-white p-2 rounded border border-gray-100  flex flex-col">
-              <h3 className="text-[13px] font-semibold text-gray-900 mb-4">Top Skills in Team</h3>
+            <div className="col-span-4 bg-white p-4 rounded border border-gray-100 flex flex-col">
+              <h3 className="text-[13px] font-semibold text-gray-900 mb-4">Top Roles in Team</h3>
               <div className="flex flex-wrap gap-2">
-                {[
-                  { name: 'React', count: 12, color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
-                  { name: 'Node.js', count: 10, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-                  { name: 'JavaScript', count: 12, color: 'text-amber-600 bg-amber-50 border-amber-100' },
-                  { name: 'TypeScript', count: 8, color: 'text-blue-600 bg-blue-50 border-blue-100' },
-                  { name: 'UI/UX', count: 8, color: 'text-rose-600 bg-rose-50 border-rose-100' },
-                  { name: 'Figma', count: 7, color: 'text-purple-600 bg-purple-50 border-purple-100' },
-                ].map((s, i) => (
-                  <div key={i} className={`flex items-center gap-1.5 px-2 py-1 border rounded-md ${s.color}`}>
-                    <span className="text-xs ">{s.name}</span>
-                    <span className="text-[9px] opacity-80">{s.count}</span>
+                {Object.entries(
+                  users.reduce((acc, u) => {
+                    const r = u.job_title || u.role || 'Member';
+                    acc[r] = (acc[r] || 0) + 1;
+                    return acc;
+                  }, {})
+                ).map(([name, count], i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 border rounded-md border-indigo-100 bg-indigo-50 text-indigo-600">
+                    <span className="text-xs">{name}</span>
+                    <span className="text-[9px] opacity-80">{count}</span>
                   </div>
                 ))}
+                {users.length === 0 && (
+                  <span className="text-xs text-gray-400">No active team members found.</span>
+                )}
               </div>
             </div>
 
-            <div className="col-span-8 bg-white rounded border border-gray-100  flex flex-col">
+            <div className="col-span-8 bg-white rounded border border-gray-100 flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
-                <h2 className="text-[13px] font-semibold text-gray-900">Skills Matrix Matrix</h2>
+                <h2 className="text-[13px] font-semibold text-gray-900">Skills & Designations Registry</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500  bg-gray-50/50">
+                    <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 bg-gray-50/50">
                       <th className="py-3 px-4">Resource</th>
-                      <th className="p-2">Primary Skillset</th>
-                      <th className="p-2 text-center">Expertise Level</th>
+                      <th className="p-2">Primary Skillset / Role</th>
+                      <th className="p-2 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm">
                     {users.map((u, i) => (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-gray-900">{(`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User')}</td>
+                        <td className="py-3 px-4 font-semibold text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
                         <td className="p-2">
-                          <div className="flex gap-1">
-                            {([u.job_title || 'Skill']).map(s => (
-                              <span key={s} className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[9px] font-semibold">{s}</span>
-                            ))}
-                          </div>
+                          <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[9px] font-semibold">
+                            {u.job_title || u.role || 'Member'}
+                          </span>
                         </td>
                         <td className="p-2 text-center">
-                          <span className="px-2.5 py-1 bg-green-50 text-green-700  rounded text-[9px] ">Senior Expert</span>
+                          <span className="px-2.5 py-1 bg-green-50 text-green-700 rounded text-[9px]">Active Resource</span>
                         </td>
                       </tr>
                     ))}
+                    {users.length === 0 && (
+                      <tr>
+                        <td colSpan="3" className="py-8 text-center text-gray-500 text-xs">No resources found.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -759,31 +881,36 @@ const ITTeamsPage = () => {
         )}
 
         {activeTab === 'Availability Calendar' && (
-          <div className="bg-white rounded border border-gray-100  flex flex-col mb-6">
+          <div className="bg-white rounded border border-gray-100 flex flex-col mb-6">
             <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
               <h2 className="text-[13px] font-semibold text-gray-900">Resource Capacity & Calendar</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500  bg-gray-50/50">
+                  <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 bg-gray-50/50">
                     <th className="py-3 px-4">Member Name</th>
                     <th className="p-2">Weekly Allocated Hours</th>
-                    <th className="p-2 text-center">Available Capacity</th>
-                    <th className="p-2 text-center">Utilization</th>
+                    <th className="p-2 text-center">Department</th>
+                    <th className="p-2 text-center">Availability Status</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm">
                   {users.map((u, i) => (
                     <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-gray-900">{(`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User')}</td>
+                      <td className="py-3 px-4 font-semibold text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
                       <td className="p-2 font-medium text-gray-700">40 Hours / week</td>
-                      <td className="p-2 text-center text-emerald-600 ">{('100%')}</td>
+                      <td className="p-2 text-center text-gray-600">{u.department || 'IT Department'}</td>
                       <td className="p-2 text-center">
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full  text-[9px]">80% Utilized</span>
+                        <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px]">Fully Available</span>
                       </td>
                     </tr>
                   ))}
+                  {users.length === 0 && (
+                    <tr>
+                      <td colSpan="4" className="py-8 text-center text-gray-500 text-xs">No members found.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -792,56 +919,41 @@ const ITTeamsPage = () => {
 
         {activeTab === 'Leave & Attendance' && (
           <div className="grid grid-cols-12 gap-6 mb-6">
-            <div className="col-span-5 bg-white p-2 rounded border border-gray-100  flex flex-col">
+            <div className="col-span-5 bg-white p-4 rounded border border-gray-100 flex flex-col">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-[13px] font-semibold text-gray-900">Upcoming leaves schedule</h3>
+                <h3 className="text-[13px] font-semibold text-gray-900">Upcoming Leaves Schedule</h3>
               </div>
-              <div className="space-y-4">
-                {[
-                  { name: 'Rahul Patil', role: 'Project Manager', date: '21 Jul 2026 - 23 Jul 2026', days: '3 Days', color: 'text-green-600 bg-green-50', avatar: 'https://i.pravatar.cc/150?u=1' },
-                  { name: 'Sneha Joshi', role: 'UI/UX Designer', date: '25 Jul 2026 - 27 Jul 2026', days: '3 Days', color: 'text-green-600 bg-green-50', avatar: 'https://i.pravatar.cc/150?u=2' },
-                  { name: 'Akshay More', role: 'Full Stack Developer', date: '28 Jul 2026 - 01 Aug 2026', days: '5 Days', color: 'text-orange-600 bg-orange-50', avatar: 'https://i.pravatar.cc/150?u=3' },
-                ].map((l, i) => (
-                  <div key={i} className="flex items-center justify-between group">
-                    <div className="flex items-center gap-2">
-                      <img src={l.avatar} alt="" className="w-6 h-6 rounded-full" />
-                      <div>
-                        <div className="text-sm font-semibold text-gray-900">{l.name}</div>
-                        <div className="text-[9px] text-gray-500">{l.role}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[9px] text-gray-500 font-medium">{l.date}</div>
-                      <div className={`text-[9px] inline-block px-1.5 py-0.5 rounded mt-0.5 ${l.color}`}>{l.days}</div>
-                    </div>
-                  </div>
-                ))}
+              <div className="py-12 text-center text-gray-400 text-xs">
+                No upcoming leaves scheduled.
               </div>
             </div>
 
-            <div className="col-span-7 bg-white rounded border border-gray-100  flex flex-col">
+            <div className="col-span-7 bg-white rounded border border-gray-100 flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
-                <h2 className="text-[13px] font-semibold text-gray-900">Attendance Log</h2>
+                <h2 className="text-[13px] font-semibold text-gray-900">Today's Attendance Registry</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500  bg-gray-50/50">
+                    <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 bg-gray-50/50">
                       <th className="py-3 px-4">Member</th>
-                      <th className="p-2 text-center">Clock-in Time</th>
                       <th className="p-2 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm">
                     {users.map((u, i) => (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-gray-900">{(`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User')}</td>
-                        <td className="p-2 text-center text-gray-600">09:00 AM</td>
+                        <td className="py-3 px-4 font-semibold text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
                         <td className="p-2 text-center">
-                          <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full  text-[9px]">Present</span>
+                          <span className="px-2 py-0.5 bg-gray-50 text-gray-400 rounded-full text-[9px]">Offline</span>
                         </td>
                       </tr>
                     ))}
+                    {users.length === 0 && (
+                      <tr>
+                        <td colSpan="2" className="py-8 text-center text-gray-500 text-xs">No users found.</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -853,168 +965,354 @@ const ITTeamsPage = () => {
       {/* Create Team Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded p-3 w-full max-w-md shadow-xl">
-            <h2 className="text-xl  mb-2">Create New Team</h2>
-            <form onSubmit={handleCreateTeam} className="space-y-4">
-
-
+          <div className="bg-white rounded-lg p-5 w-full max-w-3xl shadow-2xl border border-gray-200 overflow-y-auto max-h-[90vh]">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-3 border-b border-gray-100 mb-4">
               <div>
-                <label className="block text-xs  text-gray-700 mb-1">Team Manager</label>
-                <div className="relative" onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="text"
-                    placeholder="Search for manager..."
-                    className="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-red-500 outline-none text-xs"
-                    value={managerSearch}
-                    onChange={(e) => {
-                      setManagerSearch(e.target.value);
-                      setActiveDropdown('manager');
-                    }}
-                    onFocus={() => setActiveDropdown('manager')}
-                    required={!newTeam.manager_id}
-                  />
-                  {activeDropdown === 'manager' && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
-                      {filteredManagers.length > 0 ? (
-                        filteredManagers.map(u => (
-                          <div
-                            key={u.id}
-                            className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col"
-                            onClick={() => {
-                              setNewTeam({ ...newTeam, manager_id: u.id });
-                              setManagerSearch(`${u.first_name} ${u.last_name}`);
-                              setActiveDropdown(null);
-                            }}
-                          >
-                            <span className=" text-xs">{u.first_name} {u.last_name}</span>
-                            <span className="text-xs text-gray-500">{u.email}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-2 text-gray-500 text-sm">No users found</div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <h2 className="text-base font-bold text-gray-900">{isEditMode ? 'Edit Team Details' : 'Create New Team'}</h2>
+                <p className="text-[11px] text-gray-500">{isEditMode ? 'Modify team details, change the manager, or manage team allocations.' : 'Configure team properties, select the manager, and allocate team members.'}</p>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setIsEditMode(false);
+                  setSelectedTeamId(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
-
-              {/* Members Selection in Create Team */}
-              <div className="pt-4 border-t border-gray-100">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="text-sm text-gray-700">Team Members</label>
-                  <button
-                    type="button"
-                    onClick={addMemberField}
-                    className="text-red-600 hover:text-red-700 text-xs  flex items-center gap-1"
-                  >
-                    <Plus size={14} /> Add Member
-                  </button>
+            <form onSubmit={handleCreateTeam} className="space-y-4">
+              {/* Section 1: Team & Manager Information */}
+              <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-100 mb-4">
+                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-900 border-b border-gray-100 pb-1.5">
+                  <Briefcase size={14} className="text-indigo-600" />
+                  <span>Team & Manager Information</span>
                 </div>
 
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                  {newTeam.members.map((member, index) => (
-                    <div key={index} className="p-2 bg-gray-50 rounded border border-gray-200 relative group">
-                      <button
-                        type="button"
-                        onClick={() => removeMemberField(index)}
-                        className="absolute -top-2 -right-2 bg-white border border-gray-200 text-gray-400 hover:text-red-500 rounded-full p-1  opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-
-                      <div className="grid grid-cols-1 gap-3">
-                        {/* Member Name Search */}
-                        <div className="relative" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="text"
-                            placeholder="Search member name..."
-                            className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:ring-2 focus:ring-red-500 outline-none bg-white"
-                            value={member.userName}
-                            onChange={(e) => {
-                              updateMemberField(index, 'userName', e.target.value);
-                              updateMemberField(index, 'searchActive', true);
-                            }}
-                            onFocus={() => updateMemberField(index, 'searchActive', true)}
-                          />
-                          {member.searchActive && (
-                            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-auto">
-                              {users.filter(u =>
-                                `${u.first_name} ${u.last_name}`.toLowerCase().includes(member.userName.toLowerCase())
-                              ).map(u => (
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Left Column */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs text-gray-700 font-medium mb-1">Team Name <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        placeholder="Enter team name..."
+                        className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs bg-white"
+                        value={newTeam.name}
+                        onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-700 font-medium mb-1">Team Manager <span className="text-red-500">*</span></label>
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          placeholder="Search for manager..."
+                          className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs bg-white"
+                          value={managerSearch}
+                          onChange={(e) => {
+                            setManagerSearch(e.target.value);
+                            setActiveDropdown('manager');
+                          }}
+                          onFocus={() => setActiveDropdown('manager')}
+                          required={!newTeam.manager_id}
+                        />
+                        {activeDropdown === 'manager' && (
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-auto">
+                            {filteredManagers.length > 0 ? (
+                              filteredManagers.map(u => (
                                 <div
                                   key={u.id}
-                                  className="px-2 py-1.5 hover:bg-gray-100 cursor-pointer flex flex-col"
+                                  className="p-2 hover:bg-gray-100 cursor-pointer flex flex-col text-left"
                                   onClick={() => {
-                                    updateMemberField(index, 'user_id', u.id);
-                                    updateMemberField(index, 'userName', `${u.first_name} ${u.last_name}`);
-                                    updateMemberField(index, 'searchActive', false);
+                                    setNewTeam({ ...newTeam, manager_id: u.id, manager_role: 'Manager' });
+                                    setManagerSearch(`${u.first_name} ${u.last_name}`);
+                                    setActiveDropdown(null);
                                   }}
                                 >
-                                  <span className=" text-xs">{u.first_name} {u.last_name}</span>
-                                  <span className="text-xs text-gray-500">{u.email}</span>
+                                  <span className="text-xs font-semibold text-gray-900">{u.first_name} {u.last_name}</span>
+                                  <span className="text-[10px] text-gray-500">{u.email}</span>
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Member Role Search */}
-                        <div className="relative" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="text"
-                            placeholder="Role (e.g., Frontend Developer)"
-                            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-red-500 outline-none bg-white"
-                            value={member.roleSearch}
-                            onChange={(e) => {
-                              updateMemberField(index, 'roleSearch', e.target.value);
-                              updateMemberField(index, 'role', e.target.value);
-                              updateMemberField(index, 'roleSearchActive', true);
-                            }}
-                            onFocus={() => updateMemberField(index, 'roleSearchActive', true)}
-                          />
-                          {member.roleSearchActive && (
-                            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-auto">
-                              {commonRoles.filter(r =>
-                                r.toLowerCase().includes(member.roleSearch.toLowerCase())
-                              ).map(role => (
-                                <div
-                                  key={role}
-                                  className="px-2 py-1.5 hover:bg-gray-100 cursor-pointer text-xs"
-                                  onClick={() => {
-                                    updateMemberField(index, 'role', role);
-                                    updateMemberField(index, 'roleSearch', role);
-                                    updateMemberField(index, 'roleSearchActive', false);
-                                  }}
-                                >
-                                  {role}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                              ))
+                            ) : (
+                              <div className="p-2 text-gray-500 text-xs">No users found</div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
-                  {newTeam.members.length === 0 && (
-                    <p className="text-xs text-gray-400 text-center py-2">No members added yet. Click "Add Member" to begin.</p>
-                  )}
+                  </div>
+
+                  {/* Right Column */}
+                  <div>
+                    <label className="block text-xs text-gray-700 font-medium mb-1">Team Description</label>
+                    <textarea
+                      placeholder="Describe team focus, responsibilities, and department alignment..."
+                      rows="5"
+                      className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs bg-white resize-none h-[106px]"
+                      value={newTeam.description}
+                      onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
+              {/* Section 2: Allocate Team Member (Form) */}
+              <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-100 mb-4">
+                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-900 border-b border-gray-100 pb-1.5">
+                  <UserPlus size={14} className="text-emerald-600" />
+                  <span>Allocate Team Member</span>
+                </div>
+
+                <div className="grid grid-cols-12 gap-3 items-end">
+                  {/* Select Member Column */}
+                  <div className="col-span-5 relative" onClick={(e) => e.stopPropagation()}>
+                    <label className="block text-xs text-gray-700 font-medium mb-1">Select Member Name</label>
+                    <input
+                      type="text"
+                      placeholder="Search member name..."
+                      className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs bg-white"
+                      value={memberFormUserName}
+                      onChange={(e) => {
+                        setMemberFormUserName(e.target.value);
+                        setMemberFormUserSearchActive(true);
+                        setMemberFormUserId(''); // Reset ID if they type manually
+                      }}
+                      onFocus={() => setMemberFormUserSearchActive(true)}
+                    />
+                    {memberFormUserSearchActive && (
+                      <div className="absolute z-30 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-auto">
+                        {users.filter(u =>
+                          `${u.first_name} ${u.last_name}`.toLowerCase().includes(memberFormUserName.toLowerCase()) ||
+                          u.email.toLowerCase().includes(memberFormUserName.toLowerCase())
+                        ).map(u => (
+                          <div
+                            key={u.id}
+                            className="px-2 py-1.5 hover:bg-gray-100 cursor-pointer flex flex-col text-left"
+                            onClick={() => {
+                              setMemberFormUserId(u.id);
+                              setMemberFormUserName(`${u.first_name} ${u.last_name}`);
+                              setMemberFormUserEmail(u.email);
+                              setMemberFormUserSearchActive(false);
+                            }}
+                          >
+                            <span className="text-xs font-semibold text-gray-900">{u.first_name} {u.last_name}</span>
+                            <span className="text-[10px] text-gray-500">{u.email}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Member Role Column */}
+                  <div className="col-span-5 relative" onClick={(e) => e.stopPropagation()}>
+                    <label className="block text-xs text-gray-700 font-medium mb-1">Assign Role</label>
+                    <input
+                      type="text"
+                      placeholder="Role (e.g., Frontend Developer)"
+                      className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-xs bg-white"
+                      value={memberFormRole}
+                      onChange={(e) => {
+                        setMemberFormRole(e.target.value);
+                        setMemberFormRoleSearchActive(true);
+                      }}
+                      onFocus={() => setMemberFormRoleSearchActive(true)}
+                    />
+                    {memberFormRoleSearchActive && (
+                      <div className="absolute z-30 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-auto">
+                        {commonRoles.filter(role =>
+                          role.toLowerCase().includes(memberFormRole.toLowerCase())
+                        ).map(role => (
+                          <div
+                            key={role}
+                            className="px-2 py-1.5 hover:bg-gray-100 cursor-pointer text-xs text-left"
+                            onClick={() => {
+                              setMemberFormRole(role);
+                              setMemberFormRoleSearchActive(false);
+                            }}
+                          >
+                            {role}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add Button Column */}
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={addMemberToList}
+                      className="w-full p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center justify-center gap-1 transition-colors h-8"
+                    >
+                      <Plus size={14} /> Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Allocated Members Table */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
+                  <span className="text-xs font-bold text-gray-900">Allocated Members List ({newTeam.members.length})</span>
+                </div>
+
+                <div className="overflow-x-auto max-h-48 custom-scrollbar">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-500 bg-gray-50/50 font-semibold sticky top-0">
+                        <th className="py-2.5 px-3 w-10">#</th>
+                        <th className="p-2">Member Name</th>
+                        <th className="p-2">Email</th>
+                        <th className="p-2">Role</th>
+                        <th className="py-2 px-3 text-center w-16">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {newTeam.members.length > 0 ? (
+                        newTeam.members.map((m, idx) => (
+                          <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
+                            <td className="py-2.5 px-3 text-gray-500 font-medium">{idx + 1}</td>
+                            <td className="p-2 font-semibold text-gray-900">{m.userName}</td>
+                            <td className="p-2 text-gray-500">{m.email}</td>
+                            <td className="p-2 text-gray-700">{m.role}</td>
+                            <td className="py-2 px-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => removeMemberField(idx)}
+                                className="p-1 hover:bg-red-50 text-red-500 rounded transition-colors"
+                                title="Remove member"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="5" className="py-8 text-center text-gray-400 font-medium bg-white">
+                            No members added yet. Use the form above to add your first member.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Section 4: Assign IT Project (Form) */}
+              <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-100 mb-4">
+                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-900 border-b border-gray-100 pb-1.5">
+                  <Folder size={14} className="text-indigo-600" />
+                  <span>Assign IT Project</span>
+                </div>
+
+                <div className="grid grid-cols-12 gap-3 items-end">
+                  {/* Select IT Project Column */}
+                  <div className="col-span-10">
+                    <label className="block text-xs text-gray-700 font-medium mb-1">Select IT Project</label>
+                    <select
+                      className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 outline-none text-xs bg-white h-[34px]"
+                      value={projectFormId}
+                      onChange={(e) => setProjectFormId(e.target.value)}
+                    >
+                      <option value="">Choose Project...</option>
+                      {projects.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Add Button Column */}
+                  <div className="col-span-2">
+                    <button
+                      type="button"
+                      onClick={addProjectToList}
+                      className="w-full p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold flex items-center justify-center gap-1 transition-colors h-[34px]"
+                    >
+                      <Plus size={14} /> Add Project
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 5: Assigned Projects List Table */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
+                  <span className="text-xs font-bold text-gray-900">Assigned Projects List ({newTeam.project_ids?.length || 0})</span>
+                </div>
+
+                <div className="overflow-x-auto max-h-48 custom-scrollbar">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-gray-500 bg-gray-50/50 font-semibold sticky top-0">
+                        <th className="py-2.5 px-3 w-10">#</th>
+                        <th className="p-2">Project Name</th>
+                        <th className="p-2">Status</th>
+                        <th className="py-2 px-3 text-center w-16">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {newTeam.project_ids && newTeam.project_ids.length > 0 ? (
+                        newTeam.project_ids.map((projId, idx) => {
+                          const p = projects.find(project => project.id === projId);
+                          return (
+                            <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
+                              <td className="py-2.5 px-3 text-gray-500 font-medium">{idx + 1}</td>
+                              <td className="p-2 font-semibold text-gray-900">{p ? p.name : `Project ID: ${projId}`}</td>
+                              <td className="p-2">
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-bold">
+                                  {p?.status || 'Planning'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => removeProjectFromList(projId)}
+                                  className="p-1 hover:bg-red-55 text-red-500 rounded transition-colors"
+                                  title="Remove project"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="py-8 text-center text-gray-400 font-medium bg-white">
+                            No projects assigned yet. Use the form above to assign your first IT project.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="flex-1 p-2 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setIsEditMode(false);
+                    setSelectedTeamId(null);
+                  }}
+                  className="px-4 py-2 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-red-600 text-white p-2 rounded hover:bg-red-700 text-xs"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold"
                 >
-                  Create
+                  {isEditMode ? 'Update Team' : 'Create Team'}
                 </button>
               </div>
             </form>
@@ -1129,16 +1427,35 @@ const ITTeamsPage = () => {
       {/* Assign Project Modal */}
       {isAssignProjectModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded p-3 w-full max-w-md shadow-xl">
-            <h2 className="text-xl  mb-4">Assign Project to {selectedTeam?.name}</h2>
+          <div className="bg-white rounded p-4 w-full max-w-md shadow-xl border border-gray-150">
+            <h2 className="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">
+              {selectedTeam ? `Assign Project to ${selectedTeam.name}` : 'Assign Project to Team'}
+            </h2>
             <form onSubmit={handleAssignProject} className="space-y-4">
+
+              {!selectedTeam && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Select Team <span className="text-red-500">*</span></label>
+                  <select
+                    required
+                    className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 outline-none text-xs bg-white"
+                    value={projectAssignment.team_id || ''}
+                    onChange={e => setProjectAssignment(prev => ({ ...prev, team_id: e.target.value }))}
+                  >
+                    <option value="">Select Team</option>
+                    {teams.map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
-                <label className="block text-sm  text-gray-700 mb-1">Select IT Project</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Select IT Project <span className="text-red-500">*</span></label>
                 <select
                   required
-                  className="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-red-500 outline-none"
+                  className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 outline-none text-xs bg-white"
                   value={projectAssignment.project_id}
-                  onChange={e => setProjectAssignment({ project_id: e.target.value })}
+                  onChange={e => setProjectAssignment(prev => ({ ...prev, project_id: e.target.value }))}
                 >
                   <option value="">Select Project</option>
                   {projects.map(p => (
@@ -1146,22 +1463,196 @@ const ITTeamsPage = () => {
                   ))}
                 </select>
               </div>
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-3 mt-6 pt-2 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setIsAssignProjectModalOpen(false)}
-                  className="flex-1 p-2 text-xs border border-gray-300 rounded hover:bg-gray-50"
+                  onClick={() => {
+                    setIsAssignProjectModalOpen(false);
+                    setProjectAssignment({ project_id: '', team_id: '' });
+                    setSelectedTeam(null);
+                  }}
+                  className="flex-1 p-2 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700 font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-red-600 text-white p-2 rounded hover:bg-red-700 text-xs"
+                  className="flex-1 bg-red-600 text-white p-2 rounded hover:bg-red-700 text-xs font-semibold"
                 >
                   Assign Project
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* View Team Modal */}
+      {isViewModalOpen && selectedTeam && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-5 w-full max-w-2xl shadow-xl border border-gray-150 max-h-[85vh] overflow-y-auto custom-scrollbar">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-150">
+              <div className="flex items-center gap-2">
+                <Users className="text-indigo-600" size={18} />
+                <h2 className="text-sm font-bold text-gray-900">Team Profile: {selectedTeam.name}</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  setSelectedTeam(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {/* Manager & Description Section */}
+              <div className="grid grid-cols-2 gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100">
+                <div>
+                  <h3 className="font-bold text-gray-500 uppercase text-[9px] tracking-wider mb-1">Team Manager</h3>
+                  {(() => {
+                    const manager = users.find(u => u.id === selectedTeam.manager_id);
+                    return manager ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[11px] font-bold">
+                          {manager.first_name[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-800">{manager.first_name} {manager.last_name}</p>
+                          <p className="text-[10px] text-gray-500">{manager.email}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 font-semibold italic mt-1">No manager assigned</p>
+                    );
+                  })()}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-500 uppercase text-[9px] tracking-wider mb-1">Team Description</h3>
+                  <p className="text-gray-700 leading-relaxed font-semibold mt-1">
+                    {selectedTeam.description || 'No description provided.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Members Section */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-bold text-gray-900 uppercase text-[9px] tracking-wider">Allocated Members ({selectedTeam.members?.length || 0})</h3>
+                </div>
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-gray-400 bg-gray-50/20">
+                        <th className="py-2 px-3 font-semibold">Member Name</th>
+                        <th className="py-2 px-3 font-semibold">Role</th>
+                        <th className="py-2 px-3 font-semibold">Email</th>
+                        <th className="py-2 px-3 text-center font-semibold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedTeam.members && selectedTeam.members.length > 0 ? (
+                        selectedTeam.members.map((member, i) => {
+                          const user = users.find(u => u.id === member.user_id);
+                          return (
+                            <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                              <td className="py-2.5 px-3 font-bold text-gray-800">
+                                {user ? `${user.first_name} ${user.last_name}` : `User ID: ${member.user_id}`}
+                              </td>
+                              <td className="py-2.5 px-3 text-gray-600 font-semibold">{member.role}</td>
+                              <td className="py-2.5 px-3 text-gray-500">{user?.email || '—'}</td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px] font-bold">Active</span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan="4" className="py-4 text-center text-gray-400">No members allocated to this team.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Projects Section */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-bold text-gray-900 uppercase text-[9px] tracking-wider">Assigned Projects</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTeam(selectedTeam);
+                      setIsAssignProjectModalOpen(true);
+                      setIsViewModalOpen(false);
+                    }}
+                    className="text-[11px] text-emerald-600 hover:text-emerald-800 font-bold flex items-center gap-1 focus:outline-none"
+                  >
+                    <Plus size={12} /> Assign Project
+                  </button>
+                </div>
+                <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-gray-400 bg-gray-50/20">
+                        <th className="py-2 px-3 font-semibold">Project Name</th>
+                        <th className="py-2 px-3 font-semibold">Status</th>
+                        <th className="py-2 px-3 text-right pr-6 font-semibold">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const teamProjects = projects.filter(p => p.team_id === selectedTeam.id);
+                        return teamProjects.length > 0 ? (
+                          teamProjects.map(p => (
+                            <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                              <td className="py-2.5 px-3 font-bold text-gray-800">{p.name}</td>
+                              <td className="py-2.5 px-3">
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-bold">
+                                  {p.status || 'Planning'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right pr-6">
+                                <button
+                                  onClick={() => {
+                                    setIsViewModalOpen(false);
+                                    navigate(`/projects/${designation || 'it-manager'}/${username || 'ashwini'}/details/${p.id}`);
+                                  }}
+                                  className="p-1 hover:bg-indigo-50 text-indigo-650 rounded transition-colors inline-flex items-center gap-1 font-bold text-[10px] focus:outline-none"
+                                  title="View Project Details"
+                                >
+                                  <Eye size={12} /> View Project
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="3" className="py-4 text-center text-gray-400">No projects currently assigned to this team.</td>
+                          </tr>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-4 mt-4 border-t border-gray-150">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsViewModalOpen(false);
+                  setSelectedTeam(null);
+                }}
+                className="px-4 py-2 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700 font-semibold"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

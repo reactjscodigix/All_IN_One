@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   Search, ChevronDown, ChevronRight,
   Share2, Download, MoreHorizontal, LayoutList,
@@ -31,30 +32,148 @@ function TestTubeIcon(props) {
 
 const LIST_DATA = [];
 
-const ALL_COLUMNS = [];
+const ALL_COLUMNS = [
+  { key: 'workType', label: 'Type', defaultChecked: true },
+  { key: 'key', label: 'Key', defaultChecked: true },
+  { key: 'summary', label: 'Summary', defaultChecked: true },
+  { key: 'assignee', label: 'Assignee', defaultChecked: true },
+  { key: 'reporter', label: 'Reporter', defaultChecked: true },
+  { key: 'team', label: 'Team', defaultChecked: true },
+  { key: 'priority', label: 'Priority', defaultChecked: true },
+  { key: 'status', label: 'Status', defaultChecked: true },
+  { key: 'resolution', label: 'Resolution', defaultChecked: true },
+  { key: 'created', label: 'Created', defaultChecked: true },
+  { key: 'updated', label: 'Updated', defaultChecked: false },
+  { key: 'dueDate', label: 'Due Date', defaultChecked: true },
+  { key: 'progress', label: 'Progress', defaultChecked: false },
+  { key: 'actions', label: 'Actions', defaultChecked: true }
+];
 
 const ITTasksPage = () => {
-  const { username } = useParams();
+  const { user } = useAuth();
+  const { designation, username } = useParams();
+  const isManager = designation ? designation.toLowerCase().includes('manager') || designation.toLowerCase().includes('admin') : true;
+
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
   const [openFilterDropdown, setOpenFilterDropdown] = useState(null);
 
+  // Filters state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [selectedPriority, setSelectedPriority] = useState('ALL');
+  const [selectedAssignee, setSelectedAssignee] = useState('ALL');
+  const [onlyMyIssues, setOnlyMyIssues] = useState(false);
+
+  const [projectsList, setProjectsList] = useState([]);
+  const [usersList, setUsersList] = useState([]);
+
   // Columns filter state
   const [selectedColumns, setSelectedColumns] = useState(
-    new Set(['workType', 'key', 'summary', 'assignee', 'reporter', 'priority', 'status', 'resolution', 'created', 'updated', 'dueDate'])
+    new Set(['workType', 'key', 'summary', 'assignee', 'reporter', 'team', 'priority', 'status', 'resolution', 'created', 'dueDate', 'actions'])
   );
   const [columnSearchQuery, setColumnSearchQuery] = useState('');
   const [activeColumnsTab, setActiveColumnsTab] = useState('My defaults');
 
   const [tasks, setTasks] = useState([]);
 
-  const filteredTasks = React.useMemo(() => {
-    if (!username) return tasks;
-    return tasks.filter(task => {
-      if (!task.assignee) return false;
-      return task.assignee.toLowerCase().includes(username.toLowerCase());
+  useEffect(() => {
+    fetchTasks();
+    fetch('http://localhost:5000/api/projects')
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setProjectsList(data); })
+      .catch(err => console.error('Error fetching projects:', err));
+
+    fetch('http://localhost:5000/api/users')
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setUsersList(data); })
+      .catch(err => console.error('Error fetching users:', err));
+  }, []);
+
+  const itUsersList = React.useMemo(() => {
+    const SYSTEM_DUMMY_USERNAMES = ['admin', 'leads', 'deals', 'sales', 'marketing', 'it', 'accounting'];
+    return usersList.filter(u => {
+      const un = (u.username || '').toLowerCase();
+      if (SYSTEM_DUMMY_USERNAMES.includes(un)) return false;
+      const dept = (u.department || '').toLowerCase();
+      const role = (u.role_name || u.role || '').toLowerCase();
+      return dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester') || role.includes('devops');
     });
-  }, [tasks, username]);
+  }, [usersList]);
+
+  const fetchTasks = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/it-kanban/issues');
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data);
+      }
+    } catch (err) {
+      console.error('Error fetching tasks', err);
+    }
+  };
+
+  const userSearchTerms = React.useMemo(() => {
+    const terms = new Set();
+    if (username) {
+      terms.add(username.toLowerCase());
+      username.toLowerCase().split(/[-_\s]+/).forEach(t => { if (t.length > 2) terms.add(t); });
+    }
+    if (user) {
+      if (user.username) terms.add(user.username.toLowerCase());
+      if (user.first_name) terms.add(user.first_name.toLowerCase());
+      if (user.last_name) terms.add(user.last_name.toLowerCase());
+      if (user.name) user.name.toLowerCase().split(/\s+/).forEach(t => { if (t.length > 2) terms.add(t); });
+    }
+    return Array.from(terms);
+  }, [username, user]);
+
+  const filteredTasks = React.useMemo(() => {
+    let result = tasks;
+
+    if (selectedProjectId !== 'ALL') {
+      result = result.filter(issue => Number(issue.project_id) === Number(selectedProjectId));
+    }
+    if (selectedType !== 'ALL') {
+      result = result.filter(issue => issue.type === selectedType);
+    }
+    if (selectedStatus !== 'ALL') {
+      result = result.filter(issue => (issue.status || 'TO DO').toUpperCase() === selectedStatus.toUpperCase());
+    }
+    if (selectedPriority !== 'ALL') {
+      result = result.filter(issue => issue.priority === selectedPriority);
+    }
+    if (selectedAssignee !== 'ALL') {
+      if (selectedAssignee === 'UNASSIGNED') {
+        result = result.filter(issue => !issue.assignee || issue.assignee === 'Unassigned' || issue.assignee === 'Automatic');
+      } else {
+        const a = selectedAssignee.toLowerCase();
+        result = result.filter(issue => issue.assignee && issue.assignee.toLowerCase().includes(a));
+      }
+    }
+
+    const isUserTask = (issue) => {
+      const assigneeStr = (issue.assignee || '').toLowerCase();
+      const reporterStr = (issue.reporter || '').toLowerCase();
+      return userSearchTerms.some(term => assigneeStr.includes(term) || reporterStr.includes(term));
+    };
+
+    if (onlyMyIssues) {
+      result = result.filter(issue => isUserTask(issue));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(issue => 
+        (issue.title && issue.title.toLowerCase().includes(q)) ||
+        (issue.issue_key && issue.issue_key.toLowerCase().includes(q)) ||
+        (issue.assignee && issue.assignee.toLowerCase().includes(q)) ||
+        (issue.reporter && issue.reporter.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [tasks, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignee, onlyMyIssues, isManager, userSearchTerms, searchQuery]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
@@ -77,20 +196,6 @@ const ITTasksPage = () => {
       }
     }
   }, [tasks]);
-
-  const fetchTasks = async () => {
-    try {
-      const res = await fetch('http://localhost:5000/api/it-kanban/issues');
-      if (res.ok) {
-        const data = await res.json();
-        // The list page expects some fields to be formatted slightly differently (e.g. summary instead of title, though we can use title)
-        // But our ITIssueDetailsPanel expects issue.key and issue.title etc.
-        setTasks(data);
-      }
-    } catch (err) {
-      console.error('Error fetching tasks', err);
-    }
-  };
 
   const updateIssue = async (key, updates) => {
     // Optimistic local update
@@ -151,26 +256,168 @@ const ITTasksPage = () => {
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="relative">
                       <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
-                      <input type="text" placeholder="Search issues" className="pl-8 pr-3 py-1.5 bg-gray-50 border-none rounded text-xs focus:outline-none focus:ring-1 focus:ring-gray-300 w-40" />
+                      <input
+                        type="text"
+                        placeholder="Search issues"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 w-40"
+                      />
                     </div>
 
-                    {/* Project Dropdown */}
+                    {/* JIRA USER AVATAR BUBBLES */}
+                    <div className="flex items-center -space-x-1.5 mx-1">
+                      {itUsersList.map((u) => {
+                        const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'User';
+                        const initials = (u.first_name ? u.first_name[0] : (u.username ? u.username[0] : 'U')) + 
+                                         (u.last_name ? u.last_name[0] : '');
+                        const uppercaseInitials = initials.toUpperCase();
+                        
+                        const a = selectedAssignee.toLowerCase();
+                        const isSelected = selectedAssignee !== 'ALL' && (
+                          a === fullName.toLowerCase() || 
+                          a === (u.username || '').toLowerCase() ||
+                          (u.first_name && a.includes(u.first_name.toLowerCase()))
+                        );
+
+                        const colors = [
+                          'bg-emerald-600 text-white',
+                          'bg-blue-600 text-white',
+                          'bg-purple-600 text-white',
+                          'bg-amber-600 text-white',
+                          'bg-pink-600 text-white',
+                          'bg-indigo-600 text-white',
+                          'bg-teal-600 text-white'
+                        ];
+                        const colorClass = colors[Number(u.id || 0) % colors.length];
+
+                        return (
+                          <button
+                            key={u.id || u.username}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedAssignee('ALL');
+                              } else {
+                                setSelectedAssignee(fullName);
+                              }
+                            }}
+                            title={`Filter issues by ${fullName}`}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative border-2 border-white cursor-pointer ${
+                              isSelected 
+                                ? 'ring-2 ring-blue-600 ring-offset-1 z-20 scale-110 shadow-md' 
+                                : 'hover:z-10 hover:scale-105 opacity-90 hover:opacity-100'
+                            } ${colorClass}`}
+                          >
+                            {uppercaseInitials}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Project Filter */}
                     <div className="relative interactive-dropdown">
-                      <button onClick={() => toggleDropdown('project')} className="flex items-center gap-1.5 p-2 rounded text-sm font-medium border bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors">
-                        Project: Website Redesign <ChevronDown size={14} />
+                      <button onClick={() => toggleDropdown('project')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors">
+                        Project: {selectedProjectId === 'ALL' ? 'All Projects' : (projectsList.find(p => Number(p.id) === Number(selectedProjectId))?.name || 'Selected Project')} <ChevronDown size={14} />
                       </button>
                       {openFilterDropdown === 'project' && (
-                        <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs">
-                          {['Website Redesign (WR)', 'Mobile App (MA)', 'Backend API (BA)'].map(p => (
-                            <div key={p} className="p-2 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium">{p}</div>
+                        <div className="absolute left-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs max-h-60 overflow-y-auto">
+                          <div onClick={() => { setSelectedProjectId('ALL'); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedProjectId === 'ALL' ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                            All Projects
+                          </div>
+                          {projectsList.map(p => (
+                            <div key={p.id} onClick={() => { setSelectedProjectId(p.id); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${Number(selectedProjectId) === Number(p.id) ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                              {p.name || p.title}
+                            </div>
                           ))}
                         </div>
                       )}
                     </div>
 
+                    {/* Type Filter */}
+                    <div className="relative interactive-dropdown">
+                      <button onClick={() => toggleDropdown('type')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
+                        Type: {selectedType === 'ALL' ? 'All' : selectedType} <ChevronDown size={14} />
+                      </button>
+                      {openFilterDropdown === 'type' && (
+                        <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs">
+                          {['ALL', 'Task', 'Bug', 'Story', 'Test'].map(t => (
+                            <div key={t} onClick={() => { setSelectedType(t); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedType === t ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                              {t === 'ALL' ? 'All Types' : t}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
+                    {/* Status Filter */}
+                    <div className="relative interactive-dropdown">
+                      <button onClick={() => toggleDropdown('status')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
+                        Status: {selectedStatus === 'ALL' ? 'All' : selectedStatus} <ChevronDown size={14} />
+                      </button>
+                      {openFilterDropdown === 'status' && (
+                        <div className="absolute left-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs">
+                          {['ALL', 'TO DO', 'IN PROGRESS', 'IN REVIEW', 'TESTING', 'DONE'].map(st => (
+                            <div key={st} onClick={() => { setSelectedStatus(st); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedStatus === st ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                              {st === 'ALL' ? 'All Statuses' : st}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                    <button onClick={() => setIsCreateDrawerOpen(true)} className="flex items-center gap-1.5 p-2 rounded text-sm  bg-blue-600 text-white hover:bg-blue-700 transition-colors ml-4 ">
+                    {/* Priority Filter */}
+                    <div className="relative interactive-dropdown">
+                      <button onClick={() => toggleDropdown('priority')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
+                        Priority: {selectedPriority === 'ALL' ? 'All' : selectedPriority} <ChevronDown size={14} />
+                      </button>
+                      {openFilterDropdown === 'priority' && (
+                        <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs">
+                          {['ALL', 'Low', 'Medium', 'High'].map(pr => (
+                            <div key={pr} onClick={() => { setSelectedPriority(pr); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedPriority === pr ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                              {pr === 'ALL' ? 'All Priorities' : pr}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Assignee Filter & Only My Issues (for Managers) */}
+                    {isManager && (
+                      <>
+                        <div className="relative interactive-dropdown">
+                          <button onClick={() => toggleDropdown('assignee')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
+                            Assignee: {selectedAssignee === 'ALL' ? 'All' : selectedAssignee} <ChevronDown size={14} />
+                          </button>
+                          {openFilterDropdown === 'assignee' && (
+                            <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs max-h-60 overflow-y-auto">
+                              <div onClick={() => { setSelectedAssignee('ALL'); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedAssignee === 'ALL' ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                                All Assignees
+                              </div>
+                              <div onClick={() => { setSelectedAssignee('UNASSIGNED'); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedAssignee === 'UNASSIGNED' ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                                Unassigned
+                              </div>
+                              {usersList.map(u => {
+                                const uName = u.first_name ? `${u.first_name} ${u.last_name || ''}`.trim() : u.username;
+                                return (
+                                  <div key={u.id} onClick={() => { setSelectedAssignee(uName); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedAssignee === uName ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                                    {uName}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => setOnlyMyIssues(!onlyMyIssues)}
+                          className={`px-3 py-1.5 rounded text-xs font-semibold border transition cursor-pointer ${onlyMyIssues ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                        >
+                          Only My Issues
+                        </button>
+                      </>
+                    )}
+
+                    <button onClick={() => setIsCreateDrawerOpen(true)} className="flex items-center gap-1.5 p-2 rounded text-xs bg-blue-600 text-white hover:bg-blue-700 transition-colors ml-2 font-medium">
                       <Plus size={14} /> Create Issue
                     </button>
                   </div>
@@ -365,9 +612,16 @@ const ITTasksPage = () => {
                                   </td>
                                 );
                               case 'summary':
+                                const fullSummary = row.title || row.summary || '';
+                                const words = fullSummary.trim().split(/\s+/);
+                                const isLong = words.length > 2;
+                                const displaySummary = isLong ? `${words.slice(0, 2).join(' ')}...` : fullSummary;
+
                                 return (
-                                  <td key={col.key} className="p-3 text-gray-900 font-semibold truncate max-w-xs">
-                                    {row.title}
+                                  <td key={col.key} className="p-3">
+                                    <span className="text-gray-900 font-semibold cursor-pointer" title={fullSummary}>
+                                      {displaySummary}
+                                    </span>
                                   </td>
                                 );
                               case 'assignee':
@@ -385,10 +639,10 @@ const ITTasksPage = () => {
                                 return (
                                   <td key={col.key} className="p-3">
                                     <div className="flex items-center gap-2">
-                                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] ">
-                                        P
+                                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-semibold">
+                                        {(row.reporter ? row.reporter.charAt(0) : "U")}
                                       </div>
-                                      <span>{row.reporter || "PM Admin"}</span>
+                                      <span>{row.reporter || "Unassigned"}</span>
                                     </div>
                                   </td>
                                 );
@@ -413,6 +667,8 @@ const ITTasksPage = () => {
                                     </span>
                                   </td>
                                 );
+                              case 'team':
+                                return <td key={col.key} className="p-3 text-gray-700 font-medium">{row.team || '-'}</td>;
                               case 'resolution':
                                 return <td key={col.key} className="p-3 text-gray-500 font-medium">{row.status === 'DONE' ? 'Done' : 'Unresolved'}</td>;
                               case 'created':

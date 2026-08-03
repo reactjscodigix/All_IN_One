@@ -139,7 +139,7 @@ const ProposalsPage = ({ onViewDetails }) => {
       const result = await Swal.fire({
         title: 'Convert to Invoice?',
         html: `<p>Convert <strong>${proposal.proposal_number}</strong> to invoice?</p>
-               <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Amount: <strong>${proposal.currency || 'USD'} ${(proposal.total_amount || 0).toLocaleString()}</strong></p>`,
+               <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Amount: <strong>${proposal.currency || 'INR'} ${(proposal.total_amount || 0).toLocaleString()}</strong></p>`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -223,7 +223,7 @@ const ProposalsPage = ({ onViewDetails }) => {
       const result = await Swal.fire({
         title: 'Convert to Contract?',
         html: `<p>Convert proposal <strong>${proposal.proposal_number}</strong> to a contract?</p>
-               <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Amount: <strong>${proposal.currency || 'USD'} ${(proposal.total_amount || 0).toLocaleString()}</strong></p>`,
+               <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Amount: <strong>${proposal.currency || 'INR'} ${(proposal.total_amount || 0).toLocaleString()}</strong></p>`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#16a34a',
@@ -280,7 +280,7 @@ const ProposalsPage = ({ onViewDetails }) => {
 
   const ProposalCard = ({ proposal }) => {
     const company = companies.find(c => c.id === proposal.client_id);
-    const currency = proposal.currency || 'USD';
+    const currency = proposal.currency || 'INR';
 
     const getCompanyInitials = (name) => {
       return name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'CP';
@@ -395,7 +395,7 @@ const ProposalsPage = ({ onViewDetails }) => {
 
   const ProposalRow = ({ proposal }) => {
     const company = companies.find(c => c.id === proposal.client_id);
-    const currency = proposal.currency || 'USD';
+    const currency = proposal.currency || 'INR';
 
     return (
       <tr className="border-b hover:bg-gray-50">

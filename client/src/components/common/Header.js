@@ -344,7 +344,7 @@ const Header = ({ toggleSidebar }) => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs  text-gray-900 truncate">{user?.name || 'User'}</p>
-                        <p className="text-xs text-gray-600 truncate">{user?.role || 'Member'}{user?.department ? ` • ${user.department}` : ''}</p>
+                        <p className="text-xs text-gray-600 truncate">{user?.job_title || user?.role || 'Member'}{user?.department ? ` • ${user.department}` : ''}</p>
                         <p className="text-xs text-gray-400 truncate">{user?.email}</p>
                       </div>
                     </div>

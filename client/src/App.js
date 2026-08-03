@@ -348,6 +348,7 @@ function AppContent() {
 
   const currentPage = getPageFromPath(location.pathname);
   const isVideoCall = location.pathname.includes('/video-call');
+  const isChatPage = location.pathname.includes('/chat');
 
   useEffect(() => {
     if (location.state?.company) {
@@ -404,8 +405,8 @@ function AppContent() {
     <Layout 
       currentPage={currentPage} 
       onNavigate={handleNavigate}
-      hideSidebar={isVideoCall}
-      hideHeader={isVideoCall}
+      hideSidebar={isVideoCall || isChatPage}
+      hideHeader={isVideoCall || isChatPage}
     >
       <Routes>
         <Route path="/" element={<DashboardRouter />} />

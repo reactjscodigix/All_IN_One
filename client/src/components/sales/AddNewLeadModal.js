@@ -37,6 +37,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
   });
 
   useEffect(() => {
+    setSelectedFile(null);
     if (leadToEdit) {
       const it_services = leadToEdit.it_services || '';
       const isItServiceOther = it_services && !itServiceOptions.includes(it_services);
@@ -70,7 +71,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
         company: leadToEdit.company_id?.toString() || leadToEdit.company || '',
         lead_type: leadToEdit.lead_type || 'Person',
         value: leadToEdit.value?.toString() || '',
-        currency: leadToEdit.currency || 'USD',
+        currency: leadToEdit.currency || 'INR',
         source: isSourceOther ? 'Other' : source,
         source_other: isSourceOther ? source : '',
         referral_name: leadToEdit.referral_name || '',
@@ -124,6 +125,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
   const [companySearchOpen, setCompanySearchOpen] = useState(false);
   const [companySearchTerm, setCompanySearchTerm] = useState('');
   const [fetchedCompanies, setFetchedCompanies] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const marketingServiceOptions = [
     'SEO',
@@ -342,7 +344,9 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
       setLocalCompanies(prev => [newCompany, ...prev]);
       setFormData(prev => ({
         ...prev,
-        company: createdCompany.id?.toString() || ''
+        company: createdCompany.id?.toString() || '',
+        email: createdCompany.email || prev.email,
+        phone: createdCompany.phone || prev.phone
       }));
 
       setIsCompanyFormOpen(false);
@@ -420,7 +424,19 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
       };
 
       if (onSubmit) {
-        await onSubmit(payload);
+        const response = await onSubmit(payload);
+        if (response && response.id && selectedFile) {
+          const fileData = new FormData();
+          fileData.append('file', selectedFile);
+          fileData.append('lead_id', response.id);
+          fileData.append('userId', formData.owner || '1');
+
+          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+          await fetch(`${apiUrl}/files/upload`, {
+            method: 'POST',
+            body: fileData
+          });
+        }
       }
       handleCancel();
     } catch (err) {
@@ -465,6 +481,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     setSelectPeopleDropdownOpen(false);
     setCompanySearchOpen(false);
     setCompanySearchTerm('');
+    setSelectedFile(null);
     onClose();
   };
 
@@ -532,8 +549,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
               </label>
             </div>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs    text-gray-700 mb-2">
                 Client Name<span className="text-red-500">*</span>
@@ -544,35 +560,6 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="Enter client name"
-                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
-              />
-            </div>
-            <div>
-              <label className="block text-xs    text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="Enter email address"
-                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs    text-gray-700 mb-2">
-                Project Name
-              </label>
-              <input
-                type="text"
-                name="project_name"
-                value={formData.project_name}
-                onChange={handleInputChange}
-                placeholder="Enter project name"
                 className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
               />
             </div>
@@ -620,7 +607,12 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
                           key={company.id}
                           type="button"
                           onClick={() => {
-                            setFormData(prev => ({ ...prev, company: company.id.toString() }));
+                            setFormData(prev => ({
+                              ...prev,
+                              company: company.id.toString(),
+                              email: company.email || prev.email,
+                              phone: company.phone || prev.phone
+                            }));
                             setCompanySearchOpen(false);
                           }}
                           className="w-full p-2 text-left text-xs text-gray-700 hover:bg-gray-50 border-b border-gray-50 last:border-b-0"
@@ -650,9 +642,20 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
             </div>
           </div>
 
-
-
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs    text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="Enter email address"
+                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
+              />
+            </div>
             <div>
               <label className="block text-xs    text-gray-700 mb-2">
                 Phone Number<span className="text-red-500">*</span>
@@ -663,6 +666,22 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="Enter phone number"
+                className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs    text-gray-700 mb-2">
+                Project Name
+              </label>
+              <input
+                type="text"
+                name="project_name"
+                value={formData.project_name}
+                onChange={handleInputChange}
+                placeholder="Enter project name"
                 className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
               />
             </div>
@@ -960,6 +979,37 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
               rows="4"
               className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition resize-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs text-gray-700 mb-2 font-[500]">
+              Attachment (PRD or Document)
+            </label>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded cursor-pointer bg-white hover:bg-gray-50 transition text-xs text-gray-700 font-[500]">
+                <Plus size={14} className="text-gray-500" />
+                <span>Choose File</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                />
+              </label>
+              {selectedFile ? (
+                <div className="flex items-center gap-2 bg-gray-100 px-2 py-1 rounded text-xs text-gray-700">
+                  <span className="truncate max-w-[200px]">{selectedFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFile(null)}
+                    className="text-red hover:text-red-800 font-bold"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <span className="text-xs text-gray-400">No file chosen</span>
+              )}
+            </div>
           </div>
 
           <div>

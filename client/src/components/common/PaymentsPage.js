@@ -77,10 +77,10 @@ const PaymentsPage = () => {
     currentPage * itemsPerPage
   );
 
-  const formatCurrency = (value, currency = 'USD') => {
-    if (!value) return '$0.00';
+  const formatCurrency = (value, currency = 'INR') => {
+    if (!value) return '₹0.00';
     const num = typeof value === 'string' ? parseFloat(value) : value;
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: currency,
     }).format(num);

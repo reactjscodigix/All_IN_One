@@ -14,6 +14,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
   const [users, setUsers] = useState([]);
   const [isFirstForClient, setIsFirstForClient] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [existingFiles, setExistingFiles] = useState([]);
 
   const [formData, setFormData] = useState({
     related_type: 'Lead',
@@ -60,6 +61,18 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
 
   useEffect(() => {
     if (isOpen) {
+      const formatDateForInput = (dateStr) => {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) {
+          return typeof dateStr === 'string' ? dateStr.split('T')[0] : '';
+        }
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       if (initialData) {
         const clientEmail = initialData.client_email || initialData.email || initialData.company_email || initialData.contact_email || '';
         const clientPhone = initialData.client_phone || initialData.phone || initialData.company_phone || initialData.contact_phone || '';
@@ -70,10 +83,10 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
           client_email: clientEmail,
           client_phone: clientPhone,
           related_name: clientName,
-          scheduled_date: initialData.scheduled_date ? initialData.scheduled_date.split('T')[0] : (new Date().toISOString().split('T')[0]),
+          scheduled_date: formatDateForInput(initialData.scheduled_date) || formatDateForInput(new Date()),
           scheduled_time: initialData.scheduled_time || '10:00',
-          recurrence_end_date: initialData.recurrence_end_date ? initialData.recurrence_end_date.split('T')[0] : '',
-          next_followup_date: initialData.next_followup_date ? initialData.next_followup_date.split('T')[0] : ''
+          recurrence_end_date: formatDateForInput(initialData.recurrence_end_date),
+          next_followup_date: formatDateForInput(initialData.next_followup_date)
         };
 
         const userStr = localStorage.getItem('user');
@@ -183,7 +196,7 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
           if (!formData.subject && !initialData?.subject) {
             setFormData(prev => ({
               ...prev,
-              subject: count === 0 ? 'Initial Contact' : `Follow-up #${count + 1}`
+              subject: count === 0 ? 'Initial Contact' : `Follow-up #${count}`
             }));
           }
         } catch (err) {
@@ -192,6 +205,41 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
       }
     };
     checkFollowups();
+  }, [formData.related_id, formData.related_type, isOpen]);
+
+  useEffect(() => {
+    const fetchExistingFiles = async () => {
+      if (isOpen && formData.related_id && formData.related_type) {
+        try {
+          const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+          let paramName = '';
+          switch (formData.related_type) {
+            case 'Lead': paramName = 'lead_id'; break;
+            case 'Deal': paramName = 'deal_id'; break;
+            case 'Customer': paramName = 'contact_id'; break;
+            case 'Project': paramName = 'project_id'; break;
+            default: break;
+          }
+
+          if (paramName) {
+            const response = await fetch(`${apiUrl}/files?${paramName}=${formData.related_id}`);
+            if (response.ok) {
+              const data = await response.json();
+              setExistingFiles(Array.isArray(data) ? data : []);
+            }
+          } else {
+            setExistingFiles([]);
+          }
+        } catch (err) {
+          console.error('Error fetching existing files:', err);
+          setExistingFiles([]);
+        }
+      } else {
+        setExistingFiles([]);
+      }
+    };
+
+    fetchExistingFiles();
   }, [formData.related_id, formData.related_type, isOpen]);
 
   const fetchUsers = async () => {
@@ -297,8 +345,8 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
       } else {
         setFormData(prev => ({ ...prev, related_id: value }));
       }
-    } else if (name === 'type' && !initialData?.id) {
-      // Auto-update subject based on type if it's a new follow-up and subject is generic
+    } else if (name === 'type') {
+      // Auto-update subject based on type if subject is generic
       setFormData(prev => {
         const isGenericSubject = prev.subject.includes('Follow-up') || !prev.subject.trim();
         let newSubject = prev.subject;
@@ -309,8 +357,11 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
         }
 
         let meeting_link = prev.meeting_link;
-        if (['Internal Video Call', 'WhatsApp Call', 'Phone Call', 'Zoom Meeting', 'Demo', 'Google Meet', 'Meeting', 'Call'].includes(value)) {
-          meeting_link = generateMeetingLink(value);
+        // Generate new link if currently empty OR if the type changed
+        if (!meeting_link || prev.type !== value) {
+          if (['Internal Video Call', 'WhatsApp Call', 'Phone Call', 'Zoom Meeting', 'Demo', 'Google Meet', 'Meeting', 'Call'].includes(value)) {
+            meeting_link = generateMeetingLink(value);
+          }
         }
 
         return {
@@ -876,6 +927,26 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                           }}
                         />
                       </div>
+                      {existingFiles.filter(file => !['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(file.file_type?.toUpperCase())).length > 0 && (
+                        <div className="mt-2 space-y-1 text-left">
+                          <p className="text-[9px] font-semibold text-gray-500">Existing Docs:</p>
+                          <div className="max-h-24 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                            {existingFiles.filter(file => !['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(file.file_type?.toUpperCase())).map(file => (
+                              <a
+                                key={file.id}
+                                href={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5000'}${file.file_path}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 p-1 bg-gray-50 rounded hover:bg-gray-100 transition text-[9px] text-blue-600 hover:text-blue-800 border border-gray-100 truncate"
+                                title={file.name}
+                              >
+                                <Paperclip size={10} className="text-gray-400" />
+                                <span className="truncate flex-1">{file.name}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="block text-xs  text-gray-700 flex items-center gap-1  tracking-wider">
@@ -899,6 +970,26 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                           }}
                         />
                       </div>
+                      {existingFiles.filter(file => ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(file.file_type?.toUpperCase())).length > 0 && (
+                        <div className="mt-2 space-y-1 text-left">
+                          <p className="text-[9px] font-semibold text-gray-500">Existing Images:</p>
+                          <div className="max-h-24 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                            {existingFiles.filter(file => ['PNG', 'JPG', 'JPEG', 'GIF', 'WEBP'].includes(file.file_type?.toUpperCase())).map(file => (
+                              <a
+                                key={file.id}
+                                href={`${process.env.REACT_APP_API_URL ? process.env.REACT_APP_API_URL.replace('/api', '') : 'http://localhost:5000'}${file.file_path}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 p-1 bg-gray-50 rounded hover:bg-gray-100 transition text-[9px] text-blue-600 hover:text-blue-800 border border-gray-100 truncate"
+                                title={file.name}
+                              >
+                                <ImageIcon size={10} className="text-gray-400" />
+                                <span className="truncate flex-1">{file.name}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

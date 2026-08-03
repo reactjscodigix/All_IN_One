@@ -52,107 +52,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
   const isFetchingVersionsRef = useRef(false);
   const isFetchingItemsRef = useRef(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchClientsAndProjects();
-      if (initialData) {
-        const isQuotation = initialData.estimation_number || initialData.quotation_number;
-        const deal_id = initialData.deal_id ? initialData.deal_id.toString() : (initialData.lead_id ? (Number(initialData.lead_id) + 1000000).toString() : (!isQuotation && Number(initialData.id) <= 1000000 ? initialData.id.toString() : ''));
-        const lead_id = initialData.lead_id ? initialData.lead_id.toString() : (!isQuotation && Number(initialData.id) > 1000000 ? (Number(initialData.id) - 1000000).toString() : '');
-
-        setFormData(prev => ({
-          ...prev,
-          quotationNumber: initialData.quotation_number || initialData.quotationNumber || `Q-${new Date().getFullYear()}-001`,
-          client: initialData.company_name || initialData.client_name || initialData.client || '',
-          client_id: initialData.client_id || initialData.company_id || '',
-          lead_id: lead_id,
-          deal_id: deal_id,
-          project_id: initialData.project_id ? initialData.project_id.toString() : '',
-          dealName: initialData.deal_name || initialData.dealName || '',
-          project_name: initialData.project_name || initialData.deal_name || initialData.dealName || '',
-          contactPerson: initialData.contact_first_name ? `${initialData.contact_first_name} ${initialData.contact_last_name || ''}`.trim() : (initialData.contact_person || initialData.contactPerson || ''),
-          assignedExecutiveId: initialData.assignee_id || initialData.assigned_executive_id || initialData.user_id || initialData.estimate_by || '',
-          quotationDate: initialData.quotation_date ? new Date(initialData.quotation_date).toISOString().split('T')[0] : (initialData.estimate_date ? new Date(initialData.estimate_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-          validUntil: initialData.valid_until ? new Date(initialData.valid_until).toISOString().split('T')[0] : (initialData.expiry_date ? new Date(initialData.expiry_date).toISOString().split('T')[0] : ''),
-          status: initialData.status || 'Draft',
-          quotationType: initialData.quotation_type || initialData.quotationType || 'Draft',
-          businessType: initialData.business_type || initialData.businessType || '',
-          items: Array.isArray(initialData.items) && initialData.items.length > 0
-            ? initialData.items.map(item => ({
-              ...item,
-              productName: item.productName || item.item_name || item.product_name || item.name || '',
-              rate: parseFloat(item.rate || item.price) || 0,
-              quantity: parseFloat(item.quantity) || 1
-            }))
-            : (() => {
-              const services = [];
-              if (initialData.it_services && initialData.it_services !== 'None') {
-                services.push({
-                  id: Date.now() + 1,
-                  productName: initialData.it_services === 'Other' ? initialData.it_services_other : initialData.it_services,
-                  description: initialData.description || '',
-                  quantity: 1,
-                  rate: parseFloat(initialData.value || initialData.deal_value || initialData.amount) || 0
-                });
-              }
-              const marketingServices = parseJson(initialData.marketing_services);
-              if (Array.isArray(marketingServices) && marketingServices.length > 0) {
-                marketingServices.forEach((service, index) => {
-                  services.push({
-                    id: Date.now() + 100 + index,
-                    productName: service,
-                    description: index === 0 && services.length === 0 ? (initialData.description || '') : '',
-                    quantity: 1,
-                    rate: (index === 0 && services.length === 0) ? (parseFloat(initialData.value || initialData.deal_value || initialData.amount) || 0) : 0
-                  });
-                });
-              }
-              return services.length > 0 ? services : (initialData.amount || initialData.deal_value ? [{ id: Date.now(), productName: initialData.project_name || initialData.deal_name || 'Service', description: initialData.description || '', quantity: 1, rate: parseFloat(initialData.amount || initialData.deal_value) }] : [{ id: Date.now(), productName: '', description: '', quantity: 1, rate: 0 }]);
-            })(),
-          paymentTerms: initialData.payment_terms || initialData.paymentTerms || '50% advance payment. Balance due upon project completion.',
-          notes: initialData.notes || '',
-          currency: initialData.currency || 'INR',
-          discount: initialData.discount || initialData.discount_amount || 0,
-          client_email: initialData.client_email || initialData.email || '',
-          client_phone: initialData.client_phone || initialData.phone || '',
-          business_description: initialData.business_description || initialData.description || '',
-          referral_name: initialData.referral_name || '',
-        }));
-
-        // Fetch version history
-        fetchVersions(deal_id, lead_id);
-
-        // Fetch items if they are not in initialData and it's a quotation
-        if (isQuotation && initialData.id && (!initialData.items || initialData.items.length === 0)) {
-          const fetchItems = async () => {
-            if (isFetchingItemsRef.current) return;
-            isFetchingItemsRef.current = true;
-            try {
-              const itemsRes = await estimationsAPI.getItems(initialData.id);
-              if (Array.isArray(itemsRes) && itemsRes.length > 0) {
-                setFormData(prev => ({
-                  ...prev,
-                  items: itemsRes.map(item => ({
-                    id: item.id || Date.now() + Math.random(),
-                    productName: item.item_name || item.productName || item.product_name || item.name || '',
-                    description: item.description || '',
-                    duration: item.duration || '',
-                    quantity: parseFloat(item.quantity) || 1,
-                    rate: parseFloat(item.rate || item.price) || 0
-                  }))
-                }));
-              }
-            } catch (err) {
-              console.error('Error fetching quotation items:', err);
-            } finally {
-              isFetchingItemsRef.current = false;
-            }
-          };
-          fetchItems();
-        }
-      }
-    }
-  }, [isOpen, initialData?.id]);
+  // useEffect moved down below to avoid hoisting reference errors
 
   const fetchVersions = async (dealId, leadId) => {
     if (isFetchingVersionsRef.current) return;
@@ -307,11 +207,12 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
           client: clientName,
           lead_id: leadId,
           contactPerson: contactPerson || prev.contactPerson,
-          businessType: leadBusinessType || prev.businessType,
+          businessType: prev.businessType,
           client_email: clientEmail || prev.client_email,
           client_phone: clientPhone || prev.client_phone,
           business_description: businessDescription || prev.business_description,
           referral_name: referralName || prev.referral_name,
+          assignedExecutiveId: leadData.owner_id ? leadData.owner_id.toString() : prev.assignedExecutiveId,
           items: leadServices.length > 0 ? leadServices : prev.items
         }));
 
@@ -325,8 +226,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
     }
   };
 
-  const handleDealChange = async (e) => {
-    const dealId = e.target.value;
+  const handleDealChangeById = async (dealId) => {
     if (!dealId) {
       setFormData(prev => ({
         ...prev,
@@ -451,12 +351,12 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
           client_id: dealData.company_id || '',
           lead_id: dealData.lead_id || (Number(dealData.id) > 1000000 ? (Number(dealData.id) - 1000000) : ''),
           contactPerson: contactPerson || prev.contactPerson,
-          businessType: leadBusinessType || dealData.business_type || '',
+          businessType: prev.businessType || '',
           assignedExecutiveId: assignedExecutiveId || prev.assignedExecutiveId,
-          client_email: clientEmail || '',
-          client_phone: clientPhone || '',
-          business_description: businessDescription || '',
-          referral_name: referralName || '',
+          client_email: clientEmail || prev.client_email || '',
+          client_phone: clientPhone || prev.client_phone || '',
+          business_description: businessDescription || prev.business_description || '',
+          referral_name: referralName || prev.referral_name || '',
           items: leadServices.length > 0 ? leadServices : (
             Array.isArray(dealData.items) && dealData.items.length > 0
               ? dealData.items.map(item => ({
@@ -489,6 +389,124 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
       setLoadingData(false);
     }
   };
+
+  const handleDealChange = (e) => {
+    handleDealChangeById(e.target.value);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchClientsAndProjects();
+      if (initialData) {
+        const isQuotation = initialData.estimation_number || initialData.quotation_number;
+        const deal_id = initialData.deal_id ? initialData.deal_id.toString() : (initialData.lead_id ? (Number(initialData.lead_id) + 1000000).toString() : (!isQuotation && Number(initialData.id) <= 1000000 ? initialData.id.toString() : ''));
+        const lead_id = initialData.lead_id ? initialData.lead_id.toString() : (!isQuotation && Number(initialData.id) > 1000000 ? (Number(initialData.id) - 1000000).toString() : '');
+
+        setFormData(prev => ({
+          ...prev,
+          quotationNumber: initialData.quotation_number || initialData.quotationNumber || `Q-${new Date().getFullYear()}-001`,
+          client: initialData.company_name || initialData.client_name || initialData.client || '',
+          client_id: initialData.client_id || initialData.company_id || '',
+          lead_id: lead_id,
+          deal_id: deal_id,
+          project_id: initialData.project_id ? initialData.project_id.toString() : '',
+          dealName: initialData.deal_name || initialData.dealName || '',
+          project_name: initialData.project_name || initialData.deal_name || initialData.dealName || '',
+          contactPerson: initialData.contact_first_name ? `${initialData.contact_first_name} ${initialData.contact_last_name || ''}`.trim() : (initialData.contact_person || initialData.contactPerson || ''),
+          assignedExecutiveId: initialData.assignee_id || initialData.assigned_executive_id || initialData.user_id || initialData.estimate_by || '',
+          quotationDate: initialData.quotation_date ? new Date(initialData.quotation_date).toISOString().split('T')[0] : (initialData.estimate_date ? new Date(initialData.estimate_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+          validUntil: initialData.valid_until ? new Date(initialData.valid_until).toISOString().split('T')[0] : (initialData.expiry_date ? new Date(initialData.expiry_date).toISOString().split('T')[0] : ''),
+          status: initialData.status || 'Draft',
+          quotationType: initialData.quotation_type || initialData.quotationType || 'Draft',
+          businessType: initialData.business_type || initialData.businessType || '',
+          items: Array.isArray(initialData.items) && initialData.items.length > 0
+            ? initialData.items.map(item => ({
+              ...item,
+              productName: item.productName || item.item_name || item.product_name || item.name || '',
+              rate: parseFloat(item.rate || item.price) || 0,
+              quantity: parseFloat(item.quantity) || 1
+            }))
+            : (() => {
+              const services = [];
+              if (initialData.it_services && initialData.it_services !== 'None') {
+                services.push({
+                  id: Date.now() + 1,
+                  productName: initialData.it_services === 'Other' ? initialData.it_services_other : initialData.it_services,
+                  description: initialData.description || '',
+                  quantity: 1,
+                  rate: parseFloat(initialData.value || initialData.deal_value || initialData.amount) || 0
+                });
+              }
+              const marketingServices = parseJson(initialData.marketing_services);
+              if (Array.isArray(marketingServices) && marketingServices.length > 0) {
+                marketingServices.forEach((service, index) => {
+                  services.push({
+                    id: Date.now() + 100 + index,
+                    productName: service,
+                    description: index === 0 && services.length === 0 ? (initialData.description || '') : '',
+                    quantity: 1,
+                    rate: (index === 0 && services.length === 0) ? (parseFloat(initialData.value || initialData.deal_value || initialData.amount) || 0) : 0
+                  });
+                });
+              }
+              return services.length > 0 ? services : (initialData.amount || initialData.deal_value ? [{ id: Date.now(), productName: initialData.project_name || initialData.deal_name || 'Service', description: initialData.description || '', quantity: 1, rate: parseFloat(initialData.amount || initialData.deal_value) }] : [{ id: Date.now(), productName: '', description: '', quantity: 1, rate: 0 }]);
+            })(),
+          paymentTerms: initialData.payment_terms || initialData.paymentTerms || '50% advance payment. Balance due upon project completion.',
+          notes: initialData.notes || '',
+          currency: initialData.currency || 'INR',
+          discount: initialData.discount || initialData.discount_amount || 0,
+          client_email: initialData.client_email || initialData.email || '',
+          client_phone: initialData.client_phone || initialData.phone || '',
+          business_description: initialData.business_description || initialData.description || '',
+          referral_name: initialData.referral_name || '',
+        }));
+
+        // Fetch version history
+        fetchVersions(deal_id, lead_id);
+
+        // Auto-fetch additional details if this is a new quotation being created from a pre-selected lead/deal
+        if (!initialData.id) {
+          const isVirtual = Number(deal_id) > 1000000;
+          if (isVirtual) {
+            handleLeadChange((Number(deal_id) - 1000000).toString());
+          } else if (deal_id) {
+            handleDealChangeById(deal_id);
+          } else if (lead_id) {
+            handleLeadChange(lead_id);
+          }
+        }
+
+        // Fetch items if they are not in initialData and it's a quotation
+        if (isQuotation && initialData.id && (!initialData.items || initialData.items.length === 0)) {
+          const fetchItems = async () => {
+            if (isFetchingItemsRef.current) return;
+            isFetchingItemsRef.current = true;
+            try {
+              const itemsRes = await estimationsAPI.getItems(initialData.id);
+              if (Array.isArray(itemsRes) && itemsRes.length > 0) {
+                setFormData(prev => ({
+                  ...prev,
+                  items: itemsRes.map(item => ({
+                    id: item.id || Date.now() + Math.random(),
+                    productName: item.item_name || item.productName || item.product_name || item.name || '',
+                    description: item.description || '',
+                    duration: item.duration || '',
+                    quantity: parseFloat(item.quantity) || 1,
+                    rate: parseFloat(item.rate || item.price) || 0
+                  }))
+                }));
+              }
+            } catch (err) {
+              console.error('Error fetching quotation items:', err);
+            } finally {
+              isFetchingItemsRef.current = false;
+            }
+          };
+          fetchItems();
+        }
+      }
+    }
+  }, [isOpen, initialData?.id]);
 
   const calculatePricing = () => {
     const subtotal = formData.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);

@@ -255,6 +255,7 @@ const CrmLeadsPage = () => {
         fetchData();
         setIsModalOpen(false);
         setLeadToEdit(null);
+        return response;
       }
     } catch (err) {
       const errorMessage = err.message || `Failed to ${leadToEdit ? 'update' : 'create'} lead`;
@@ -580,7 +581,7 @@ const CrmLeadsPage = () => {
                           </div>
                           <div className="px-1">
                             <p className="text-xs text-gray-600 ">
-                              {stageLeads.length} Leads • {formatINR(stageLeads.reduce((sum, l) => sum + (l.value || 0), 0))}
+                              {stageLeads.length} Leads
                             </p>
                           </div>
                         </div>

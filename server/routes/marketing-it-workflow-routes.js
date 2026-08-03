@@ -102,7 +102,7 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
     try {
       connection = await pool.getConnection();
       const { department_id } = req.query;
-      let query = 'SELECT t.*, d.name as department_name, u.first_name as manager_name FROM teams t LEFT JOIN departments d ON t.department_id = d.id LEFT JOIN users u ON t.manager_id = u.id';
+      let query = "SELECT t.*, d.name as department_name, u.first_name as manager_first_name, u.last_name as manager_last_name, CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) as manager_name FROM teams t LEFT JOIN departments d ON t.department_id = d.id LEFT JOIN users u ON t.manager_id = u.id";
       let params = [];
       if (department_id) {
         query += ' WHERE t.department_id = ?';
@@ -148,7 +148,7 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
     try {
       connection = await pool.getConnection();
       const [members] = await connection.query(
-        'SELECT tm.*, u.first_name, u.last_name, u.email, u.avatar FROM team_members tm JOIN users u ON tm.user_id = u.id WHERE tm.team_id = ?',
+        'SELECT tm.*, u.first_name, u.last_name, u.email, u.avatar, COALESCE(tm.role, u.job_title, \'Team Member\') AS role FROM team_members tm JOIN users u ON tm.user_id = u.id WHERE tm.team_id = ?',
         [req.params.id]
       );
       connection.release();
@@ -168,6 +168,52 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
       await connection.query(
         'INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE role = ?',
         [req.params.id, user_id, role, role]
+      );
+      connection.release();
+      res.json({ success: true });
+    } catch (error) {
+      if (connection) connection.release();
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put('/api/teams/:id', async (req, res) => {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      const { name, description, department_id, manager_id, manager_role } = req.body;
+      await connection.query(
+        'UPDATE teams SET name = ?, description = ?, department_id = ?, manager_id = ?, manager_role = ? WHERE id = ?',
+        [name || null, description || null, department_id || null, manager_id || null, manager_role || null, req.params.id]
+      );
+      connection.release();
+      res.json({ success: true });
+    } catch (error) {
+      if (connection) connection.release();
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete('/api/teams/:id', async (req, res) => {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      await connection.query('DELETE FROM teams WHERE id = ?', [req.params.id]);
+      connection.release();
+      res.json({ success: true });
+    } catch (error) {
+      if (connection) connection.release();
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete('/api/teams/:id/members/:userId', async (req, res) => {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      await connection.query(
+        'DELETE FROM team_members WHERE team_id = ? AND user_id = ?',
+        [req.params.id, req.params.userId]
       );
       connection.release();
       res.json({ success: true });

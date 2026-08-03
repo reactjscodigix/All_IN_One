@@ -57,7 +57,7 @@ const EditInvoiceModal = ({ isOpen, invoiceId, onClose, onSubmit, companies = []
         billTo: invoiceData.bill_to || '',
         shipTo: invoiceData.ship_to || '',
         project: invoiceData.project_id || '',
-        currency: invoiceData.currency || 'USD',
+        currency: invoiceData.currency || 'INR',
         date: invoiceData.invoice_date ? invoiceData.invoice_date.split('T')[0] : new Date().toISOString().split('T')[0],
         openTill: invoiceData.open_till ? invoiceData.open_till.split('T')[0] : '',
         paymentMethod: invoiceData.payment_method || '',

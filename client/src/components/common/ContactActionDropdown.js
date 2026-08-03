@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreVertical, Edit2, Trash2, Eye, Copy, Send, ChevronRight } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Eye, Copy, Send, ChevronRight, ChevronDown } from 'lucide-react';
 
 const ContactActionDropdown = ({ contact, onEdit, onDelete, onPreview, onClone, onSendToDepartment, entityName = 'item', variant = 'default' }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showDeptSubmenu, setShowDeptSubmenu] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -15,6 +16,12 @@ const ContactActionDropdown = ({ contact, onEdit, onDelete, onPreview, onClone, 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShowDeptSubmenu(false);
+    }
+  }, [isOpen]);
 
   const handleEdit = (e) => {
     e.stopPropagation();
@@ -95,39 +102,45 @@ const ContactActionDropdown = ({ contact, onEdit, onDelete, onPreview, onClone, 
             </button>
           )}
           {onSendToDepartment && (
-            <div className="relative group">
+            <div className="relative">
               <button
-                className="w-full flex items-center justify-between gap-2 p-2 px-3 text-xs text-gray-700 hover:bg-gray-50 transition"
-                onClick={(e) => e.stopPropagation()}
+                className={`w-full flex items-center justify-between gap-2 p-2 px-3 text-xs text-gray-700 hover:bg-gray-50 transition ${showDeptSubmenu ? 'bg-gray-50 font-semibold' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeptSubmenu(!showDeptSubmenu);
+                }}
               >
                 <div className="flex items-center gap-2">
                   <Send size={14} strokeWidth={2} />
                   Send to Dept
                 </div>
-                <ChevronRight size={14} />
+                <ChevronDown size={14} className={`transition-transform duration-200 ${showDeptSubmenu ? 'rotate-180' : ''}`} />
               </button>
-              <div className="absolute right-full top-0 mt-0 w-36 bg-white border border-[#E5E7EB] rounded shadow-lg z-50 py-1 hidden group-hover:block">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSendToDepartment(contact, 'IT');
-                    setIsOpen(false);
-                  }}
-                  className="w-full text-left p-2 px-3 text-xs text-gray-700 hover:bg-gray-50 transition"
-                >
-                  IT Team
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSendToDepartment(contact, 'Marketing');
-                    setIsOpen(false);
-                  }}
-                  className="w-full text-left p-2 px-3 text-xs text-gray-700 hover:bg-gray-50 transition"
-                >
-                  Marketing Team
-                </button>
-              </div>
+              
+              {showDeptSubmenu && (
+                <div className="bg-gray-50/50 py-1 border-t border-b border-gray-100 pl-4">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSendToDepartment(contact, 'IT');
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-left p-1.5 px-3 text-xs text-gray-600 hover:text-indigo-600 hover:bg-indigo-50/50 rounded transition"
+                  >
+                    IT Team
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSendToDepartment(contact, 'Marketing');
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-left p-1.5 px-3 text-xs text-gray-600 hover:text-indigo-600 hover:bg-indigo-50/50 rounded transition"
+                  >
+                    Marketing Team
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

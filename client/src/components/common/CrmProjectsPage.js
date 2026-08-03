@@ -171,7 +171,7 @@ const CrmProjectsPage = ({ department }) => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(amount || 0);
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(amount || 0);
   };
 
   // Metrics calculation
@@ -365,10 +365,8 @@ const CrmProjectsPage = ({ department }) => {
           <table className="w-full text-left whitespace-nowrap">
             <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-600  ">
               <tr>
-                <th className="p-3 w-10 text-center"><input type="checkbox" className="rounded border-gray-300" /></th>
                 <th className="p-3">Project ID</th>
                 <th className="p-3">Project Name</th>
-                <th className="p-3">Client</th>
                 <th className="p-3">Department</th>
                 <th className="p-3">Project Manager</th>
                 <th className="p-3">Status</th>
@@ -379,7 +377,6 @@ const CrmProjectsPage = ({ department }) => {
                 <th className="p-3">Budget</th>
                 <th className="p-3">Spent</th>
                 <th className="p-3">Tasks</th>
-                <th className="p-3">Team</th>
                 <th className="p-3 text-center">Actions</th>
               </tr>
             </thead>
@@ -395,19 +392,10 @@ const CrmProjectsPage = ({ department }) => {
 
                 return (
                   <tr key={project.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigateToProject(project.id)}>
-                    <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="rounded border-gray-300" /></td>
                     <td className="p-3 text-gray-500">{project.project_id_code || `PRJ-00${project.id}`}</td>
                     <td className="p-3">
                       <div className="font-medium text-gray-900">{project.name || project.title}</div>
                       <div className="text-xs text-gray-500">{project.description ? project.description.substring(0, 30) + '...' : project.project_type || 'General'}</div>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center text-xs  text-gray-600 overflow-hidden">
-                          {project.company_name ? project.company_name.charAt(0) : 'C'}
-                        </div>
-                        <span className="font-medium text-gray-700">{project.company_name || project.company || project.client || '-'}</span>
-                      </div>
                     </td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded text-xs text-purple-600 bg-purple-50 border border-purple-100">
@@ -418,11 +406,11 @@ const CrmProjectsPage = ({ department }) => {
                       <div className="flex items-center gap-2">
                         {project.manager_avatar ? (
                           <img src={project.manager_avatar} alt="Manager" className="w-6 h-6 rounded-full object-cover border border-gray-200" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs ">
-                            {project.manager_first_name ? project.manager_first_name.charAt(0) : 'M'}
+                        ) : project.manager_first_name ? (
+                          <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-semibold">
+                            {project.manager_first_name.charAt(0)}
                           </div>
-                        )}
+                        ) : null}
                         <span className="text-gray-700">{project.manager_first_name ? `${project.manager_first_name} ${project.manager_last_name || ''}` : '-'}</span>
                       </div>
                     </td>
@@ -441,28 +429,6 @@ const CrmProjectsPage = ({ department }) => {
                     <td className="p-3 font-medium text-gray-900">{formatCurrency(project.budget)}</td>
                     <td className="p-3 font-medium text-gray-900">{formatCurrency(project.spent)}</td>
                     <td className="p-3 text-gray-600">{project.completed_tasks || 0}/{project.total_tasks || 0}</td>
-                    <td className="p-3">
-                      <div className="flex items-center -space-x-2">
-                        {teamMembers && teamMembers.length > 0 ? (
-                          teamMembers.slice(0, 3).map((member, idx) => (
-                            member.avatar ? (
-                              <img key={idx} src={member.avatar} alt="team" className="w-6 h-6 rounded-full border-2 border-white object-cover" />
-                            ) : (
-                              <div key={idx} className="w-6 h-6 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-[8px]  text-gray-600">
-                                {(member.first_name || 'U').charAt(0)}
-                              </div>
-                            )
-                          ))
-                        ) : (
-                          <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-100"></div>
-                        )}
-                        {teamMembers && teamMembers.length > 3 && (
-                          <div className="w-6 h-6 rounded-full border-2 border-white bg-gray-50 flex items-center justify-center text-[9px] font-medium text-gray-600">
-                            +{teamMembers.length - 3}
-                          </div>
-                        )}
-                      </div>
-                    </td>
                     <td className="p-3 text-center relative" onClick={(e) => e.stopPropagation()}>
                       <button onClick={(e) => { e.stopPropagation(); setOpenActionMenu(openActionMenu === project.id ? null : project.id); }} className="text-gray-400 hover:text-gray-600"><MoreHorizontal size={16} /></button>
                       {openActionMenu === project.id && (
@@ -478,7 +444,7 @@ const CrmProjectsPage = ({ department }) => {
               })}
               {filteredProjects.length === 0 && (
                 <tr>
-                  <td colSpan="16" className="px-6 py-10 text-center text-gray-500">
+                  <td colSpan="15" className="px-6 py-10 text-center text-gray-500">
                     No projects found matching your search.
                   </td>
                 </tr>
@@ -494,11 +460,11 @@ const CrmProjectsPage = ({ department }) => {
               {['New', 'In Progress', 'Review', 'On Hold', 'Completed'].map(status => {
                 const colProjects = filteredProjects.filter(p => {
                   const s = (p.status || '').toLowerCase();
-                  if (status === 'New') return !s || s === 'new' || s === 'open';
+                  if (status === 'New') return !s || s === 'new' || s === 'open' || s.includes('planning');
                   if (status === 'In Progress') return s.includes('progress');
-                  if (status === 'Review') return s.includes('review') || s.includes('planning');
+                  if (status === 'Review') return s.includes('review');
                   if (status === 'On Hold') return s.includes('hold');
-                  if (status === 'Completed') return s.includes('complete');
+                  if (status === 'Completed') return s.includes('complete') || s.includes('done');
                   return false;
                 });
                 const colColors = {
@@ -591,7 +557,7 @@ const CrmProjectsPage = ({ department }) => {
                   <div key={p.id} style={{ display: 'flex', alignItems: 'center', marginBottom: 8, height: 36 }}>
                     <div style={{ width: 196, paddingRight: 8, flexShrink: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.title}</div>
-                      <div style={{ fontSize: 10, color: '#9CA3AF' }}>{p.company_name || p.company || '-'}</div>
+                      <div style={{ fontSize: 10, color: '#9CA3AF' }}>{p.department_name || p.workflow_type || ''}</div>
                     </div>
                     <div style={{ flex: 1, position: 'relative', height: 28, background: '#F9FAFB', borderRadius: 4, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
                       {/* Grid lines for months */}

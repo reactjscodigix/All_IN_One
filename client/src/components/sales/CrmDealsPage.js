@@ -40,7 +40,7 @@ const PIPELINE_STAGE_ORDER = [
   'Lost'
 ];
 
-const STAGES = [];
+const STAGES = PIPELINE_STAGE_ORDER.map(name => ({ name }));
 
 const CrmDealsPage = () => {
   const { user } = useAuth();
@@ -63,6 +63,8 @@ const CrmDealsPage = () => {
   const [activeMenuDealId, setActiveMenuDealId] = useState(null);
   const [draggedDeal, setDraggedDeal] = useState(null);
   const [dealToEdit, setDealToEdit] = useState(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
   const scrollRef = useRef(null);
 
   const getProbabilityFromStage = (stageName) => {
@@ -250,7 +252,7 @@ const CrmDealsPage = () => {
             id: deal.id,
             stage: STAGES.some(s => s.name === stage) ? stage : STAGES[0].name,
             company: deal.company_name || deal.deal_name || 'Unknown Company',
-            client_name: deal.client_name || deal.deal_name || (linkedLead ? (linkedLead.lead_name || linkedLead.name) : deal.company_name) || 'Unknown Client',
+            client_name: deal.client_name || (deal.contact_first_name ? `${deal.contact_first_name} ${deal.contact_last_name || ''}`.trim() : null) || (linkedLead ? (linkedLead.lead_name || linkedLead.name) : null) || deal.company_name || deal.deal_name || 'Unknown Client',
             project_name: deal.project_name || (linkedLead ? linkedLead.project_name : '') || '',
             business_type: deal.business_type || (linkedLead ? linkedLead.business_type : '') || '',
             initials: ((deal.company_name || deal.deal_name || 'UC').substring(0, 2)).toUpperCase(),
@@ -317,7 +319,7 @@ const CrmDealsPage = () => {
   };
 
   const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       minimumFractionDigits: 0,
@@ -445,6 +447,34 @@ const CrmDealsPage = () => {
       });
     }
   };
+
+  const checkScrollLimits = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setShowLeftArrow(scrollLeft > 10);
+      setShowRightArrow(scrollWidth - clientWidth - scrollLeft > 10);
+    }
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) {
+      el.addEventListener('scroll', checkScrollLimits);
+      checkScrollLimits();
+    }
+    window.addEventListener('resize', checkScrollLimits);
+    return () => {
+      if (el) el.removeEventListener('scroll', checkScrollLimits);
+      window.removeEventListener('resize', checkScrollLimits);
+    };
+  }, [deals, viewMode]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkScrollLimits();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [deals, viewMode]);
 
   const columns = [
     {
@@ -725,12 +755,14 @@ const CrmDealsPage = () => {
 
         {viewMode === 'kanban' ? (
           <div className="relative group">
-            <button
-              onClick={() => handleScroll('left')}
-              className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-100 rounded-full shadow-lg flex items-center justify-center text-[#1F2020] hover:text-red  opacity-0 group-hover:opacity-100 transition-all"
-            >
-              <ChevronLeft size={20} />
-            </button>
+            {showLeftArrow && (
+              <button
+                onClick={() => handleScroll('left')}
+                className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-100 rounded-full shadow-lg flex items-center justify-center text-[#1F2020] hover:text-red hover:shadow-xl transition-all"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            )}
 
             <div
               ref={scrollRef}
@@ -820,8 +852,7 @@ const CrmDealsPage = () => {
 
 
                           <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/deals/deal/${deal.id}`)}>
-                            <h4 className="text-sm font-[500] text-black hover:text-red-600 truncate mb-1 transition-colors">{deal.project_name}</h4>
-
+                            <h4 className="text-sm font-[500] text-black hover:text-red-600 truncate mb-1 transition-colors">{deal.project_name || deal.deal_name}</h4>
                           </div>
 
 
@@ -886,16 +917,6 @@ const CrmDealsPage = () => {
                             )}
                           </div>
 
-                          <div className="flex items-center justify-between mb-3 p-2 bg-gray-50/50 rounded-md border border-gray-100/50">
-                            <div className="flex items-center gap-2">
-                              <img src={`https://i.pravatar.cc/100?u=${deal.id}`} alt={deal.owner} className="w-6 h-6 rounded-full border border-white " />
-                              <span className="text-xs text-gray-600 ">{deal.owner}</span>
-                            </div>
-                            <div className={`px-2 py-0.5 rounded text-xs font-[500] text-white  ${getProgressColor(deal.progress)}`}>
-                              {deal.progress}%
-                            </div>
-                          </div>
-
                           <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                             <div className="flex items-center gap-1.5 text-xs text-gray-500 ">
                               <Calendar size={12} className="text-orange-400" />
@@ -921,12 +942,14 @@ const CrmDealsPage = () => {
               })}
             </div>
 
-            <button
-              onClick={() => handleScroll('right')}
-              className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-100 rounded-full shadow-lg flex items-center justify-center text-[#1F2020] hover:text-red  opacity-0 group-hover:opacity-100 transition-all"
-            >
-              <ChevronRight size={20} />
-            </button>
+            {showRightArrow && (
+              <button
+                onClick={() => handleScroll('right')}
+                className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border border-gray-100 rounded-full shadow-lg flex items-center justify-center text-[#1F2020] hover:text-red hover:shadow-xl transition-all"
+              >
+                <ChevronRight size={20} />
+              </button>
+            )}
           </div>
         ) : (
           <AdvancedDataTable

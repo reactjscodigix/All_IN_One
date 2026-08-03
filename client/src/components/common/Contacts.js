@@ -407,8 +407,8 @@ const Contacts = () => {
   const fetchContacts = useCallback(async () => {
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      // Only fetch confirmed IT clients as requested by the user
-      const response = await fetch(`${apiUrl}/confirmed-it-clients`);
+      // Fetch all contacts
+      const response = await fetch(`${apiUrl}/contacts`);
       if (!response.ok) {
         throw new Error(`API Error ${response.status}`);
       }

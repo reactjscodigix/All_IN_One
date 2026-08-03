@@ -13,7 +13,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
     try {
       const { skip = 0, limit = 50, search, assignedTo } = req.query;
 
-      // 1. Get contacts for companies with WON deals only (Converted Clients)
+      // 1. Get all contacts
       let contactsQuery = `SELECT 
         ct.id,
         ct.first_name,
@@ -32,10 +32,9 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         u.first_name AS owner_first_name,
         u.last_name AS owner_last_name
       FROM contacts ct
-      INNER JOIN companies c ON ct.company_id = c.id
-      INNER JOIN deals d ON d.company_id = c.id
+      LEFT JOIN companies c ON ct.company_id = c.id
       LEFT JOIN users u ON ct.owner_id = u.id
-      WHERE c.status = 'Active' AND d.status = 'Won'`;
+      WHERE 1=1`;
       const contactsParams = [];
 
       if (assignedTo) {
@@ -49,12 +48,12 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         contactsParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
-      // Group by contact ID to handle cases where multiple won deals might exist for one client
+      // Group by contact ID
       contactsQuery += ' GROUP BY ct.id ORDER BY ct.created_at DESC';
       
       const [contacts] = await db.query(contactsQuery, contactsParams);
 
-      // 2. Get companies that have a WON deal (Converted Clients) but might not have individual contacts
+      // 2. Get all active companies
       let companiesQuery = `SELECT DISTINCT
         c.id AS company_id,
         c.company_name,
@@ -65,8 +64,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         c.status,
         c.created_at
       FROM companies c
-      INNER JOIN deals d ON d.company_id = c.id
-      WHERE c.status = 'Active' AND d.status = 'Won'`;
+      WHERE c.status = 'Active'`;
       const companiesParams = [];
 
       if (search) {
@@ -475,14 +473,12 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       const { 
         first_name, last_name, username, email, password, phone1, 
         phone1_country, phone2, phone2_country, location, avatar, 
-        role_id, email_opt_out, status 
+        role_id, role_name, role, department, email_opt_out, status 
       } = req.body;
 
       if (!email || !password || !username) {
         return res.status(400).json({ error: 'Email, password and username are required' });
       }
-
-      // Connection handled by db.query
 
       // Check if user exists
       const [existingUser] = await db.query(
@@ -492,6 +488,18 @@ module.exports = function setupEntitiesRoutes(app, pool) {
 
       if (existingUser.length > 0) {
         return res.status(409).json({ error: 'User already exists' });
+      }
+
+      let finalRoleId = role_id || 5;
+      const targetRoleName = role_name || role;
+      if (targetRoleName) {
+        const [r] = await db.query('SELECT id FROM roles WHERE name = ? LIMIT 1', [targetRoleName]);
+        if (r.length > 0) {
+          finalRoleId = r[0].id;
+        } else {
+          const [ins] = await db.query('INSERT INTO roles (name, description) VALUES (?, ?)', [targetRoleName, `Role for ${targetRoleName}`]);
+          finalRoleId = ins.insertId;
+        }
       }
 
       const [result] = await db.query(
@@ -504,7 +512,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           first_name, last_name || null, username, email, password, 
           phone1 || null, phone1_country || 'US', 
           phone2 || null, phone2_country || 'US', 
-          location || null, avatar || null, role_id || 5, department || null,
+          location || null, avatar || null, finalRoleId, department || null,
           email_opt_out ? 1 : 0, status || 'Active'
         ]
       );
@@ -1292,10 +1300,11 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       let query = `
         SELECT 
           p.*, 
-          c.company_name,
+          COALESCE(c.company_name, dc.company_name) AS company_name,
           u.first_name AS manager_first_name,
           u.last_name AS manager_last_name,
           u.avatar AS manager_avatar,
+          t.name AS team_name,
           (SELECT COUNT(*) FROM general_tasks WHERE project_id = p.id) AS total_tasks,
           (SELECT COUNT(*) FROM general_tasks WHERE project_id = p.id AND status = 'Completed') AS completed_tasks,
           (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', tm.user_id, 'first_name', tu.first_name, 'last_name', tu.last_name, 'avatar', tu.avatar)) 
@@ -1304,7 +1313,10 @@ module.exports = function setupEntitiesRoutes(app, pool) {
            WHERE tm.project_id = p.id) AS team_members
         FROM projects p 
         LEFT JOIN companies c ON p.company_id = c.id 
+        LEFT JOIN deals d ON p.deal_id = d.id
+        LEFT JOIN companies dc ON d.company_id = dc.id
         LEFT JOIN users u ON p.manager_id = u.id
+        LEFT JOIN teams t ON p.team_id = t.id
         WHERE 1=1
       `;
       const params = [];
@@ -1484,10 +1496,11 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       const query = `
         SELECT 
           p.*, 
-          c.company_name,
+          COALESCE(c.company_name, dc.company_name) AS company_name,
           u.first_name AS manager_first_name,
           u.last_name AS manager_last_name,
           u.avatar AS manager_avatar,
+          t.name AS team_name,
           (SELECT COUNT(*) FROM general_tasks WHERE project_id = p.id) AS total_tasks,
           (SELECT COUNT(*) FROM general_tasks WHERE project_id = p.id AND status = 'Completed') AS completed_tasks,
           (SELECT COUNT(*) FROM general_tasks WHERE project_id = p.id AND status = 'To Do') AS todo_tasks,
@@ -1499,7 +1512,10 @@ module.exports = function setupEntitiesRoutes(app, pool) {
            WHERE tm.project_id = p.id) AS team_members
         FROM projects p 
         LEFT JOIN companies c ON p.company_id = c.id 
+        LEFT JOIN deals d ON p.deal_id = d.id
+        LEFT JOIN companies dc ON d.company_id = dc.id
         LEFT JOIN users u ON p.manager_id = u.id
+        LEFT JOIN teams t ON p.team_id = t.id
         WHERE p.id = ?
       `;
       const [projects] = await db.query(query, [id]);
@@ -1515,21 +1531,39 @@ module.exports = function setupEntitiesRoutes(app, pool) {
   app.put('/api/projects/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { title, name, description, status, company_id, priority, budget, due_date, start_date, progress, spent, manager_id } = req.body;
+      const { title, name, description, status, company_id, company_name, company, priority, budget, due_date, start_date, progress, spent, manager_id, team_id } = req.body;
+
+      let finalCompanyId = company_id || null;
+      if (!finalCompanyId && (company_name || company)) {
+        const cName = company_name || company;
+        const [comp] = await db.query('SELECT id FROM companies WHERE company_name = ? LIMIT 1', [cName]);
+        if (comp.length > 0) finalCompanyId = comp[0].id;
+      }
+      if (!finalCompanyId) {
+        const [proj] = await db.query('SELECT deal_id, company_id FROM projects WHERE id = ?', [id]);
+        if (proj.length > 0) {
+          if (proj[0].company_id) {
+            finalCompanyId = proj[0].company_id;
+          } else if (proj[0].deal_id) {
+            const [d] = await db.query('SELECT company_id FROM deals WHERE id = ?', [proj[0].deal_id]);
+            if (d.length > 0 && d[0].company_id) finalCompanyId = d[0].company_id;
+          }
+        }
+      }
 
       // Connection handled by db.query
       await db.query(
         `UPDATE projects SET 
           title = ?, name = ?, description = ?, status = ?, company_id = ?, 
           priority = ?, budget = ?, due_date = ?, start_date = ?, 
-          progress = ?, spent = ?, manager_id = ?, updated_at = NOW() 
+          progress = ?, spent = ?, manager_id = ?, team_id = ?, updated_at = NOW() 
          WHERE id = ?`,
         [
           title || name || null, 
           name || title || null, 
           description || null, 
           status || 'Planning', 
-          company_id || null,
+          finalCompanyId,
           priority || 'Medium',
           budget || 0,
           due_date || null,
@@ -1537,6 +1571,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           progress || 0,
           spent || 0,
           manager_id || null,
+          team_id !== undefined ? team_id : null,
           id
         ]
       );

@@ -468,10 +468,41 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
   });
 
 
-  app.post('/api/messages', async (req, res) => {
+  app.post('/api/messages', (req, res, next) => {
+    if (req.is && req.is('multipart/form-data')) {
+      upload.single('file')(req, res, (err) => {
+        if (err) console.error('Multer error:', err);
+        next();
+      });
+    } else {
+      next();
+    }
+  }, async (req, res) => {
     let connection;
     try {
-      const { sender_id, receiver_id, group_id, message_text, file_name, file_size, file_type, file_path } = req.body;
+      const body = req.body || {};
+      const parseId = (val) => {
+        if (!val || val === 'undefined' || val === 'null') return null;
+        const cleaned = String(val).replace(/\D/g, '');
+        return cleaned ? parseInt(cleaned, 10) : null;
+      };
+
+      const sender_id = parseId(body.sender_id);
+      const receiver_id = parseId(body.receiver_id);
+      const group_id = parseId(body.group_id);
+      const message_text = body.message_text || body.message || body.text || '';
+
+      let file_name = body.file_name;
+      let file_size = body.file_size;
+      let file_type = body.file_type;
+      let file_path = body.file_path;
+
+      if (req.file) {
+        file_name = req.file.originalname;
+        file_size = req.file.size;
+        file_type = req.file.mimetype;
+        file_path = `/uploads/${req.file.filename}`;
+      }
 
       if (!sender_id || (!receiver_id && !group_id) || (!message_text && !file_name)) {
         return res.status(400).json({ error: 'Sender ID, (Receiver ID or Group ID), and message text or file required' });
@@ -522,6 +553,7 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
       const [message] = await connection.query('SELECT * FROM messages WHERE id = ?', [result.insertId]);
       res.status(201).json(message[0]);
     } catch (error) {
+      console.error('Error in POST /api/messages:', error);
       responseError(res, 500, 'Failed to send message', error);
     } finally {
       if (connection) connection.release();

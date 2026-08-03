@@ -36,6 +36,13 @@ const ProjectDetailsPage = () => {
   const [documents, setDocuments] = useState([]);
   const [fileSearchQuery, setFileSearchQuery] = useState('');
   const fileInputRef = useRef(null);
+  const [assignedTeamName, setAssignedTeamName] = useState('');
+  const [assignedTeam, setAssignedTeam] = useState(null);
+  const [teamRoster, setTeamRoster] = useState([]); // team_members table (for overview card)
+  const [milestones, setMilestones] = useState([]);
+  const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
+  const [editingMilestone, setEditingMilestone] = useState(null);
+  const [milestoneForm, setMilestoneForm] = useState({ title: '', description: '', owner_id: '', start_date: '', due_date: '', status: 'Not Started', progress: 0 });
 
   const handleTaskSubmit = async (formData) => {
     try {
@@ -226,10 +233,41 @@ const ProjectDetailsPage = () => {
 
   const fetchTasks = async () => {
     try {
+      let combined = [];
+
+      // 1. Fetch project_tasks
       const tasksRes = await fetch(`http://localhost:5000/api/projects/${id}/tasks`);
       if (tasksRes.ok) {
-        setProjectTasks(await tasksRes.json());
+        const pTasks = await tasksRes.json();
+        if (Array.isArray(pTasks)) combined.push(...pTasks);
       }
+
+      // 2. Fetch IT Kanban issues for this project
+      const kanbanRes = await fetch('http://localhost:5000/api/it-kanban/issues');
+      if (kanbanRes.ok) {
+        const kIssues = await kanbanRes.json();
+        if (Array.isArray(kIssues)) {
+          const projectKanban = kIssues.filter(issue => Number(issue.project_id) === Number(id));
+          const formattedKanban = projectKanban.map(issue => ({
+            id: issue.id,
+            issue_key: issue.issue_key,
+            title: issue.title,
+            description: issue.description || '',
+            status: issue.status || 'TO DO',
+            priority: issue.priority || 'Medium',
+            assigned_to: issue.assignee,
+            first_name: issue.assignee ? issue.assignee.split(' ')[0] : 'Unassigned',
+            last_name: issue.assignee ? issue.assignee.split(' ')[1] || '' : '',
+            reporter: issue.reporter,
+            team: issue.team,
+            due_date: issue.due_date,
+            isKanban: true
+          }));
+          combined.push(...formattedKanban);
+        }
+      }
+
+      setProjectTasks(combined);
     } catch (err) {
       console.error('Error refreshing tasks:', err);
     }
@@ -248,6 +286,7 @@ const ProjectDetailsPage = () => {
         start_date: formData.startDate,
         project_type: formData.projectType,
         company: formData.client,
+        company_name: formData.client,
         company_id: formData.company_id,
         project_id: formData.projectId,
         manager_id: formData.manager_id
@@ -279,15 +318,46 @@ const ProjectDetailsPage = () => {
         const pData = await pRes.json();
         setProject(pData);
 
-        const tRes = await fetch(`http://localhost:5000/api/projects/${id}/tasks`);
-        if (tRes.ok) {
-          const tData = await tRes.json();
-          setProjectTasks(tData);
+        if (pData.team_id) {
+          try {
+            // Fetch team details (includes manager_name from the GET /api/teams query)
+            const teamsRes = await fetch('http://localhost:5000/api/teams');
+            if (teamsRes.ok) {
+              const teamsList = await teamsRes.json();
+              const matchedTeam = teamsList.find(t => Number(t.id) === Number(pData.team_id));
+              if (matchedTeam) {
+                setAssignedTeamName(matchedTeam.name);
+                setAssignedTeam(matchedTeam);
+              } else {
+                setAssignedTeamName('');
+                setAssignedTeam(null);
+              }
+            }
+
+            // Fetch team roster for Overview card (from team_members table)
+            const teamRosterRes = await fetch(`http://localhost:5000/api/teams/${pData.team_id}/members`);
+            if (teamRosterRes.ok) {
+              setTeamRoster(await teamRosterRes.json());
+            }
+          } catch (teamErr) {
+            console.error('Failed to fetch team details:', teamErr);
+          }
+        } else {
+          setAssignedTeamName('');
+          setAssignedTeam(null);
         }
 
-        const teamRes = await fetch(`http://localhost:5000/api/projects/${id}/team`);
-        if (teamRes.ok) {
-          setTeamMembers(await teamRes.json());
+        const msRes = await fetch(`http://localhost:5000/api/projects/${id}/milestones`);
+        if (msRes.ok) {
+          setMilestones(await msRes.json());
+        }
+
+        await fetchTasks();
+
+        // Fetch project_team members for Team tab
+        const teamTabRes = await fetch(`http://localhost:5000/api/projects/${id}/team`);
+        if (teamTabRes.ok) {
+          setTeamMembers(await teamTabRes.json());
         }
 
         const timeRes = await fetch(`http://localhost:5000/api/projects/${id}/timesheets`);
@@ -352,13 +422,15 @@ const ProjectDetailsPage = () => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
-  const formatCurrency = (val) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(val || 0);
+  const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(val || 0);
+
+  const getNormStatus = (s) => (s || '').toUpperCase().trim();
 
   const stats = {
-    todo: projectTasks.filter(t => t.status === 'Open' || t.status === 'To Do').length,
-    inProgress: projectTasks.filter(t => t.status === 'In Progress').length,
-    review: projectTasks.filter(t => t.status === 'Review' || t.status === 'Pending').length,
-    completed: projectTasks.filter(t => t.status === 'Completed' || t.status === 'Closed').length,
+    todo: projectTasks.filter(t => ['TO DO', 'OPEN', 'BACKLOG'].includes(getNormStatus(t.status))).length,
+    inProgress: projectTasks.filter(t => ['IN PROGRESS'].includes(getNormStatus(t.status))).length,
+    review: projectTasks.filter(t => ['IN REVIEW', 'REVIEW', 'PENDING', 'TESTING', 'ON HOLD'].includes(getNormStatus(t.status))).length,
+    completed: projectTasks.filter(t => ['DONE', 'COMPLETED', 'CLOSED'].includes(getNormStatus(t.status))).length,
     total: projectTasks.length || 1, // avoid division by zero
   };
   const totalReal = projectTasks.length;
@@ -379,34 +451,100 @@ const ProjectDetailsPage = () => {
   const renderOverview = () => (
     <div className="flex flex-col gap-6 animate-fade-in">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 bg-white rounded border border-gray-200  p-2">
-          <h3 className="text-sm  text-gray-900 mb-2">Project Overview</h3>
-          <p className="text-xs text-gray-600 mb-4 leading-relaxed">
-            {project.description || 'No description provided.'}
-          </p>
-          <div className="space-y-3">
-            {[
-              ['Project ID', project.project_id_code || `PRJ-00${project.id}`],
-              ['Client', project.company_name || project.client || '-'],
-              ['Department', project.department_name || project.workflow_type || '-'],
-              ['Project Manager', `${project.manager_first_name || ''} ${project.manager_last_name || ''}`.trim() || 'Unassigned'],
-              ['Priority', <span className="text-red-500 bg-red-50 px-1.5 py-0.5 rounded text-[9px] font-medium border border-red-200">{project.priority || '-'}</span>],
-              ['Start Date', formatDate(project.start_date)],
-              ['End Date', formatDate(project.due_date || project.end_date)],
-              ['Status', <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[9px] font-medium border border-blue-200">{project.status || '-'}</span>],
-              ['Progress',
-                <div className="flex items-center gap-2 w-full">
-                  <div className="flex-1 h-1 bg-gray-100 rounded-full"><div className="h-full bg-blue-600 rounded-full" style={{ width: `${progress}%` }}></div></div>
-                  <span className="text-xs">{progress}%</span>
+        <div className="space-y-6 lg:col-span-1">
+          <div className="bg-white rounded border border-gray-200  p-2">
+            <h3 className="text-sm  text-gray-900 mb-2">Project Overview</h3>
+            <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+              {project.description || 'No description provided.'}
+            </p>
+            <div className="space-y-3">
+              {[
+                ['Project ID', project.project_id_code || `PRJ-00${project.id}`],
+                ['Client', project.company_name || project.client || '-'],
+                ['Department', project.department_name || project.workflow_type || '-'],
+                ['Assigned Team', (project.team_name || assignedTeamName) ? <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-bold border border-emerald-100 text-[10px]">{project.team_name || assignedTeamName}</span> : 'No team assigned'],
+                ['Project Manager', `${project.manager_first_name || ''} ${project.manager_last_name || ''}`.trim() || 'Unassigned'],
+                ['Priority', <span className="text-red-500 bg-red-50 px-1.5 py-0.5 rounded text-[9px] font-medium border border-red-200">{project.priority || '-'}</span>],
+                ['Start Date', formatDate(project.start_date)],
+                ['End Date', formatDate(project.due_date || project.end_date)],
+                ['Status', <span className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[9px] font-medium border border-blue-200">{project.status || '-'}</span>],
+                ['Progress',
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="flex-1 h-1 bg-gray-100 rounded-full"><div className="h-full bg-blue-600 rounded-full" style={{ width: `${progress}%` }}></div></div>
+                    <span className="text-xs">{progress}%</span>
+                  </div>
+                ],
+              ].map(([label, val], i) => (
+                <div key={i} className="flex text-xs">
+                  <span className="w-1/3 text-gray-500">{label}</span>
+                  <span className="w-4 text-gray-400">:</span>
+                  <span className="flex-1 font-medium text-gray-900 flex items-center">{val}</span>
                 </div>
-              ],
-            ].map(([label, val], i) => (
-              <div key={i} className="flex text-xs">
-                <span className="w-1/3 text-gray-500">{label}</span>
-                <span className="w-4 text-gray-400">:</span>
-                <span className="flex-1 font-medium text-gray-900 flex items-center">{val}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Assigned Team Info Card */}
+          <div className="bg-white rounded border border-gray-200 p-3">
+            <h3 className="text-xs font-bold text-gray-900 mb-3 flex items-center gap-1.5 border-b border-gray-100 pb-2 uppercase tracking-wider">
+              <Users size={14} className="text-indigo-600" />
+              Assigned Team Info
+            </h3>
+            {(project?.team_name || assignedTeamName) ? (
+              <div className="space-y-4">
+                <div>
+                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-bold border border-emerald-100 text-[10px]">
+                    {project?.team_name || assignedTeamName}
+                  </span>
+                </div>
+                
+                {/* Team Manager */}
+                <div className="border-t border-gray-100 pt-3">
+                  <h4 className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Team Manager</h4>
+                  <div className="flex items-center gap-2">
+                    {assignedTeam?.manager_name ? (
+                      <div className="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-bold">
+                        {assignedTeam.manager_name[0].toUpperCase()}
+                      </div>
+                    ) : null}
+                    <div>
+                      <p className="text-xs font-bold text-gray-800">
+                        {assignedTeam?.manager_name || 'Unassigned'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Team Members List */}
+                <div className="border-t border-gray-100 pt-3">
+                  <h4 className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-2">Allocated Team Roster ({teamRoster.length})</h4>
+                  <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                    {teamRoster.map((m, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-gray-50 last:border-0">
+                        <div className="flex items-center gap-2">
+                          {m.avatar ? (
+                            <img src={m.avatar} alt="A" className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-[9px] font-bold">
+                              {m.first_name ? m.first_name[0].toUpperCase() : 'U'}
+                            </div>
+                          )}
+                          <span className="font-semibold text-gray-800">{m.first_name} {m.last_name}</span>
+                        </div>
+                        <span className="text-[9px] text-gray-500 font-semibold bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">{m.role || 'Member'}</span>
+                      </div>
+                    ))}
+                    {teamRoster.length === 0 && (
+                      <p className="text-gray-400 italic text-[10px]">No team members allocated.</p>
+                    )}
+                  </div>
+                </div>
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-6 text-gray-400 italic text-xs">
+                No team currently assigned to this project.
+              </div>
+            )}
           </div>
         </div>
 
@@ -491,6 +629,7 @@ const ProjectDetailsPage = () => {
             <th className="p-3 font-medium text-center w-10"><input type="checkbox" className="rounded border-gray-300" /></th>
             <th className="p-3 font-medium">Task</th>
             <th className="p-3 font-medium">Assignee</th>
+            <th className="p-3 font-medium">Reporter</th>
             <th className="p-3 font-medium">Priority</th>
             <th className="p-3 font-medium">Status</th>
             <th className="p-3 font-medium">Due Date</th>
@@ -504,8 +643,16 @@ const ProjectDetailsPage = () => {
               <td className="p-3 text-center"><input type="checkbox" className="rounded border-gray-300" /></td>
               <td className="p-3 font-medium text-gray-900">{t.title}</td>
               <td className="p-3 flex items-center gap-1.5">
-                {t.avatar ? <img src={t.avatar} alt="A" className="w-5 h-5 rounded-full" /> : <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex justify-center items-center  text-[9px]">{t.first_name?.[0] || 'U'}</div>}
-                {t.first_name || 'Unassigned'}
+                {t.avatar ? <img src={t.avatar} alt="A" className="w-5 h-5 rounded-full" /> : <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex justify-center items-center text-[9px] font-semibold">{t.first_name?.[0] || 'U'}</div>}
+                {t.first_name || t.assigned_to || 'Unassigned'}
+              </td>
+              <td className="p-3">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex justify-center items-center text-[9px] font-semibold">
+                    {(t.reporter || 'U').substring(0, 1).toUpperCase()}
+                  </div>
+                  <span className="text-gray-700 font-medium">{t.reporter || 'Unassigned'}</span>
+                </div>
               </td>
               <td className="p-3">
                 <span className={`px-2 py-0.5 rounded text-[9px] font-medium border ${t.priority === 'High' ? 'text-red-500 bg-red-50 border-red-100' : t.priority === 'Medium' ? 'text-orange-500 bg-orange-50 border-orange-100' : 'text-blue-500 bg-blue-50 border-blue-100'}`}>
@@ -513,7 +660,7 @@ const ProjectDetailsPage = () => {
                 </span>
               </td>
               <td className="p-3">
-                <span className={`px-2 py-0.5 rounded text-[9px] font-medium border ${t.status === 'Completed' ? 'text-green-600 bg-green-50 border-green-200' : t.status === 'In Progress' ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-500 bg-gray-100 border-gray-200'}`}>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-medium border ${t.status === 'Completed' || t.status === 'DONE' ? 'text-green-600 bg-green-50 border-green-200' : t.status === 'In Progress' || t.status === 'IN PROGRESS' ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-500 bg-gray-100 border-gray-200'}`}>
                   {t.status || 'To Do'}
                 </span>
               </td>
@@ -521,9 +668,9 @@ const ProjectDetailsPage = () => {
               <td className="p-3">
                 <div className="flex items-center gap-2">
                   <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${t.status === 'Completed' ? 'bg-green-500' : 'bg-blue-600'}`} style={{ width: t.status === 'Completed' ? '100%' : t.status === 'In Progress' ? '60%' : '0%' }}></div>
+                    <div className={`h-full rounded-full ${t.status === 'Completed' || t.status === 'DONE' ? 'bg-green-500' : 'bg-blue-600'}`} style={{ width: t.status === 'Completed' || t.status === 'DONE' ? '100%' : t.status === 'In Progress' || t.status === 'IN PROGRESS' ? '60%' : '0%' }}></div>
                   </div>
-                  <span className="text-xs text-gray-500">{t.status === 'Completed' ? '100%' : t.status === 'In Progress' ? '60%' : '0%'}</span>
+                  <span className="text-xs text-gray-500">{t.status === 'Completed' || t.status === 'DONE' ? '100%' : t.status === 'In Progress' || t.status === 'IN PROGRESS' ? '60%' : '0%'}</span>
                 </div>
               </td>
               <td className="p-3 text-center">
@@ -539,71 +686,183 @@ const ProjectDetailsPage = () => {
               </td>
             </tr>
           )) : (
-            <tr><td colSpan="8" className="p-6 text-center text-gray-500">No tasks found. Create one to get started.</td></tr>
+            <tr><td colSpan="9" className="p-6 text-center text-gray-500">No tasks found. Create one to get started.</td></tr>
           )}
         </tbody>
       </table>
     </div>
   );
 
+  const handleMilestoneSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const url = editingMilestone
+        ? `http://localhost:5000/api/projects/${id}/milestones/${editingMilestone.id}`
+        : `http://localhost:5000/api/projects/${id}/milestones`;
+      const method = editingMilestone ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(milestoneForm)
+      });
+      if (!res.ok) throw new Error('Failed');
+      const msRes = await fetch(`http://localhost:5000/api/projects/${id}/milestones`);
+      if (msRes.ok) setMilestones(await msRes.json());
+      setIsMilestoneModalOpen(false);
+      setEditingMilestone(null);
+      setMilestoneForm({ title: '', description: '', owner_id: '', start_date: '', due_date: '', status: 'Not Started', progress: 0 });
+    } catch (err) {
+      console.error('Failed to save milestone:', err);
+    }
+  };
+
+  const handleMilestoneDelete = async (msId) => {
+    if (!window.confirm('Delete this milestone?')) return;
+    try {
+      await fetch(`http://localhost:5000/api/projects/${id}/milestones/${msId}`, { method: 'DELETE' });
+      setMilestones(prev => prev.filter(m => m.id !== msId));
+    } catch (err) {
+      console.error('Failed to delete milestone:', err);
+    }
+  };
+
   const renderMilestones = () => {
-    const milestones = [
-      { title: '1. Planning & Research', owner: 'Emma Johnson', start: '01 May 2024', due: '07 May 2024', status: 'Completed', pct: 100 },
-      { title: '2. Design & Wireframe', owner: 'Olivia Taylor', start: '08 May 2024', due: '20 May 2024', status: 'Completed', pct: 100 },
-      { title: '3. Development', owner: 'Michael Brown', start: '21 May 2024', due: '15 Jun 2024', status: 'In Progress', pct: 60 },
-      { title: '4. Testing & QA', owner: 'Sophia Davis', start: '16 Jun 2024', due: '25 Jun 2024', status: 'Not Started', pct: 0 },
-      { title: '5. Deployment', owner: 'James Wilson', start: '26 Jun 2024', due: '30 Jun 2024', status: 'Not Started', pct: 0 },
-    ];
     return (
-      <div className="bg-white rounded border border-gray-200  animate-fade-in">
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-          <h3 className=" text-gray-900 text-sm">Project Milestones</h3>
-          <button className="flex items-center gap-1.5 text-xs text-white bg-blue-600 p-2 rounded font-medium hover:bg-blue-700"><Plus size={12} /> Add Milestone</button>
-        </div>
-        <table className="w-full text-left whitespace-nowrap text-xs">
-          <thead className="bg-gray-50 border-b border-gray-100 text-gray-500">
-            <tr>
-              <th className="p-3 font-medium">Milestone</th>
-              <th className="p-3 font-medium">Owner</th>
-              <th className="p-3 font-medium">Start Date</th>
-              <th className="p-3 font-medium">Due Date</th>
-              <th className="p-3 font-medium">Status</th>
-              <th className="p-3 font-medium">Progress</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 text-gray-700">
-            {milestones.map((m, i) => (
-              <tr key={i} className="hover:bg-gray-50">
-                <td className="p-3 font-medium text-gray-900">{m.title}</td>
-                <td className="p-3 flex items-center gap-1.5">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex justify-center items-center  text-[9px]">{m.owner[0]}</div>
-                  {m.owner}
-                </td>
-                <td className="p-3 text-gray-500">{m.start}</td>
-                <td className="p-3 text-gray-500">{m.due}</td>
-                <td className="p-3">
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-medium border ${m.status === 'Completed' ? 'text-green-600 bg-green-50 border-green-200' : m.status === 'In Progress' ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-500 bg-gray-100 border-gray-200'}`}>
-                    {m.status === 'Completed' ? '✓ Completed' : m.status}
-                  </span>
-                </td>
-                <td className="p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${m.status === 'Completed' ? 'bg-green-500' : 'bg-blue-600'}`} style={{ width: `${m.pct}%` }}></div>
-                    </div>
-                    <span className="text-xs text-gray-500">{m.pct}%</span>
+      <>
+        {/* Add/Edit Milestone Modal */}
+        {isMilestoneModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-gray-900 text-base">{editingMilestone ? 'Edit Milestone' : 'Add Milestone'}</h3>
+                <button onClick={() => { setIsMilestoneModalOpen(false); setEditingMilestone(null); }} className="text-gray-400 hover:text-gray-600">✕</button>
+              </div>
+              <form onSubmit={handleMilestoneSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Title *</label>
+                  <input required type="text" value={milestoneForm.title} onChange={e => setMilestoneForm(p => ({...p, title: e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Milestone title" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                  <textarea rows={2} value={milestoneForm.description} onChange={e => setMilestoneForm(p => ({...p, description: e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Optional description" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+                    <input type="date" value={milestoneForm.start_date} onChange={e => setMilestoneForm(p => ({...p, start_date: e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+                    <input type="date" value={milestoneForm.due_date} onChange={e => setMilestoneForm(p => ({...p, due_date: e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                    <select value={milestoneForm.status} onChange={e => setMilestoneForm(p => ({...p, status: e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option>Not Started</option>
+                      <option>In Progress</option>
+                      <option>Completed</option>
+                      <option>On Hold</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Progress ({milestoneForm.progress}%)</label>
+                    <input type="range" min={0} max={100} value={milestoneForm.progress} onChange={e => setMilestoneForm(p => ({...p, progress: Number(e.target.value)}))} className="w-full mt-2" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Owner</label>
+                  <select value={milestoneForm.owner_id} onChange={e => setMilestoneForm(p => ({...p, owner_id: e.target.value}))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Unassigned --</option>
+                    {teamMembers.map(m => (
+                      <option key={m.user_id} value={m.user_id}>{m.first_name} {m.last_name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <button type="button" onClick={() => { setIsMilestoneModalOpen(false); setEditingMilestone(null); }} className="px-4 py-2 text-xs font-medium text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+                  <button type="submit" className="px-4 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">{editingMilestone ? 'Update' : 'Create'} Milestone</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white rounded border border-gray-200 animate-fade-in">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-gray-900 text-sm font-semibold">Project Milestones ({milestones.length})</h3>
+            <button onClick={() => { setEditingMilestone(null); setMilestoneForm({ title: '', description: '', owner_id: '', start_date: '', due_date: '', status: 'Not Started', progress: 0 }); setIsMilestoneModalOpen(true); }} className="flex items-center gap-1.5 text-xs text-white bg-blue-600 p-2 rounded font-medium hover:bg-blue-700">
+              <Plus size={12} /> Add Milestone
+            </button>
+          </div>
+          {milestones.length === 0 ? (
+            <div className="p-10 text-center">
+              <Flag className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+              <p className="text-gray-400 text-sm font-medium">No milestones yet</p>
+              <p className="text-gray-400 text-xs mt-1">Click "Add Milestone" to create your first project milestone.</p>
+            </div>
+          ) : (
+            <table className="w-full text-left whitespace-nowrap text-xs">
+              <thead className="bg-gray-50 border-b border-gray-100 text-gray-500">
+                <tr>
+                  <th className="p-3 font-medium">Milestone</th>
+                  <th className="p-3 font-medium">Owner</th>
+                  <th className="p-3 font-medium">Start Date</th>
+                  <th className="p-3 font-medium">Due Date</th>
+                  <th className="p-3 font-medium">Status</th>
+                  <th className="p-3 font-medium">Progress</th>
+                  <th className="p-3 font-medium text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-gray-700">
+                {milestones.map((m, i) => (
+                  <tr key={m.id} className="hover:bg-gray-50">
+                    <td className="p-3 font-medium text-gray-900">{i + 1}. {m.title}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1.5">
+                        {m.owner_avatar ? <img src={m.owner_avatar} alt="" className="w-5 h-5 rounded-full" /> : <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex justify-center items-center text-[9px]">{m.owner_name?.[0] || '?'}</div>}
+                        {m.owner_name || <span className="text-gray-400 italic">Unassigned</span>}
+                      </div>
+                    </td>
+                    <td className="p-3 text-gray-500">{formatDate(m.start_date)}</td>
+                    <td className="p-3 text-gray-500">{formatDate(m.due_date)}</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-medium border ${
+                        m.status === 'Completed' ? 'text-green-600 bg-green-50 border-green-200' :
+                        m.status === 'In Progress' ? 'text-blue-600 bg-blue-50 border-blue-200' :
+                        m.status === 'On Hold' ? 'text-amber-600 bg-amber-50 border-amber-200' :
+                        'text-gray-500 bg-gray-100 border-gray-200'
+                      }`}>
+                        {m.status === 'Completed' ? '✓ Completed' : m.status}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${m.status === 'Completed' ? 'bg-green-500' : 'bg-blue-600'}`} style={{ width: `${m.progress}%` }}></div>
+                        </div>
+                        <span className="text-xs text-gray-500">{m.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => { setEditingMilestone(m); setMilestoneForm({ title: m.title, description: m.description || '', owner_id: m.owner_id || '', start_date: m.start_date ? m.start_date.slice(0,10) : '', due_date: m.due_date ? m.due_date.slice(0,10) : '', status: m.status, progress: m.progress }); setIsMilestoneModalOpen(true); }} className="text-blue-500 hover:text-blue-700"><Edit3 size={13} /></button>
+                        <button onClick={() => handleMilestoneDelete(m.id)} className="text-red-500 hover:text-red-700"><Trash2 size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </>
     );
   };
 
+
   const renderTeam = () => {
-    const roles = ['Project Manager', 'Developer', 'UI/UX Designer', 'QA Engineer', 'Content Writer', 'Marketing Specialist', 'DevOps'];
     return (
       <div className="bg-white rounded border border-gray-200  animate-fade-in">
         <div className="p-4 border-b border-gray-100 flex justify-end">
@@ -621,13 +880,19 @@ const ProjectDetailsPage = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-gray-700">
-            {teamMembers.length > 0 ? teamMembers.map((m, i) => (
+            {teamMembers.length > 0 ? teamMembers.map((m, i) => {
+              // Look up correct role from team_members table (most authoritative)
+              const rosterEntry = teamRoster.find(r => Number(r.user_id) === Number(m.user_id));
+              // If member is the team manager (not in team_members), use manager_role
+              const isTeamManager = assignedTeam && Number(assignedTeam.manager_id) === Number(m.user_id);
+              const displayRole = rosterEntry?.role || (isTeamManager ? (assignedTeam.manager_role || 'Manager') : null) || m.role || '-';
+              return (
               <tr key={i} className="hover:bg-gray-50">
                 <td className="p-3 flex items-center gap-1.5">
                   {m.avatar ? <img src={m.avatar} alt="A" className="w-6 h-6 rounded-full" /> : <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex justify-center items-center  text-xs">{m.first_name?.[0] || 'U'}</div>}
                   <span className="font-medium text-gray-900">{m.first_name} {m.last_name}</span>
                 </td>
-                <td className="p-3">{roles[i % roles.length]}</td>
+                <td className="p-3">{displayRole}</td>
                 <td className="p-3">{m.department || project.department_name || '-'}</td>
                 <td className="p-3 text-blue-600 hover:underline cursor-pointer">{m.email}</td>
                 <td className="p-3"><span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[9px] font-medium border border-emerald-100">Active</span></td>
@@ -643,7 +908,8 @@ const ProjectDetailsPage = () => {
                   </div>
                 </td>
               </tr>
-            )) : (
+              );
+            }) : (
               <tr><td colSpan="6" className="p-6 text-center text-gray-500">No team members assigned.</td></tr>
             )}
           </tbody>
@@ -1117,11 +1383,11 @@ const ProjectDetailsPage = () => {
                 <div className="flex items-center gap-1.5 font-medium text-gray-900">
                   {project.manager_avatar ? (
                     <img src={project.manager_avatar} alt="manager" className="w-5 h-5 rounded-full" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[9px] ">
-                      {project.manager_first_name ? project.manager_first_name.charAt(0) : 'M'}
+                  ) : project.manager_first_name ? (
+                    <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[9px] font-semibold">
+                      {project.manager_first_name.charAt(0)}
                     </div>
-                  )}
+                  ) : null}
                   {project.manager_first_name ? `${project.manager_first_name} ${project.manager_last_name || ''}` : '-'}
                 </div>
               </div>

@@ -15,7 +15,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
         company_name: '',
         deal_name: '',
         deal_value: '',
-        currency: 'USD',
+        currency: 'INR',
         industry: '',
         position: '',
         website: '',
@@ -356,7 +356,7 @@ const ConvertLeadModal = ({ isOpen, onClose, onSubmit, convertType, leadData, co
                   </label>
                   <select
                     name="currency"
-                    value={formData.currency || 'USD'}
+                    value={formData.currency || 'INR'}
                     onChange={handleInputChange}
                     className="w-full p-2 border border-gray-300 rounded  text-xs  focus:outline-none focus:border-red-500"
                   >

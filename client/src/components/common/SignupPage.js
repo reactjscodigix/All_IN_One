@@ -161,7 +161,22 @@ const SignupPage = () => {
   };
 
   const getRoleName = (department, roleType) => {
-    return roleType || 'Employee';
+    if (!roleType) return 'Employee';
+    
+    if (department === 'IT Department') {
+      if (roleType === 'Manager') return 'IT Manager';
+      return roleType;
+    } else if (department === 'Sales Department') {
+      if (roleType === 'Manager') return 'Sales Manager';
+      return roleType;
+    } else if (department === 'Marketing Department') {
+      if (roleType === 'Manager') return 'Marketing Manager';
+      return roleType;
+    } else if (department === 'Management') {
+      if (roleType === 'Super Admin') return 'Super Admin';
+    }
+    
+    return roleType;
   };
 
   const handleSignup = async (e) => {
@@ -203,6 +218,7 @@ const SignupPage = () => {
           department: formData.department || null,
           phone: formData.phone || null,
           company: formData.company || null,
+          job_title: formData.roleType || null,
         }),
       });
 

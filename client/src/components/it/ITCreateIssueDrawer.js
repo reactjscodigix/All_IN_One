@@ -6,6 +6,7 @@ import {
   Paperclip, Image, Code, CheckSquare, Search, Columns, Clock
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import Swal from 'sweetalert2';
 
 const SearchableDropdown = ({ value, options, onSelect, placeholder, labelRenderer, iconRenderer, searchPlaceholder, className = "" }) => {
@@ -131,8 +132,9 @@ const SimpleDropdown = ({ value, options, onSelect, placeholder, className = "" 
   );
 };
 
-const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => {
-  const { username } = useParams();
+const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null }) => {
+  const { user } = useAuth();
+  const { designation, username } = useParams();
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -146,12 +148,52 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
   // Label tag state
   const [newLabel, setNewLabel] = useState('');
 
-  // Attachment state
+  // Attachment state — store actual File objects
   const [attachedFiles, setAttachedFiles] = useState([]);
-  const fileInputRef = useRef(null);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const fileInputRef = useRef(null);          // drag-drop area
+  const toolbarFileInputRef = useRef(null);   // toolbar paperclip button
 
   // Editor Ref
   const editorRef = useRef(null);
+
+  // Jira-like inline attachment insertion into Description editor
+  const handleToolbarFileUpload = (filesList) => {
+    if (!filesList || filesList.length === 0) return;
+    const files = Array.from(filesList);
+    setAttachedFiles(prev => [...prev, ...files]);
+
+    if (editorRef.current) {
+      files.forEach(file => {
+        const isImg = file.type.startsWith('image/');
+        const fileUrl = URL.createObjectURL(file);
+        const formattedSize = (file.size / 1024).toFixed(1) + ' KB';
+        const formattedDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+        let embedHtml = '';
+        if (isImg) {
+          embedHtml = `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" contenteditable="false" style="margin:8px 0; display:inline-block; max-width:100%; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; background:#f8fafc; padding:6px; box-shadow:0 1px 2px rgba(0,0,0,0.05); font-family:sans-serif; text-decoration:none; color:inherit; cursor:pointer;" class="jira-inline-file">
+            <img src="${fileUrl}" alt="${file.name}" style="max-height:200px; object-fit:contain; border-radius:4px; display:block;" />
+            <div style="font-size:11px; font-weight:600; color:#334155; margin-top:4px;">${file.name}</div>
+            <div style="font-size:10px; color:#64748b;">${formattedDate}</div>
+          </a><br/>`;
+        } else {
+          embedHtml = `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer" download="${file.name}" onclick="event.stopPropagation();" contenteditable="false" style="display:inline-flex; align-items:center; gap:10px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; margin:8px 0; box-shadow:0 1px 3px rgba(0,0,0,0.05); user-select:none; font-family:sans-serif; text-decoration:none; color:inherit; cursor:pointer;" class="jira-inline-file">
+            <div style="width:36px; height:36px; background:#eff6ff; color:#2563eb; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:bold;">📄</div>
+            <div style="display:flex; flex-direction:column; text-align:left;">
+              <span style="font-size:12px; font-weight:700; color:#0f172a; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${file.name}</span>
+              <span style="font-size:10px; color:#64748b;">${formattedDate} • ${formattedSize}</span>
+            </div>
+          </a><br/>`;
+        }
+
+        editorRef.current.focus();
+        document.execCommand('insertHTML', false, embedHtml);
+      });
+
+      setFormData(prev => ({ ...prev, description: editorRef.current.innerHTML }));
+    }
+  };
 
   const [formData, setFormData] = useState({
     space: { id: 1, name: 'My Kanban Space (KAN)', code: 'KAN' },
@@ -197,28 +239,46 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
 
   useEffect(() => {
     if (isOpen) {
-      // Mock data fetching for Teams
-      setTeams([
-        { id: 1, name: 'Frontend Team', icon: 'F' },
-        { id: 2, name: 'Backend Team', icon: 'B' },
-        { id: 3, name: 'Design Team', icon: 'D' }
-      ]);
+      // Fetch Real Teams
+      fetch('http://localhost:5000/api/teams')
+        .then(res => res.json())
+        .then(data => {
+          const rawTeams = Array.isArray(data) ? data : (data.data || []);
+          const formattedTeams = rawTeams.map(t => ({
+            ...t,
+            icon: t.name ? t.name.charAt(0).toUpperCase() : 'T'
+          }));
+          setTeams(formattedTeams);
+        })
+        .catch(err => console.error('Error fetching teams:', err));
 
       // Fetch Real Users
       fetch('http://localhost:5000/api/users')
         .then(res => res.json())
         .then(data => {
-          if (data && Array.isArray(data.value)) {
-            setUsers(data.value);
-            // Default reporter
-            if (data.value.length > 0 && !formData.reporter) {
-              setFormData(prev => ({ ...prev, reporter: data.value[0] }));
-            }
-          } else if (Array.isArray(data)) {
-            setUsers(data);
-            if (data.length > 0 && !formData.reporter) {
-              setFormData(prev => ({ ...prev, reporter: data[0] }));
-            }
+          const userList = Array.isArray(data?.value) ? data.value : (Array.isArray(data) ? data : []);
+          setUsers(userList);
+
+          if (user) {
+            const currentReporter = {
+              id: user.id,
+              name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'User',
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email: user.email
+            };
+            setFormData(prev => ({ 
+              ...prev, 
+              reporter: prev.reporter || currentReporter,
+              assignee: prev.assignee || currentReporter 
+            }));
+          } else if (userList.length > 0) {
+            const searchName = username || 'ashwini';
+            const currentUser = userList.find(u =>
+              (u.first_name && u.first_name.toLowerCase() === searchName.toLowerCase()) ||
+              (u.name && u.name.toLowerCase().includes(searchName.toLowerCase()))
+            ) || userList[0];
+            setFormData(prev => ({ ...prev, reporter: prev.reporter || currentUser }));
           }
         })
         .catch(err => console.error('Error fetching users:', err));
@@ -236,6 +296,85 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
         .catch(err => console.error('Error fetching projects:', err));
     }
   }, [isOpen]);
+
+  // Fetch Team Members whenever selected Team changes to filter Reporter and Assignee
+  useEffect(() => {
+    if (formData.team && formData.team.id) {
+      fetch(`http://localhost:5000/api/teams/${formData.team.id}/members`)
+        .then(res => res.json())
+        .then(data => {
+          const membersList = Array.isArray(data) ? data : [];
+          const formatted = membersList.map(m => ({
+            id: m.user_id || m.id,
+            name: (m.first_name || m.last_name) ? `${m.first_name || ''} ${m.last_name || ''}`.trim() : (m.name || 'Team Member'),
+            first_name: m.first_name,
+            last_name: m.last_name,
+            email: m.email,
+            avatar: m.avatar
+          }));
+
+          // Also include Team Manager if available and not already in member list
+          if (formData.team.manager_name || formData.team.manager_first_name) {
+            const mgrName = formData.team.manager_name || `${formData.team.manager_first_name || ''} ${formData.team.manager_last_name || ''}`.trim();
+            const exists = formatted.some(m => m.name.toLowerCase() === mgrName.toLowerCase());
+            if (!exists && mgrName) {
+              const mgrUser = users.find(u => (u.name && u.name.toLowerCase() === mgrName.toLowerCase()) || (u.id === formData.team.manager_id));
+              formatted.unshift({
+                id: formData.team.manager_id || (mgrUser ? mgrUser.id : 'mgr'),
+                name: mgrName,
+                first_name: formData.team.manager_first_name || (mgrUser ? mgrUser.first_name : mgrName),
+                last_name: formData.team.manager_last_name || (mgrUser ? mgrUser.last_name : ''),
+                email: mgrUser ? mgrUser.email : '',
+                avatar: mgrUser ? mgrUser.avatar : null
+              });
+            }
+          }
+
+          if (formatted.length > 0) {
+            setTeamMembers(formatted);
+
+            // Keep current reporter if in list, otherwise keep current or fallback to first
+            setFormData(prev => {
+              const currentReporterName = prev.reporter ? (prev.reporter.name || `${prev.reporter.first_name || ''} ${prev.reporter.last_name || ''}`.trim()).toLowerCase() : '';
+              const inTeam = formatted.find(m => m.name.toLowerCase() === currentReporterName);
+              return inTeam ? prev : { ...prev, reporter: prev.reporter || formatted[0] };
+            });
+          } else {
+            setTeamMembers([]);
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching team members:', err);
+          setTeamMembers([]);
+        });
+    } else {
+      setTeamMembers([]);
+    }
+  }, [formData.team?.id, users]);
+
+  // Automatically select Team when Project / Space / Parent or projectId prop changes
+  useEffect(() => {
+    if (!isOpen || teams.length === 0) return;
+
+    let targetProject = null;
+    if (projectId) {
+      targetProject = projects.find(p => Number(p.id) === Number(projectId));
+    } else if (formData.space && formData.space.id) {
+      targetProject = projects.find(p => Number(p.id) === Number(formData.space.id));
+    } else if (formData.parent && formData.parent.id) {
+      targetProject = projects.find(p => Number(p.id) === Number(formData.parent.id));
+    }
+
+    if (targetProject) {
+      const matchedTeam = teams.find(t => 
+        (targetProject.team_id && Number(t.id) === Number(targetProject.team_id)) ||
+        (targetProject.team_name && t.name && t.name.toLowerCase() === targetProject.team_name.toLowerCase())
+      );
+      if (matchedTeam) {
+        setFormData(prev => ({ ...prev, team: matchedTeam }));
+      }
+    }
+  }, [isOpen, projectId, projects, teams, formData.space, formData.parent]);
 
   // Set editor content when drawer opens
   useEffect(() => {
@@ -367,14 +506,48 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
           body: JSON.stringify(projectPayload)
         });
       } else {
+        const selectedProjId = (formData.space && formData.space.id !== 1 ? formData.space.id : null) || (formData.parent ? formData.parent.id : null);
+
+        const currentUserName = user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : (username || 'Unassigned');
+
         // Create Kanban issue
+        const reporterVal = formData.reporter
+          ? (formData.reporter.name || `${formData.reporter.first_name || ''} ${formData.reporter.last_name || ''}`.trim() || currentUserName)
+          : currentUserName;
+
+        const teamVal = formData.team
+          ? (typeof formData.team === 'string' ? formData.team : (formData.team.name || 'None'))
+          : 'None';
+
+        let assigneeVal = 'Unassigned';
+        if (formData.assignee && (formData.assignee.name || formData.assignee.first_name)) {
+          const aName = formData.assignee.name || `${formData.assignee.first_name || ''} ${formData.assignee.last_name || ''}`.trim();
+          if (aName !== 'Automatic' && aName !== 'Unassigned') {
+            assigneeVal = aName;
+          }
+        }
+
+        // Default Assignee fallback: Assignee defaults to Reporter (creator performing the work)
+        if (assigneeVal === 'Unassigned') {
+          assigneeVal = reporterVal !== 'Unassigned' ? reporterVal : currentUserName;
+        }
+
+        const cleanDescription = (formData.description || '')
+          .replace(/<a [^>]*class="[^"]*jira-inline-file[^"]*"[^>]*>[\s\S]*?<\/a>(<br\s*\/?>)?/gi, '')
+          .replace(/<div [^>]*class="[^"]*jira-inline-file[^"]*"[^>]*>[\s\S]*?<\/div>(<br\s*\/?>)?/gi, '')
+          .trim();
+
         const payload = {
           title: formData.summary,
           type: formData.workType || 'Task',
           status: formData.status ? formData.status.toUpperCase() : 'TO DO',
-          assignee: formData.assignee ? (formData.assignee.name || formData.assignee.first_name || 'Unassigned') : 'Unassigned',
+          assignee: assigneeVal,
+          reporter: reporterVal,
+          team: teamVal,
+          team_id: formData.team && typeof formData.team === 'object' ? formData.team.id : null,
           priority: 'Medium',
-          description: formData.description || ''
+          description: cleanDescription,
+          project_id: selectedProjId
         };
 
         res = await fetch('http://localhost:5000/api/it-kanban/issues', {
@@ -384,7 +557,41 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
         });
       }
 
-      if (!res.ok) throw new Error('Failed to create issue');
+      let createdData = null;
+      try { createdData = await res.json(); } catch (_) {}
+      if (!res.ok) throw new Error(createdData?.error || 'Failed to create issue');
+
+      // Upload attachments if any
+      if (attachedFiles.length > 0) {
+        const createdTaskId = createdData?.id || createdData?.insertId || null;
+        const issueKey = createdData?.issue_key;
+
+        for (const file of attachedFiles) {
+          try {
+            const fd = new FormData();
+            fd.append('file', file);
+            if (createdTaskId) fd.append('task_id', createdTaskId);
+            if (projectId) fd.append('project_id', projectId);
+            fd.append('userId', '1');
+            await fetch('http://localhost:5000/api/files/upload', { method: 'POST', body: fd });
+
+            if (issueKey) {
+              await fetch(`http://localhost:5000/api/it-kanban/issues/${issueKey}/attachments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  file_name: file.name,
+                  file_path: file.name,
+                  file_size: `${(file.size / 1024).toFixed(1)} KB`,
+                  file_type: file.type || 'document'
+                })
+              });
+            }
+          } catch (uploadErr) {
+            console.error('Failed to upload attachment:', file.name, uploadErr);
+          }
+        }
+      }
 
       Swal.fire({
         icon: 'success',
@@ -460,7 +667,20 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
               <SearchableDropdown
                 options={[{ id: 1, name: 'My Kanban Space (KAN)', code: 'KAN' }, ...projects]}
                 value={formData.space}
-                onSelect={(v) => setFormData({ ...formData, space: v })}
+                onSelect={(v) => {
+                  let matchedTeam = formData.team;
+                  if (v && v.id) {
+                    const proj = projects.find(p => Number(p.id) === Number(v.id));
+                    if (proj) {
+                      const found = teams.find(t =>
+                        (proj.team_id && Number(t.id) === Number(proj.team_id)) ||
+                        (proj.team_name && t.name && t.name.toLowerCase() === proj.team_name.toLowerCase())
+                      );
+                      if (found) matchedTeam = found;
+                    }
+                  }
+                  setFormData(prev => ({ ...prev, space: v, team: matchedTeam }));
+                }}
                 placeholder="Select space"
                 labelRenderer={(p) => p.name}
                 iconRenderer={(p) => p ? <div className="w-5 h-5 bg-indigo-600 rounded flex items-center justify-center text-white text-xs ">{p.code ? p.code[0] : p.name.charAt(0)}</div> : null}
@@ -545,8 +765,25 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
                   <button type="button" onClick={() => handleCommand('insertUnorderedList')} className="p-1 hover:bg-gray-200 rounded text-gray-600"><List size={14} /></button>
                   <button type="button" onClick={() => handleCommand('formatBlock', '<pre>')} className="p-1 hover:bg-gray-200 rounded text-gray-600 font-serif  text-[12px] px-1.5">&lt;/&gt;</button>
                   <div className="w-px h-4 bg-gray-300 mx-1"></div>
-                  <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600"><Image size={14} /></button>
-                  <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600"><Paperclip size={14} /></button>
+                  <button type="button" onClick={() => toolbarFileInputRef.current?.click()} className="p-1 hover:bg-gray-200 rounded text-gray-600" title="Insert Image">
+                    <Image size={14} />
+                  </button>
+                  {/* Hidden input for toolbar paperclip */}
+                  <input
+                    type="file"
+                    ref={toolbarFileInputRef}
+                    className="hidden"
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files.length > 0) {
+                        handleToolbarFileUpload(e.target.files);
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <button type="button" onClick={() => toolbarFileInputRef.current?.click()} className="p-1 hover:bg-gray-200 rounded text-gray-600" title="Attach file to description">
+                    <Paperclip size={14} />
+                  </button>
                   <button type="button" onClick={() => { const url = prompt('Enter URL:'); if (url) handleCommand('createLink', url); }} className="p-1 hover:bg-gray-200 rounded text-gray-600"><Link size={14} /></button>
                 </div>
 
@@ -565,6 +802,8 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
               </div>
             </div>
 
+
+
             {/* Assignee */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
@@ -578,7 +817,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
                 </button>
               </div>
               <SearchableDropdown
-                options={users}
+                options={(teamMembers.length > 0) ? teamMembers : users}
                 value={formData.assignee}
                 onSelect={(v) => setFormData({ ...formData, assignee: v })}
                 placeholder="Automatic"
@@ -601,7 +840,20 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
               <SearchableDropdown
                 options={projects}
                 value={formData.parent}
-                onSelect={(v) => setFormData({ ...formData, parent: v })}
+                onSelect={(v) => {
+                  let matchedTeam = formData.team;
+                  if (v && v.id) {
+                    const proj = projects.find(p => Number(p.id) === Number(v.id));
+                    if (proj) {
+                      const found = teams.find(t =>
+                        (proj.team_id && Number(t.id) === Number(proj.team_id)) ||
+                        (proj.team_name && t.name && t.name.toLowerCase() === proj.team_name.toLowerCase())
+                      );
+                      if (found) matchedTeam = found;
+                    }
+                  }
+                  setFormData(prev => ({ ...prev, parent: v, team: matchedTeam }));
+                }}
                 placeholder="Select parent"
                 labelRenderer={(p) => p.name}
               />
@@ -684,7 +936,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reporter <span className="text-red-500">*</span></label>
               <SearchableDropdown
-                options={users}
+                options={(teamMembers.length > 0) ? teamMembers : users}
                 value={formData.reporter}
                 onSelect={(v) => setFormData({ ...formData, reporter: v })}
                 placeholder="Select reporter"
@@ -706,8 +958,9 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files.length > 0) {
-                    const newFiles = Array.from(e.target.files).map(f => f.name);
+                    const newFiles = Array.from(e.target.files); // Store actual File objects
                     setAttachedFiles(prev => [...prev, ...newFiles]);
+                    e.target.value = ''; // Reset so same file can be re-added
                   }
                 }}
                 multiple
@@ -722,15 +975,48 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId }) => 
                 </div>
               </div>
 
-              {/* Attached file list */}
+              {/* Attached file list — Jira style cards */}
               {attachedFiles.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {attachedFiles.map((name, i) => (
-                    <div key={i} className="flex items-center justify-between text-xs bg-gray-50 border border-gray-200 px-2.5 py-1 rounded">
-                      <span className="text-gray-700 truncate">{name}</span>
-                      <X size={12} className="text-gray-400 hover:text-red-500 cursor-pointer" onClick={(e) => { e.stopPropagation(); setAttachedFiles(prev => prev.filter((_, idx) => idx !== i)); }} />
-                    </div>
-                  ))}
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {attachedFiles.map((file, i) => {
+                    const isImg = file.type.startsWith('image/');
+                    const formattedSize = (file.size / 1024).toFixed(1) + ' KB';
+                    const formattedDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                    const previewUrl = isImg ? URL.createObjectURL(file) : null;
+
+                    return (
+                      <div key={i} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-2.5 shadow-sm hover:border-blue-300 transition-all group">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {isImg ? (
+                            <img src={previewUrl} alt="" className="w-9 h-9 rounded object-cover border border-gray-100 shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0 border border-blue-100">
+                              📄
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-gray-800 truncate" title={file.name}>
+                              {file.name}
+                            </div>
+                            <div className="text-[10px] text-gray-400 font-medium">
+                              {formattedDate} • {formattedSize}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAttachedFiles(prev => prev.filter((_, idx) => idx !== i));
+                          }}
+                          className="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors shrink-0 ml-2 cursor-pointer"
+                          title="Remove attachment"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

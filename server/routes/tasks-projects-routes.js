@@ -44,9 +44,10 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
         }
       });
 
+      const clientBaseUrl = process.env.CLIENT_URL || process.env.CORS_ORIGIN || 'http://localhost:3001';
       const link = projectId
-        ? `http://localhost:3001/it/employee/it/details/${projectId}?taskId=${ticketKey}`
-        : `http://localhost:3001/it/employee/it/tasks?ticketKey=${ticketKey}`;
+        ? `${clientBaseUrl}/it/employee/it/details/${projectId}?taskId=${ticketKey}`
+        : `${clientBaseUrl}/it/employee/it/tasks?ticketKey=${ticketKey}`;
 
       const mailOptions = {
         from: `"CRM Notifications" <${SMTP_USER}>`,
@@ -364,9 +365,17 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
     try {
       const { projectId } = req.params;
       const [team] = await db.query(`
-        SELECT pt.*, u.first_name, u.last_name, u.email, u.avatar
+        SELECT pt.*, 
+          u.first_name, u.last_name, u.email, u.avatar,
+          COALESCE(tm.role, u.job_title, t.manager_role, pt.role, 'Team Member') AS role,
+          COALESCE(d.name, pd.name, u.department) AS department
         FROM project_team pt
         JOIN users u ON pt.user_id = u.id
+        LEFT JOIN projects p ON p.id = pt.project_id
+        LEFT JOIN team_members tm ON tm.user_id = pt.user_id AND tm.team_id = p.team_id
+        LEFT JOIN teams t ON t.id = p.team_id AND t.manager_id = pt.user_id
+        LEFT JOIN departments d ON d.id = u.department_id
+        LEFT JOIN departments pd ON pd.id = p.department_id
         WHERE pt.project_id = ?
         ORDER BY pt.joined_at DESC
       `, [projectId]);
@@ -816,6 +825,19 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
       let finalDeptId = department_id;
       let finalWorkflowType = workflow_type || 'Standard';
 
+      if (!finalDeptId && finalWorkflowType) {
+        let deptName = '';
+        if (finalWorkflowType === 'IT') deptName = 'IT Department';
+        else if (finalWorkflowType === 'Marketing') deptName = 'Marketing Department';
+
+        if (deptName) {
+          const [dept] = await db.query('SELECT id FROM departments WHERE name = ?', [deptName]);
+          if (dept.length > 0) {
+            finalDeptId = dept[0].id;
+          }
+        }
+      }
+
       if (!finalDeptId && deal[0].service_category_id) {
         const [cat] = await db.query('SELECT name, suggested_department_id FROM service_categories WHERE id = ?', [deal[0].service_category_id]);
         if (cat.length > 0) {
@@ -851,6 +873,108 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
       res.status(201).json({ success: true, projectId });
     } catch (error) {
       responseError(res, 500, 'Failed to convert deal to project', error);
+    }
+  });
+
+  // ─── PROJECT MILESTONES ───────────────────────────────────────────────
+  // Auto-create table if not exists
+  (async () => {
+    try {
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS project_milestones (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          project_id INT NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          description TEXT,
+          owner_id INT DEFAULT NULL,
+          start_date DATE DEFAULT NULL,
+          due_date DATE DEFAULT NULL,
+          status ENUM('Not Started','In Progress','Completed','On Hold') DEFAULT 'Not Started',
+          progress INT DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )
+      `);
+    } catch (e) {
+      console.error('Failed to create project_milestones table:', e.message);
+    }
+  })();
+
+  // GET all milestones for a project
+  app.get('/api/projects/:projectId/milestones', async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const [rows] = await db.query(`
+        SELECT pm.*,
+          u.first_name AS owner_first_name,
+          u.last_name AS owner_last_name,
+          u.avatar AS owner_avatar,
+          CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS owner_name
+        FROM project_milestones pm
+        LEFT JOIN users u ON u.id = pm.owner_id
+        WHERE pm.project_id = ?
+        ORDER BY pm.start_date ASC, pm.created_at ASC
+      `, [projectId]);
+      res.json(rows);
+    } catch (error) {
+      responseError(res, 500, 'Failed to fetch milestones', error);
+    }
+  });
+
+  // POST create milestone
+  app.post('/api/projects/:projectId/milestones', async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { title, description, owner_id, start_date, due_date, status, progress } = req.body;
+      if (!title) return res.status(400).json({ error: 'Title is required' });
+      const [result] = await db.query(
+        'INSERT INTO project_milestones (project_id, title, description, owner_id, start_date, due_date, status, progress) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [projectId, title, description || null, owner_id || null, start_date || null, due_date || null, status || 'Not Started', progress || 0]
+      );
+      const [rows] = await db.query(`
+        SELECT pm.*, u.first_name AS owner_first_name, u.last_name AS owner_last_name, u.avatar AS owner_avatar,
+          CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS owner_name
+        FROM project_milestones pm
+        LEFT JOIN users u ON u.id = pm.owner_id
+        WHERE pm.id = ?
+      `, [result.insertId]);
+      res.status(201).json(rows[0]);
+    } catch (error) {
+      responseError(res, 500, 'Failed to create milestone', error);
+    }
+  });
+
+  // PUT update milestone
+  app.put('/api/projects/:projectId/milestones/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title, description, owner_id, start_date, due_date, status, progress } = req.body;
+      await db.query(
+        'UPDATE project_milestones SET title=?, description=?, owner_id=?, start_date=?, due_date=?, status=?, progress=? WHERE id=?',
+        [title, description || null, owner_id || null, start_date || null, due_date || null, status || 'Not Started', progress || 0, id]
+      );
+      const [rows] = await db.query(`
+        SELECT pm.*, u.first_name AS owner_first_name, u.last_name AS owner_last_name, u.avatar AS owner_avatar,
+          CONCAT(u.first_name, ' ', IFNULL(u.last_name, '')) AS owner_name
+        FROM project_milestones pm
+        LEFT JOIN users u ON u.id = pm.owner_id
+        WHERE pm.id = ?
+      `, [id]);
+      res.json(rows[0]);
+    } catch (error) {
+      responseError(res, 500, 'Failed to update milestone', error);
+    }
+  });
+
+  // DELETE milestone
+  app.delete('/api/projects/:projectId/milestones/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      await db.query('DELETE FROM project_milestones WHERE id = ?', [id]);
+      res.json({ success: true });
+    } catch (error) {
+      responseError(res, 500, 'Failed to delete milestone', error);
     }
   });
 

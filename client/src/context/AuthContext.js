@@ -1,5 +1,6 @@
-import React, { createContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getDataAccessLevel } from '../utils/roleBasedAccess';
+import { API_BASE_URL } from '../config/environment';
 
 export const AuthContext = createContext();
 
@@ -201,6 +202,52 @@ const ROLE_PERMISSIONS = {
   },
 };
 
+// Copy and extend permissions dynamically for all department-specific system roles
+ROLE_PERMISSIONS['Deals Manager'] = ROLE_PERMISSIONS['Deal Manager'];
+ROLE_PERMISSIONS['Leads Manager'] = {
+  ...ROLE_PERMISSIONS['Deal Manager'],
+  leads: ['view', 'create', 'edit', 'convert', 'delete']
+};
+ROLE_PERMISSIONS['Sales Manager'] = {
+  ...ROLE_PERMISSIONS['Super Admin'],
+  users: [],
+  roles: [],
+  settings: [],
+};
+ROLE_PERMISSIONS['IT Manager'] = ROLE_PERMISSIONS['Project Manager'];
+ROLE_PERMISSIONS['Marketing Manager'] = {
+  ...ROLE_PERMISSIONS['Project Manager'],
+  campaign: ['view', 'create', 'edit', 'delete']
+};
+ROLE_PERMISSIONS['Accounting Manager'] = {
+  ...ROLE_PERMISSIONS['Admin'],
+  projects: ['view'],
+  tasks: ['view'],
+  leads: [],
+  deals: [],
+};
+ROLE_PERMISSIONS['Sales Executive'] = ROLE_PERMISSIONS['Sales'];
+ROLE_PERMISSIONS['Marketing Executive'] = ROLE_PERMISSIONS['Employee'];
+ROLE_PERMISSIONS['IT Specialist'] = ROLE_PERMISSIONS['Employee'];
+ROLE_PERMISSIONS['Accountant'] = ROLE_PERMISSIONS['Employee'];
+
+['Developer', 'Tester', 'DevOps Engineer', 'Frontend Developer', 'Backend Developer', 'Fullstack Developer'].forEach(r => {
+  ROLE_PERMISSIONS[r] = ROLE_PERMISSIONS['Employee'];
+  DATA_ACCESS_LEVELS[r] = DATA_ACCESS_LEVELS['Employee'];
+});
+
+// Map the data access levels for the new roles as well
+DATA_ACCESS_LEVELS['Deals Manager'] = DATA_ACCESS_LEVELS['Deal Manager'];
+DATA_ACCESS_LEVELS['Leads Manager'] = DATA_ACCESS_LEVELS['Deal Manager'];
+DATA_ACCESS_LEVELS['Sales Manager'] = DATA_ACCESS_LEVELS['Admin'];
+DATA_ACCESS_LEVELS['IT Manager'] = DATA_ACCESS_LEVELS['Project Manager'];
+DATA_ACCESS_LEVELS['Marketing Manager'] = DATA_ACCESS_LEVELS['Project Manager'];
+DATA_ACCESS_LEVELS['Accounting Manager'] = DATA_ACCESS_LEVELS['Admin'];
+DATA_ACCESS_LEVELS['Sales Executive'] = DATA_ACCESS_LEVELS['Sales'];
+DATA_ACCESS_LEVELS['Marketing Executive'] = DATA_ACCESS_LEVELS['Employee'];
+DATA_ACCESS_LEVELS['IT Specialist'] = DATA_ACCESS_LEVELS['Employee'];
+DATA_ACCESS_LEVELS['Accountant'] = DATA_ACCESS_LEVELS['Employee'];
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('currentUser');
@@ -223,6 +270,28 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('currentUser');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user && user.id) {
+      fetch(`${API_BASE_URL}/users`)
+        .then(res => res.json())
+        .then(data => {
+          const userList = Array.isArray(data?.value) ? data.value : (Array.isArray(data) ? data : []);
+          const dbUser = userList.find(u => Number(u.id) === Number(user.id));
+          if (dbUser && dbUser.role_name && (dbUser.role_name !== user.role || dbUser.role_name !== user.role_name)) {
+            const updated = {
+              ...user,
+              ...dbUser,
+              role: dbUser.role_name,
+              role_name: dbUser.role_name
+            };
+            setUser(updated);
+            localStorage.setItem('currentUser', JSON.stringify(updated));
+          }
+        })
+        .catch(err => console.error('Error syncing user role:', err));
+    }
+  }, [user?.id]);
 
   const login = useCallback((userData) => {
     if (userData.role_name && !userData.role) {
@@ -327,3 +396,5 @@ export const AuthProvider = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export const useAuth = () => useContext(AuthContext);

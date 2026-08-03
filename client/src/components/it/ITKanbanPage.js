@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
   Search, Bell, HelpCircle, Settings, ChevronDown, ChevronRight,
   Share2, Download, MoreHorizontal, LayoutList, Plus, AlertCircle, ArrowUp, ArrowDown, CheckSquare,
-  Trash2
+  Trash2, User, Check
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ITCreateIssueDrawer from './ITCreateIssueDrawer';
 import ITIssueDetailsPanel from './ITIssueDetailsPanel';
+
+function BookmarkIcon(props) {
+  return <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}><path d="M5 3v18l7-4.5 7 4.5V3z" /></svg>;
+}
+function TestTubeIcon(props) {
+  return <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}><rect x="9" y="3" width="6" height="3" rx="1" /><path d="M10 6v11a2 2 0 004 0V6" /></svg>;
+}
 
 const PRIORITY_ICONS = {
   High: <ArrowUp size={14} className="text-red-500" />,
@@ -30,19 +38,12 @@ const COLUMN_COLORS = {
   'DONE': 'bg-green-50',
 };
 
-function BookmarkIcon(props) {
-  return <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}><path d="M5 3v18l7-4.5 7 4.5V3z" /></svg>;
-}
-function TestTubeIcon(props) {
-  return <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}><rect x="9" y="3" width="6" height="3" rx="1" /><path d="M10 6v11a2 2 0 004 0V6" /></svg>;
-}
-
 const CheckCircleIcon = ({ size = 16, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
 );
 
 const getInitials = (name) => {
-  if (!name || name === 'Unassigned') return '?';
+  if (!name || name === 'Unassigned') return 'U';
   return name
     .split(/\s+/)
     .filter(Boolean)
@@ -55,40 +56,38 @@ const AlertTriangleIcon = ({ size = 16, className = "" }) => (
 );
 
 const INITIAL_KANBAN_DATA = {
-  'TO DO': [
-    { key: 'WR-101', title: 'Create wireframes for homepage', type: 'Task', priority: 'High', assignee: 'EJ' },
-    { key: 'WR-102', title: 'Setup development environment', type: 'Task', priority: 'Medium', assignee: 'JW' },
-    { key: 'WR-103', title: 'User research and analysis', type: 'Story', priority: 'Low', assignee: 'EJ' },
-    { key: 'WR-104', title: 'Competitor analysis report', type: 'Task', priority: 'Low', assignee: 'OT' },
-  ],
-  'IN PROGRESS': [
-    { key: 'WR-105', title: 'Design homepage UI', type: 'Task', priority: 'High', assignee: 'OT' },
-    { key: 'WR-106', title: 'Implement authentication API', type: 'Story', priority: 'High', assignee: 'DM' },
-    { key: 'WR-107', title: 'Develop responsive navigation', type: 'Task', priority: 'Medium', assignee: 'OT' },
-    { key: 'WR-108', title: 'Create style guide and components', type: 'Task', priority: 'Low', assignee: 'OT' },
-  ],
-  'IN REVIEW': [
-    { key: 'WR-109', title: 'Review homepage design', type: 'Task', priority: 'High', assignee: 'MB' },
-    { key: 'WR-110', title: 'Code review - Login module', type: 'Task', priority: 'Medium', assignee: 'MB' },
-    { key: 'WR-111', title: 'Review user dashboard UI', type: 'Task', priority: 'Medium', assignee: 'MB' },
-    { key: 'WR-112', title: 'Review API integration', type: 'Task', priority: 'Medium', assignee: 'MB' },
-  ],
-  'TESTING': [
-    { key: 'WR-113', title: 'Test login functionality', type: 'Test', priority: 'High', assignee: 'SD' },
-    { key: 'WR-114', title: 'Cross-browser testing', type: 'Test', priority: 'Medium', assignee: 'AT' },
-    { key: 'WR-115', title: 'Mobile responsiveness testing', type: 'Test', priority: 'Medium', assignee: 'SD' },
-    { key: 'WR-116', title: 'Performance testing', type: 'Test', priority: 'Medium', assignee: 'AT' },
-  ],
-  'DONE': [
-    { key: 'WR-117', title: 'Project kickoff meeting', type: 'Task', priority: 'Low', assignee: 'EJ' },
-    { key: 'WR-118', title: 'Requirements gathering', type: 'Story', priority: 'Low', assignee: 'EJ' },
-    { key: 'WR-119', title: 'Information architecture planning', type: 'Task', priority: 'Low', assignee: 'EJ' },
-    { key: 'WR-120', title: 'Database schema design', type: 'Task', priority: 'Medium', assignee: 'DM' },
-  ]
+  'TO DO': [],
+  'IN PROGRESS': [],
+  'IN REVIEW': [],
+  'TESTING': [],
+  'DONE': []
 };
 
 const ITKanbanPage = () => {
-  const { username } = useParams();
+  const { user } = useAuth();
+  const { designation, username } = useParams();
+
+  const isManager = designation ? (
+    designation.toLowerCase().includes('manager') ||
+    designation.toLowerCase().includes('admin') ||
+    designation.toLowerCase().includes('lead')
+  ) : false;
+
+  const userSearchTerms = React.useMemo(() => {
+    const terms = new Set();
+    if (username) {
+      terms.add(username.toLowerCase());
+      username.toLowerCase().split(/[-_\s]+/).forEach(t => { if (t.length > 2) terms.add(t); });
+    }
+    if (user) {
+      if (user.username) terms.add(user.username.toLowerCase());
+      if (user.first_name) terms.add(user.first_name.toLowerCase());
+      if (user.last_name) terms.add(user.last_name.toLowerCase());
+      if (user.name) user.name.toLowerCase().split(/\s+/).forEach(t => { if (t.length > 2) terms.add(t); });
+    }
+    return Array.from(terms);
+  }, [username, user]);
+
   const [boardData, setBoardData] = useState({
     'TO DO': [],
     'IN PROGRESS': [],
@@ -101,54 +100,252 @@ const ITKanbanPage = () => {
     return saved ? JSON.parse(saved) : Object.keys(INITIAL_KANBAN_DATA);
   });
 
+  const [allRawIssues, setAllRawIssues] = useState([]);
+  const [projectsList, setProjectsList] = useState([]);
+  const [usersList, setUsersList] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [selectedPriority, setSelectedPriority] = useState('ALL');
+  const [selectedAssignee, setSelectedAssignee] = useState('ALL');
+  const [onlyMyIssues, setOnlyMyIssues] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilterDropdown, setActiveFilterDropdown] = useState(null);
+  const [openCardAssigneeDropdown, setOpenCardAssigneeDropdown] = useState(null);
+  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
+  const [cardAssigneePos, setCardAssigneePos] = useState({ top: 0, left: 0 });
+
+  const [openSubtasksPopover, setOpenSubtasksPopover] = useState(null);
+  const [subtaskPos, setSubtaskPos] = useState({ top: 0, left: 0 });
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [expandedSubtaskCardKeys, setExpandedSubtaskCardKeys] = useState([]);
+
+  const handleOpenSubtasksPopover = (e, cardKey) => {
+    e.stopPropagation();
+    if (openSubtasksPopover === cardKey) {
+      setOpenSubtasksPopover(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const popupWidth = 280;
+    const popupHeight = 280;
+    let leftPos = rect.right + 10;
+    if (leftPos + popupWidth > window.innerWidth) {
+      leftPos = Math.max(10, rect.left - popupWidth - 10);
+    }
+    let topPos = rect.top - 10;
+    if (topPos + popupHeight > window.innerHeight) {
+      topPos = Math.max(10, window.innerHeight - popupHeight - 10);
+    }
+    setSubtaskPos({ top: topPos, left: leftPos });
+    setOpenSubtasksPopover(cardKey);
+    setNewSubtaskTitle('');
+  };
+
+  const handleToggleCardSubtask = async (cardKey, subtaskId) => {
+    setAllRawIssues(prev => prev.map(issue => {
+      if (issue.issue_key === cardKey || issue.key === cardKey) {
+        let rawSt = issue.subtasks;
+        if (typeof rawSt === 'string') {
+          try { rawSt = JSON.parse(rawSt); } catch (e) { rawSt = []; }
+        }
+        if (!Array.isArray(rawSt)) rawSt = [];
+        const updatedSt = rawSt.map(st => st.id === subtaskId ? { ...st, completed: !st.completed } : st);
+        fetch(`http://localhost:5000/api/it-kanban/issues/${cardKey}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subtasks: JSON.stringify(updatedSt) })
+        }).catch(err => console.error('Failed to update subtask:', err));
+
+        return { ...issue, subtasks: updatedSt };
+      }
+      return issue;
+    }));
+  };
+
+  const handleAddCardSubtask = async (cardKey) => {
+    if (!newSubtaskTitle.trim()) return;
+    const newTitle = newSubtaskTitle.trim();
+    setNewSubtaskTitle('');
+
+    setAllRawIssues(prev => prev.map(issue => {
+      if (issue.issue_key === cardKey || issue.key === cardKey) {
+        let rawSt = issue.subtasks;
+        if (typeof rawSt === 'string') {
+          try { rawSt = JSON.parse(rawSt); } catch (e) { rawSt = []; }
+        }
+        if (!Array.isArray(rawSt)) rawSt = [];
+        const updatedSt = [...rawSt, { id: Date.now(), title: newTitle, completed: false }];
+        fetch(`http://localhost:5000/api/it-kanban/issues/${cardKey}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subtasks: JSON.stringify(updatedSt) })
+        }).catch(err => console.error('Failed to add subtask:', err));
+
+        return { ...issue, subtasks: updatedSt };
+      }
+      return issue;
+    }));
+  };
+
+  const handleOpenCardAssignee = (e, cardKey) => {
+    e.stopPropagation();
+    if (openCardAssigneeDropdown === cardKey) {
+      setOpenCardAssigneeDropdown(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const popupWidth = 260;
+    const popupHeight = 320;
+    let leftPos = rect.right + 10;
+    if (leftPos + popupWidth > window.innerWidth) {
+      leftPos = Math.max(10, rect.left - popupWidth - 10);
+    }
+    let topPos = rect.top - 10;
+    if (topPos + popupHeight > window.innerHeight) {
+      topPos = Math.max(10, window.innerHeight - popupHeight - 10);
+    }
+    setCardAssigneePos({ top: topPos, left: leftPos });
+    setOpenCardAssigneeDropdown(cardKey);
+    setAssigneeSearchQuery('');
+  };
+
+  const handleUpdateCardAssignee = async (issueKey, newAssignee) => {
+    setAllRawIssues(prev => prev.map(t => (t.issue_key === issueKey || t.key === issueKey) ? { ...t, assignee: newAssignee } : t));
+    setOpenCardAssigneeDropdown(null);
+    try {
+      await fetch(`http://localhost:5000/api/it-kanban/issues/${issueKey}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignee: newAssignee })
+      });
+    } catch (err) {
+      console.error('Failed to update assignee', err);
+    }
+  };
+
   const fetchKanbanData = () => {
     fetch('http://localhost:5000/api/it-kanban/issues')
       .then(res => res.json())
       .then(data => {
-        const newBoard = {
-          'TO DO': [],
-          'IN PROGRESS': [],
-          'IN REVIEW': [],
-          'TESTING': [],
-          'DONE': []
-        };
-        columnOrder.forEach(col => {
-          if (!newBoard[col]) newBoard[col] = [];
-        });
-
-        let filteredData = data;
-        if (username) {
-          filteredData = data.filter(issue => issue.assignee && issue.assignee.toLowerCase().includes(username.toLowerCase()));
-        }
-
-        filteredData.forEach(issue => {
-          const col = issue.status || 'TO DO';
-          if (!newBoard[col]) newBoard[col] = [];
-          newBoard[col].push({
-            key: issue.issue_key,
-            title: issue.title,
-            type: issue.type,
-            priority: issue.priority,
-            status: issue.status,
-            assignee: issue.assignee,
-            reporter: issue.reporter,
-            sprint: issue.sprint,
-            due_date: issue.due_date,
-            start_date: issue.start_date,
-            description: issue.description,
-            subtasks: issue.subtasks,
-            linked_issues: issue.linked_issues,
-            comments: issue.comments
-          });
-        });
-        setBoardData(newBoard);
+        setAllRawIssues(Array.isArray(data) ? data : []);
       })
       .catch(err => console.error('Error fetching kanban data:', err));
   };
 
   useEffect(() => {
     fetchKanbanData();
-  }, []); // Run on mount
+
+    // Fetch projects list for filter dropdown
+    fetch('http://localhost:5000/api/projects')
+      .then(res => res.json())
+      .then(data => {
+        const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+        setProjectsList(list);
+      })
+      .catch(err => console.error('Error fetching projects for kanban filter:', err));
+
+    // Fetch users list for assignee filter
+    fetch('http://localhost:5000/api/users')
+      .then(res => res.json())
+      .then(data => {
+        const list = Array.isArray(data?.value) ? data.value : (Array.isArray(data) ? data : []);
+        setUsersList(list);
+      })
+      .catch(err => console.error('Error fetching users for kanban filter:', err));
+  }, []);
+
+  const itUsersList = React.useMemo(() => {
+    const SYSTEM_DUMMY_USERNAMES = ['admin', 'leads', 'deals', 'sales', 'marketing', 'it', 'accounting'];
+    return usersList.filter(u => {
+      const un = (u.username || '').toLowerCase();
+      if (SYSTEM_DUMMY_USERNAMES.includes(un)) return false;
+      const dept = (u.department || '').toLowerCase();
+      const role = (u.role_name || u.role || '').toLowerCase();
+      return dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester') || role.includes('devops');
+    });
+  }, [usersList]);
+
+  // Re-build board data whenever issues or filters change
+  useEffect(() => {
+    const newBoard = {
+      'TO DO': [],
+      'IN PROGRESS': [],
+      'IN REVIEW': [],
+      'TESTING': [],
+      'DONE': []
+    };
+    columnOrder.forEach(col => {
+      if (!newBoard[col]) newBoard[col] = [];
+    });
+
+    let filtered = allRawIssues;
+
+    if (selectedProjectId !== 'ALL') {
+      filtered = filtered.filter(issue => Number(issue.project_id) === Number(selectedProjectId));
+    }
+    if (selectedType !== 'ALL') {
+      filtered = filtered.filter(issue => issue.type === selectedType);
+    }
+    if (selectedStatus !== 'ALL') {
+      filtered = filtered.filter(issue => (issue.status || 'TO DO').toUpperCase() === selectedStatus.toUpperCase());
+    }
+    if (selectedPriority !== 'ALL') {
+      filtered = filtered.filter(issue => issue.priority === selectedPriority);
+    }
+    if (selectedAssignee !== 'ALL') {
+      if (selectedAssignee === 'UNASSIGNED') {
+        filtered = filtered.filter(issue => !issue.assignee || issue.assignee === 'Unassigned' || issue.assignee === 'Automatic');
+      } else {
+        const a = selectedAssignee.toLowerCase();
+        filtered = filtered.filter(issue => issue.assignee && issue.assignee.toLowerCase().includes(a));
+      }
+    }
+    const isUserTask = (issue) => {
+      const assigneeStr = (issue.assignee || '').toLowerCase();
+      const reporterStr = (issue.reporter || '').toLowerCase();
+      return userSearchTerms.some(term => assigneeStr.includes(term) || reporterStr.includes(term));
+    };
+
+    if (onlyMyIssues) {
+      filtered = filtered.filter(issue => isUserTask(issue));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(issue =>
+        (issue.title && issue.title.toLowerCase().includes(q)) ||
+        (issue.issue_key && issue.issue_key.toLowerCase().includes(q)) ||
+        (issue.assignee && issue.assignee.toLowerCase().includes(q))
+      );
+    }
+
+    filtered.forEach(issue => {
+      const col = (issue.status || 'TO DO').toUpperCase();
+      const targetCol = newBoard[col] ? col : 'TO DO';
+      newBoard[targetCol].push({
+        ...issue,
+        key: issue.issue_key,
+        title: issue.title,
+        type: issue.type,
+        priority: issue.priority,
+        status: issue.status,
+        assignee: issue.assignee,
+        reporter: issue.reporter,
+        team: issue.team,
+        team_id: issue.team_id,
+        sprint: issue.sprint,
+        due_date: issue.due_date,
+        start_date: issue.start_date,
+        description: issue.description,
+        subtasks: issue.subtasks,
+        linked_issues: issue.linked_issues,
+        comments: issue.comments,
+        project_id: issue.project_id
+      });
+    });
+
+    setBoardData(newBoard);
+  }, [allRawIssues, columnOrder, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignee, onlyMyIssues, searchQuery, username]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -189,16 +386,30 @@ const ITKanbanPage = () => {
         setActiveCreateColumn(null);
         setOpenInlineDropdown(null);
       }
+      if (activeFilterDropdown && !e.target.closest('.relative')) {
+        setActiveFilterDropdown(null);
+      }
+      if (openCardAssigneeDropdown && !e.target.closest('.card-assignee-dropdown')) {
+        setOpenCardAssigneeDropdown(null);
+      }
+      if (openSubtasksPopover && !e.target.closest('.card-subtask-popover')) {
+        setOpenSubtasksPopover(null);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [activeCreateColumn]);
+  }, [activeCreateColumn, activeFilterDropdown, openCardAssigneeDropdown, openSubtasksPopover]);
 
 
   const handleCreateInlineIssue = async (col) => {
     if (!newIssueTitle.trim()) return;
 
-    const assigneeVal = newIssueAssignee === 'Unassigned' || newIssueAssignee === 'Automatic' ? 'Unassigned' : newIssueAssignee;
+    let assigneeVal = newIssueAssignee === 'Unassigned' || newIssueAssignee === 'Automatic' ? 'Unassigned' : newIssueAssignee;
+    const reporterVal = username ? username : 'Unassigned';
+
+    if (assigneeVal === 'Unassigned') {
+      assigneeVal = reporterVal;
+    }
 
     try {
       const res = await fetch('http://localhost:5000/api/it-kanban/issues', {
@@ -209,6 +420,7 @@ const ITKanbanPage = () => {
           type: newIssueType,
           status: col,
           assignee: assigneeVal,
+          reporter: reporterVal,
           priority: 'Medium'
         })
       });
@@ -250,10 +462,16 @@ const ITKanbanPage = () => {
 
   let selectedIssueData = null;
   if (selectedIssue) {
+    const rawMatch = allRawIssues.find(i => i.issue_key === selectedIssue || i.key === selectedIssue);
+    let cardMatch = null;
     Object.values(boardData).forEach(col => {
-      const found = col.find(c => c.key === selectedIssue);
-      if (found) selectedIssueData = found;
+      const found = col.find(c => c.key === selectedIssue || c.issue_key === selectedIssue);
+      if (found) cardMatch = found;
     });
+
+    if (rawMatch || cardMatch) {
+      selectedIssueData = { ...(rawMatch || {}), ...(cardMatch || {}) };
+    }
   }
 
 
@@ -374,7 +592,11 @@ const ITKanbanPage = () => {
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span className="hover:underline cursor-pointer">Projects</span>
               <ChevronRight size={14} />
-              <span className="hover:underline cursor-pointer">Website Redesign</span>
+              <span className="hover:underline cursor-pointer font-medium text-gray-700">
+                {selectedProjectId !== 'ALL'
+                  ? (projectsList.find(p => Number(p.id) === Number(selectedProjectId))?.name || 'Selected Project')
+                  : 'All Projects'}
+              </span>
               <ChevronRight size={14} />
               <span className="text-gray-900 font-medium">Kanban Board</span>
             </div>
@@ -394,17 +616,236 @@ const ITKanbanPage = () => {
 
               <div className="flex items-end justify-between mb-6">
                 <div>
-                  <h1 className="text-2xl  text-gray-900 mb-4">Board</h1>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl text-gray-900 mb-4 font-bold">Board</h1>
+                  <div className="flex items-center gap-2 flex-wrap relative">
                     <div className="relative">
                       <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
-                      <input type="text" placeholder="Search issues" className="pl-8 pr-3 py-1.5 bg-gray-50 border-none rounded text-xs focus:outline-none focus:ring-1 focus:ring-gray-300 w-40" />
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search issues"
+                        className="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 w-44"
+                      />
                     </div>
-                    {['Project: Website Redesign', 'Type', 'Status', 'Assignee', 'Priority'].map((filter, i) => (
-                      <button key={i} className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${i === 0 ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-white border-gray-300 text-gray-700'}`}>
-                        {filter} <ChevronDown size={14} />
+
+                    {/* JIRA USER AVATAR BUBBLES */}
+                    <div className="flex items-center -space-x-1.5 mx-1">
+                      {itUsersList.map((u) => {
+                        const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'User';
+                        const initials = (u.first_name ? u.first_name[0] : (u.username ? u.username[0] : 'U')) +
+                          (u.last_name ? u.last_name[0] : '');
+                        const uppercaseInitials = initials.toUpperCase();
+
+                        const a = selectedAssignee.toLowerCase();
+                        const isSelected = selectedAssignee !== 'ALL' && (
+                          a === fullName.toLowerCase() ||
+                          a === (u.username || '').toLowerCase() ||
+                          (u.first_name && a.includes(u.first_name.toLowerCase()))
+                        );
+
+                        const colors = [
+                          'bg-emerald-600 text-white',
+                          'bg-blue-600 text-white',
+                          'bg-purple-600 text-white',
+                          'bg-amber-600 text-white',
+                          'bg-pink-600 text-white',
+                          'bg-indigo-600 text-white',
+                          'bg-teal-600 text-white'
+                        ];
+                        const colorClass = colors[Number(u.id || 0) % colors.length];
+
+                        return (
+                          <button
+                            key={u.id || u.username}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedAssignee('ALL');
+                              } else {
+                                setSelectedAssignee(fullName);
+                              }
+                            }}
+                            title={`Filter issues by ${fullName}`}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative border-2 border-white cursor-pointer ${isSelected
+                                ? 'ring-2 ring-blue-600 ring-offset-1 z-20 scale-110 shadow-md'
+                                : 'hover:z-10 hover:scale-105 opacity-90 hover:opacity-100'
+                              } ${colorClass}`}
+                          >
+                            {uppercaseInitials}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Project Filter Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'project' ? null : 'project')}
+                        className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${selectedProjectId !== 'ALL' ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700'}`}
+                      >
+                        Project: {selectedProjectId !== 'ALL' ? (projectsList.find(p => Number(p.id) === Number(selectedProjectId))?.name || 'Selected') : 'All Projects'} <ChevronDown size={14} />
                       </button>
-                    ))}
+                      {activeFilterDropdown === 'project' && (
+                        <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-xs text-gray-700 max-h-60 overflow-y-auto">
+                          <div
+                            onClick={() => { setSelectedProjectId('ALL'); setActiveFilterDropdown(null); }}
+                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer font-medium border-b border-gray-100 ${selectedProjectId === 'ALL' ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                          >
+                            All Projects
+                          </div>
+                          {projectsList.map(p => (
+                            <div
+                              key={p.id}
+                              onClick={() => { setSelectedProjectId(p.id); setActiveFilterDropdown(null); }}
+                              className={`px-3 py-2 hover:bg-gray-100 cursor-pointer truncate ${Number(selectedProjectId) === Number(p.id) ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                            >
+                              {p.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Type Filter Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'type' ? null : 'type')}
+                        className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${selectedType !== 'ALL' ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700'}`}
+                      >
+                        Type: {selectedType !== 'ALL' ? selectedType : 'All'} <ChevronDown size={14} />
+                      </button>
+                      {activeFilterDropdown === 'type' && (
+                        <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-xs text-gray-700">
+                          {['ALL', 'Task', 'Story', 'Bug', 'Test'].map(t => (
+                            <div
+                              key={t}
+                              onClick={() => { setSelectedType(t); setActiveFilterDropdown(null); }}
+                              className={`px-3 py-1.5 hover:bg-gray-100 cursor-pointer ${selectedType === t ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                            >
+                              {t === 'ALL' ? 'All Types' : t}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status Filter Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'status' ? null : 'status')}
+                        className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${selectedStatus !== 'ALL' ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700'}`}
+                      >
+                        Status: {selectedStatus !== 'ALL' ? selectedStatus : 'All'} <ChevronDown size={14} />
+                      </button>
+                      {activeFilterDropdown === 'status' && (
+                        <div className="absolute left-0 top-full mt-1 w-40 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-xs text-gray-700">
+                          {['ALL', 'TO DO', 'IN PROGRESS', 'IN REVIEW', 'TESTING', 'DONE'].map(s => (
+                            <div
+                              key={s}
+                              onClick={() => { setSelectedStatus(s); setActiveFilterDropdown(null); }}
+                              className={`px-3 py-1.5 hover:bg-gray-100 cursor-pointer ${selectedStatus === s ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                            >
+                              {s === 'ALL' ? 'All Statuses' : s}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Priority Filter Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'priority' ? null : 'priority')}
+                        className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${selectedPriority !== 'ALL' ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700'}`}
+                      >
+                        Priority: {selectedPriority !== 'ALL' ? selectedPriority : 'All'} <ChevronDown size={14} />
+                      </button>
+                      {activeFilterDropdown === 'priority' && (
+                        <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-xs text-gray-700">
+                          {['ALL', 'High', 'Medium', 'Low'].map(p => (
+                            <div
+                              key={p}
+                              onClick={() => { setSelectedPriority(p); setActiveFilterDropdown(null); }}
+                              className={`px-3 py-1.5 hover:bg-gray-100 cursor-pointer ${selectedPriority === p ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                            >
+                              {p === 'ALL' ? 'All Priorities' : p}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Assignee Filter Dropdown */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'assignee' ? null : 'assignee')}
+                        className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${selectedAssignee !== 'ALL' ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700'}`}
+                      >
+                        Assignee: {selectedAssignee !== 'ALL' ? selectedAssignee : 'All'} <ChevronDown size={14} />
+                      </button>
+                      {activeFilterDropdown === 'assignee' && (
+                        <div className="absolute left-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-xs text-gray-700 max-h-60 overflow-y-auto">
+                          <div
+                            onClick={() => { setSelectedAssignee('ALL'); setActiveFilterDropdown(null); }}
+                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer font-medium border-b border-gray-100 ${selectedAssignee === 'ALL' ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                          >
+                            All Assignees
+                          </div>
+                          <div
+                            onClick={() => { setSelectedAssignee('UNASSIGNED'); setActiveFilterDropdown(null); }}
+                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 ${selectedAssignee === 'UNASSIGNED' ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                          >
+                            Unassigned
+                          </div>
+                          {usersList.map(u => {
+                            const uName = u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim();
+                            if (!uName) return null;
+                            return (
+                              <div
+                                key={u.id || uName}
+                                onClick={() => { setSelectedAssignee(uName); setActiveFilterDropdown(null); }}
+                                className={`px-3 py-2 hover:bg-gray-100 cursor-pointer truncate ${selectedAssignee === uName ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                              >
+                                {uName}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Only My Issues Quick Filter Pill — Only visible to Managers */}
+                    {isManager && (
+                      <button
+                        onClick={() => setOnlyMyIssues(!onlyMyIssues)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${onlyMyIssues
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                            : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        title="Show only tasks assigned to or reported by me"
+                      >
+                        <User size={13} />
+                        Only My Issues
+                      </button>
+                    )}
+
+                    {/* Clear Filters reset button */}
+                    {(selectedProjectId !== 'ALL' || selectedType !== 'ALL' || selectedStatus !== 'ALL' || selectedPriority !== 'ALL' || selectedAssignee !== 'ALL' || onlyMyIssues || searchQuery) && (
+                      <button
+                        onClick={() => {
+                          setSelectedProjectId('ALL');
+                          setSelectedType('ALL');
+                          setSelectedStatus('ALL');
+                          setSelectedPriority('ALL');
+                          setSelectedAssignee('ALL');
+                          setOnlyMyIssues(false);
+                          setSearchQuery('');
+                        }}
+                        className="text-xs text-red-600 font-medium hover:underline ml-2"
+                      >
+                        Reset filters
+                      </button>
+                    )}
                     <button className="flex items-center gap-1 p-2 text-xs text-gray-600 hover:bg-gray-50 rounded">
                       More filters <ChevronDown size={14} />
                     </button>
@@ -481,9 +922,97 @@ const ITKanbanPage = () => {
                                                 >
                                                   <Trash2 size={13} />
                                                 </button>
-
                                                 <div className="text-blue-600 text-xs hover:underline mb-1 font-medium cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedIssue(card.key); }}>{card.key}</div>
-                                                <div className="text-xs text-gray-900 font-medium mb-4 leading-snug cursor-grab active:cursor-grabbing">{card.title}</div>
+                                                <div className="text-xs text-gray-900 font-medium mb-3 leading-snug cursor-grab active:cursor-grabbing">{card.title}</div>
+
+                                                {/* JIRA INLINE EXPANDABLE SUBTASKS LIST */}
+                                                {(() => {
+                                                  let rawSt = card.subtasks;
+                                                  if (typeof rawSt === 'string') {
+                                                    try { rawSt = JSON.parse(rawSt); } catch (e) { rawSt = []; }
+                                                  }
+                                                  if (!Array.isArray(rawSt)) rawSt = [];
+                                                  const totalSt = rawSt.length;
+
+                                                  // JIRA RULE: Only visible when that particular ticket actually HAS subtasks (> 0)
+                                                  if (totalSt === 0) return null;
+
+                                                  const completedSt = rawSt.filter(s => s.completed || s.status === 'DONE').length;
+                                                  const isExpanded = expandedSubtaskCardKeys.includes(card.key);
+
+                                                  return (
+                                                    <div className="mb-3">
+                                                      {/* Subtasks Accordion Pill Header (Jira Style) */}
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setExpandedSubtaskCardKeys(prev =>
+                                                            prev.includes(card.key) ? prev.filter(k => k !== card.key) : [...prev, card.key]
+                                                          );
+                                                        }}
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-gray-200 bg-gray-50 hover:bg-gray-100 text-[11px] font-medium text-gray-700 cursor-pointer transition-all hover:border-gray-300 w-full justify-between select-none"
+                                                        title="Click to toggle subtasks list"
+                                                      >
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                          {/* Branch / Subtask Icon */}
+                                                          <svg className="w-3.5 h-3.5 text-gray-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <line x1="6" y1="3" x2="6" y2="15"></line>
+                                                            <circle cx="18" cy="6" r="3"></circle>
+                                                            <circle cx="6" cy="18" r="3"></circle>
+                                                            <path d="M18 9a9 9 0 0 1-9 9"></path>
+                                                          </svg>
+                                                          <span className="font-semibold text-gray-800">Subtasks {completedSt}/{totalSt}</span>
+                                                        </div>
+                                                        <ChevronDown size={13} className={`text-gray-500 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                      </button>
+
+                                                      {/* Expanded Subtasks List under Card (Jira Card View) */}
+                                                      {isExpanded && (
+                                                        <div className="mt-1.5 space-y-1.5 pl-1 pr-1 py-1 bg-gray-50/80 rounded border border-gray-200/80 animate-in fade-in duration-150">
+                                                          {rawSt.map((st, idx) => {
+                                                            const subtaskKey = `${card.key}-${st.id || idx + 1}`;
+                                                            const isDone = st.completed || st.status === 'DONE';
+                                                            const statusLabel = isDone ? 'Done' : (st.status || 'To Do');
+
+                                                            return (
+                                                              <div
+                                                                key={st.id || idx}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:border-blue-300 shadow-2xs text-xs font-sans group transition-all"
+                                                              >
+                                                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                                  <input
+                                                                    type="checkbox"
+                                                                    checked={isDone}
+                                                                    onChange={() => handleToggleCardSubtask(card.key, st.id)}
+                                                                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
+                                                                  />
+                                                                  <div className="min-w-0 flex-1">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                      <span className="text-[10px] text-blue-600 font-semibold">{subtaskKey}</span>
+                                                                      <span className={`text-xs font-medium truncate ${isDone ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                                                                        {st.title}
+                                                                      </span>
+                                                                    </div>
+                                                                  </div>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                                                                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold tracking-tight ${isDone
+                                                                      ? 'bg-emerald-100 text-emerald-700'
+                                                                      : 'bg-gray-100 text-gray-600'
+                                                                    }`}>
+                                                                    {statusLabel}
+                                                                  </span>
+                                                                </div>
+                                                              </div>
+                                                            );
+                                                          })}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })()}
 
                                                 <div className="flex items-center justify-between">
                                                   <div className="flex items-center gap-2">
@@ -494,8 +1023,143 @@ const ITKanbanPage = () => {
                                                   {col === 'DONE' ? (
                                                     <CheckCircleIcon className="text-green-500" size={16} />
                                                   ) : (
-                                                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[9px] " title={card.assignee || 'Unassigned'}>
-                                                      {getInitials(card.assignee)}
+                                                    <div className="relative card-assignee-dropdown">
+                                                      <button
+                                                        onClick={(e) => handleOpenCardAssignee(e, card.key)}
+                                                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border border-white shrink-0 cursor-pointer transition-transform hover:scale-110 ${card.assignee === 'Unassigned' || !card.assignee
+                                                            ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                                            : 'bg-blue-600 text-white shadow-sm'
+                                                          }`}
+                                                        title={`Assignee: ${card.assignee || 'Unassigned'} (Click to change)`}
+                                                      >
+                                                        {card.assignee === 'Unassigned' || !card.assignee ? (
+                                                          <User size={12} className="text-gray-500" />
+                                                        ) : (
+                                                          getInitials(card.assignee)
+                                                        )}
+                                                      </button>
+
+                                                      {/* JIRA CARD ASSIGNEE POPUP MENU (Right Side Floating) */}
+                                                      {openCardAssigneeDropdown === card.key && (
+                                                        <div
+                                                          onClick={(e) => e.stopPropagation()}
+                                                          style={{
+                                                            position: 'fixed',
+                                                            top: `${cardAssigneePos.top}px`,
+                                                            left: `${cardAssigneePos.left}px`,
+                                                            width: '260px',
+                                                            zIndex: 99999
+                                                          }}
+                                                          className="bg-white border border-gray-200 rounded-lg shadow-2xl py-1.5 text-xs text-gray-700 font-sans border-t-2 border-t-blue-500"
+                                                        >
+                                                          {/* Jira Top Active / Search Input Box */}
+                                                          <div className="p-2 border-b border-gray-100 bg-white">
+                                                            <div className="relative">
+                                                              <input
+                                                                type="text"
+                                                                autoFocus
+                                                                value={assigneeSearchQuery}
+                                                                onChange={(e) => setAssigneeSearchQuery(e.target.value)}
+                                                                placeholder={card.assignee || "Search users..."}
+                                                                className="w-full px-3 py-1.5 text-xs border-2 border-blue-500 rounded-md focus:outline-none bg-white text-gray-900 font-medium"
+                                                              />
+                                                            </div>
+                                                          </div>
+
+                                                          <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+                                                            {/* Unassigned Option */}
+                                                            <div
+                                                              onClick={() => handleUpdateCardAssignee(card.key, 'Unassigned')}
+                                                              className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${card.assignee === 'Unassigned' || !card.assignee ? 'bg-[#deebff] font-semibold text-blue-900' : 'text-gray-700'
+                                                                }`}
+                                                            >
+                                                              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shrink-0">
+                                                                <User size={13} className="text-gray-600" />
+                                                              </div>
+                                                              <span className="text-xs font-medium">Unassigned</span>
+                                                            </div>
+
+                                                            {/* Automatic Option */}
+                                                            <div
+                                                              onClick={() => {
+                                                                const myName = user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : 'Unassigned';
+                                                                handleUpdateCardAssignee(card.key, myName);
+                                                              }}
+                                                              className="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 text-gray-700 font-medium border-b border-gray-100 transition-colors"
+                                                            >
+                                                              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shrink-0">
+                                                                <User size={13} className="text-gray-600" />
+                                                              </div>
+                                                              <span className="text-xs font-medium">Automatic</span>
+                                                            </div>
+
+                                                            {/* Logged in User (Assign to me) Option */}
+                                                            {user && (
+                                                              <div
+                                                                onClick={() => {
+                                                                  const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+                                                                  handleUpdateCardAssignee(card.key, myName);
+                                                                }}
+                                                                className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${card.assignee && (card.assignee.toLowerCase().includes((user.first_name || '').toLowerCase()) || card.assignee.toLowerCase() === user.username.toLowerCase())
+                                                                    ? 'bg-[#deebff] font-semibold text-blue-900'
+                                                                    : 'text-gray-700'
+                                                                  }`}
+                                                              >
+                                                                <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                                                  {getInitials(user.first_name || user.username)}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                  <div className="truncate text-xs font-medium text-gray-900">
+                                                                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username} <span className="text-[10px] text-gray-500 font-normal">(assign to me)</span>
+                                                                  </div>
+                                                                  {user.email && <div className="text-[10px] text-gray-500 truncate leading-none mt-0.5">{user.email}</div>}
+                                                                </div>
+                                                              </div>
+                                                            )}
+
+                                                            {/* Team Users List */}
+                                                            {itUsersList
+                                                              .filter(u => {
+                                                                if (user && (u.id === user.id || u.username === user.username)) return false;
+                                                                const name = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '';
+                                                                return name.toLowerCase().includes(assigneeSearchQuery.toLowerCase()) || (u.email && u.email.toLowerCase().includes(assigneeSearchQuery.toLowerCase()));
+                                                              })
+                                                              .map((u) => {
+                                                                const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'User';
+                                                                const initials = getInitials(fullName);
+                                                                const isCurrentAssignee = card.assignee && card.assignee.toLowerCase() === fullName.toLowerCase();
+
+                                                                const colors = [
+                                                                  'bg-blue-600 text-white',
+                                                                  'bg-purple-600 text-white',
+                                                                  'bg-amber-600 text-white',
+                                                                  'bg-pink-600 text-white',
+                                                                  'bg-indigo-600 text-white',
+                                                                  'bg-teal-600 text-white'
+                                                                ];
+                                                                const colorClass = colors[Number(u.id || 0) % colors.length];
+
+                                                                return (
+                                                                  <div
+                                                                    key={u.id || u.username}
+                                                                    onClick={() => handleUpdateCardAssignee(card.key, fullName)}
+                                                                    className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${isCurrentAssignee ? 'bg-[#deebff] text-blue-900 font-semibold' : 'text-gray-700'
+                                                                      }`}
+                                                                  >
+                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${colorClass}`}>
+                                                                      {initials}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                      <div className="truncate text-xs font-medium text-gray-900">{fullName}</div>
+                                                                      {u.email && <div className="text-[10px] text-gray-500 truncate leading-none mt-0.5">{u.email}</div>}
+                                                                    </div>
+                                                                    {isCurrentAssignee && <Check size={14} className="text-blue-600 shrink-0" />}
+                                                                  </div>
+                                                                );
+                                                              })}
+                                                          </div>
+                                                        </div>
+                                                      )}
                                                     </div>
                                                   )}
                                                 </div>

@@ -1,17 +1,65 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Search, Send, Phone, Video, MoreHorizontal, X, Plus, Filter,
   Star, Paperclip, Smile, AtSign, Hash, Calendar, FileText,
   ThumbsUp, Download, ChevronRight, Bell, Users, Settings,
-  Mic, Image, Link, Check, CheckCheck, Pin, Edit3, LogOut, Trash2
+  Mic, Image, Link, Check, CheckCheck, Pin, Edit3, LogOut, Trash2, ArrowLeft
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Swal from 'sweetalert2';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+const formatMessageTime = (timeStr) => {
+  if (!timeStr) {
+    const now = new Date();
+    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  const str = String(timeStr).trim();
+
+  // If already formatted like '10:10 AM' or '09:28 AM'
+  if (/^\d{1,2}:\d{2}\s*(AM|PM)$/i.test(str)) {
+    return str;
+  }
+
+  // If formatted like '2026-08-01 10:10:00' or ISO date
+  try {
+    const dateObj = new Date(str.includes('T') ? str : str.replace(/-/g, '/'));
+    if (!isNaN(dateObj.getTime())) {
+      return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+  } catch (e) {}
+
+  // Extract HH:MM AM/PM if present inside text
+  const match = str.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
+  if (match) {
+    return match[1];
+  }
+
+  const now = new Date();
+  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+};
+
+const WhatsAppTicks = ({ status = 'read', isMine = true }) => {
+  if (!isMine) return null;
+
+  if (status === 'sent' || status === 'sending') {
+    return <Check size={13} className="text-gray-400 shrink-0 inline-block ml-1" />;
+  }
+
+  if (status === 'delivered') {
+    return <CheckCheck size={14} className="text-gray-400 shrink-0 inline-block ml-1" />;
+  }
+
+  // Double Blue Tick ✓✓ (#34b7f1)
+  return <CheckCheck size={14} className="text-[#34b7f1] shrink-0 inline-block ml-1 font-bold" />;
+};
+
 export default function ITChatPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const currentUserId = user?.id || 1;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -48,89 +96,57 @@ export default function ITChatPage() {
 
     const cursorPosition = e.target.selectionStart || 0;
     const textBeforeCursor = value.slice(0, cursorPosition);
-    const words = textBeforeCursor.split(/\s+/);
-    const lastWord = words[words.length - 1] || '';
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
 
-    if (lastWord.startsWith('@')) {
+    if (lastAtIndex !== -1 && lastAtIndex >= textBeforeCursor.search(/\s[^\s]*$/)) {
+      const query = textBeforeCursor.slice(lastAtIndex + 1);
+      setMentionSearchTerm(query);
       setShowMentionSuggestions(true);
-      setMentionSearchTerm(lastWord.slice(1));
     } else {
       setShowMentionSuggestions(false);
-      setMentionSearchTerm('');
     }
   };
 
-  const handleSelectMention = (member) => {
-    const fullName = `${member.first_name} ${member.last_name}`;
-    const inputElement = document.getElementById('chat-input');
-    const cursorPosition = inputElement?.selectionStart || input.length;
+  const handleSelectMentionUser = (userName) => {
+    const cursorPosition = document.getElementById('chat-input')?.selectionStart || input.length;
     const textBeforeCursor = input.slice(0, cursorPosition);
     const textAfterCursor = input.slice(cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
 
-    const words = textBeforeCursor.split(/\s+/);
-    words[words.length - 1] = `@${fullName}`;
-    const newTextBeforeCursor = words.join(' ') + ' ';
+    if (lastAtIndex !== -1) {
+      const newText = textBeforeCursor.slice(0, lastAtIndex) + `@${userName} ` + textAfterCursor;
+      setInput(newText);
+    } else {
+      setInput(prev => prev + `@${userName} `);
+    }
 
-    setInput(newTextBeforeCursor + textAfterCursor);
     setShowMentionSuggestions(false);
-    setMentionSearchTerm('');
-    setTimeout(() => {
-      if (inputElement) {
-        inputElement.focus();
-        const newCursorPos = newTextBeforeCursor.length;
-        inputElement.setSelectionRange(newCursorPos, newCursorPos);
-      }
-    }, 50);
+    document.getElementById('chat-input')?.focus();
   };
 
-  const getMentionSuggestions = () => {
-    const list = selectedChat?.chat_type === 'group' ? groupMembers : availableUsers;
-    return list.filter(member => {
-      const fullName = `${member.first_name || ''} ${member.last_name || ''}`.toLowerCase();
-      return fullName.includes(mentionSearchTerm.toLowerCase());
-    });
-  };
+  const filteredMentionUsers = availableUsers.filter(u => {
+    const name = u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim();
+    return name.toLowerCase().includes(mentionSearchTerm.toLowerCase());
+  });
 
   const getChatTasks = () => {
     if (!selectedChat) return [];
-    const chatId = selectedChat.id;
-    if (tasksState[chatId]) {
-      return tasksState[chatId];
-    }
-    // Initialize mock tasks for this chat
-    const name = selectedChat.name.toLowerCase();
-    let initial = [];
-    if (name.includes('bug') || name.includes('issue') || name.includes('it')) {
-      initial = [
-        { id: 1, title: 'Investigate memory leak in production server', completed: false },
-        { id: 2, title: 'Upgrade staging environment to version 2.4', completed: true },
-        { id: 3, title: 'Review network firewall policies', completed: false }
-      ];
-    } else if (name.includes('design') || name.includes('creative')) {
-      initial = [
-        { id: 1, title: 'Create wireframes for new login flow', completed: false },
-        { id: 2, title: 'Update style guide color palettes', completed: true },
-        { id: 3, title: 'Prepare assets for marketing campaign', completed: false }
-      ];
-    } else {
-      initial = [
-        { id: 1, title: 'Schedule sprint planning meeting', completed: false },
-        { id: 2, title: 'Publish meeting notes to Wiki', completed: true },
-        { id: 3, title: 'Review weekly progress reports', completed: false }
-      ];
-    }
-    return initial;
+    return tasksState[selectedChat.id] || [
+      { id: 1, title: 'Review project requirements document', completed: true, assignee: 'Purvesh' },
+      { id: 2, title: 'Setup GitHub repository & branch rules', completed: false, assignee: 'Ashwini' },
+      { id: 3, title: 'Verify database migration scripts', completed: false, assignee: 'You' }
+    ];
   };
 
-  const handleAddTask = (e) => {
-    e.preventDefault();
+  const handleAddTask = () => {
     if (!newTaskTitle.trim() || !selectedChat) return;
     const chatId = selectedChat.id;
     const currentTasks = getChatTasks();
     const newTask = {
       id: Date.now(),
       title: newTaskTitle.trim(),
-      completed: false
+      completed: false,
+      assignee: 'You'
     };
     setTasksState(prev => ({
       ...prev,
@@ -216,7 +232,7 @@ export default function ITChatPage() {
   useEffect(() => {
     if (selectedChat) {
       fetchMessages(selectedChat);
-      const interval = setInterval(() => fetchMessages(selectedChat), 5000);
+      const interval = setInterval(() => fetchMessages(selectedChat), 4000);
       return () => clearInterval(interval);
     }
   }, [selectedChat]);
@@ -226,10 +242,10 @@ export default function ITChatPage() {
   }, [messages]);
 
   const handleSelectChat = (chat) => {
-    setSelectedChat(chat);
+    setConversations(prev => prev.map(c => c.id === chat.id ? { ...c, unread: 0, unread_count: 0 } : c));
+    setSelectedChat({ ...chat, unread: 0, unread_count: 0 });
     setActiveTab('Messages');
   };
-
 
   const handleIconClick = (action) => {
     if (action === 'smile') setShowEmojiPicker(!showEmojiPicker);
@@ -250,100 +266,116 @@ export default function ITChatPage() {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) setAttachedFile(file);
-    e.target.value = null; // reset
+    e.target.value = null;
   };
 
   const handleSend = async () => {
     if (!input.trim() && !attachedFile) return;
     if (!selectedChat) return;
+
     try {
-      let uploadedFileDetails = null;
+      const isGroup = selectedChat.chat_type === 'group';
+      const rawRecId = selectedChat.other_user_id || selectedChat.receiver_id || (!isGroup ? selectedChat.id : null);
+      const targetReceiverId = rawRecId ? String(rawRecId).replace(/\D/g, '') : null;
+      const targetGroupId = isGroup ? String(selectedChat.id).replace(/\D/g, '') : null;
+
+      let res;
       if (attachedFile) {
         const formData = new FormData();
+        formData.append('sender_id', currentUserId);
+        if (targetGroupId) formData.append('group_id', targetGroupId);
+        if (targetReceiverId) formData.append('receiver_id', targetReceiverId);
+        formData.append('message_text', input.trim());
         formData.append('file', attachedFile);
-        formData.append('userId', currentUserId);
 
-        const uploadRes = await axios.post(`${API_BASE_URL}/files/upload`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+        res = await axios.post(`${API_BASE_URL}/messages`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
         });
-        uploadedFileDetails = uploadRes.data;
-      }
-
-      const isGroup = selectedChat.chat_type === 'group';
-      const payload = {
-        sender_id: currentUserId,
-        message_text: input.trim(),
-      };
-      if (isGroup) {
-        payload.group_id = selectedChat.id;
       } else {
-        payload.receiver_id = selectedChat.other_user_id;
-      }
-      if (uploadedFileDetails) {
-        payload.file_name = uploadedFileDetails.name;
-        payload.file_size = uploadedFileDetails.size_bytes;
-        payload.file_type = uploadedFileDetails.file_type.toLowerCase();
-        payload.file_path = uploadedFileDetails.file_path;
+        const payload = {
+          sender_id: currentUserId,
+          receiver_id: targetReceiverId ? parseInt(targetReceiverId, 10) : null,
+          group_id: targetGroupId ? parseInt(targetGroupId, 10) : null,
+          message_text: input.trim()
+        };
+
+        res = await axios.post(`${API_BASE_URL}/messages`, payload);
       }
 
-      await axios.post(`${API_BASE_URL}/messages`, payload);
-      setInput(''); setAttachedFile(null); setShowEmojiPicker(false);
-      fetchMessages(selectedChat);
+      const newMsg = {
+        id: res.data?.id || res.data?.messageId || Date.now(),
+        sender: 'user',
+        first_name: user?.first_name || 'You',
+        last_name: user?.last_name || '',
+        sender_avatar: user?.avatar,
+        text: input.trim(),
+        timestamp: formatMessageTime(),
+        status: 'read',
+        is_read: true,
+        file: attachedFile ? {
+          name: attachedFile.name,
+          size: `${(attachedFile.size / 1024).toFixed(1)} KB`,
+          icon: attachedFile.name.split('.').pop().toLowerCase()
+        } : null
+      };
+
+      setMessages(prev => [...prev, newMsg]);
+      setInput('');
+      setAttachedFile(null);
+      setShowEmojiPicker(false);
+      setShowMentionSuggestions(false);
       fetchConversations();
     } catch (err) {
       console.error('Failed to send message', err);
+      Swal.fire({ icon: 'error', title: 'Send Error', text: err?.response?.data?.error || 'Could not send message' });
     }
   };
 
   const handleCreateTeam = async () => {
-    if (!newTeamName.trim() || selectedUserIds.length === 0) return;
+    if (!newTeamName.trim()) return;
     try {
-      const payload = {
+      const res = await axios.post(`${API_BASE_URL}/chat-groups`, {
         name: newTeamName,
         description: newTeamDesc,
         created_by: currentUserId,
-        members: selectedUserIds
-      };
-      await axios.post(`${API_BASE_URL}/chat-groups`, payload);
+        memberIds: selectedUserIds
+      });
       setIsCreateTeamOpen(false);
       setNewTeamName('');
       setNewTeamDesc('');
       setSelectedUserIds([]);
       fetchConversations();
+      Swal.fire({ icon: 'success', title: 'Team Created', text: `Team "${newTeamName}" created!` });
     } catch (err) {
       console.error('Failed to create team', err);
     }
   };
 
   const handleAddMembers = async () => {
-    if (!selectedChat || selectedChat.chat_type !== 'group' || selectedUserIds.length === 0) return;
+    if (!selectedChat || selectedUserIds.length === 0) return;
     try {
       await axios.post(`${API_BASE_URL}/chat-groups/${selectedChat.id}/members`, {
-        members: selectedUserIds
+        memberIds: selectedUserIds
       });
       setIsAddMemberOpen(false);
       setSelectedUserIds([]);
       fetchMessages(selectedChat);
+      Swal.fire({ icon: 'success', title: 'Members Added', text: 'Members added to team!' });
     } catch (err) {
       console.error('Failed to add members', err);
     }
   };
 
-  const toggleUserSelection = (id) => {
-    setSelectedUserIds(prev => prev.includes(id) ? prev.filter(u => u !== id) : [...prev, id]);
-  };
+  const isEmployeeSearch = searchTerm.trim().toLowerCase().startsWith('emp-') || searchTerm.trim().toLowerCase().startsWith('employee');
 
-  const isEmployeeSearch = searchTerm.toLowerCase().trim() === 'employee';
+  const filteredChats = conversations.filter(chat => {
+    const matchesSearch = (chat.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesSearch && !isEmployeeSearch) return false;
 
-  const filteredChats = conversations.filter(c => {
-    if (isEmployeeSearch) return true;
-    const matchSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || (c.lastMessage || '').toLowerCase().includes(searchTerm.toLowerCase());
-    if (activeFilter === 'Direct') return matchSearch && c.chat_type === 'direct';
-    if (activeFilter === 'Groups') return matchSearch && c.chat_type === 'group';
-    if (activeFilter === 'Unread') return matchSearch && false;
-    return matchSearch;
+    if (activeFilter === 'Unread') return Number(chat.unread_count || chat.unread || 0) > 0;
+    if (activeFilter === 'Direct') return chat.chat_type === 'private';
+    if (activeFilter === 'Groups') return chat.chat_type === 'group';
+    return true;
   });
 
   const pinned = filteredChats.filter(c => c.pinned);
@@ -369,7 +401,7 @@ export default function ITChatPage() {
 
   const renderMessage = (msg, idx) => {
     const isMine = msg.sender === 'user';
-    const senderName = isMine ? 'You' : `${msg.first_name} ${msg.last_name}`;
+    const senderName = isMine ? 'You' : `${msg.first_name || ''} ${msg.last_name || ''}`.trim();
     const avatarUrl = msg.sender_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=random`;
 
     const file = msg.file || (msg.file_name ? {
@@ -387,54 +419,52 @@ export default function ITChatPage() {
         {msg.date && (
           <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-px bg-gray-100" />
-            <span className={`text-xs px-3 py-1 rounded-full ${msg.date === 'New Messages' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'}`}>{msg.date}</span>
+            <span className={`text-xs px-3 py-1 rounded-full ${msg.date === 'New Messages' ? 'bg-red-50 text-red-500 font-semibold' : 'bg-gray-100 text-gray-500'}`}>{msg.date}</span>
             <div className="flex-1 h-px bg-gray-100" />
           </div>
         )}
-        <div className={`flex gap-3 px-5 py-1.5 hover:bg-gray-50/80 group ${isMine ? 'flex-row-reverse' : ''}`}>
-          {!isMine && <Avatar name={senderName} src={avatarUrl} size={34} />}
-          <div className={`max-w-[65%] ${isMine ? 'items-end' : 'items-start'} flex flex-col`}>
+        <div className={`flex gap-2.5 px-5 py-1 group ${isMine ? 'flex-row-reverse' : ''}`}>
+          {!isMine && <Avatar name={senderName} src={avatarUrl} size={32} />}
+          <div className={`max-w-[70%] ${isMine ? 'items-end' : 'items-start'} flex flex-col`}>
             {!isMine && (
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[12px] text-gray-900">{senderName}</span>
-                <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">{'Member'}</span>
-                <span className="text-xs text-gray-400 font-medium">{msg.timestamp}</span>
+                <span className="text-[12px] font-semibold text-gray-900">{senderName}</span>
+                <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded">{'Member'}</span>
+                <span className="text-[10px] text-gray-400 font-medium">{formatMessageTime(msg.timestamp || msg.created_at)}</span>
               </div>
             )}
             {msg.text && (
-              <div className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap
-                ${isMine ? 'bg-red-600 text-white rounded-tr-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm '}`}>
-                {msg.text}
+              <div className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap flex flex-col
+                ${isMine ? 'bg-[#d9fdd3] text-gray-900 border border-[#bceab4] rounded-tr-xs self-end' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-xs self-start shadow-2xs'}`}>
+                <div>{msg.text}</div>
+                <div className="flex items-center gap-1 justify-end mt-1 text-[10px] text-gray-500 font-medium select-none">
+                  <span>{formatMessageTime(msg.timestamp || msg.created_at)}</span>
+                  <WhatsAppTicks status={msg.status || (msg.is_read ? 'read' : 'delivered')} isMine={isMine} />
+                </div>
               </div>
             )}
             {file && (
-              <div className={`mt-2 flex items-center gap-2.5 p-3 rounded border border-gray-100 bg-white `}>
+              <div className="mt-1 flex items-center gap-2.5 p-2.5 rounded-xl border border-gray-200 bg-white shadow-2xs">
                 {FILE_ICONS[file.icon] || <FileText size={22} className="text-gray-400" />}
                 <div>
                   <p className="text-[12px] text-gray-800 font-medium">{file.name}</p>
-                  <p className="text-xs text-gray-400 font-medium">{file.size}</p>
+                  <p className="text-[10px] text-gray-400 font-medium">{file.size}</p>
                 </div>
                 <a
                   href={fileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   download
-                  className="ml-4 text-gray-400 hover:text-blue-600 transition-colors p-1"
+                  className="ml-3 text-gray-400 hover:text-blue-600 transition-colors p-1"
                 >
                   <Download size={15} />
                 </a>
               </div>
             )}
-            {isMine && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-xs text-gray-400">{msg.timestamp}</span>
-                <CheckCheck size={12} className="text-blue-500" />
-              </div>
-            )}
           </div>
           <div className={`opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 self-center ${isMine ? 'mr-2' : 'ml-2'}`}>
-            <button className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-400"><Smile size={12} /></button>
-            <button className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-400"><MoreHorizontal size={12} /></button>
+            <button className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-400 cursor-pointer"><Smile size={12} /></button>
+            <button className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-400 cursor-pointer"><MoreHorizontal size={12} /></button>
           </div>
         </div>
       </React.Fragment>
@@ -442,17 +472,31 @@ export default function ITChatPage() {
   };
 
   return (
-    <div className="flex bg-[#f8fafc] font-sans text-gray-900 overflow-hidden" style={{ fontFamily: "'Inter', sans-serif", height: 'calc(100vh - 64px)' }}>
+    <div className="flex bg-[#f8fafc] font-sans text-gray-900 overflow-hidden w-full h-screen" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Left Panel: Chat List ─────────────────────────────────────────── */}
       <div className="w-[280px] shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-3.5 py-3 border-b border-gray-100 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2">
-            <h2 className="text-[15px] text-gray-900">Team Chat</h2>
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>
+            <button
+              onClick={() => {
+                if (window.history.length > 1) {
+                  navigate(-1);
+                } else {
+                  navigate('/it/it manager/ashwinikhedekar1025/dashboard');
+                }
+              }}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-700 hover:text-red-600 transition flex items-center gap-1 cursor-pointer font-semibold text-xs bg-gray-50 border border-gray-200 shadow-xs"
+              title="Back to Dashboard"
+            >
+              <ArrowLeft size={14} />
+              <span>Back</span>
+            </button>
+            <div className="w-px h-4 bg-gray-200 mx-0.5" />
+            <h2 className="text-[14px] font-bold text-gray-900">Team Chat</h2>
           </div>
-          <button onClick={() => setIsCreateTeamOpen(true)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"><Edit3 size={14} /></button>
+          <button onClick={() => setIsCreateTeamOpen(true)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors" title="Create New Team Chat"><Edit3 size={14} /></button>
         </div>
 
         {/* Filter Tabs */}
@@ -460,8 +504,8 @@ export default function ITChatPage() {
           <div className="flex gap-3">
             {FILTER_TABS.map(f => (
               <button key={f} onClick={() => setActiveFilter(f)}
-                className={`p-2  text-sm  transition-colors
-                  ${activeFilter === f ? 'text-red-600 border-b-2 border-red-500' : 'text-gray-500 hover:text-gray-700'}`}>
+                className={`p-2 text-xs transition-colors cursor-pointer
+                  ${activeFilter === f ? 'text-red-600 border-b-2 border-red-500 font-bold' : 'text-gray-500 hover:text-gray-700'}`}>
                 {f}
               </button>
             ))}
@@ -469,7 +513,7 @@ export default function ITChatPage() {
         </div>
 
         {/* Search */}
-        <div className="px-3 py-3">
+        <div className="p-3">
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input type="text" placeholder="Search chats..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
@@ -483,7 +527,7 @@ export default function ITChatPage() {
           {pinned.length > 0 && (
             <>
               <div className="flex items-center justify-between p-2 mb-1">
-                <span className="text-xs  text-amber-500  tracking-wider flex items-center gap-1"><Pin size={10} /> Pinned</span>
+                <span className="text-xs text-amber-500 tracking-wider flex items-center gap-1 font-semibold"><Pin size={10} /> Pinned</span>
                 <button className="text-gray-400 hover:text-gray-600"><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" /></svg></button>
               </div>
               {pinned.map(chat => <ChatItem key={chat.id} chat={chat} selected={selectedChat?.id === chat.id} onSelect={handleSelectChat} groupInitials={groupInitials} />)}
@@ -492,7 +536,7 @@ export default function ITChatPage() {
           {recent.length > 0 && (
             <>
               <div className="flex items-center justify-between p-2 mb-1 mt-2">
-                <span className="text-xs  text-gray-400  tracking-wider">Recent</span>
+                <span className="text-xs text-gray-400 tracking-wider font-semibold">Recent</span>
                 <button className="text-gray-400 hover:text-gray-600"><svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" /></svg></button>
               </div>
               {recent.map(chat => <ChatItem key={chat.id} chat={chat} selected={selectedChat?.id === chat.id} onSelect={handleSelectChat} groupInitials={groupInitials} />)}
@@ -501,7 +545,7 @@ export default function ITChatPage() {
           {directoryUsers.length > 0 && (
             <>
               <div className="flex items-center justify-between p-2 mb-1 mt-2 border-t border-gray-100 pt-2">
-                <span className="text-xs  text-blue-500  tracking-wider flex items-center gap-1"><Users size={10} /> Company Directory</span>
+                <span className="text-xs text-blue-500 tracking-wider flex items-center gap-1 font-semibold"><Users size={10} /> Company Directory</span>
               </div>
               {directoryUsers.map(chat => <ChatItem key={chat.id} chat={chat} selected={selectedChat?.id === chat.id} onSelect={handleSelectChat} groupInitials={groupInitials} />)}
             </>
@@ -512,31 +556,30 @@ export default function ITChatPage() {
         <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-xs text-gray-600">Online</span>
+            <span className="text-xs text-gray-600 font-medium">Online</span>
             <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>
           </div>
           <div className="flex items-center gap-2 text-gray-400">
-            <button className="hover:text-gray-600 transition-colors"><Settings size={14} /></button>
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" /></svg>
+            <button className="hover:text-gray-600 transition-colors cursor-pointer"><Settings size={14} /></button>
           </div>
         </div>
       </div>
 
       {/* ── Middle: Messages ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className="flex-1 flex flex-col min-w-0 relative bg-gray-50/50">
         {selectedChat && (
           <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between shrink-0 z-10">
             <div className="flex items-center gap-3">
               <div className="relative">
                 {selectedChat.chat_type === 'group'
-                  ? <div className={`w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs`}>{groupInitials(selectedChat.name)}</div>
+                  ? <div className={`w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold`}>{groupInitials(selectedChat.name)}</div>
                   : <Avatar name={selectedChat.name} src={selectedChat.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat.name)}&background=random`} size={40} />
                 }
                 {selectedChat.chat_type === 'group' && <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />}
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-[14px] text-gray-900">{selectedChat.name}</h3>
+                  <h3 className="text-[14px] font-bold text-gray-900">{selectedChat.name}</h3>
                   {selectedChat.chat_type === 'group' && <Star size={13} className="text-amber-400 fill-amber-400" />}
                 </div>
                 <p className="text-xs text-gray-400 font-medium">{(groupMembers.length || 0)} members • <span className="hover:text-blue-600 cursor-pointer">Add description</span></p>
@@ -553,514 +596,210 @@ export default function ITChatPage() {
         <div className="sticky top-[64px] bg-white border-b border-gray-100 p-2 flex items-center gap-4 z-10">
           {TABS.map(tab => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`p-2 text-sm border-b-2 transition-colors
-                ${activeTab === tab ? 'text-red-600 border-red-500' : 'text-gray-500 border-transparent hover:text-gray-700'}`}>
+              className={`text-xs px-3 py-1.5 rounded transition-colors cursor-pointer ${activeTab === tab ? 'bg-red-50 text-red-600 font-bold' : 'text-gray-500 hover:text-gray-700'}`}>
               {tab}
             </button>
           ))}
-          <button className="ml-auto text-gray-400 hover:text-gray-600 p-2"><Plus size={14} /></button>
-          <button className="text-gray-400 hover:text-gray-600 p-2"><Search size={14} /></button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-2 bg-[#f8fafc]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {activeTab === 'Messages' && (
-            <>
-              {messages.map((msg, i) => renderMessage(msg, i))}
-              <div ref={messagesEndRef} />
-            </>
+            messages.length > 0 ? (
+              messages.map((msg, idx) => renderMessage(msg, idx))
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400 text-xs">
+                No messages yet. Send a message to start conversation.
+              </div>
+            )
           )}
 
           {activeTab === 'Files' && (
-            <div className="p-6 bg-white m-4 rounded  border border-gray-100 min-h-[300px]">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-semibold text-gray-800">Shared Files</h3>
-                <span className="text-xs text-gray-500">
-                  {messages.filter(m => m.file || m.file_name).length} items
-                </span>
-              </div>
-              {messages.filter(m => m.file || m.file_name).length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
-                  <FileText size={48} className="mx-auto mb-3 opacity-20" />
-                  <p className="text-xs">No files shared in this chat yet</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-gray-500">
-                    <thead className="bg-gray-50 text-gray-700  tracking-wider text-xs">
-                      <tr>
-                        <th className="p-3">Name</th>
-                        <th className="p-3">Shared By</th>
-                        <th className="p-3">Size</th>
-                        <th className="p-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {messages.filter(m => m.file || m.file_name).map(m => {
-                        const file = m.file || {
-                          name: m.file_name,
-                          size: m.file_size ? `${(m.file_size / 1024).toFixed(1)} KB` : '0 KB',
-                          icon: (m.file_type || 'pdf').toLowerCase(),
-                          path: m.file_path
-                        };
-                        const senderName = m.sender === 'user' ? 'You' : `${m.first_name} ${m.last_name}`;
-                        const fileUrl = file.path
-                          ? `${API_BASE_URL.replace('/api', '')}${file.path}`
-                          : `${API_BASE_URL.replace('/api', '')}/uploads/${file.name}`;
-                        return (
-                          <tr key={m.id} className="hover:bg-gray-50/50">
-                            <td className="p-3 flex items-center gap-2 font-medium text-gray-900">
-                              {FILE_ICONS[file.icon] || <FileText size={18} className="text-gray-400" />}
-                              <span>{file.name}</span>
-                            </td>
-                            <td className="p-3">{senderName}</td>
-                            <td className="p-3">{file.size}</td>
-                            <td className="p-3">
-                              <a
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
-                                className="text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 font-medium"
-                              >
-                                <Download size={12} /> Download
-                              </a>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'Links' && (
-            <div className="p-6 bg-white m-4 rounded  border border-gray-100 min-h-[300px]">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-semibold text-gray-800">Shared Links</h3>
-                <span className="text-xs text-gray-500">
-                  {(() => {
-                    let count = 0;
-                    messages.forEach(m => {
-                      const matches = m.text?.match(/(https?:\/\/[^\s]+)/g);
-                      if (matches) count += matches.length;
-                    });
-                    return count;
-                  })()} items
-                </span>
-              </div>
-              {(() => {
-                const links = [];
-                messages.forEach(m => {
-                  const urlRegex = /(https?:\/\/[^\s]+)/g;
-                  const matches = m.text?.match(urlRegex);
-                  if (matches) {
-                    matches.forEach(url => {
-                      links.push({
-                        id: m.id + url,
-                        sender: m.sender === 'user' ? 'You' : `${m.first_name} ${m.last_name}`,
-                        url: url,
-                        timestamp: m.timestamp
-                      });
-                    });
-                  }
-                });
-
-                if (links.length === 0) {
-                  return (
-                    <div className="text-center py-12 text-gray-400">
-                      <Link size={48} className="mx-auto mb-3 opacity-20" />
-                      <p className="text-xs">No links shared in this chat yet</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {links.map(l => (
-                      <div key={l.id} className="p-3.5 border border-gray-100 rounded hover: transition bg-gray-50/50 flex flex-col justify-between">
-                        <div className="mb-3">
-                          <p className="text-xs text-gray-400 font-medium mb-1">Shared by {l.sender} at {l.timestamp}</p>
-                          <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-blue-600 hover:underline break-all flex items-center gap-1.5">
-                            <Link size={12} className="shrink-0" />
-                            {l.url}
-                          </a>
-                        </div>
-                        <a href={l.url} target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1 mt-1">
-                          Open Link <ChevronRight size={12} />
-                        </a>
-                      </div>
-                    ))}
+            <div className="p-4 space-y-2">
+              <h4 className="text-xs font-semibold text-gray-700 mb-2">Shared Files</h4>
+              {messages.filter(m => m.file || m.file_name).map((m, i) => (
+                <div key={i} className="p-3 bg-white border border-gray-200 rounded-lg flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-2">
+                    <FileText size={16} className="text-blue-500" />
+                    <span>{m.file_name || m.file?.name}</span>
                   </div>
-                );
-              })()}
+                  <span className="text-gray-400">{formatMessageTime(m.timestamp || m.created_at)}</span>
+                </div>
+              ))}
             </div>
           )}
 
           {activeTab === 'Tasks' && (
-            <div className="p-6 bg-white m-4 rounded  border border-gray-100 min-h-[300px]">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-sm font-semibold text-gray-800">Chat Tasks</h3>
-                <span className="text-xs text-gray-500">{getChatTasks().filter(t => !t.completed).length} remaining</span>
+            <div className="p-4 space-y-3 font-sans">
+              <div className="flex justify-between items-center">
+                <h4 className="text-xs font-bold text-gray-800">Team Tasks & To-Dos</h4>
               </div>
 
-              {/* Add Task Form */}
-              <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   placeholder="Add a new task..."
                   value={newTaskTitle}
-                  onChange={e => setNewTaskTitle(e.target.value)}
-                  className="flex-1 border rounded p-2 text-xs focus:outline-blue-500 focus:border-transparent transition-all"
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+                  className="flex-1 p-2 border border-gray-300 rounded text-xs outline-none bg-white focus:ring-1 focus:ring-blue-500"
                 />
-                <button type="submit" className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5 font-medium ">
-                  <Plus size={14} /> Add Task
+                <button
+                  onClick={handleAddTask}
+                  className="px-3 py-2 bg-blue-600 text-white rounded text-xs font-semibold hover:bg-blue-700 cursor-pointer"
+                >
+                  Add Task
                 </button>
-              </form>
+              </div>
 
-              {getChatTasks().length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
-                  <Check size={48} className="mx-auto mb-3 opacity-20" />
-                  <p className="text-xs">No tasks created yet. Use the input above to create one!</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {getChatTasks().map(t => (
-                    <div key={t.id} className="flex items-center justify-between p-3 border border-gray-100 rounded hover:bg-gray-50/50 transition">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={t.completed}
-                          onChange={() => handleToggleTask(t.id)}
-                          className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
-                        />
-                        <span className={`text-xs ${t.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>{t.title}</span>
-                      </div>
-                      <button onClick={() => handleDeleteTask(t.id)} className="text-gray-400 hover:text-red-500 p-1 rounded hover:bg-gray-100 transition-colors">
+              <div className="space-y-2 pt-2">
+                {getChatTasks().map(task => (
+                  <div key={task.id} className="p-2.5 bg-white border border-gray-200 rounded-lg flex items-center justify-between text-xs">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={task.completed}
+                        onChange={() => handleToggleTask(task.id)}
+                        className="rounded text-blue-600 cursor-pointer"
+                      />
+                      <span className={task.completed ? 'line-through text-gray-400' : 'text-gray-800 font-medium'}>{task.title}</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{task.assignee}</span>
+                      <button onClick={() => handleDeleteTask(task.id)} className="text-gray-400 hover:text-red-500 cursor-pointer">
                         <Trash2 size={13} />
                       </button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
 
-        <div className="bg-white border-t border-gray-100 p-4 relative">
-          {showMentionSuggestions && getMentionSuggestions().length > 0 && (
-            <div className="absolute bottom-[100%] left-4 mb-2 bg-white border border-gray-200 shadow-xl rounded max-h-[200px] overflow-y-auto w-[240px] z-50 py-1.5">
-              <div className="px-3 py-1 text-xs text-gray-400   tracking-wider border-b border-gray-50 mb-1">
-                Mention Team Members
-              </div>
-              {getMentionSuggestions().map(member => {
-                const name = `${member.first_name} ${member.last_name}`;
-                const avatar = member.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+        {/* Input Bar */}
+        <div className="p-3 bg-white border-t border-gray-100 relative">
+          {showMentionSuggestions && (
+            <div className="absolute bottom-full left-4 bg-white border border-gray-200 rounded-lg shadow-xl max-h-40 overflow-y-auto z-50 w-64 p-1 text-xs">
+              <div className="text-[10px] font-bold text-gray-400 px-2 py-1 uppercase">Mention Team Member</div>
+              {filteredMentionUsers.map(u => {
+                const uName = u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim();
                 return (
-                  <button
-                    key={member.id}
-                    onClick={() => handleSelectMention(member)}
-                    className="w-full flex items-center gap-2.5 p-2 text-left text-xs hover:bg-gray-50 transition-colors"
+                  <div
+                    key={u.id}
+                    onClick={() => handleSelectMentionUser(uName)}
+                    className="p-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2 rounded text-gray-800 font-medium"
                   >
-                    <img src={avatar} className="w-6 h-6 rounded-full object-cover shrink-0" alt={name} />
-                    <span className="font-medium text-gray-700">{name}</span>
-                  </button>
+                    <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
+                      {uName.substring(0, 2).toUpperCase()}
+                    </div>
+                    <span>{uName}</span>
+                  </div>
                 );
               })}
             </div>
           )}
 
-          {attachedFile && (
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 p-2 rounded mb-2 w-fit">
-              <FileText size={16} className="text-blue-500 shrink-0" />
-              <span className="text-xs text-gray-700 truncate max-w-[200px] font-medium">{attachedFile.name}</span>
-              <span className="text-xs text-gray-400 font-medium">({(attachedFile.size / 1024).toFixed(1)} KB)</span>
-              <button
-                onClick={() => setAttachedFile(null)}
-                className="text-gray-400 hover:text-red-500 rounded hover:bg-gray-200/50 p-0.5 transition-colors"
-              >
-                <X size={13} />
-              </button>
+          {showEmojiPicker && (
+            <div className="absolute bottom-full left-4 bg-white border border-gray-200 rounded-lg shadow-xl p-2 z-50 flex gap-2 flex-wrap max-w-xs mb-2">
+              {EMOJIS.map(emoji => (
+                <button key={emoji} onClick={() => setInput(prev => prev + emoji)} className="text-lg hover:scale-125 transition-transform p-1">
+                  {emoji}
+                </button>
+              ))}
             </div>
           )}
 
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded p-2.5 focus-within:border-blue-300 focus-within:bg-white transition-all">
+          {attachedFile && (
+            <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-xs text-blue-900">
+              <span className="truncate flex items-center gap-1"><Paperclip size={13} /> {attachedFile.name}</span>
+              <button onClick={() => setAttachedFile(null)} className="text-blue-700 hover:text-red-500 p-0.5"><X size={14} /></button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-blue-400 focus-within:bg-white transition-all">
             <input
               id="chat-input"
+              type="text"
+              placeholder="Type a message... (Use @ to mention)"
               value={input}
               onChange={handleInputChange}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder="Type a message..."
-              className="flex-1 bg-transparent text-xs text-gray-700 outline-none placeholder-gray-400"
+              onKeyPress={e => e.key === 'Enter' && handleSend()}
+              className="w-full text-xs outline-none bg-transparent text-gray-800 placeholder-gray-400"
             />
-          </div>
-          <div className="flex items-center justify-between mt-2 px-1">
-            <div className="flex items-center gap-1 text-gray-400">
-              <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
-              <input type="file" className="hidden" accept="image/*" ref={imageInputRef} onChange={handleFileSelect} />
-              <button onClick={() => handleIconClick('paperclip')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Paperclip size={15} /></button>
-              <div className="relative">
-                <button onClick={() => handleIconClick('smile')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Smile size={15} /></button>
-                {showEmojiPicker && (
-                  <div className="absolute bottom-full left-0 mb-2 bg-white border shadow-lg rounded p-2 flex flex-wrap w-[220px] gap-2 z-50">
-                    {EMOJIS.map(emoji => (
-                      <button key={emoji} onClick={() => { setInput(prev => prev + emoji); setShowEmojiPicker(false); document.getElementById('chat-input')?.focus(); }} className="text-xl hover:bg-gray-100 rounded p-1">{emoji}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button onClick={() => handleIconClick('atsign')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><AtSign size={15} /></button>
-              <button onClick={() => handleIconClick('hash')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Hash size={15} /></button>
-              <button onClick={() => handleIconClick('image')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Image size={15} /></button>
-              <button onClick={() => handleIconClick('calendar')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Calendar size={15} /></button>
-              <button onClick={() => handleIconClick('mic')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Mic size={15} /></button>
-              <button onClick={() => handleIconClick('plus')} className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 hover:text-gray-600 transition-colors"><Plus size={15} /></button>
+            <div className="flex items-center gap-1.5 text-gray-400">
+              <button onClick={() => handleIconClick('smile')} className="hover:text-gray-600 cursor-pointer p-1"><Smile size={16} /></button>
+              <button onClick={() => handleIconClick('paperclip')} className="hover:text-gray-600 cursor-pointer p-1"><Paperclip size={16} /></button>
+              <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" />
+              <button onClick={handleSend} className="p-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition cursor-pointer shadow-xs ml-1">
+                <Send size={14} />
+              </button>
             </div>
-            <button
-              onClick={handleSend}
-              disabled={!(input.trim() || attachedFile)}
-              className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors 
-                ${(input.trim() || attachedFile) ? 'bg-red-600 text-white hover:bg-red-700 cursor-pointer' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
-            >
-              <Send size={14} />
-            </button>
           </div>
         </div>
       </div>
 
       {/* ── Right Panel: Details ─────────────────────────────────────────── */}
       {showDetails && selectedChat && (
-        <div className="w-[280px] shrink-0 bg-white border-l border-gray-100 flex flex-col overflow-hidden">
-          <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-[14px] text-gray-900">Details</h3>
-            <button onClick={() => setShowDetails(false)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition-colors"><X size={14} /></button>
+        <div className="w-[280px] shrink-0 bg-white border-l border-gray-100 p-4 overflow-y-auto space-y-4 text-xs font-sans">
+          <div className="flex justify-between items-center border-b pb-3">
+            <span className="font-bold text-gray-800 text-sm">Details</span>
+            <button onClick={() => setShowDetails(false)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X size={16} /></button>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
-            <div className="flex flex-col items-center py-6 border-b border-gray-100">
-              {selectedChat.chat_type === 'group' ? (
-                <div className={`w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white text-xl mb-3 shadow-md`}>
-                  {groupInitials(selectedChat.name)}
-                </div>
-              ) : (
-                <Avatar name={selectedChat.name} src={selectedChat.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat.name)}&background=random`} size={64} />
-              )}
-              <h4 className="text-[14px] text-gray-900">{selectedChat.name}</h4>
-              <p className="text-xs text-gray-400 font-medium mt-0.5">{(groupMembers.length || 0)} Members</p>
+          <div className="text-center space-y-2 py-2">
+            <Avatar name={selectedChat.name} src={selectedChat.avatar} size={64} color="bg-blue-500" />
+            <h3 className="font-bold text-gray-900 text-sm">{selectedChat.name}</h3>
+            <p className="text-gray-400 text-[11px] font-medium">{(groupMembers.length || 0)} Members</p>
+          </div>
 
-              <div className="flex gap-4 mt-5">
-                {[
-                  { icon: <Phone size={16} />, label: 'Audio Call' },
-                  { icon: <Video size={16} />, label: 'Video Call' },
-                  { icon: <Users size={16} />, label: 'Add Members' },
-                  { icon: <Search size={16} />, label: 'Search' },
-                  { icon: <MoreHorizontal size={16} />, label: 'More' },
-                ].map(({ icon, label }) => (
-                  <button key={label} onClick={label === 'Add Members' ? () => setIsAddMemberOpen(true) : undefined} className="flex flex-col items-center gap-1.5">
-                    <div className="w-9 h-9 bg-gray-100 hover:bg-blue-50 hover:text-blue-600 rounded-full flex items-center justify-center text-gray-500 transition-colors">{icon}</div>
-                    <span className="text-[9px] text-gray-400">{label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="px-4 py-4 border-b border-gray-100">
-              <div className="flex justify-between items-center mb-2">
-                <h5 className="text-xs  text-gray-700  tracking-wider">About</h5>
-                <button className="text-xs text-blue-600 hover:text-blue-700">Edit</button>
-              </div>
-              <p className="text-xs text-gray-600 font-medium leading-relaxed">{selectedChat.description || 'No description available'}</p>
-              <div className="mt-3 space-y-1 text-xs text-gray-500 font-medium">
-                <p><span className="text-gray-700">Created by</span></p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Avatar name={selectedChat.createdBy || 'Admin'} src={`https://ui-avatars.com/api/?name=${encodeURIComponent(selectedChat.createdBy || 'Admin')}&background=random`} size={22} />
-                  <div>
-                    <p className="text-xs text-gray-800">{selectedChat.createdBy || 'Admin'}</p>
-                    <p className="text-[9px] text-gray-400">Created on {selectedChat.timestamp || 'Unknown'}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {[
-              { label: 'Media, Files & Links', count: (selectedChat.stats?.media || 0), icon: <Paperclip size={13} /> },
-              { label: 'Pinned Messages', count: (selectedChat.stats?.pinned || 0), icon: <Pin size={13} /> },
-              { label: 'Tasks', count: (selectedChat.stats?.tasks || 0), icon: <Check size={13} /> },
-              { label: 'Events', count: (selectedChat.stats?.events || 0), icon: <Calendar size={13} /> },
-              { label: 'Polls', count: (selectedChat.stats?.polls || 0), icon: <Hash size={13} /> },
-            ].map(({ label, count, icon }) => (
-              <button key={label} className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors">
-                <div className="flex items-center gap-2.5 text-[12px] text-gray-700">
-                  <span className="text-gray-400">{icon}</span>{label}
-                </div>
-                <div className="flex items-center gap-1.5 text-gray-400">
-                  <span className="text-xs text-gray-500">{count}</span>
-                  <ChevronRight size={12} />
-                </div>
-              </button>
-            ))}
-
-            {selectedChat.chat_type === 'group' && (
-              <div className="px-4 py-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <h5 className="text-xs  text-gray-700  tracking-wider">Members ({groupMembers.length})</h5>
-                  <button onClick={() => setIsAddMemberOpen(true)} className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"><Plus size={10} /> Add Members</button>
-                </div>
-                <div className="space-y-2.5">
-                  {groupMembers.slice(0, 5).map(m => {
-                    const name = `${m.first_name} ${m.last_name}`;
-                    return (
-                      <div key={m.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="relative">
-                            <Avatar name={name} src={m.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`} size={28} color="bg-blue-500" />
-                            <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-800 leading-tight">{name}</p>
-                            <p className="text-[9px] text-gray-400 font-medium">{m.role || 'Member'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {groupMembers.length > 5 && (
-                  <button className="mt-3 text-xs text-blue-600 hover:text-blue-700">View all members</button>
-                )}
-              </div>
-            )}
-
-            <div className="px-4 py-3 border-b border-gray-100">
-              <button className="w-full flex items-center justify-between text-[12px] text-gray-700 hover:text-gray-900 py-1">
-                <div className="flex items-center gap-2"><Bell size={13} className="text-gray-400" /> Notifications</div>
-                <span className="text-xs text-gray-400">All Messages <ChevronRight size={11} className="inline" /></span>
-              </button>
-              <button className="w-full flex items-center justify-between text-[12px] text-gray-700 hover:text-gray-900 py-1 mt-1">
-                <div className="flex items-center gap-2"><FileText size={13} className="text-gray-400" /> Shared Files</div>
-                <span className="text-xs text-gray-400">Visible to All <ChevronRight size={11} className="inline" /></span>
-              </button>
-            </div>
-
-            <div className="px-4 py-4">
-              <button className="flex items-center gap-2 text-[12px] text-red-500 hover:text-red-600 transition-colors">
-                <LogOut size={13} /> Leave Channel
-              </button>
-            </div>
+          <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg space-y-1">
+            <span className="text-gray-500 font-semibold text-[10px] uppercase tracking-wider block">About</span>
+            <p className="text-gray-700 leading-relaxed text-xs">No description available</p>
           </div>
         </div>
       )}
-
-      {/* Create Team Modal */}
-      {isCreateTeamOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded p-2 w-[400px]">
-            <h3 className="text-lg  mb-4">Create New Team</h3>
-            <input
-              type="text" placeholder="Team Name" value={newTeamName} onChange={e => setNewTeamName(e.target.value)}
-              className="w-full border rounded p-2 text-sm mb-3 focus:outline-blue-500"
-            />
-            <textarea
-              placeholder="Description" value={newTeamDesc} onChange={e => setNewTeamDesc(e.target.value)}
-              className="w-full border rounded p-2 text-sm mb-4 focus:outline-blue-500 h-20"
-            />
-            <h4 className="text-sm font-semibold mb-2">Select Members</h4>
-            <div className="relative mb-2">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text" placeholder="Search employees..."
-                value={teamMemberSearch} onChange={e => setTeamMemberSearch(e.target.value)}
-                className="w-full border rounded p-2 pl-8 text-sm focus:outline-blue-500"
-              />
-            </div>
-            <div className="max-h-40 overflow-y-auto mb-4 border rounded p-2">
-              {availableUsers.filter(u => teamMemberSearch.toLowerCase().trim() === 'employee' || (u.name || '').toLowerCase().includes(teamMemberSearch.toLowerCase())).map(u => (
-                <label key={u.id} className="flex items-center gap-2 mb-2 cursor-pointer">
-                  <input type="checkbox" checked={selectedUserIds.includes(u.id)} onChange={() => toggleUserSelection(u.id)} />
-                  <img src={u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=random`} className="w-6 h-6 rounded-full" />
-                  <span className="text-sm">{u.name}</span>
-                </label>
-              ))}
-            </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setIsCreateTeamOpen(false); setSelectedUserIds([]); setTeamMemberSearch(""); }} className="p-2 text-sm text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-              <button onClick={handleCreateTeam} className="p-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Create Team</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Member Modal */}
-      {isAddMemberOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded p-2 w-[400px]">
-            <h3 className="text-lg  mb-4">Add Members to Team</h3>
-            <div className="relative mb-2">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text" placeholder="Search employees..."
-                value={teamMemberSearch} onChange={e => setTeamMemberSearch(e.target.value)}
-                className="w-full border rounded p-2 pl-8 text-sm focus:outline-blue-500"
-              />
-            </div>
-            <div className="max-h-60 overflow-y-auto mb-4 border rounded p-2">
-              {availableUsers.filter(u => teamMemberSearch.toLowerCase().trim() === 'employee' || (u.name || '').toLowerCase().includes(teamMemberSearch.toLowerCase())).map(u => {
-                if (groupMembers.some(m => m.id === u.id)) return null;
-                return (
-                  <label key={u.id} className="flex items-center gap-2 mb-2 cursor-pointer">
-                    <input type="checkbox" checked={selectedUserIds.includes(u.id)} onChange={() => toggleUserSelection(u.id)} />
-                    <img src={u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=random`} className="w-6 h-6 rounded-full" />
-                    <span className="text-sm">{u.name}</span>
-                  </label>
-                );
-              })}
-            </div>
-            <div className="flex justify-end gap-2">
-              <button onClick={() => { setIsAddMemberOpen(false); setSelectedUserIds([]); setTeamMemberSearch(""); }} className="p-2 text-sm text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-              <button onClick={handleAddMembers} className="p-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">Add Members</button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
 
 function ActionBtn({ icon, onClick }) {
   return (
-    <button onClick={onClick} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+    <button onClick={onClick} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
       {icon}
     </button>
   );
 }
 
 function ChatItem({ chat, selected, onSelect, groupInitials }) {
+  const rawTime = chat.timestamp || chat.created_at || '';
+  const displayTime = formatMessageTime(rawTime);
+  const unreadCount = Number(chat.unread_count || chat.unread || 0);
+
   return (
     <button
       onClick={() => onSelect(chat)}
-      className={`w-full flex items-center gap-3 px-2 py-2.5 rounded transition-all mb-0.5 text-left
-        ${selected ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
+      className={`w-full flex items-center gap-3 px-2 py-2.5 rounded transition-all mb-0.5 text-left cursor-pointer
+        ${selected ? 'bg-gray-100 font-semibold' : 'hover:bg-gray-50'}`}
     >
       <div className="relative shrink-0">
         {chat.chat_type === 'group'
-          ? <div className={`w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-[12px]`}>{groupInitials(chat.name)}</div>
+          ? <div className={`w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white text-[12px] font-bold`}>{groupInitials(chat.name)}</div>
           : <img src={chat.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(chat.name)}&background=random`} alt={chat.name} className="w-10 h-10 rounded-full object-cover" />
         }
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center mb-0.5">
           <h4 className="text-xs font-semibold text-gray-900 truncate pr-2">{chat.name}</h4>
-          <span className="text-xs text-gray-400 whitespace-nowrap">{chat.timestamp?.split(' ')[1] || ''}</span>
+          <span className="text-[10px] text-gray-400 whitespace-nowrap">{displayTime}</span>
         </div>
-        <p className={`text-xs truncate ${chat.unread ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
+        <p className={`text-xs truncate ${unreadCount > 0 ? 'font-bold text-gray-900' : 'text-gray-500'}`}>
           {chat.lastMessage || 'New Conversation'}
         </p>
       </div>
-      {chat.unread > 0 && (
-        <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center text-[9px] text-white  shrink-0">
-          {chat.unread}
+      {unreadCount > 0 && (
+        <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center text-[9px] font-bold text-white shrink-0 shadow-xs">
+          {unreadCount > 99 ? '99+' : unreadCount}
         </div>
       )}
     </button>

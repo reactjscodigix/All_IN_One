@@ -101,7 +101,7 @@ const ProposalDetailsPage = ({ proposalId, onBack }) => {
     );
   }
 
-  const currency = proposal.currency || 'USD';
+  const currency = proposal.currency || 'INR';
   const lineItems = proposal.lineItems || [];
   const history = proposal.history || [];
 

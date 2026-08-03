@@ -105,9 +105,21 @@ const FollowupsPage = () => {
     const sanitized = { ...data };
     const dateFields = ['scheduled_date', 'recurrence_end_date', 'next_followup_date', 'created_at', 'updated_at'];
 
+    const formatDateForAPI = (dateVal) => {
+      if (!dateVal) return dateVal;
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) {
+        return typeof dateVal === 'string' ? dateVal.split('T')[0] : dateVal;
+      }
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     dateFields.forEach(field => {
-      if (sanitized[field] && typeof sanitized[field] === 'string' && sanitized[field].includes('T')) {
-        sanitized[field] = sanitized[field].split('T')[0];
+      if (sanitized[field]) {
+        sanitized[field] = formatDateForAPI(sanitized[field]);
       }
     });
 
@@ -577,14 +589,14 @@ const FollowupsPage = () => {
                     related_name: row.related_name,
                     client_email: row.client_email,
                     client_phone: row.client_phone,
-                    autoOpenAdd: true
+                    autoOpenAdd: !row.latest_quotation_status
                   }
                 });
               }}
-              title="Create Quotation"
-              className="px-2 py-1 bg-green-600 text-white rounded text-xs  hover:bg-green-700 transition-all flex items-center gap-1 "
+              title={row.latest_quotation_status ? `Quotation Status: ${row.latest_quotation_status}` : "Create Quotation"}
+              className={`px-2 py-1 ${row.latest_quotation_status ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'} text-white rounded text-xs transition-all flex items-center gap-1`}
             >
-              <Calculator size={12} /> CREATE QUOTATION
+              <Calculator size={12} /> {row.latest_quotation_status ? 'VIEW QUOTATION' : 'CREATE QUOTATION'}
             </button>
           )}
           {((row.type === 'Google Meet' || row.type === 'Zoom Meeting') || row.meeting_link) && (row.status === 'Scheduled' || row.status === 'Pending' || row.status === 'Client Joined') && (
@@ -596,56 +608,76 @@ const FollowupsPage = () => {
               <VideoIcon size={12} className={row.status === 'Client Joined' ? 'text-white' : 'text-red-500'} /> {row.status === 'Client Joined' ? 'JOIN NOW' : 'JOIN'}
             </button>
           )}
-          {row.status !== 'Completed' && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleComplete(row); }}
-              title="Mark Completed"
-              className="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-colors"
-            >
-              <CheckCircle2 size={15} />
-            </button>
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); setEditingFollowup(row); setIsAddModalOpen(true); }}
-            title="Edit Follow-up"
-            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-          >
-            <Edit2 size={15} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              // Create next follow-up with pre-filled data
-              const nextData = {
-                related_type: row.related_type,
-                related_id: row.related_id,
-                related_name: row.related_name,
-                client_email: row.client_email,
-                client_phone: row.client_phone,
-                formal_message: `Dear ${row.related_name || 'Client'}, I would like to schedule a session to discuss our collaboration. Looking forward to connecting with you.`,
-                subject: `Follow-up: ${row.subject.replace('Follow-up: ', '')}`,
-                previous_outcome: row.outcome || 'No outcome recorded',
-                previous_followup_id: row.id,
-                isNextFollowup: true,
-                status: 'Scheduled',
-                type: row.type || 'Call',
-                priority: row.priority || 'High'
-              };
-              setEditingFollowup(nextData);
-              setIsAddModalOpen(true);
-            }}
-            title="Create Next Follow-up"
-            className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
-          >
-            <RotateCcw size={15} />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }}
-            title="Delete"
-            className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-          >
-            <Trash2 size={15} />
-          </button>
+          {(() => {
+            const isRowFinalized = 
+              row.lead_status === 'Converted' || 
+              row.deal_status === 'Won' || 
+              row.deal_status === 'Lost' || 
+              row.deal_status === 'Finalized Deal' ||
+              row.outcome === 'Converted to Deal' ||
+              row.outcome === 'Won';
+
+            return (
+              <>
+                {!isRowFinalized && row.status !== 'Completed' && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleComplete(row); }}
+                    title="Mark Completed"
+                    className="p-1.5 text-green-600 hover:bg-green-50 rounded-md transition-colors"
+                  >
+                    <CheckCircle2 size={15} />
+                  </button>
+                )}
+                {!isRowFinalized && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingFollowup(row); setIsAddModalOpen(true); }}
+                    title="Edit Follow-up"
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                  >
+                    <Edit2 size={15} />
+                  </button>
+                )}
+                {!isRowFinalized && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Create next follow-up with pre-filled data
+                      const nextData = {
+                        related_type: row.related_type,
+                        related_id: row.related_id,
+                        related_name: row.related_name,
+                        client_email: row.client_email,
+                        client_phone: row.client_phone,
+                        formal_message: `Dear ${row.related_name || 'Client'}, I would like to schedule a session to discuss our collaboration. Looking forward to connecting with you.`,
+                        subject: `Follow-up: ${row.subject.replace('Follow-up: ', '')}`,
+                        previous_outcome: row.outcome || 'No outcome recorded',
+                        previous_followup_id: row.id,
+                        isNextFollowup: true,
+                        status: 'Scheduled',
+                        type: row.type || 'Call',
+                        priority: row.priority || 'High'
+                      };
+                      setEditingFollowup(nextData);
+                      setIsAddModalOpen(true);
+                    }}
+                    title="Create Next Follow-up"
+                    className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-md transition-colors"
+                  >
+                    <RotateCcw size={15} />
+                  </button>
+                )}
+                {!isRowFinalized && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }}
+                    title="Delete"
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </div>
       )
     }
@@ -665,7 +697,8 @@ const FollowupsPage = () => {
       group.sort((a, b) => {
         const dateA = parseDateSafely(a.scheduled_date, a.scheduled_time);
         const dateB = parseDateSafely(b.scheduled_date, b.scheduled_time);
-        return dateA - dateB;
+        if (dateA - dateB !== 0) return dateA - dateB;
+        return a.id - b.id; // stable fallback by database ID oldest-first
       });
     });
 
@@ -774,11 +807,12 @@ const FollowupsPage = () => {
     });
 
     return Object.values(groups).map(client => {
-      // Sort followups by date
+      // Sort followups by date (Oldest First)
       const sorted = [...client.followups].sort((a, b) => {
         const dateA = parseDateSafely(a.scheduled_date, a.scheduled_time);
         const dateB = parseDateSafely(b.scheduled_date, b.scheduled_time);
-        return dateB - dateA; // Newest first
+        if (dateA - dateB !== 0) return dateA - dateB;
+        return a.id - b.id; // stable fallback by database ID oldest-first
       });
 
       return {
@@ -1163,9 +1197,19 @@ const FollowupsPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {clientsWithFollowups.map(client => (
-                      <React.Fragment key={client.key}>
-                        <tr
+                    {clientsWithFollowups.map(client => {
+                      const isFinalized = client.followups.some(f => 
+                        f.lead_status === 'Converted' || 
+                        f.deal_status === 'Won' || 
+                        f.deal_status === 'Lost' || 
+                        f.deal_status === 'Finalized Deal' ||
+                        f.outcome === 'Converted to Deal' ||
+                        f.outcome === 'Won'
+                      );
+
+                      return (
+                        <React.Fragment key={client.key}>
+                          <tr
                           onClick={() => toggleClientExpansion(client.key)}
                           className={`hover:bg-gray-50/80 transition-colors cursor-pointer ${expandedClients[client.key] ? 'bg-gray-50/50' : ''}`}
                         >
@@ -1188,19 +1232,41 @@ const FollowupsPage = () => {
                           </td>
                           <td className="p-2">
                             {(() => {
-                              const status = client.type === 'Lead' ? client.last_followup?.lead_status : (client.last_followup?.deal_stage || client.last_followup?.deal_status);
-                              if (!status) return <span className="text-xs text-gray-400">N/A</span>;
+                              const entityStatus = client.type === 'Lead' ? client.last_followup?.lead_status : (client.last_followup?.deal_stage || client.last_followup?.deal_status);
+                              const quotStatus = client.last_followup?.latest_quotation_status;
+                              const revisions = client.last_followup?.revision_count || 0;
+
+                              if (!entityStatus && !quotStatus) return <span className="text-xs text-gray-400">N/A</span>;
 
                               let colorClass = 'bg-gray-50 text-gray-600';
-                              if (['Quotation', 'Revised Quotation'].includes(status)) colorClass = 'bg-blue-50 text-blue-600';
-                              else if (['Won', 'Finalized Deal', 'Accepted'].includes(status)) colorClass = 'bg-green-50 text-green-600';
-                              else if (['Lost', 'Declined'].includes(status)) colorClass = 'bg-red-50 text-red-600';
-                              else if (['Draft', 'Sent'].includes(status)) colorClass = 'bg-yellow-50 text-yellow-600';
+                              if (['Quotation', 'Revised Quotation', 'Sent'].includes(entityStatus || quotStatus)) colorClass = 'bg-blue-50 text-blue-600';
+                              else if (['Won', 'Accepted'].includes(entityStatus || quotStatus)) colorClass = 'bg-green-50 text-green-600';
+                              else if (['Lost', 'Declined'].includes(entityStatus || quotStatus)) colorClass = 'bg-red-50 text-red-600';
+                              else if (['Draft'].includes(entityStatus || quotStatus)) colorClass = 'bg-yellow-50 text-yellow-600';
 
                               return (
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-[500] ${colorClass}`}>
-                                  {status}
-                                </span>
+                                <div className="flex flex-col gap-1">
+                                  {entityStatus && (
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-[500] w-fit ${colorClass}`}>
+                                      {entityStatus}
+                                    </span>
+                                  )}
+                                  {quotStatus && (
+                                    <div className="flex items-center gap-1">
+                                      <span className={`text-[9px] ${quotStatus === 'Accepted' ? 'text-green-600' : quotStatus === 'Declined' ? 'text-red-600' : 'text-blue-600'} font-medium`}>
+                                        Quotation: {quotStatus}
+                                      </span>
+                                      {revisions > 0 && (
+                                        <span className="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded">
+                                          Rev: {revisions}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {!quotStatus && (entityStatus === 'Quotation' || entityStatus === 'Qualified') && (
+                                    <span className="text-[9px] text-gray-400">No Quotation Created</span>
+                                  )}
+                                </div>
                               );
                             })()}
                           </td>
@@ -1232,26 +1298,7 @@ const FollowupsPage = () => {
                             )}
                           </td>
                           <td className="p-2 text-right">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingFollowup({
-                                  related_type: client.type,
-                                  related_id: client.id,
-                                  related_name: client.name,
-                                  subject: `Initial Follow-up for ${client.name}`,
-                                  type: 'Call',
-                                  priority: 'Medium',
-                                  status: 'Scheduled',
-                                  isFirstFollowup: true
-                                });
-                                setIsAddModalOpen(true);
-                              }}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                              title="Add First Follow-up"
-                            >
-                              <Plus size={15} />
-                            </button>
+                            {/* Parent-row + button removed to prevent sequence mismatch */}
                           </td>
                         </tr>
                         {expandedClients[client.key] && (
@@ -1264,7 +1311,6 @@ const FollowupsPage = () => {
                                       <tr>
                                         <th className="p-2 text-xs  text-gray-500  font-[500]">Attempt</th>
                                         <th className="p-2 text-xs  text-gray-500  font-[500]">Type</th>
-                                        <th className="p-2 text-xs  text-gray-500  font-[500]">Calendar</th>
                                         <th className="p-2 text-xs  text-gray-500  font-[500]">Date & Time</th>
                                         <th className="p-2 text-xs  text-gray-500  font-[500]">Subject</th>
                                         <th className="p-2 text-xs  text-gray-500  font-[500]">Status</th>
@@ -1275,26 +1321,22 @@ const FollowupsPage = () => {
                                     <tbody className="divide-y divide-gray-50">
                                       {client.followups.map((f, idx) => (
                                         <tr key={f.id} className="hover:bg-gray-50 transition-colors">
-                                          <td className="p-2 text-xs text-gray-500">#{client.followups.length - idx}</td>
+                                          <td className="p-2 text-xs text-gray-500">#{f.attempt}</td>
                                           <td className="p-2">
                                             <div className="flex items-center gap-1.5">
                                               <div className={`p-1 rounded ${getStatusStyle(f.status)}`}>
                                                 {getTypeIcon(f.type)}
                                               </div>
-                                              <span className="text-xs  text-gray-700">{f.type}</span>
-                                            </div>
-                                          </td>
-                                          <td className="p-2 text-center">
-                                            {['Google Meet', 'Zoom Meeting', 'Internal Video Call', 'Demo'].includes(f.type) ? (
-                                              <div className="flex flex-col items-center gap-1">
-                                                <div className={`w-2 h-2 rounded-full ${f.calendar_event_id ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} title={f.calendar_event_id ? "Synced to Google Calendar" : "Not Synced"}></div>
-                                                <span className="text-[8px] text-gray-400 font-medium whitespace-nowrap">
-                                                  {f.calendar_event_id ? 'SYNCED' : 'OFFLINE'}
-                                                </span>
+                                              <div className="flex items-center gap-1">
+                                                <span className="text-xs text-gray-700">{f.type}</span>
+                                                {['Google Meet', 'Zoom Meeting', 'Internal Video Call', 'Demo'].includes(f.type) && f.calendar_event_id && (
+                                                  <span 
+                                                    className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" 
+                                                    title="Synced to Google Calendar"
+                                                  />
+                                                )}
                                               </div>
-                                            ) : (
-                                              <span className="text-[18px] text-gray-200">—</span>
-                                            )}
+                                            </div>
                                           </td>
                                           <td className="p-2">
                                             <div className="flex flex-col">
@@ -1317,26 +1359,32 @@ const FollowupsPage = () => {
                                           <td className="p-2 text-right">
                                             <div className="flex items-center justify-end gap-1">
                                               {f.outcome === 'Asking for Quotation' && (
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate('/sales/quotations', {
-                                                      state: {
-                                                        related_type: f.related_type,
-                                                        related_id: f.related_id,
-                                                        related_name: f.related_name,
-                                                        client_email: f.client_email,
-                                                        client_phone: f.client_phone,
-                                                        autoOpenAdd: true
-                                                      }
-                                                    });
-                                                  }}
-                                                  className="p-1 text-green-600  flex items-center gap-1"
-                                                  title="Create Quotation"
-                                                >
-                                                  <Calculator size={12} />
-
-                                                </button>
+                                                <div className="flex items-center gap-1">
+                                                  {f.latest_quotation_status && (
+                                                    <span className="text-[9px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-200 font-medium whitespace-nowrap">
+                                                      Quotation: {f.latest_quotation_status}
+                                                    </span>
+                                                  )}
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      navigate('/sales/quotations', {
+                                                        state: {
+                                                          related_type: f.related_type,
+                                                          related_id: f.related_id,
+                                                          related_name: f.related_name,
+                                                          client_email: f.client_email,
+                                                          client_phone: f.client_phone,
+                                                          autoOpenAdd: !f.latest_quotation_status
+                                                        }
+                                                      });
+                                                    }}
+                                                    className={`p-1 flex items-center gap-1 ${f.latest_quotation_status ? 'text-blue-600 hover:bg-blue-50' : 'text-green-600 hover:bg-green-50'} rounded transition-colors`}
+                                                    title={f.latest_quotation_status ? "View Quotations" : "Create Quotation"}
+                                                  >
+                                                    <Calculator size={12} />
+                                                  </button>
+                                                </div>
                                               )}
                                               {f.status === 'Scheduled' && ['Google Meet', 'Zoom Meeting', 'Internal Video Call', 'Demo'].includes(f.type) && (
                                                 <button
@@ -1348,7 +1396,7 @@ const FollowupsPage = () => {
                                                   <span className="text-xs font-medium">JOIN</span>
                                                 </button>
                                               )}
-                                              {f.status === 'Completed' && (
+                                              {!isFinalized && f.status === 'Completed' && (
                                                 <button
                                                   onClick={(e) => {
                                                     e.stopPropagation();
@@ -1359,7 +1407,7 @@ const FollowupsPage = () => {
                                                       client_email: f.client_email,
                                                       client_phone: f.client_phone,
                                                       previous_followup_id: f.id,
-                                                      subject: `Follow-up #${client.followups.length + 1} for ${client.name}`,
+                                                      subject: `Follow-up #${client.followups.length} for ${client.name}`,
                                                       type: 'Call',
                                                       priority: 'Medium',
                                                       status: 'Scheduled',
@@ -1373,7 +1421,7 @@ const FollowupsPage = () => {
                                                   <PlusCircle size={14} />
                                                 </button>
                                               )}
-                                              {f.status !== 'Completed' && (
+                                              {!isFinalized && f.status !== 'Completed' && (
                                                 <button
                                                   onClick={(e) => { e.stopPropagation(); handleComplete(f); }}
                                                   className="p-1 text-green-600 hover:bg-green-50 rounded"
@@ -1382,20 +1430,24 @@ const FollowupsPage = () => {
                                                   <CheckCircle2 size={14} />
                                                 </button>
                                               )}
-                                              <button
-                                                onClick={(e) => { e.stopPropagation(); setEditingFollowup(f); setIsAddModalOpen(true); }}
-                                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                                                title="Edit Follow-up"
-                                              >
-                                                <Edit2 size={14} />
-                                              </button>
-                                              <button
-                                                onClick={(e) => { e.stopPropagation(); handleDelete(f.id); }}
-                                                className="p-1 text-red-600 hover:bg-red-50 rounded"
-                                                title="Delete"
-                                              >
-                                                <Trash2 size={14} />
-                                              </button>
+                                              {!isFinalized && (
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); setEditingFollowup(f); setIsAddModalOpen(true); }}
+                                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                                  title="Edit Follow-up"
+                                                >
+                                                  <Edit2 size={14} />
+                                                </button>
+                                              )}
+                                              {!isFinalized && (
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); handleDelete(f.id); }}
+                                                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                                                  title="Delete"
+                                                >
+                                                  <Trash2 size={14} />
+                                                </button>
+                                              )}
                                             </div>
                                           </td>
                                         </tr>
@@ -1408,7 +1460,7 @@ const FollowupsPage = () => {
                           </tr>
                         )}
                       </React.Fragment>
-                    ))}
+                    )})}
                     {clientsWithFollowups.length === 0 && (
                       <tr>
                         <td colSpan={7} className="p-10 text-center text-gray-500">
