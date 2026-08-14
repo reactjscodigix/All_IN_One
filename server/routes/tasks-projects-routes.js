@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { resolveDealForLead, generateProjectTasks } = require('../middleware/helpers');
 
 module.exports = function setupTasksProjectsRoutes(app, pool) {
 
@@ -6,6 +7,45 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
   // This automatically acquires and releases connections from the pool
   const db = {
     query: (sql, params) => pool.query(sql, params)
+  };
+
+  // In-app "assigned to you" notification for project tasks. assigned_to is a user id here.
+  // Fire-and-forget so a notification failure can't fail the save.
+  // Resolve who acted, so notifications name a person instead of "Someone".
+  const resolveActorName = async (req) => {
+    const headerName = req.headers['x-user-name'];
+    if (headerName && String(headerName).trim()) return String(headerName).trim();
+    const headerId = req.headers['x-user-id'];
+    if (headerId) {
+      try {
+        const [rows] = await db.query(
+          "SELECT TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) AS name, username FROM users WHERE id = ?",
+          [headerId]
+        );
+        if (rows.length > 0) return rows[0].name || rows[0].username;
+      } catch (e) {
+        console.error('Could not resolve actor from x-user-id:', e.message);
+      }
+    }
+    return 'Someone';
+  };
+
+  const notifyTaskAssignment = async ({ req, assignedTo, taskId, title, projectId }) => {
+    const createNotification = req.app.locals.createNotification;
+    if (typeof createNotification !== 'function' || !assignedTo) return;
+    const actor = await resolveActorName(req);
+
+    createNotification({
+      userId: assignedTo,
+      type: 'assignment',
+      title: `TASK-${taskId} assigned to you`,
+      message: `${actor} assigned the task "${title || 'Untitled'}" to you`,
+      actorName: actor,
+      entityType: 'task',
+      entityKey: `TASK-${taskId}`,
+      link: projectId ? `/projects/details/${projectId}` : null,
+      excludeUserId: req.headers['x-user-id']
+    }).catch(err => console.error('Failed to send task assignment notification:', err.message));
   };
 
   const getAssigneeDetails = async (userId) => {
@@ -142,6 +182,8 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
             );
           }
         }).catch(err => console.error('Failed to trigger email notify on task creation:', err));
+
+        notifyTaskAssignment({ req, assignedTo: assigned_to, taskId: result.insertId, title, projectId });
       }
 
       res.status(201).json({
@@ -170,7 +212,22 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
         ORDER BY t.created_at DESC
       `, [projectId]);
 
-      res.json(tasks);
+      // Service checklist tasks (auto-generated on project setup) live in general_tasks,
+      // so include them here or they stay invisible on the project page.
+      const [serviceTasks] = await db.query(`
+        SELECT g.id, g.title, g.description, g.status, g.priority, g.due_date,
+               g.workflow_type, g.created_at, g.updated_at, g.project_id,
+               u.first_name, u.last_name, u.avatar
+        FROM general_tasks g
+        LEFT JOIN users u ON u.id = g.created_by
+        WHERE g.project_id = ?
+        ORDER BY g.created_at ASC
+      `, [projectId]);
+
+      res.json([
+        ...tasks.map(t => ({ ...t, task_source: 'project_task' })),
+        ...serviceTasks.map(t => ({ ...t, task_source: 'general_task' }))
+      ]);
     } catch (error) {
       responseError(res, 500, 'Failed to fetch tasks', error);
     }
@@ -238,7 +295,25 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
   app.put('/api/project-tasks/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { title, description, status, priority, assigned_to, due_date, completed_date } = req.body;
+      const { title, description, status, priority, assigned_to, due_date, completed_date, task_source } = req.body;
+
+      // Service checklist tasks live in general_tasks; ids are not shared between the two
+      // tables, so route by source to avoid updating an unrelated project_task with the same id.
+      if (task_source === 'general_task') {
+        await db.query(`
+          UPDATE general_tasks
+          SET title = ?, description = ?, status = ?, priority = ?, due_date = ?, updated_at = NOW()
+          WHERE id = ?
+        `, [
+          title || null,
+          description || null,
+          status || 'To Do',
+          priority || 'Medium',
+          due_date || null,
+          id
+        ]);
+        return res.json({ message: 'Task updated successfully' });
+      }
 
       // Check if assignee is updated
       if (assigned_to) {
@@ -265,6 +340,14 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
                   );
                 }
               }).catch(err => console.error('Failed to trigger email notify on project task update:', err));
+
+              notifyTaskAssignment({
+                req,
+                assignedTo: assigned_to,
+                taskId: id,
+                title: title || currentTask.title,
+                projectId: currentTask.project_id
+              });
             }
           }
         } catch (dbErr) {
@@ -296,7 +379,11 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
   app.delete('/api/project-tasks/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      await db.query('DELETE FROM project_tasks WHERE id = ?', [id]);
+      if (req.query.task_source === 'general_task') {
+        await db.query('DELETE FROM general_tasks WHERE id = ?', [id]);
+      } else {
+        await db.query('DELETE FROM project_tasks WHERE id = ?', [id]);
+      }
       res.json({ message: 'Task deleted successfully' });
     } catch (error) {
       responseError(res, 500, 'Failed to delete task', error);
@@ -610,24 +697,26 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
                 }
               } catch (e) { /* ignore pipeline table errors */ }
 
+              const resolved = await resolveDealForLead(db, leadData);
               await db.query(
                 `INSERT INTO deals (
                   deal_name, description, deal_value, currency, status,
-                  company_id, service_category_id, pipeline, deal_stage, probability, 
+                  company_id, service_category_id, services, pipeline, deal_stage, probability,
                   department_id, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
                 [
-                  leadData.lead_name || 'New Deal from Task',
+                  resolved.dealName || 'New Deal from Task',
                   leadData.notes || 'Converted from new task with converted status',
                   leadData.value || 0,
                   leadData.currency || 'USD',
                   'Open',
                   finalCompanyId,
-                  leadData.service_category_id || null,
+                  resolved.serviceCategoryId,
+                  resolved.serviceNames.length > 0 ? JSON.stringify(resolved.serviceNames) : null,
                   'Converted Lead',
                   stageId,
                   10,
-                  leadData.department_id || null
+                  resolved.departmentId
                 ]
               );
 
@@ -635,7 +724,7 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
                 "UPDATE leads SET lead_status = 'Qualified', updated_at = NOW() WHERE id = ?",
                 [leadId]
               );
-              console.log(`✓ New task triggered lead ${leadId} conversion to deal`);
+              console.log(`✓ New task triggered lead ${leadId} conversion to a deal`);
             }
           }
         } catch (convError) {
@@ -749,24 +838,26 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
                 }
               } catch (e) { /* ignore pipeline table errors */ }
 
+              const resolved = await resolveDealForLead(db, leadData);
               const [dealResult] = await db.query(
                 `INSERT INTO deals (
                   deal_name, description, deal_value, currency, status,
-                  company_id, service_category_id, pipeline, deal_stage, probability, 
+                  company_id, service_category_id, services, pipeline, deal_stage, probability,
                   department_id, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
                 [
-                  leadData.lead_name || 'New Deal from Task',
+                  resolved.dealName || 'New Deal from Task',
                   leadData.notes || 'Converted from task status change',
                   leadData.value || 0,
                   leadData.currency || 'USD',
                   'Open',
                   finalCompanyId,
-                  leadData.service_category_id || null,
+                  resolved.serviceCategoryId,
+                  resolved.serviceNames.length > 0 ? JSON.stringify(resolved.serviceNames) : null,
                   'Converted Lead',
                   stageId,
                   10,
-                  leadData.department_id || null
+                  resolved.departmentId
                 ]
               );
 
@@ -854,23 +945,62 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
         }
       }
 
-      const [projectResult] = await db.query(`
-        INSERT INTO projects (name, deal_id, company_id, budget, status, start_date, end_date, workflow_type, department_id, created_by, created_at)
-        VALUES (?, ?, ?, ?, 'Planning', ?, ?, ?, ?, ?, NOW())
-      `, [name || deal[0].deal_name, dealId, deal[0].company_id, budget || deal[0].deal_value, start_date || null, end_date || null, finalWorkflowType, finalDeptId || null, userId]);
-
-      const projectId = projectResult.insertId;
-
-      // Create department-specific project entry if needed
-      if (workflow_type === 'Marketing') {
-        await db.query('INSERT INTO marketing_projects (project_id, status) VALUES (?, "Planning")', [projectId]);
-      } else if (workflow_type === 'IT') {
-        await db.query('INSERT INTO it_projects (project_id, status) VALUES (?, "Backlog")', [projectId]);
+      // One client gets one project per department: when they bought several services, each
+      // service deal folds into that same project (adding its own task checklist) instead of
+      // spawning a duplicate project for the same client.
+      let projectId = null;
+      let reusedExisting = false;
+      if (deal[0].company_id && finalDeptId) {
+        const [existing] = await db.query(
+          'SELECT id FROM projects WHERE company_id = ? AND department_id = ? ORDER BY id ASC LIMIT 1',
+          [deal[0].company_id, finalDeptId]
+        );
+        if (existing.length > 0) {
+          projectId = existing[0].id;
+          reusedExisting = true;
+        }
       }
+
+      if (!reusedExisting) {
+        const [projectResult] = await db.query(`
+          INSERT INTO projects (name, deal_id, company_id, budget, status, start_date, end_date, workflow_type, department_id, created_by, created_at)
+          VALUES (?, ?, ?, ?, 'Planning', ?, ?, ?, ?, ?, NOW())
+        `, [name || deal[0].deal_name, dealId, deal[0].company_id, budget || deal[0].deal_value, start_date || null, end_date || null, finalWorkflowType, finalDeptId || null, userId]);
+
+        projectId = projectResult.insertId;
+
+        // Create department-specific project entry if needed
+        if (finalWorkflowType === 'Marketing') {
+          await db.query('INSERT INTO marketing_projects (project_id, status) VALUES (?, "Planning")', [projectId]);
+        } else if (finalWorkflowType === 'IT') {
+          await db.query('INSERT INTO it_projects (project_id, status) VALUES (?, "Backlog")', [projectId]);
+        }
+      } else {
+        // Folding an extra service into an existing project - grow its budget by the new deal.
+        await db.query(
+          'UPDATE projects SET budget = COALESCE(budget, 0) + ?, updated_at = NOW() WHERE id = ?',
+          [budget || deal[0].deal_value || 0, projectId]
+        );
+      }
+
+      // Auto-generate the starter task checklist for every service on this deal
+      // (a client can buy SEO + PPC + Social Media on one deal - each gets its own checklist).
+      let serviceTypes = [];
+      if (deal[0].services) {
+        try {
+          const parsed = typeof deal[0].services === 'string' ? JSON.parse(deal[0].services) : deal[0].services;
+          if (Array.isArray(parsed)) serviceTypes = parsed.filter(Boolean);
+        } catch (e) { /* fall back to the primary service category below */ }
+      }
+      if (serviceTypes.length === 0 && deal[0].service_category_id) {
+        const [cat] = await db.query('SELECT name FROM service_categories WHERE id = ?', [deal[0].service_category_id]);
+        if (cat.length > 0) serviceTypes = [cat[0].name];
+      }
+      await generateProjectTasks(db, projectId, { serviceTypes, departmentId: finalDeptId });
 
       await db.query('UPDATE deals SET status = "Project Created" WHERE id = ?', [dealId]);
 
-      res.status(201).json({ success: true, projectId });
+      res.status(201).json({ success: true, projectId, mergedIntoExistingProject: reusedExisting });
     } catch (error) {
       responseError(res, 500, 'Failed to convert deal to project', error);
     }

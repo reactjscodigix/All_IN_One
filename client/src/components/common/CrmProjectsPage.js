@@ -54,11 +54,14 @@ const CrmProjectsPage = ({ department }) => {
       setIsLoading(true);
       setError('');
 
+      // Note: deliberately no `assignedOnly` flag. That flag restricts results to projects the
+      // user created or is explicitly rostered on, which hid the department's own projects from
+      // its non-manager members. The API's non-manager branch already scopes results to
+      // "mine OR my department", which is the visibility we want here.
       const authFilters = {
         department: user?.department || '',
         user_id: user?.id || '',
-        role: user?.role || '',
-        ...(!isManager ? { assignedOnly: 'true' } : {})
+        role: user?.role || ''
       };
 
       const data = await projectAPI.getAll(authFilters);
@@ -129,7 +132,9 @@ const CrmProjectsPage = ({ department }) => {
         company: formData.client,
         company_id: formData.company_id,
         project_id: formData.projectId,
-        manager_id: formData.manager_id
+        manager_id: formData.manager_id,
+        deal_id: formData.dealId || null,
+        service_type: formData.category || null
       };
 
       if (editingProject) {
@@ -367,6 +372,7 @@ const CrmProjectsPage = ({ department }) => {
               <tr>
                 <th className="p-3">Project ID</th>
                 <th className="p-3">Project Name</th>
+                <th className="p-3">Client</th>
                 <th className="p-3">Department</th>
                 <th className="p-3">Project Manager</th>
                 <th className="p-3">Status</th>
@@ -396,6 +402,18 @@ const CrmProjectsPage = ({ department }) => {
                     <td className="p-3">
                       <div className="font-medium text-gray-900">{project.name || project.title}</div>
                       <div className="text-xs text-gray-500">{project.description ? project.description.substring(0, 30) + '...' : project.project_type || 'General'}</div>
+                    </td>
+                    <td className="p-3">
+                      {(project.company_name || project.company || project.client) ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center text-xs font-semibold">
+                            {(project.company_name || project.company || project.client).charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-gray-900 font-medium">{project.company_name || project.company || project.client}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded text-xs text-purple-600 bg-purple-50 border border-purple-100">
@@ -717,6 +735,7 @@ const CrmProjectsPage = ({ department }) => {
         }}
         onSubmit={handleModalSubmit}
         initialData={editingProject}
+        department={department}
       />
     </div>
   );

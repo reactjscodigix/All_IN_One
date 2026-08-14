@@ -4,11 +4,11 @@ require('dotenv').config();
 async function patchEnum() {
   try {
     const connection = await mysql.createConnection({
-      host: '127.0.0.1',
-      port: 3307,
-      user: 'all_in_one_user',
-      password: 'C0digix$309',
-      database: 'deals_db'
+      host: process.env.DB_HOST || '127.0.0.1',
+      port: process.env.DB_PORT || 3307,
+      user: process.env.DB_USER || 'all_in_one_user',
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME || 'deals_db'
     });
 
     console.log('Connected to database.');

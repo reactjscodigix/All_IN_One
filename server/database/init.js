@@ -1900,6 +1900,8 @@ async function initializeDatabase() {
       { table: 'deals', column: 'discount_reason', definition: "TEXT" },
       { table: 'deals', column: 'discount_approved_by', definition: "INT" },
       { table: 'deals', column: 'discount_status', definition: "ENUM('None', 'Pending', 'Approved', 'Rejected') DEFAULT 'None'" },
+      // A single client deal can cover several services at once (SEO + PPC + Social Media...)
+      { table: 'deals', column: 'services', definition: "JSON" },
       { table: 'projects', column: 'workflow_type', definition: "ENUM('Standard', 'Marketing', 'IT') DEFAULT 'Standard'" },
       { table: 'projects', column: 'priority', definition: "VARCHAR(50) DEFAULT 'Medium'" },
       { table: 'general_tasks', column: 'sprint_id', definition: "INT" },
@@ -1990,26 +1992,36 @@ async function initializeDatabase() {
 
     const [existingUsers] = await connection.query('SELECT COUNT(*) as count FROM users');
     if (existingUsers[0].count === 0) {
-      const adminUser = { first_name: 'Super', last_name: 'Admin', email: 'admin@example.com', password: 'admin123', role_id: 1, department: 'Admin' };
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+      const generatedPassword = crypto.randomBytes(12).toString('hex');
+      const adminPassword = process.env.ADMIN_PASSWORD || generatedPassword;
+      const adminUser = { first_name: 'Super', last_name: 'Admin', email: adminEmail, password: adminPassword, role_id: 1, department: 'Admin' };
       const username = adminUser.email.split('@')[0];
       const hashedPassword = crypto.pbkdf2Sync(adminUser.password, 'salt', 1000, 64, 'sha512').toString('hex');
       await connection.query(
         'INSERT INTO users (first_name, last_name, username, email, password, role_id, status, department) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         [adminUser.first_name, adminUser.last_name, username, adminUser.email, hashedPassword, adminUser.role_id, 'Active', adminUser.department]
       );
-      console.log('✓ Default admin user created');
+      if (process.env.ADMIN_PASSWORD) {
+        console.log(`✓ Default admin user created: ${adminEmail}`);
+      } else {
+        console.log(`✓ Default admin user created: ${adminEmail} / ${adminPassword}`);
+        console.log('  ⚠ This password was auto-generated because ADMIN_PASSWORD was not set. Log in and change it immediately, or set ADMIN_EMAIL/ADMIN_PASSWORD before first run.');
+      }
     }
 
     if (process.env.SEED_DEMO_DATA === 'true') {
       console.log('🌱 Seeding demo data...');
+      console.log('  ⚠ SEED_DEMO_DATA is enabled — this creates demo accounts with a shared known password. Never enable this in a production or internet-reachable environment.');
       if (existingUsers[0].count <= 1) { // If only admin or no users
+        const demoPassword = process.env.DEMO_USER_PASSWORD || 'pass123';
         const demoUsers = [
-          { first_name: 'Leads', last_name: 'Manager', email: 'leads@example.com', password: 'pass123', role_id: 3, department: 'Leads Management' },
-          { first_name: 'Deals', last_name: 'Manager', email: 'deals@example.com', password: 'pass123', role_id: 4, department: 'Deals Management' },
-          { first_name: 'Sales', last_name: 'Manager', email: 'sales@example.com', password: 'pass123', role_id: 5, department: 'Sales Department' },
-          { first_name: 'Marketing', last_name: 'Manager', email: 'marketing@example.com', password: 'pass123', role_id: 6, department: 'Marketing Department' },
-          { first_name: 'IT', last_name: 'Manager', email: 'it@example.com', password: 'pass123', role_id: 7, department: 'IT Department' },
-          { first_name: 'Accounting', last_name: 'Manager', email: 'accounting@example.com', password: 'pass123', role_id: 8, department: 'Accounting Department' }
+          { first_name: 'Leads', last_name: 'Manager', email: 'leads@example.com', password: demoPassword, role_id: 3, department: 'Leads Management' },
+          { first_name: 'Deals', last_name: 'Manager', email: 'deals@example.com', password: demoPassword, role_id: 4, department: 'Deals Management' },
+          { first_name: 'Sales', last_name: 'Manager', email: 'sales@example.com', password: demoPassword, role_id: 5, department: 'Sales Department' },
+          { first_name: 'Marketing', last_name: 'Manager', email: 'marketing@example.com', password: demoPassword, role_id: 6, department: 'Marketing Department' },
+          { first_name: 'IT', last_name: 'Manager', email: 'it@example.com', password: demoPassword, role_id: 7, department: 'IT Department' },
+          { first_name: 'Accounting', last_name: 'Manager', email: 'accounting@example.com', password: demoPassword, role_id: 8, department: 'Accounting Department' }
         ];
         for (const user of demoUsers) {
           const username = user.email.split('@')[0];

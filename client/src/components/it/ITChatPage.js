@@ -6,7 +6,7 @@ import {
   Star, Paperclip, Smile, AtSign, Hash, Calendar, FileText,
   ThumbsUp, Download, ChevronRight, Bell, Users, Settings,
   Mic, Image, Link, Check, CheckCheck, Pin, Edit3, LogOut, Trash2, ArrowLeft,
-  Reply, CornerUpLeft, Edit2, ShieldAlert
+  Reply, CornerUpLeft, Edit2, ShieldAlert, UserPlus, ChevronDown, Copy, MoreVertical
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Swal from 'sweetalert2';
@@ -15,8 +15,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api
 
 const formatMessageTime = (timeStr) => {
   if (!timeStr) {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   }
 
   const str = String(timeStr).trim();
@@ -26,19 +25,20 @@ const formatMessageTime = (timeStr) => {
   }
 
   try {
-    const dateObj = new Date(str.includes('T') ? str : str.replace(/-/g, '/'));
+    let isoStr = str;
+    if (!isoStr.includes('T') && isoStr.includes(' ')) {
+      isoStr = isoStr.replace(' ', 'T') + 'Z';
+    } else if (isoStr.includes('T') && !isoStr.endsWith('Z') && !isoStr.includes('+')) {
+      isoStr = isoStr + 'Z';
+    }
+
+    const dateObj = new Date(isoStr);
     if (!isNaN(dateObj.getTime())) {
       return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
     }
   } catch (e) {}
 
-  const match = str.match(/(\d{1,2}:\d{2}\s*(?:AM|PM)?)/i);
-  if (match) {
-    return match[1];
-  }
-
-  const now = new Date();
-  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+  return str;
 };
 
 const WhatsAppTicks = ({ status = 'read', isMine = true }) => {
@@ -77,14 +77,20 @@ export default function ITChatPage() {
   const [showDetails, setShowDetails] = useState(true);
   const messagesEndRef = useRef(null);
 
-  // Phase 1 Features States
+  // WhatsApp Reaction & Context Menu States
+  const [activeHoverMessageId, setActiveHoverMessageId] = useState(null);
+  const [activeReactionPopoverId, setActiveReactionPopoverId] = useState(null);
+  const [activeContextMenuId, setActiveContextMenuId] = useState(null);
+  const [showTopHeaderMenu, setShowTopHeaderMenu] = useState(false);
+
+  // Messaging States
   const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [showInChatSearch, setShowInChatSearch] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
-  const [activeHoverMessageId, setActiveHoverMessageId] = useState(null);
 
+  // Group Creation States
   const [availableUsers, setAvailableUsers] = useState([]);
   const [isCreateTeamOpen, setIsCreateTeamOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
@@ -228,6 +234,45 @@ export default function ITChatPage() {
     }
   }, [currentUserId]);
 
+  useEffect(() => {
+    if (!currentUserId) return;
+    const sendHeartbeat = async () => {
+      try {
+        await axios.post(`${API_BASE_URL}/users/${currentUserId}/heartbeat`);
+      } catch (e) {}
+    };
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 15000);
+    return () => clearInterval(interval);
+  }, [currentUserId]);
+
+  const getUserOnlineStatus = (chat) => {
+    if (!chat || chat.chat_type === 'group') return null;
+
+    if (!chat.last_seen) {
+      return { isOnline: true, text: 'online' };
+    }
+
+    try {
+      const lastSeenDate = new Date(String(chat.last_seen).includes('T') ? chat.last_seen : String(chat.last_seen).replace(/-/g, '/'));
+      const diffSecs = (Date.now() - lastSeenDate.getTime()) / 1000;
+
+      if (diffSecs <= 90) {
+        return { isOnline: true, text: 'online' };
+      }
+
+      const isToday = lastSeenDate.toDateString() === new Date().toDateString();
+      const timeStr = lastSeenDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      if (isToday) {
+        return { isOnline: false, text: `last seen today at ${timeStr}` };
+      }
+      return { isOnline: false, text: `last seen ${lastSeenDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${timeStr}` };
+    } catch (e) {
+      return { isOnline: true, text: 'online' };
+    }
+  };
+
   const fetchMessages = async (chat) => {
     try {
       const isGroup = chat.chat_type === 'group';
@@ -266,6 +311,8 @@ export default function ITChatPage() {
     setActiveTab('Messages');
     setReplyingToMessage(null);
     setEditingMessageId(null);
+    setActiveReactionPopoverId(null);
+    setActiveContextMenuId(null);
   };
 
   const handleIconClick = (action) => {
@@ -364,7 +411,7 @@ export default function ITChatPage() {
     }
   };
 
-  // Phase 1 Action Handlers (Edit, Delete, Reaction)
+  // WhatsApp Reaction Handler
   const handleAddReaction = async (messageId, emoji) => {
     try {
       setMessages(prev => prev.map(m => {
@@ -378,6 +425,7 @@ export default function ITChatPage() {
         }
         return m;
       }));
+      setActiveReactionPopoverId(null);
       await axios.post(`${API_BASE_URL}/messages/${messageId}/reactions`, { emoji, userId: currentUserId });
     } catch (err) {
       console.error('Failed to react', err);
@@ -399,6 +447,7 @@ export default function ITChatPage() {
   const handleDeleteMessage = async (messageId) => {
     try {
       setMessages(prev => prev.map(m => m.id === messageId ? { ...m, is_deleted: 1, text: 'This message was deleted' } : m));
+      setActiveContextMenuId(null);
       await axios.delete(`${API_BASE_URL}/messages/${messageId}`);
     } catch (err) {
       console.error('Failed to delete message', err);
@@ -406,22 +455,34 @@ export default function ITChatPage() {
   };
 
   const handleCreateTeam = async () => {
-    if (!newTeamName.trim()) return;
+    if (!newTeamName.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Group Name Required', text: 'Please enter a name for the group.' });
+      return;
+    }
     try {
       const res = await axios.post(`${API_BASE_URL}/chat-groups`, {
-        name: newTeamName,
-        description: newTeamDesc,
+        name: newTeamName.trim(),
+        description: newTeamDesc.trim(),
         created_by: currentUserId,
-        memberIds: selectedUserIds
+        members: selectedUserIds
       });
       setIsCreateTeamOpen(false);
       setNewTeamName('');
       setNewTeamDesc('');
       setSelectedUserIds([]);
-      fetchConversations();
-      Swal.fire({ icon: 'success', title: 'Team Created', text: `Team "${newTeamName}" created!` });
+      await fetchConversations();
+
+      const newGroupObj = {
+        id: res.data.id,
+        name: res.data.name,
+        chat_type: 'group',
+        unread_count: 0
+      };
+      setSelectedChat(newGroupObj);
+      Swal.fire({ icon: 'success', title: 'Group Created!', text: `Team Group "${res.data.name}" created successfully!` });
     } catch (err) {
       console.error('Failed to create team', err);
+      Swal.fire({ icon: 'error', title: 'Create Group Failed', text: err?.response?.data?.error || 'Could not create group' });
     }
   };
 
@@ -429,14 +490,15 @@ export default function ITChatPage() {
     if (!selectedChat || selectedUserIds.length === 0) return;
     try {
       await axios.post(`${API_BASE_URL}/chat-groups/${selectedChat.id}/members`, {
-        memberIds: selectedUserIds
+        members: selectedUserIds
       });
       setIsAddMemberOpen(false);
       setSelectedUserIds([]);
       fetchMessages(selectedChat);
-      Swal.fire({ icon: 'success', title: 'Members Added', text: 'Members added to team!' });
+      Swal.fire({ icon: 'success', title: 'Members Added', text: 'Selected members added to group!' });
     } catch (err) {
       console.error('Failed to add members', err);
+      Swal.fire({ icon: 'error', title: 'Error', text: err?.response?.data?.error || 'Failed to add members' });
     }
   };
 
@@ -510,28 +572,29 @@ export default function ITChatPage() {
         )}
         <div
           onMouseEnter={() => setActiveHoverMessageId(msg.id)}
-          onMouseLeave={() => setActiveHoverMessageId(null)}
+          onMouseLeave={() => {
+            setActiveHoverMessageId(null);
+          }}
           className={`flex gap-2.5 px-5 py-1.5 group relative ${isMine ? 'flex-row-reverse' : ''}`}
         >
           {!isMine && <Avatar name={senderName} src={avatarUrl} size={32} />}
 
           <div className={`max-w-[70%] ${isMine ? 'items-end' : 'items-start'} flex flex-col relative`}>
-            {!isMine && (
+            {!isMine && selectedChat?.chat_type === 'group' && (
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[12px] font-semibold text-gray-900">{senderName}</span>
-                <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded">{'Member'}</span>
+                <span className="text-[12px] font-semibold text-[#25d366]">{senderName}</span>
                 <span className="text-[10px] text-gray-400 font-medium">{formatMessageTime(msg.timestamp || msg.created_at)}</span>
               </div>
             )}
 
-            {/* Quoted Reply Block */}
+            {/* Quoted Reply Block (WhatsApp Style) */}
             {msg.reply_to_text && !isDeleted && (
-              <div className={`mb-1 p-2 rounded border-l-4 text-xs ${isMine ? 'bg-emerald-100/70 border-emerald-700 text-gray-900 self-end' : 'bg-blue-50 border-blue-600 text-gray-900 self-start'} max-w-full`}>
-                <div className="flex items-center gap-1 font-bold text-[10px] text-emerald-900 mb-0.5">
+              <div className={`mb-1 p-2 rounded-lg border-l-4 text-xs ${isMine ? 'bg-[#c5eabf] border-[#25d366] text-gray-900 self-end' : 'bg-gray-100 border-purple-600 text-gray-900 self-start'} max-w-full shadow-2xs`}>
+                <div className="flex items-center gap-1 font-bold text-[11px] text-[#075e54] mb-0.5">
                   <CornerUpLeft size={10} />
                   <span>{msg.reply_to_sender || 'Replied Message'}</span>
                 </div>
-                <div className="truncate text-[11px] italic opacity-90">{msg.reply_to_text}</div>
+                <div className="truncate text-[11px] text-gray-700 italic opacity-90">{msg.reply_to_text}</div>
               </div>
             )}
 
@@ -555,9 +618,9 @@ export default function ITChatPage() {
             ) : (
               msg.text && (
                 <div className={`px-3.5 py-2 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap flex flex-col relative
-                  ${isDeleted ? 'bg-gray-100 text-gray-400 italic border border-gray-200' : isMine ? 'bg-[#d9fdd3] text-gray-900 border border-[#bceab4] rounded-tr-xs self-end' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-xs self-start shadow-2xs'}`}>
+                  ${isDeleted ? 'bg-gray-100 text-gray-400 italic border border-gray-200' : isMine ? 'bg-[#d9fdd3] text-gray-900 border border-[#bceab4] rounded-tr-xs self-end shadow-2xs' : 'bg-white border border-gray-200 text-gray-800 rounded-tl-xs self-start shadow-2xs'}`}>
                   {isDeleted ? (
-                    <div className="flex items-center gap-1 text.gray-400">
+                    <div className="flex items-center gap-1 text-gray-400">
                       <ShieldAlert size={12} /> <span>This message was deleted</span>
                     </div>
                   ) : (
@@ -605,51 +668,121 @@ export default function ITChatPage() {
             )}
           </div>
 
-          {/* Hover Quick Action Bar (Reactions, Reply, Edit, Delete) */}
+          {/* WhatsApp Hover Actions Bar (Smiley & Dropdown Arrow right beside message bubble) */}
           {activeHoverMessageId === msg.id && !isDeleted && (
-            <div className={`absolute top-0 ${isMine ? 'right-[72%]' : 'left-[72%]'} z-20 bg-white border border-gray-200 rounded-full shadow-lg px-2 py-1 flex items-center gap-1.5 animate-fadeIn`}>
-              {QUICK_REACTIONS.map(emoji => (
-                <button
-                  key={emoji}
-                  onClick={() => handleAddReaction(msg.id, emoji)}
-                  className="hover:scale-125 transition-transform text-sm cursor-pointer"
-                  title={`React ${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-              <div className="w-px h-3 bg-gray-200 mx-0.5" />
+            <div className={`flex items-center gap-1 self-center ${isMine ? 'mr-1 flex-row-reverse' : 'ml-1'} relative`}>
+              {/* Smiley Icon to trigger WhatsApp Reaction Bar */}
               <button
                 onClick={() => {
-                  setReplyingToMessage(msg);
-                  document.getElementById('chat-input')?.focus();
+                  setActiveReactionPopoverId(prev => prev === msg.id ? null : msg.id);
+                  setActiveContextMenuId(null);
                 }}
-                className="text-gray-500 hover:text-blue-600 p-1 rounded-full hover:bg-gray-100 cursor-pointer"
-                title="Reply to message"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 hover:bg-gray-100 text-gray-600 shadow-md border border-gray-200 transition-transform cursor-pointer hover:scale-110"
+                title="React to message"
               >
-                <Reply size={13} />
+                <Smile size={15} />
               </button>
 
-              {isMine && (
-                <>
+              {/* Chevron Dropdown Arrow to trigger Context Menu */}
+              <button
+                onClick={() => {
+                  setActiveContextMenuId(prev => prev === msg.id ? null : msg.id);
+                  setActiveReactionPopoverId(null);
+                }}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 hover:bg-gray-100 text-gray-600 shadow-md border border-gray-200 transition-transform cursor-pointer hover:scale-110"
+                title="Message options"
+              >
+                <ChevronDown size={15} />
+              </button>
+
+              {/* WhatsApp Floating Reaction Bar (Pill Shape) */}
+              {activeReactionPopoverId === msg.id && (
+                <div className={`absolute bottom-full mb-2 ${isMine ? 'right-0' : 'left-0'} z-50 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-full shadow-2xl px-3 py-1.5 flex items-center gap-2 animate-scaleIn`}>
+                  {QUICK_REACTIONS.map(emoji => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleAddReaction(msg.id, emoji)}
+                      className="hover:scale-135 transition-transform text-lg cursor-pointer p-0.5"
+                      title={`React ${emoji}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                  <div className="w-px h-4 bg-gray-300 dark:bg-slate-700 mx-0.5" />
                   <button
                     onClick={() => {
-                      setEditingMessageId(msg.id);
-                      setEditingText(msg.text);
+                      setShowEmojiPicker(true);
+                      setActiveReactionPopoverId(null);
                     }}
-                    className="text-gray-500 hover:text-amber-600 p-1 rounded-full hover:bg-gray-100 cursor-pointer"
-                    title="Edit message"
+                    className="w-6 h-6 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center font-bold text-xs cursor-pointer"
+                    title="More emojis"
                   >
-                    <Edit2 size={13} />
+                    +
                   </button>
-                  <button
-                    onClick={() => handleDeleteMessage(msg.id)}
-                    className="text-gray-500 hover:text-red-600 p-1 rounded-full hover:bg-gray-100 cursor-pointer"
-                    title="Delete message"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </>
+                </div>
+              )}
+
+              {/* WhatsApp Context Menu Dropdown */}
+              {activeContextMenuId === msg.id && (
+                <div className={`absolute top-full mt-1 ${isMine ? 'right-0' : 'left-0'} z-50 bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 w-44 text-xs font-medium text-gray-700 divide-y divide-gray-100 animate-fadeIn`}>
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setReplyingToMessage(msg);
+                        setActiveContextMenuId(null);
+                        document.getElementById('chat-input')?.focus();
+                      }}
+                      className="w-full text-left px-3.5 py-1.5 hover:bg-gray-50 flex items-center gap-2.5 cursor-pointer"
+                    >
+                      <Reply size={14} className="text-gray-500" />
+                      <span>Reply</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(msg.text || '');
+                        setActiveContextMenuId(null);
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Copied to clipboard', showConfirmButton: false, timer: 1500 });
+                      }}
+                      className="w-full text-left px-3.5 py-1.5 hover:bg-gray-50 flex items-center gap-2.5 cursor-pointer"
+                    >
+                      <Copy size={14} className="text-gray-500" />
+                      <span>Copy Text</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveContextMenuId(null);
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Message pinned', showConfirmButton: false, timer: 1500 });
+                      }}
+                      className="w-full text-left px-3.5 py-1.5 hover:bg-gray-50 flex items-center gap-2.5 cursor-pointer"
+                    >
+                      <Pin size={14} className="text-gray-500" />
+                      <span>Pin Message</span>
+                    </button>
+                  </div>
+
+                  {isMine && (
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setEditingMessageId(msg.id);
+                          setEditingText(msg.text);
+                          setActiveContextMenuId(null);
+                        }}
+                        className="w-full text-left px-3.5 py-1.5 hover:bg-amber-50 text-amber-700 flex items-center gap-2.5 cursor-pointer"
+                      >
+                        <Edit2 size={14} />
+                        <span>Edit Message</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMessage(msg.id)}
+                        className="w-full text-left px-3.5 py-1.5 hover:bg-red-50 text-red-600 flex items-center gap-2.5 cursor-pointer"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete Message</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -662,10 +795,10 @@ export default function ITChatPage() {
     <div className="flex bg-[#f8fafc] font-sans text-gray-900 overflow-hidden w-full h-screen" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Left Panel: Chat List ─────────────────────────────────────────── */}
-      <div className="w-[280px] shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="px-3.5 py-3 border-b border-gray-100 flex items-center justify-between bg-white">
-          <div className="flex items-center gap-2">
+      <div className="w-[290px] shrink-0 bg-white border-r border-gray-100 flex flex-col overflow-hidden">
+        {/* Header (WhatsApp Desktop Style) */}
+        <div className="px-3.5 py-3 border-b border-gray-100 flex items-center justify-between bg-white relative">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => {
                 if (window.history.length > 1) {
@@ -681,9 +814,90 @@ export default function ITChatPage() {
               <span>Back</span>
             </button>
             <div className="w-px h-4 bg-gray-200 mx-0.5" />
-            <h2 className="text-[14px] font-bold text-gray-900">Team Chat</h2>
+            <h2 className="text-[15px] font-bold text-gray-900">Chats</h2>
           </div>
-          <button onClick={() => setIsCreateTeamOpen(true)} className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors" title="Create New Team Chat"><Edit3 size={14} /></button>
+
+          <div className="flex items-center gap-0.5">
+            {/* Quick Create Group Button */}
+            <button
+              onClick={() => {
+                setSelectedUserIds([]);
+                setIsCreateTeamOpen(true);
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors cursor-pointer"
+              title="Create New Group"
+            >
+              <Plus size={18} />
+            </button>
+
+            {/* Three Dots Menu Button (WhatsApp Style) */}
+            <div className="relative">
+              <button
+                onClick={() => setShowTopHeaderMenu(prev => !prev)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 transition-colors cursor-pointer"
+                title="Menu Options"
+              >
+                <MoreVertical size={18} />
+              </button>
+
+              {/* WhatsApp Top Header Dropdown Menu */}
+              {showTopHeaderMenu && (
+                <div className="absolute right-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 w-48 text-xs font-medium text-gray-700 divide-y divide-gray-100 animate-fadeIn">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowTopHeaderMenu(false);
+                        setSelectedUserIds([]);
+                        setIsCreateTeamOpen(true);
+                      }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-gray-50 flex items-center gap-2.5 cursor-pointer text-gray-800 font-semibold"
+                    >
+                      <Users size={15} className="text-blue-600" />
+                      <span>New group</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowTopHeaderMenu(false);
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Starred messages', showConfirmButton: false, timer: 1500 });
+                      }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-gray-50 flex items-center gap-2.5 cursor-pointer text-gray-700"
+                    >
+                      <Star size={15} className="text-amber-500" />
+                      <span>Starred messages</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowTopHeaderMenu(false);
+                        setConversations(prev => prev.map(c => ({ ...c, unread: 0, unread_count: 0 })));
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'All marked as read', showConfirmButton: false, timer: 1500 });
+                      }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-gray-50 flex items-center gap-2.5 cursor-pointer text-gray-700"
+                    >
+                      <CheckCheck size={15} className="text-emerald-600" />
+                      <span>Mark all as read</span>
+                    </button>
+                  </div>
+
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowTopHeaderMenu(false);
+                        if (window.history.length > 1) {
+                          navigate(-1);
+                        } else {
+                          navigate('/it/it manager/ashwinikhedekar1025/dashboard');
+                        }
+                      }}
+                      className="w-full text-left px-3.5 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2.5 cursor-pointer font-medium"
+                    >
+                      <LogOut size={15} />
+                      <span>Back to Dashboard</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Filter Tabs */}
@@ -753,7 +967,7 @@ export default function ITChatPage() {
       </div>
 
       {/* ── Middle: Messages ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 relative bg-gray-50/50">
+      <div className="flex-1 flex flex-col min-w-0 relative bg-[#efeae2]/30">
         {selectedChat && (
           <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-3 flex items-center justify-between shrink-0 z-10">
             <div className="flex items-center gap-3">
@@ -769,7 +983,20 @@ export default function ITChatPage() {
                   <h3 className="text-[14px] font-bold text-gray-900">{selectedChat.name}</h3>
                   {selectedChat.chat_type === 'group' && <Star size={13} className="text-amber-400 fill-amber-400" />}
                 </div>
-                <p className="text-xs text-gray-400 font-medium">{(groupMembers.length || 0)} members • <span className="hover:text-blue-600 cursor-pointer">Add description</span></p>
+                {selectedChat.chat_type === 'group' ? (
+                  <p className="text-xs text-gray-400 font-medium">{(groupMembers.length || 0)} members • <span className="hover:text-blue-600 cursor-pointer">Add description</span></p>
+                ) : (
+                  (() => {
+                    const statusObj = getUserOnlineStatus(selectedChat);
+                    if (!statusObj) return null;
+                    return (
+                      <p className={`text-xs font-semibold flex items-center gap-1.5 ${statusObj.isOnline ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        {statusObj.isOnline && <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>}
+                        <span>{statusObj.text}</span>
+                      </p>
+                    );
+                  })()
+                )}
               </div>
             </div>
 
@@ -807,7 +1034,7 @@ export default function ITChatPage() {
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 relative">
           {activeTab === 'Messages' && (
             filteredActiveMessages.length > 0 ? (
               filteredActiveMessages.map((msg, idx) => renderMessage(msg, idx))
@@ -972,7 +1199,33 @@ export default function ITChatPage() {
           <div className="text-center space-y-2 py-2">
             <Avatar name={selectedChat.name} src={selectedChat.avatar} size={64} color="bg-blue-500" />
             <h3 className="font-bold text-gray-900 text-sm">{selectedChat.name}</h3>
-            <p className="text-gray-400 text-[11px] font-medium">{(groupMembers.length || 0)} Members</p>
+            {selectedChat.chat_type === 'group' ? (
+              <p className="text-gray-400 text-[11px] font-medium">{(groupMembers.length || 0)} Members</p>
+            ) : (
+              (() => {
+                const statusObj = getUserOnlineStatus(selectedChat);
+                if (!statusObj) return null;
+                return (
+                  <p className={`text-[11px] font-semibold flex items-center justify-center gap-1 ${statusObj.isOnline ? 'text-emerald-600' : 'text-gray-400'}`}>
+                    {statusObj.isOnline && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
+                    <span>{statusObj.text}</span>
+                  </p>
+                );
+              })()
+            )}
+
+            {selectedChat.chat_type === 'group' && (
+              <button
+                onClick={() => {
+                  setSelectedUserIds([]);
+                  setIsAddMemberOpen(true);
+                }}
+                className="w-full mt-2 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <UserPlus size={14} />
+                <span>Add Members</span>
+              </button>
+            )}
           </div>
 
           <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg space-y-1">
@@ -981,6 +1234,165 @@ export default function ITChatPage() {
           </div>
         </div>
       )}
+
+      {/* ── Create Team Group Modal ── */}
+      {isCreateTeamOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scaleIn border border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                  <Users size={16} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Create New Team Group</h3>
+                  <p className="text-[11px] text-gray-400">Start a group channel for team collaboration</p>
+                </div>
+              </div>
+              <button onClick={() => setIsCreateTeamOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Group Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Frontend Development Team"
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Group Description</label>
+                <textarea
+                  placeholder="What is this channel about?"
+                  rows={2}
+                  value={newTeamDesc}
+                  onChange={(e) => setNewTeamDesc(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white text-xs resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex justify-between items-center">
+                  <span>Select Team Members</span>
+                  <span className="text-blue-600 font-normal">{selectedUserIds.length} selected</span>
+                </label>
+                <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 bg-white">
+                  {availableUsers.map(u => {
+                    const isSelected = selectedUserIds.includes(u.id);
+                    const uName = u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim();
+                    return (
+                      <label key={u.id} className="flex items-center justify-between p-2.5 hover:bg-gray-50 cursor-pointer">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={uName} src={u.avatar} size={28} />
+                          <div>
+                            <span className="font-semibold text-gray-800 block text-xs">{uName}</span>
+                            <span className="text-[10px] text-gray-400 block">{u.email || u.status}</span>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            setSelectedUserIds(prev =>
+                              isSelected ? prev.filter(id => id !== u.id) : [...prev, u.id]
+                            );
+                          }}
+                          className="w-4 h-4 rounded text-blue-600 cursor-pointer"
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+              <button onClick={() => setIsCreateTeamOpen(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 text-xs font-medium cursor-pointer">
+                Cancel
+              </button>
+              <button onClick={handleCreateTeam} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer">
+                Create Group
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Members to Group Modal ── */}
+      {isAddMemberOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scaleIn border border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+                  <UserPlus size={16} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-sm">Add Members to {selectedChat?.name}</h3>
+                  <p className="text-[11px] text-gray-400">Expand team collaboration</p>
+                </div>
+              </div>
+              <button onClick={() => setIsAddMemberOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex justify-between items-center">
+                  <span>Select Users to Add</span>
+                  <span className="text-emerald-600 font-normal">{selectedUserIds.length} selected</span>
+                </label>
+                <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 bg-white">
+                  {availableUsers
+                    .filter(u => !groupMembers.some(gm => gm.id === u.id))
+                    .map(u => {
+                      const isSelected = selectedUserIds.includes(u.id);
+                      const uName = u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim();
+                      return (
+                        <label key={u.id} className="flex items-center justify-between p-2.5 hover:bg-gray-50 cursor-pointer">
+                          <div className="flex items-center gap-2.5">
+                            <Avatar name={uName} src={u.avatar} size={28} />
+                            <div>
+                              <span className="font-semibold text-gray-800 block text-xs">{uName}</span>
+                              <span className="text-[10px] text-gray-400 block">{u.email || u.status}</span>
+                            </div>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedUserIds(prev =>
+                                isSelected ? prev.filter(id => id !== u.id) : [...prev, u.id]
+                              );
+                            }}
+                            className="w-4 h-4 rounded text-emerald-600 cursor-pointer"
+                          />
+                        </label>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+              <button onClick={() => setIsAddMemberOpen(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-100 text-xs font-medium cursor-pointer">
+                Cancel
+              </button>
+              <button onClick={handleAddMembers} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer">
+                Add Selected Members
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1012,7 +1424,12 @@ function ChatItem({ chat, selected, onSelect, groupInitials }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center mb-0.5">
-          <h4 className="text-xs font-semibold text-gray-900 truncate pr-2">{chat.name}</h4>
+          <div className="flex items-center gap-1 min-w-0">
+            <h4 className="text-xs font-semibold text-gray-900 truncate pr-1">{chat.name}</h4>
+            {chat.department && (
+              <span className="text-[9px] bg-blue-50 text-blue-600 px-1 py-0.2 rounded font-normal shrink-0">{chat.department}</span>
+            )}
+          </div>
           <span className="text-[10px] text-gray-400 whitespace-nowrap">{displayTime}</span>
         </div>
         <p className={`text-xs truncate ${unreadCount > 0 ? 'font-bold text-gray-900' : 'text-gray-500'}`}>

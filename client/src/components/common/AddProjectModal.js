@@ -3,7 +3,7 @@ import { X, Plus } from 'lucide-react';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
+const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [confirmedProjects, setConfirmedProjects] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -37,9 +37,10 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
     setIsFetching(true);
     try {
       const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
+      const deptParam = encodeURIComponent(department || 'IT');
       const [companiesRes, confirmedRes, usersRes, catRes] = await Promise.all([
-        fetch(`${apiUrl}/confirmed-it-clients`),
-        fetch(`${apiUrl}/confirmed-it-projects`),
+        fetch(`${apiUrl}/confirmed-it-clients?department=${deptParam}`),
+        fetch(`${apiUrl}/confirmed-it-projects?department=${deptParam}`),
         fetch(`${apiUrl}/users`),
         fetch(`${apiUrl}/service-categories`)
       ]);
@@ -154,7 +155,8 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
         setFormData(prev => ({
           ...prev,
           name: value,
-          client: selectedProject.company_name // In this modal client seems to be name string
+          client: selectedProject.company_name, // In this modal client seems to be name string
+          dealId: selectedProject.id
         }));
         return;
       }
@@ -273,7 +275,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
               disabled={isFetching}
               className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400 disabled:opacity-50"
             >
-              <option value="">{isFetching ? 'Loading projects...' : 'Select IT Project'}</option>
+              <option value="">{isFetching ? 'Loading projects...' : `Select ${department || 'IT'} Project`}</option>
               {formData.name && !confirmedProjects.some(p => p.name === formData.name) && (
                 <option value={formData.name}>{formData.name}</option>
               )}
@@ -283,7 +285,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData }) => {
                 </option>
               ))}
               {!isFetching && confirmedProjects.length === 0 && (
-                <option disabled>No confirmed IT projects found</option>
+                <option disabled>No confirmed {department || 'IT'} projects found</option>
               )}
             </select>
           </div>

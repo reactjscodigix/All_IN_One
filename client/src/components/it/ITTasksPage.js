@@ -206,7 +206,11 @@ const ITTasksPage = () => {
     try {
       await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Attributes this change to a person in the issue History tab.
+          'x-user-name': user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : 'System'
+        },
         body: JSON.stringify(updates)
       });
     } catch (err) {

@@ -1,7 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Menu, Search, Bell, Settings, Moon, Grid, Maximize2, HelpCircle, PieChart, MessageSquare, LogOut, User, Bell as BellIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { API_BASE_URL } from '../../config/environment';
+
+// "5 minutes ago" style stamps for the notification list.
+const relativeTime = (value) => {
+  if (!value) return '';
+  const then = new Date(value);
+  if (isNaN(then.getTime())) return '';
+  const diff = Math.floor((Date.now() - then.getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  return then.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+};
+
+// Builds the signed-in user's own route segment, e.g. "/marketing/graphics-designer/gusingekaran1220".
+// Notifications can't store this server-side because each recipient has a different path.
+const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+
+const userWorkspacePath = (user) => {
+  if (!user) return null;
+  const dept = String(user.department || '').toLowerCase();
+  const role = String(user.role || '').toLowerCase();
+
+  let prefix = '';
+  if (dept.includes('marketing') || role.includes('marketing')) prefix = '/marketing';
+  else if (dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester')) prefix = '/it';
+  else if (dept.includes('seo') || dept.includes('gmb')) prefix = '/seo-gmb';
+  else if (dept.includes('sales') || dept.includes('lead') || dept.includes('deal')) prefix = '/sales';
+  if (!prefix) return null;
+
+  const designation = slug(user.role) || 'employee';
+  const username = slug(user.username || user.first_name || 'user');
+  return `${prefix}/${designation}/${username}`;
+};
+
+const AVATAR_COLORS = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-amber-500', 'bg-rose-500', 'bg-teal-500'];
+const colorForName = (name) => {
+  const s = String(name || '?');
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
+const initialsOf = (name) => String(name || 'N').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
 const Header = ({ toggleSidebar }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -13,35 +57,83 @@ const Header = ({ toggleSidebar }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const [notificationsData, setNotificationsData] = useState([
-    {
-      id: 1,
-      avatar: 'JD',
-      avatarColor: 'bg-blue-500',
-      name: 'John Doe',
-      message: 'left 6 comments on Isla Nublar',
-      time: '08:00 AM',
-      read: false
-    },
-    {
-      id: 2,
-      avatar: 'TW',
-      avatarColor: 'bg-purple-500',
-      name: 'Thomas William',
-      message: 'finished de-bugging the phones',
-      time: '08:15 AM',
-      read: false
-    },
-    {
-      id: 3,
-      avatar: 'SA',
-      avatarColor: 'bg-green-500',
-      name: 'Sarah Anderson',
-      message: 'attached a file to SOC2 compliance report',
-      time: '08:30 AM',
-      read: true
-    },
-  ]);
+  const [notificationsData, setNotificationsData] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Poll for new notifications. No websocket layer, so a light interval keeps the
+  // bell current without adding infrastructure.
+  const loadNotifications = useCallback(async () => {
+    if (!user?.id) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/notifications?user_id=${user.id}&limit=15`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setNotificationsData((data.notifications || []).map(n => ({
+        id: n.id,
+        avatar: initialsOf(n.actor_name || n.title),
+        avatarColor: colorForName(n.actor_name || n.title),
+        name: n.actor_name || 'System',
+        message: n.message || n.title,
+        title: n.title,
+        link: n.link,
+        entityType: n.entity_type,
+        entityKey: n.entity_key,
+        time: relativeTime(n.created_at),
+        read: !!n.is_read
+      })));
+      setUnreadCount(data.unreadCount || 0);
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadNotifications();
+    const timer = setInterval(loadNotifications, 30000);
+    return () => clearInterval(timer);
+  }, [loadNotifications]);
+
+  const markNotificationRead = async (id) => {
+    setNotificationsData(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setUnreadCount(c => Math.max(0, c - 1));
+    try {
+      await fetch(`${API_BASE_URL}/notifications/${id}/read`, { method: 'PUT' });
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
+    }
+  };
+
+  // Where a notification should take you. Issue/subtask notifications open the ticket on the
+  // recipient's own Kanban board via ?ticketKey=. Anything else falls back to a stored link.
+  const notificationTarget = (notif) => {
+    if (notif.entityKey && (notif.entityType === 'issue' || notif.entityType === 'subtask')) {
+      const base = userWorkspacePath(user);
+      if (base) {
+        // Subtask keys look like MKT-103-1; the board holds the parent card (MKT-103).
+        const parts = String(notif.entityKey).split('-');
+        const boardKey = parts.length > 2 ? parts.slice(0, 2).join('-') : notif.entityKey;
+        return `${base}/kanban?ticketKey=${encodeURIComponent(boardKey)}`;
+      }
+    }
+    // Ignore legacy links that are just a bare department prefix and route nowhere.
+    if (notif.link && notif.link.split('/').filter(Boolean).length > 1) return notif.link;
+    return null;
+  };
+
+  const markAllNotificationsRead = async () => {
+    if (!user?.id) return;
+    setNotificationsData(prev => prev.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+    try {
+      await fetch(`${API_BASE_URL}/notifications/read-all`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      });
+    } catch (err) {
+      console.error('Failed to mark all read:', err);
+    }
+  };
 
   const [messagesData, setMessagesData] = useState([
     {
@@ -76,10 +168,11 @@ const Header = ({ toggleSidebar }) => {
   };
 
   const handleOpenNotifications = () => {
-    setShowNotifications(!showNotifications);
-    if (!showNotifications) {
-      setNotificationsData(prev => prev.map(n => ({ ...n, read: true })));
-    }
+    const opening = !showNotifications;
+    setShowNotifications(opening);
+    // Refresh on open. Deliberately does NOT mark everything read — that's an explicit
+    // action ("Mark all read") or happens per item when clicked, as in Jira.
+    if (opening) loadNotifications();
   };
 
   const handleOpenMessages = () => {
@@ -270,40 +363,67 @@ const Header = ({ toggleSidebar }) => {
                 title="Notifications"
               >
                 <Bell size={20} />
-                {notificationsData.some(n => !n.read) && (
-                  <span className="notification-badge absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
+                {unreadCount > 0 && (
+                  <span className="notification-badge absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold rounded-full border border-white flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
                 )}
               </button>
 
               {showNotifications && (
                 <div className="dropdown-menu absolute right-0 mt-2 w-80 bg-white z-50 rounded shadow-xl border border-gray-100 py-1">
                   <div className="p-3 border-b border-gray-100 flex items-center justify-between">
-                    <h3 className="text-xs font-semibold text-gray-900">Notifications</h3>
-                    <button
-                      onClick={() => {
-                        navigate('/notifications');
-                        setShowNotifications(false);
-                      }}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <Settings size={15} />
-                    </button>
+                    <h3 className="text-xs font-semibold text-gray-900">
+                      Notifications {unreadCount > 0 && <span className="text-red-500">({unreadCount})</span>}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllNotificationsRead}
+                          className="text-[10px] text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          navigate('/notifications');
+                          setShowNotifications(false);
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <Settings size={15} />
+                      </button>
+                    </div>
                   </div>
                   <div className="max-h-80 overflow-y-auto">
-                    {notificationsData.map((notif, idx) => (
+                    {notificationsData.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-gray-400">You're all caught up.</div>
+                    ) : notificationsData.map((notif) => (
                       <div
                         key={notif.id}
-                        className="notification-item p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          if (!notif.read) markNotificationRead(notif.id);
+                          const target = notificationTarget(notif);
+                          if (target) {
+                            navigate(target);
+                            setShowNotifications(false);
+                          }
+                        }}
+                        className={`notification-item p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${!notif.read ? 'bg-blue-50/40' : ''}`}
                       >
                         <div className="flex gap-3">
                           <div className={`w-9 h-9 rounded-full ${notif.avatarColor} flex items-center justify-center text-white text-xs  shrink-0 `}>
                             {notif.avatar}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-gray-900">{notif.name}</p>
+                            <p className="text-xs font-semibold text-gray-900">{notif.title}</p>
                             <p className="text-xs text-gray-600 mt-0.5">{notif.message}</p>
-                            <p className="text-xs text-gray-400 mt-1">{notif.time}</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {notif.name !== 'System' ? `${notif.name} · ` : ''}{notif.time}
+                            </p>
                           </div>
+                          {!notif.read && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-1" />}
                         </div>
                       </div>
                     ))}

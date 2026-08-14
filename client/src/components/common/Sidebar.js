@@ -361,6 +361,13 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
             <SubmenuItem label="Blogs Calendar" page="all-blogs" icon={FileJson} prefix="/marketing" />
           </>
         )}
+
+        {isManager && (
+          <>
+            <div className="p-2 text-xs text-[#1F2020] tracking-wider bg-gray-50/50 mt-2">Marketing Management</div>
+            <SubmenuItem label="Team Management" page="teams" icon={Users2} prefix="/marketing" />
+          </>
+        )}
       </>
     );
   };

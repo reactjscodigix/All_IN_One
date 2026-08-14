@@ -158,6 +158,18 @@ const CrmDealsPage = () => {
       const leads = leadsRes || [];
 
       // Create virtual deals from leads that are Converted or Qualified
+      const getLeadServiceLabel = (lead) => {
+        if (lead.business_type === 'Marketing') {
+          let services = lead.marketing_services;
+          if (typeof services === 'string') {
+            try { services = JSON.parse(services); } catch (e) { services = services ? [services] : []; }
+          }
+          if (Array.isArray(services) && services.length > 0) return services.join(', ');
+          return 'No Service';
+        }
+        return lead.it_services || 'No Service';
+      };
+
       const virtualDeals = leads.filter(l =>
         l.lead_status === 'Converted to Deal' || l.lead_status === 'Qualified' || l.lead_status === 'Quotation' || l.lead_status === 'Revised Quotation'
       ).map(lead => {
@@ -183,7 +195,7 @@ const CrmDealsPage = () => {
           updated_at: lead.updated_at,
           source: lead.lead_source,
           description: lead.notes,
-          service: lead.it_services || 'No Service',
+          service: getLeadServiceLabel(lead),
           contact_email: lead.email,
           contact_phone: lead.phone
         };
@@ -408,7 +420,8 @@ const CrmDealsPage = () => {
         return;
       }
 
-      // Convert virtual deal to real deal if it's virtual (ID > 1000000)
+      // Convert virtual deal to a real deal if it's virtual (ID > 1000000).
+      // One client = one deal carrying all their services, so this stays a single conversion.
       let dealIdToConvert = deal.id;
       if (Number(deal.id) > 1000000) {
         const leadId = Number(deal.id) - 1000000;
@@ -420,10 +433,11 @@ const CrmDealsPage = () => {
           company_id: deal.company_id
         };
         const newDealRes = await leadsAPI.convertToDeal(leadId, conversionData);
-        dealIdToConvert = newDealRes.id || newDealRes.deal_id || newDealRes.data?.id;
+        const createdDeal = newDealRes.deal || newDealRes;
+        dealIdToConvert = createdDeal.id || createdDeal.deal_id || newDealRes.data?.id;
       }
 
-      // Now convert to project with explicit workflow_type
+      // Now convert that deal to a project with explicit workflow_type
       await projectAPI.convertDealToProject(dealIdToConvert, {
         name: deal.project_name || deal.client_name || 'New Project',
         budget: deal.value || 0,

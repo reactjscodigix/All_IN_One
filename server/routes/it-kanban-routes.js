@@ -6,6 +6,59 @@ module.exports = function setupItKanbanRoutes(app, pool) {
     query: (sql, params) => pool.query(sql, params)
   };
 
+  /**
+   * Works out who performed an action, so notifications name a person rather than "Someone".
+   * Prefers the x-user-name header, falls back to looking up x-user-id, then to a
+   * caller-supplied hint (e.g. the issue's reporter, which the create drawers set to
+   * the logged-in user).
+   */
+  const resolveActorName = async (req, fallback) => {
+    const headerName = req.headers['x-user-name'];
+    if (headerName && String(headerName).trim()) return String(headerName).trim();
+
+    const headerId = req.headers['x-user-id'];
+    if (headerId) {
+      try {
+        const [rows] = await db.query(
+          "SELECT TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) AS name, username FROM users WHERE id = ?",
+          [headerId]
+        );
+        if (rows.length > 0) return rows[0].name || rows[0].username;
+      } catch (e) {
+        console.error('Could not resolve actor from x-user-id:', e.message);
+      }
+    }
+
+    if (fallback && String(fallback).trim() && fallback !== 'Unassigned') return String(fallback).trim();
+    return 'Someone';
+  };
+
+  /**
+   * Raises the in-app "assigned to you" notification.
+   * Fire-and-forget: a notification failure must never break the save that triggered it,
+   * and we skip it when someone assigns work to themselves.
+   */
+  const notifyAssignment = async ({ req, assigneeName, issueKey, issueTitle, department, isSubtask = false, fallbackActor }) => {
+    if (!assigneeName || assigneeName === 'Unassigned') return;
+    const createNotification = req.app.locals.createNotification;
+    if (typeof createNotification !== 'function') return;
+
+    const actor = await resolveActorName(req, fallbackActor);
+    const label = isSubtask ? 'subtask' : 'issue';
+
+    createNotification({
+      userName: assigneeName,
+      type: 'assignment',
+      title: `${issueKey} assigned to you`,
+      message: `${actor} assigned the ${label} "${issueTitle || issueKey}" to you`,
+      actorName: actor,
+      entityType: isSubtask ? 'subtask' : 'issue',
+      entityKey: issueKey,
+      link: `/${String(department || 'IT').toLowerCase() === 'marketing' ? 'marketing' : 'it'}`,
+      excludeUserId: req.headers['x-user-id']
+    }).catch(err => console.error('Failed to send assignment notification:', err.message));
+  };
+
   const getAssigneeEmail = async (assigneeName) => {
     if (!assigneeName || assigneeName === 'Unassigned') return null;
     if (assigneeName.includes('@')) return assigneeName;
@@ -423,32 +476,170 @@ Acceptance Criteria
     }
   };
 
-  // GET all kanban issues
+  // Auto-migrate columns onto it_kanban_issues if missing.
+  // labels / story_points / flagged / parent_id back the fields the create drawers collect.
+  (async () => {
+    const wanted = [
+      { name: 'department', definition: "VARCHAR(50) DEFAULT 'IT'" },
+      { name: 'labels', definition: 'JSON' },
+      { name: 'story_points', definition: 'VARCHAR(20)' },
+      { name: 'flagged', definition: 'TINYINT(1) DEFAULT 0' },
+      { name: 'parent_id', definition: 'INT' }
+    ];
+    try {
+      const [cols] = await pool.query('DESCRIBE it_kanban_issues');
+      const colNames = cols.map(c => c.Field);
+      for (const col of wanted) {
+        if (!colNames.includes(col.name)) {
+          await pool.query(`ALTER TABLE it_kanban_issues ADD COLUMN ${col.name} ${col.definition}`);
+          console.log(`Added '${col.name}' column to 'it_kanban_issues' table.`);
+        }
+      }
+    } catch (e) {
+      console.error('Error migrating columns on it_kanban_issues:', e.message);
+    }
+
+    // Audit trail behind the History tab: one row per field change.
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS it_kanban_history (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          issue_key VARCHAR(50) NOT NULL,
+          field VARCHAR(64) NOT NULL,
+          old_value TEXT,
+          new_value TEXT,
+          changed_by VARCHAR(120) DEFAULT 'System',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_issue_key (issue_key),
+          INDEX idx_created_at (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+    } catch (e) {
+      console.error('Error creating it_kanban_history:', e.message);
+    }
+
+    // Time entries behind the Work log tab.
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS it_kanban_worklogs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          issue_key VARCHAR(50) NOT NULL,
+          author VARCHAR(120) DEFAULT 'Unassigned',
+          seconds INT NOT NULL DEFAULT 0,
+          description TEXT,
+          started_at DATETIME DEFAULT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_issue_key (issue_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+    } catch (e) {
+      console.error('Error creating it_kanban_worklogs:', e.message);
+    }
+  })();
+
+  // ── Work-log time helpers ──────────────────────────────────────────────
+  // Jira-style duration strings: "3h 30m", "2d", "45m", "1w 2d".
+  const parseDurationToSeconds = (input) => {
+    if (input === null || input === undefined) return 0;
+    const str = String(input).trim().toLowerCase();
+    if (!str) return 0;
+    if (/^\d+$/.test(str)) return parseInt(str, 10) * 60; // bare number = minutes
+    const units = { w: 144000, d: 28800, h: 3600, m: 60 }; // 1d = 8h, 1w = 5d
+    let total = 0;
+    let matched = false;
+    for (const m of str.matchAll(/(\d+(?:\.\d+)?)\s*([wdhm])/g)) {
+      total += parseFloat(m[1]) * units[m[2]];
+      matched = true;
+    }
+    return matched ? Math.round(total) : 0;
+  };
+
+  const formatSecondsToDuration = (seconds) => {
+    const s = Math.max(0, Math.round(Number(seconds) || 0));
+    if (s === 0) return '0h';
+    const w = Math.floor(s / 144000);
+    const d = Math.floor((s % 144000) / 28800);
+    const h = Math.floor((s % 28800) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return [w && `${w}w`, d && `${d}d`, h && `${h}h`, m && `${m}m`].filter(Boolean).join(' ');
+  };
+
+  // Recomputes time_spent / remaining_estimate from the issue's logged time.
+  const recalcIssueTime = async (key) => {
+    const [[totals]] = await db.query(
+      'SELECT COALESCE(SUM(seconds),0) AS total FROM it_kanban_worklogs WHERE issue_key = ?',
+      [key]
+    );
+    const [[issue]] = await db.query(
+      'SELECT original_estimate FROM it_kanban_issues WHERE issue_key = ?',
+      [key]
+    );
+    const spent = Number(totals.total) || 0;
+    const original = parseDurationToSeconds(issue?.original_estimate);
+    const remaining = original > 0 ? Math.max(0, original - spent) : 0;
+    await db.query(
+      'UPDATE it_kanban_issues SET time_spent = ?, remaining_estimate = ? WHERE issue_key = ?',
+      [formatSecondsToDuration(spent), formatSecondsToDuration(remaining), key]
+    );
+    return { spentSeconds: spent, remainingSeconds: remaining };
+  };
+
+  // GET all kanban issues (supports optional department query parameter)
   app.get('/api/it-kanban/issues', async (req, res) => {
     try {
-      const [issues] = await db.query('SELECT * FROM it_kanban_issues ORDER BY created_at DESC');
+      const { department } = req.query;
+      // Join the linked project so the details panel can show a real Parent instead of "None".
+      let query = `
+        SELECT i.*,
+               p.name AS parent_project_name,
+               COALESCE(p.project_id_code, CONCAT('PRJ-', p.id)) AS parent_project_code
+        FROM it_kanban_issues i
+        LEFT JOIN projects p ON p.id = COALESCE(i.parent_id, i.project_id)
+      `;
+      const params = [];
+
+      if (department) {
+        query += ' WHERE i.department = ? OR (i.department IS NULL AND ? = "IT")';
+        params.push(department, department);
+      }
+      query += ' ORDER BY i.created_at DESC';
+
+      const [issues] = await db.query(query, params);
 
       // Parse JSON fields back to objects for the frontend
       const formattedIssues = issues.map(issue => ({
         ...issue,
         subtasks: typeof issue.subtasks === 'string' ? JSON.parse(issue.subtasks) : (issue.subtasks || []),
         linked_issues: typeof issue.linked_issues === 'string' ? JSON.parse(issue.linked_issues) : (issue.linked_issues || []),
-        comments: typeof issue.comments === 'string' ? JSON.parse(issue.comments) : (issue.comments || [])
+        comments: typeof issue.comments === 'string' ? JSON.parse(issue.comments) : (issue.comments || []),
+        labels: typeof issue.labels === 'string' ? JSON.parse(issue.labels) : (issue.labels || [])
       }));
 
       res.json(formattedIssues);
     } catch (error) {
-      responseError(res, 500, 'Failed to fetch IT Kanban issues', error);
+      responseError(res, 500, 'Failed to fetch Kanban issues', error);
     }
   });
 
   // POST create a new issue
   app.post('/api/it-kanban/issues', async (req, res) => {
     try {
-      const { title, type, priority, status, assignee, reporter, team, team_id, project_id, description } = req.body;
+      const {
+        title, type, priority, status, assignee, reporter, team, team_id, project_id,
+        description, department, keyPrefix,
+        due_date, start_date, sprint, labels, story_points, flagged, parent_id, linked_issues
+      } = req.body;
 
-      // Generate a new key (e.g., WR-XXX). Simple logic: find max WR ID and increment
-      const [maxKeyResult] = await db.query("SELECT issue_key FROM it_kanban_issues WHERE issue_key LIKE 'WR-%' ORDER BY id DESC LIMIT 1");
+      // Normalise the optional planning fields the create drawers send.
+      const toDate = (v) => (v && String(v).trim() ? String(v).slice(0, 10) : null);
+      const labelsJson = JSON.stringify(Array.isArray(labels) ? labels.filter(Boolean) : []);
+      const linkedJson = JSON.stringify(Array.isArray(linked_issues) ? linked_issues.filter(Boolean) : []);
+
+      const dept = department || 'IT';
+      const prefix = keyPrefix || (dept === 'Marketing' ? 'MKT' : 'WR');
+
+      // Generate a new key (e.g., MKT-XXX, DES-XXX, WR-XXX)
+      const [maxKeyResult] = await db.query('SELECT issue_key FROM it_kanban_issues WHERE issue_key LIKE ? ORDER BY id DESC LIMIT 1', [`${prefix}-%`]);
       let nextNum = 101;
       if (maxKeyResult.length > 0) {
         const parts = maxKeyResult[0].issue_key.split('-');
@@ -456,11 +647,11 @@ Acceptance Criteria
           nextNum = parseInt(parts[1]) + 1;
         }
       }
-      const newKey = `WR-${nextNum}`;
+      const newKey = `${prefix}-${nextNum}`;
 
       const [result] = await db.query(`
-        INSERT INTO it_kanban_issues (issue_key, title, type, priority, status, assignee, reporter, team, team_id, project_id, description, subtasks, linked_issues, comments, progress, original_estimate, remaining_estimate, time_spent, components, environment, vulnerability)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '0h', '0h', '0h', '', '', '')
+        INSERT INTO it_kanban_issues (issue_key, title, type, priority, status, assignee, reporter, team, team_id, project_id, description, department, due_date, start_date, sprint, labels, story_points, flagged, parent_id, subtasks, linked_issues, comments, progress, original_estimate, remaining_estimate, time_spent, components, environment, vulnerability)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '0h', '0h', '0h', '', '', '')
       `, [
         newKey,
         title,
@@ -473,8 +664,16 @@ Acceptance Criteria
         team_id || null,
         project_id || null,
         description || '',
+        dept,
+        toDate(due_date),
+        toDate(start_date),
+        sprint || null,
+        labelsJson,
+        story_points || null,
+        flagged ? 1 : 0,
+        parent_id || null,
         JSON.stringify([]),
-        JSON.stringify([]),
+        linkedJson,
         JSON.stringify([])
       ]);
 
@@ -485,6 +684,18 @@ Acceptance Criteria
             sendAssignmentEmail(email, assignee, newKey, title, type, description, status, priority);
           }
         }).catch(err => console.error('Failed to trigger email notify:', err));
+
+        // In-app notification for the person it was assigned to.
+        notifyAssignment({
+          req,
+          assigneeName: assignee,
+          issueKey: newKey,
+          issueTitle: title,
+          department: dept,
+          // On creation the reporter is the person filling in the form, so it's a
+          // reliable stand-in when the client didn't send the user headers.
+          fallbackActor: reporter
+        });
       }
 
       res.status(201).json({
@@ -493,7 +704,7 @@ Acceptance Criteria
         issue_key: newKey
       });
     } catch (error) {
-      responseError(res, 500, 'Failed to create IT Kanban issue', error);
+      responseError(res, 500, 'Failed to create Kanban issue', error);
     }
   });
 
@@ -574,7 +785,7 @@ Acceptance Criteria
       if (updates.assignee) {
         try {
           const [currentIssues] = await db.query(
-            "SELECT title, assignee, description, priority, type, status FROM it_kanban_issues WHERE issue_key = ?",
+            "SELECT title, assignee, description, priority, type, status, department, reporter FROM it_kanban_issues WHERE issue_key = ?",
             [key]
           );
           if (currentIssues.length > 0) {
@@ -595,10 +806,71 @@ Acceptance Criteria
                   );
                 }
               }).catch(err => console.error('Failed to trigger email notify on update:', err));
+
+              // In-app notification for the newly assigned person.
+              notifyAssignment({
+                req,
+                assigneeName: newAssignee,
+                issueKey: key,
+                issueTitle: updates.title || currentIssue.title,
+                department: currentIssue.department,
+                fallbackActor: currentIssue.reporter
+              });
             }
           }
         } catch (dbErr) {
           console.error('Failed to query current issue state for assignee check:', dbErr);
+        }
+      }
+
+      // Subtasks are assigned by rewriting the whole subtasks array, so compare the
+      // incoming list against the stored one and notify anyone newly assigned.
+      if (updates.subtasks) {
+        try {
+          const [[stored]] = await db.query(
+            'SELECT subtasks, title, department, reporter FROM it_kanban_issues WHERE issue_key = ?',
+            [key]
+          );
+          const parse = (v) => {
+            if (!v) return [];
+            if (typeof v === 'string') { try { return JSON.parse(v); } catch (e) { return []; } }
+            return Array.isArray(v) ? v : [];
+          };
+          const before = parse(stored?.subtasks);
+          const after = parse(updates.subtasks);
+          const previousBySt = new Map(before.map(s => [String(s.id), s.assignee || 'Unassigned']));
+
+          after.forEach((st, idx) => {
+            const newAssignee = st.assignee;
+            if (!newAssignee || newAssignee === 'Unassigned') return;
+            if (previousBySt.get(String(st.id)) === newAssignee) return; // unchanged
+            notifyAssignment({
+              req,
+              assigneeName: newAssignee,
+              issueKey: `${key}-${idx + 1}`,
+              issueTitle: st.title || stored?.title,
+              department: stored?.department,
+              isSubtask: true,
+              fallbackActor: stored?.reporter
+            });
+          });
+        } catch (e) {
+          console.error('Failed to check subtask assignment changes:', e.message);
+        }
+      }
+
+      // Snapshot the fields being changed so we can write an audit trail (History tab).
+      let beforeState = null;
+      const auditableFields = Object.keys(updates).filter(f => allowedFields.includes(f));
+      if (auditableFields.length > 0) {
+        try {
+          const [rows] = await db.query(
+            `SELECT ${auditableFields.map(f => `\`${f}\``).join(', ')} FROM it_kanban_issues WHERE issue_key = ?`,
+            [key]
+          );
+          beforeState = rows[0] || null;
+        } catch (e) {
+          console.error('Could not snapshot issue before update:', e.message);
         }
       }
 
@@ -612,9 +884,118 @@ Acceptance Criteria
         return res.status(404).json({ error: 'Issue not found' });
       }
 
+      // Log only fields whose value actually changed.
+      if (beforeState) {
+        const actor = req.headers['x-user-name'] || updates.updated_by || 'System';
+        const norm = (v) => {
+          if (v === null || v === undefined) return '';
+          if (v instanceof Date) return v.toISOString().slice(0, 10);
+          return String(v);
+        };
+        for (const field of auditableFields) {
+          const oldVal = norm(beforeState[field]);
+          const newVal = norm(updates[field]);
+          if (oldVal === newVal) continue;
+          try {
+            await db.query(
+              'INSERT INTO it_kanban_history (issue_key, field, old_value, new_value, changed_by) VALUES (?, ?, ?, ?, ?)',
+              [key, field, oldVal.slice(0, 2000), newVal.slice(0, 2000), actor]
+            );
+          } catch (e) {
+            console.error('Failed to record history entry:', e.message);
+          }
+        }
+      }
+
       res.json({ message: 'Issue updated successfully' });
     } catch (error) {
       responseError(res, 500, 'Failed to update IT Kanban issue', error);
+    }
+  });
+
+  // ── HISTORY (audit trail) ─────────────────────────────────────────────
+  app.get('/api/it-kanban/issues/:key/history', async (req, res) => {
+    try {
+      const [rows] = await db.query(
+        'SELECT id, field, old_value, new_value, changed_by, created_at FROM it_kanban_history WHERE issue_key = ? ORDER BY created_at DESC, id DESC',
+        [req.params.key]
+      );
+      res.json(rows);
+    } catch (error) {
+      responseError(res, 500, 'Failed to fetch issue history', error);
+    }
+  });
+
+  // ── WORK LOG ──────────────────────────────────────────────────────────
+  app.get('/api/it-kanban/issues/:key/worklogs', async (req, res) => {
+    try {
+      const { key } = req.params;
+      const [rows] = await db.query(
+        'SELECT id, author, seconds, description, started_at, created_at FROM it_kanban_worklogs WHERE issue_key = ? ORDER BY COALESCE(started_at, created_at) DESC, id DESC',
+        [key]
+      );
+      const [[issue]] = await db.query(
+        'SELECT original_estimate, remaining_estimate, time_spent FROM it_kanban_issues WHERE issue_key = ?',
+        [key]
+      );
+      const totalSeconds = rows.reduce((sum, r) => sum + (Number(r.seconds) || 0), 0);
+      res.json({
+        worklogs: rows.map(r => ({ ...r, timeSpent: formatSecondsToDuration(r.seconds) })),
+        totalSeconds,
+        totalSpent: formatSecondsToDuration(totalSeconds),
+        originalEstimate: issue?.original_estimate || '0h',
+        remainingEstimate: issue?.remaining_estimate || '0h'
+      });
+    } catch (error) {
+      responseError(res, 500, 'Failed to fetch work logs', error);
+    }
+  });
+
+  app.post('/api/it-kanban/issues/:key/worklogs', async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { timeSpent, description, author, startedAt, originalEstimate } = req.body;
+
+      const seconds = parseDurationToSeconds(timeSpent);
+      if (!seconds) {
+        return res.status(400).json({ error: 'Enter time as 3h, 30m, 1d 4h, etc.' });
+      }
+
+      // Allow setting the original estimate alongside the first log entry.
+      if (originalEstimate) {
+        await db.query('UPDATE it_kanban_issues SET original_estimate = ? WHERE issue_key = ?',
+          [formatSecondsToDuration(parseDurationToSeconds(originalEstimate)), key]);
+      }
+
+      await db.query(
+        'INSERT INTO it_kanban_worklogs (issue_key, author, seconds, description, started_at) VALUES (?, ?, ?, ?, ?)',
+        [key, author || 'Unassigned', seconds, description || null, startedAt ? String(startedAt).slice(0, 19).replace('T', ' ') : null]
+      );
+
+      const totals = await recalcIssueTime(key);
+      res.status(201).json({
+        success: true,
+        totalSpent: formatSecondsToDuration(totals.spentSeconds),
+        remainingEstimate: formatSecondsToDuration(totals.remainingSeconds)
+      });
+    } catch (error) {
+      responseError(res, 500, 'Failed to log work', error);
+    }
+  });
+
+  app.delete('/api/it-kanban/issues/:key/worklogs/:id', async (req, res) => {
+    try {
+      const { key, id } = req.params;
+      const [result] = await db.query('DELETE FROM it_kanban_worklogs WHERE id = ? AND issue_key = ?', [id, key]);
+      if (result.affectedRows === 0) return res.status(404).json({ error: 'Work log not found' });
+      const totals = await recalcIssueTime(key);
+      res.json({
+        success: true,
+        totalSpent: formatSecondsToDuration(totals.spentSeconds),
+        remainingEstimate: formatSecondsToDuration(totals.remainingSeconds)
+      });
+    } catch (error) {
+      responseError(res, 500, 'Failed to delete work log', error);
     }
   });
 
@@ -627,6 +1008,10 @@ Acceptance Criteria
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: 'Issue not found' });
       }
+
+      // Don't leave orphaned audit/worklog rows behind.
+      await db.query('DELETE FROM it_kanban_history WHERE issue_key = ?', [key]).catch(() => {});
+      await db.query('DELETE FROM it_kanban_worklogs WHERE issue_key = ?', [key]).catch(() => {});
 
       res.json({ message: 'Issue deleted successfully' });
     } catch (error) {
@@ -1167,6 +1552,89 @@ Respond ONLY in valid JSON format.`
       res.json({ improvement });
     } catch (error) {
       responseError(res, 500, 'AI Subtask improve failed', error);
+    }
+  });
+
+  app.post('/api/it-kanban/issues/:key/ai/subtask-specs', async (req, res) => {
+    const { key } = req.params;
+    const { subtaskTitle, parentTitle } = req.body;
+    try {
+      const [parentRows] = await db.query('SELECT title, description FROM it_kanban_issues WHERE issue_key = ?', [key]);
+      const pTitle = parentTitle || (parentRows.length > 0 ? parentRows[0].title : '');
+      const pDesc = parentRows.length > 0 ? (parentRows[0].description || '').replace(/<\/?[^>]+(>|$)/g, ' ').replace(/\s+/g, ' ').trim() : '';
+
+      let specs = {};
+      try {
+        if (!hasApiKey()) throw new Error('API key missing');
+        const response = await aiClient.chat.completions.create({
+          model: aiModel,
+          messages: [
+            {
+              role: "system",
+              content: `You are a senior tech lead creating a detailed spec sheet for a subtask. You have the parent issue context and the subtask title. Generate a SPECIFIC specification that references the actual technology, components, and implementation details relevant to this subtask.
+
+DO NOT produce generic specs. Every item must be specific to what "${subtaskTitle}" actually involves.
+
+Return a JSON object with these keys:
+- 'acceptance_criteria': (HTML string) 3-5 specific criteria using Given/When/Then format referencing actual components/APIs
+- 'developer_checklist': (array of strings) 4-6 specific implementation steps a developer must follow
+- 'testing_checklist': (array of strings) 3-5 specific test scenarios with expected outcomes
+- 'estimated_effort': (string) realistic estimate like '4h' or '12h'
+- 'required_skills': (array of strings) specific technologies needed
+- 'risk_analysis': (HTML string) what could go wrong specific to this subtask
+- 'dependency_mapping': (string) what must be completed before this subtask
+- 'implementation_notes': (HTML string) step-by-step technical approach
+- 'tags': (array of strings) relevant labels
+- 'priority': ('High'|'Medium'|'Low')
+- 'story_points': (number 1-13)
+- 'sprint': (string)
+- 'due_date': (string YYYY-MM-DD, ~1 week from now)
+
+Respond ONLY in valid JSON format.`
+            },
+            {
+              role: "user",
+              content: `Parent Issue: ${pTitle} (${key})\nParent Description: ${pDesc}\n\nSubtask to Specify: ${subtaskTitle}`
+            }
+          ],
+        });
+        specs = safeParseJSON(response.choices[0].message.content);
+      } catch (err) {
+        console.warn('AI subtask specs failed, running fallback:', err.message);
+        specs = {
+          acceptance_criteria: `
+            <ul class="list-disc pl-4 space-y-1">
+              <li>Subtask implementation is clean and adheres to guidelines.</li>
+              <li>Unit tests verify basic operations without logic error regressions.</li>
+              <li>UI flows match mobile/desktop layouts nicely.</li>
+            </ul>
+          `.trim(),
+          developer_checklist: [
+            'Setup boilerplate codes and files structures.',
+            'Connect state hooks and props parameters.',
+            'Refactor logic functions to maintain reusability.'
+          ],
+          testing_checklist: [
+            'Test empty / null states in inputs.',
+            'Verify responsive wrapper grids on multiple window dimensions.',
+            'Confirm callback dispatch fires accurately.'
+          ],
+          estimated_effort: '6h',
+          required_skills: ['React.js', 'TailwindCSS', 'REST APIs'],
+          risk_analysis: '<p class="text-xs text-red-600"><strong>Low Risk:</strong> Verify API formats align exactly with DB indexes to avoid transaction failures.</p>',
+          dependency_mapping: 'Requires backend migrations completion.',
+          implementation_notes: '<p class="text-xs">Follow standard style system parameters. Keep callbacks lightweight.</p>',
+          tags: ['Feature', 'Frontend'],
+          priority: 'Medium',
+          story_points: 3,
+          sprint: 'Sprint 1',
+          due_date: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString().split('T')[0]
+        };
+      }
+
+      res.json({ specs, improvement: specs });
+    } catch (error) {
+      responseError(res, 500, 'AI Subtask specs failed', error);
     }
   });
 

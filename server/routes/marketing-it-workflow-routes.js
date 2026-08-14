@@ -368,7 +368,7 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
         const today = new Date();
         const nextWeek = new Date(today);
         nextWeek.setDate(today.getDate() + 7);
-        
+
         const nextMonth = new Date(today);
         nextMonth.setMonth(today.getMonth() + 1);
 
@@ -381,11 +381,11 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
             assigned_to, project_id, contact_id, deal_id, status
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-          'Customer', project.contact_id || project.company_id, 'Report', 
-          `Weekly Progress Report: ${project.name}`, 
+          'Customer', project.contact_id || project.company_id, 'Report',
+          `Weekly Progress Report: ${project.name}`,
           `Standard weekly progress report for ${project.name}`,
           nextWeek.toISOString().split('T')[0], '10:00:00', 'Medium',
-          1, 'Weekly', 
+          1, 'Weekly',
           managerId, projectId, project.contact_id, project.deal_id, 'Scheduled'
         ]);
 
@@ -398,11 +398,11 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
             assigned_to, project_id, contact_id, deal_id, status
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-          'Customer', project.contact_id || project.company_id, 'Report', 
-          `Monthly Performance Review: ${project.name}`, 
+          'Customer', project.contact_id || project.company_id, 'Report',
+          `Monthly Performance Review: ${project.name}`,
           `Comprehensive monthly performance and health review for ${project.name}`,
           nextMonth.toISOString().split('T')[0], '11:00:00', 'High',
-          1, 'Monthly', 
+          1, 'Monthly',
           managerId, projectId, project.contact_id, project.deal_id, 'Scheduled'
         ]);
       }
@@ -521,7 +521,7 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
     }
   });
 
-  // GMB Management
+  // GMB Management11
   app.get('/api/marketing/gmb', async (req, res) => {
     let connection;
     try {
@@ -530,8 +530,7 @@ module.exports = function setupMarketingITWorkflowRoutes(app, pool) {
       let query = 'SELECT * FROM gmb_management';
       const params = [];
       if (projectId) {
-        query += ' WHERE project_id = ?';
-        params.push(projectId);
+        query += ' WHERE project_id = ?'; 1
       }
       const [gmb] = await connection.query(query, params);
       connection.release();

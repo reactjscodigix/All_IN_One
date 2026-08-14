@@ -536,7 +536,13 @@ function SyncMeetLinkModal({ event, onClose, onSync }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function ITCalendarPage() {
+export default function ITCalendarPage({ department }) {
+  const path = window.location.pathname.toLowerCase();
+  const currentDept = department || (
+    path.includes('/marketing') ? 'Marketing' :
+    path.includes('/seo-gmb') ? 'Marketing' :
+    'IT'
+  );
   const [viewYear, setViewYear] = useState(TODAY.getFullYear());
   const [viewMonth, setViewMonth] = useState(TODAY.getMonth());
   const [viewMode, setViewMode] = useState('Month');
@@ -715,8 +721,8 @@ export default function ITCalendarPage() {
           {/* Page Header */}
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h1 className="text-[22px]  text-gray-900">IT Calendar</h1>
-              <p className="text-sm text-gray-500 mt-0.5">Manage your schedule, events and team activities</p>
+              <h1 className="text-[22px]  text-gray-900">{currentDept === 'Marketing' ? 'Marketing Calendar' : 'IT Calendar'}</h1>
+              <p className="text-sm text-gray-500 mt-0.5">{currentDept === 'Marketing' ? 'Manage your marketing campaigns, launch schedules, events and team activities' : 'Manage your schedule, events and team activities'}</p>
             </div>
             <button
               onClick={() => { setAddDefaultDate(todayKey); setShowAddModal(true); }}

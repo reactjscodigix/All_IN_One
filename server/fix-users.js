@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const crypto = require('crypto');
+require('dotenv').config();
 
 function hashPassword(password) {
   return crypto.pbkdf2Sync(password, 'salt', 1000, 64, 'sha512').toString('hex');
@@ -8,11 +9,11 @@ function hashPassword(password) {
 async function fixUsers() {
   try {
     const pool = mysql.createPool({
-      host: '127.0.0.1',
-      port: 3307,
-      user: 'all_in_one_user',
-      password: 'C0digix$309',
-      database: 'deals_db'
+      host: process.env.DB_HOST || '127.0.0.1',
+      port: process.env.DB_PORT || 3307,
+      user: process.env.DB_USER || 'all_in_one_user',
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME || 'deals_db'
     });
 
     const usersToEnsure = [

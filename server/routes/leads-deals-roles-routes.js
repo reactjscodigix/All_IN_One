@@ -1,3 +1,5 @@
+const { resolveDealForLead } = require('../middleware/helpers');
+
 module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
   // Use pool.query directly for better connection management
   const db = {
@@ -345,37 +347,42 @@ module.exports = function setupLeadsDealsRolesRoutes(app, pool) {
         console.warn('Pipeline/stage tables not found, proceeding without pipeline assignment');
       }
       
+      // One client = one deal. Every service the client bought (SEO, GMB, Social Media, ...)
+      // rides along on that deal instead of being dropped or split into separate deals.
+      const resolved = await resolveDealForLead(db, { ...leadData, lead_name: deal_name || leadData.lead_name });
+
       const [dealResult] = await db.query(
         `INSERT INTO deals (
           deal_name, description, deal_value, currency, status,
-          company_id, service_category_id, pipeline, deal_stage, probability, 
+          company_id, service_category_id, services, pipeline, deal_stage, probability,
           department_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
-          deal_name,
+          deal_name || resolved.dealName,
           description || null,
           deal_value,
           currency || 'USD',
           'Open',
-          finalCompanyId, 
-          leadData.service_category_id || null,
-          'New', 
+          finalCompanyId,
+          resolved.serviceCategoryId,
+          resolved.serviceNames.length > 0 ? JSON.stringify(resolved.serviceNames) : null,
+          'New',
           stageId || 'New',
           10,
-          leadData.department_id || null
+          resolved.departmentId
         ]
       );
-      
+
       const dealId = dealResult.insertId;
-      
+
       await db.query(
         `UPDATE leads SET lead_status = ?, converted_deal_id = ?, updated_at = NOW()
          WHERE id = ?`,
         ['Qualified', dealId, leadId]
       );
-      
+
       const [newDeal] = await db.query('SELECT * FROM deals WHERE id = ?', [dealId]);
-      
+
       return res.status(201).json({
         success: true,
         message: `Lead "${leadData.lead_name}" successfully converted to deal`,

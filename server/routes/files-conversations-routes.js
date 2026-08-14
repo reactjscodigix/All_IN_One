@@ -321,6 +321,10 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
             WHEN c.participant1_id = ? THEN u2.status
             ELSE u1.status
           END as status,
+          CASE 
+            WHEN c.participant1_id = ? THEN u2.last_seen
+            ELSE u1.last_seen
+          END as last_seen,
           c.last_message_text as lastMessage,
           DATE_FORMAT(c.last_message_timestamp, '%M %d, %Y %H:%i') as timestamp
         FROM conversations c
@@ -351,7 +355,7 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
         WHERE gm.user_id = ?
       `;
 
-      const [directConvs] = await connection.query(query1, [userId, userId, userId, userId, userId, userId]);
+      const [directConvs] = await connection.query(query1, [userId, userId, userId, userId, userId, userId, userId]);
       const [groupConvs] = await connection.query(query2, [userId]);
 
       const mergedConversations = [...directConvs, ...groupConvs].sort((a, b) => {
@@ -651,7 +655,8 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
             ELSE 'other'
           END as sender,
           m.message_text as text,
-          DATE_FORMAT(m.created_at, '%h:%i %p') as timestamp
+          DATE_FORMAT(m.created_at, '%Y-%m-%d %H:%i:%s') as created_at,
+          DATE_FORMAT(m.created_at, '%Y-%m-%d %H:%i:%s') as timestamp
         FROM messages m
         LEFT JOIN users u ON m.sender_id = u.id
         WHERE 1=1
@@ -687,30 +692,45 @@ module.exports = function setupFilesConversationsRoutes(app, pool) {
 
       connection = await getConnection();
 
-      let query = 'SELECT id, first_name, last_name, email, avatar, status FROM users WHERE id != ?';
+      let query = 'SELECT id, first_name, last_name, email, avatar, status, department FROM users WHERE id != ?';
       const params = [userId];
 
       if (search) {
-        query += ' AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)';
+        query += ' AND (first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR department LIKE ?)';
         const searchTerm = `%${search}%`;
-        params.push(searchTerm, searchTerm, searchTerm);
+        params.push(searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
-      query += ' ORDER BY first_name ASC LIMIT 20';
+      query += ' ORDER BY first_name ASC LIMIT 100';
 
       const [users] = await connection.query(query, params);
 
       const formattedUsers = users.map(u => ({
         id: u.id,
-        name: `${u.first_name} ${u.last_name}`,
+        name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
         email: u.email,
         avatar: u.avatar,
+        department: u.department || 'CRM',
         status: u.status || 'Active'
       }));
 
       res.json(formattedUsers);
     } catch (error) {
       responseError(res, 500, 'Failed to fetch available users', error);
+    } finally {
+      if (connection) connection.release();
+    }
+  });
+
+  app.post('/api/users/:userId/heartbeat', async (req, res) => {
+    let connection;
+    try {
+      const { userId } = req.params;
+      connection = await getConnection();
+      await connection.query('UPDATE users SET last_seen = CURRENT_TIMESTAMP, status = "Active" WHERE id = ?', [userId]);
+      res.json({ success: true, timestamp: new Date() });
+    } catch (error) {
+      responseError(res, 500, 'Failed to update heartbeat', error);
     } finally {
       if (connection) connection.release();
     }

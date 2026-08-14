@@ -1,3 +1,5 @@
+const { generateProjectTasks } = require('../middleware/helpers');
+
 module.exports = function setupEntitiesRoutes(app, pool) {
   // Use pool.query directly for better connection management
   const db = {
@@ -352,11 +354,25 @@ module.exports = function setupEntitiesRoutes(app, pool) {
 
   app.get('/api/users', async (req, res) => {
     try {
-      const { skip = 0, limit = 50, search } = req.query;
+      const { skip = 0, limit = 50, search, department, excludeSystem } = req.query;
       // Connection handled by db.query
 
       let query = 'SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE 1=1';
       const params = [];
+
+      // Scope to a department so pickers (e.g. issue assignee) don't offer staff
+      // from other departments. Accepts "Marketing" or "Marketing Department".
+      if (department) {
+        const dept = String(department).replace(/\s*department\s*$/i, '').trim();
+        query += ' AND u.department LIKE ?';
+        params.push(`%${dept}%`);
+      }
+
+      // Placeholder logins seeded per department (admin@, marketing@, it@ ...) are not
+      // real people and shouldn't appear in assignee lists.
+      if (excludeSystem === 'true') {
+        query += " AND u.username NOT IN ('admin','leads','deals','sales','marketing','it','accounting')";
+      }
 
       if (search) {
         query += ' AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ?)';
@@ -1368,31 +1384,34 @@ module.exports = function setupEntitiesRoutes(app, pool) {
 
   app.get('/api/confirmed-it-projects', async (req, res) => {
     try {
-      // Fetch deals that are 'Won' and linked to 'IT Services Department'
+      // Fetch deals that are 'Won' and linked to the requested department (defaults to IT for backward compatibility)
+      const deptQuery = (req.query.department || 'IT').toLowerCase();
+      const deptNamePattern = deptQuery.includes('market') ? '%Marketing%' : '%IT%';
       const query = `
-        SELECT 
+        SELECT
           d.id, d.deal_name as name, d.company_id, c.company_name
         FROM deals d
         JOIN companies c ON d.company_id = c.id
         JOIN service_categories sc ON d.service_category_id = sc.id
         JOIN departments dept ON sc.suggested_department_id = dept.id
-        WHERE d.deal_stage = 'Won' 
-        AND dept.name = 'IT Department'
+        WHERE d.deal_stage = 'Won'
+        AND dept.name LIKE ?
         ORDER BY d.updated_at DESC
       `;
-      
-      const [deals] = await db.query(query);
+
+      const [deals] = await db.query(query, [deptNamePattern]);
       return res.json(deals);
     } catch (err) {
-      responseError(res, 500, 'Failed to fetch confirmed IT projects', err);
+      responseError(res, 500, 'Failed to fetch confirmed projects', err);
     }
   });
 
   app.get('/api/confirmed-it-clients', async (req, res) => {
     try {
-      console.log('🔍 GET /api/confirmed-it-clients hit');
-      // Fetch companies that have at least one 'Won' deal OR 'Won' lead in 'IT Services Department'
+      // Fetch companies that have at least one 'Won' deal OR 'Won' lead in the requested department (defaults to IT)
       // Also fetch associated project_id if it exists
+      const deptQuery = (req.query.department || 'IT').toLowerCase();
+      const deptNamePattern = deptQuery.includes('market') ? '%Marketing%' : '%IT%';
       const query = `
         SELECT DISTINCT
           c.id, c.company_name, c.email, c.phone,
@@ -1404,19 +1423,19 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         LEFT JOIN service_categories sc_l ON l.service_category_id = sc_l.id
         LEFT JOIN departments dept_d ON sc_d.suggested_department_id = dept_d.id
         LEFT JOIN departments dept_l ON sc_l.suggested_department_id = dept_l.id
-        WHERE c.status = 'Active' 
+        WHERE c.status = 'Active'
         AND (
-          (d.deal_stage = 'Won' AND dept_d.name = 'IT Department')
-          OR 
-          (l.lead_status = 'Won' AND dept_l.name = 'IT Department')
+          (d.deal_stage = 'Won' AND dept_d.name LIKE ?)
+          OR
+          (l.lead_status = 'Won' AND dept_l.name LIKE ?)
         )
         ORDER BY c.company_name ASC
       `;
-      
-      const [clients] = await db.query(query);
+
+      const [clients] = await db.query(query, [deptNamePattern, deptNamePattern]);
       return res.json(clients);
     } catch (err) {
-      responseError(res, 500, 'Failed to fetch confirmed IT clients', err);
+      responseError(res, 500, 'Failed to fetch confirmed clients', err);
     }
   });
 
@@ -1428,22 +1447,41 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         return res.status(400).json({ error: 'Project name/title required' });
       }
 
+      // Resolve the department (and service, for task generation) before saving the project,
+      // preferring the originating deal's own department/service over a guessed category name.
+      let resolvedDepartmentId = department_id || null;
+      let resolvedServiceType = service_type || null;
+      if (deal_id) {
+        const [dealRows] = await db.query('SELECT department_id, service_category_id FROM deals WHERE id = ?', [deal_id]);
+        if (dealRows.length > 0) {
+          if (!resolvedDepartmentId) resolvedDepartmentId = dealRows[0].department_id;
+          if (!resolvedServiceType && dealRows[0].service_category_id) {
+            const [cat] = await db.query('SELECT name FROM service_categories WHERE id = ?', [dealRows[0].service_category_id]);
+            if (cat.length > 0) resolvedServiceType = cat[0].name;
+          }
+        }
+      }
+      if (!resolvedDepartmentId && resolvedServiceType) {
+        const [cat] = await db.query('SELECT suggested_department_id FROM service_categories WHERE name = ?', [resolvedServiceType]);
+        if (cat.length > 0) resolvedDepartmentId = cat[0].suggested_department_id;
+      }
+
       // Connection handled by db.query
       const [result] = await db.query(
-        `INSERT INTO projects (title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, progress, spent, manager_id) 
+        `INSERT INTO projects (title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, progress, spent, manager_id)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          title || name || null, 
-          name || title || null, 
-          description || null, 
-          status || 'Planning', 
+          title || name || null,
+          name || title || null,
+          description || null,
+          status || 'Planning',
           company_id || null,
           priority || 'Medium',
           budget || 0,
           due_date || null,
           start_date || null,
           parent_project_id || null,
-          department_id || null,
+          resolvedDepartmentId || null,
           deal_id || null,
           created_by || null,
           progress || 0,
@@ -1457,30 +1495,8 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       await db.query('UPDATE projects SET project_id_code = ? WHERE id = ?', [code, projectId]);
 
       // Automated Task Generation based on service_type or department
-      if (service_type || department_id) {
-        let tasks = [];
-        const deptNameQuery = department_id ? 'SELECT name FROM departments WHERE id = ?' : 'SELECT name FROM departments WHERE id = (SELECT suggested_department_id FROM service_categories WHERE name = ?)';
-        const deptNameParams = department_id ? [department_id] : [service_type];
-        
-        const [dept] = await db.query(deptNameQuery, deptNameParams);
-        const deptName = dept.length > 0 ? dept[0].name : '';
-
-        if (service_type === 'SEO') {
-          tasks = ['Keyword Research', 'On-page Optimization', 'Technical Audit', 'Backlink Strategy', 'Monthly Reporting'];
-        } else if (service_type === 'Social Media') {
-          tasks = ['Content Planning', 'Graphics Request', 'Video Request', 'Scheduling', 'Publishing', 'Analytics Tracking'];
-        } else if (service_type === 'WordPress') {
-          tasks = ['Requirement Analysis', 'Design', 'Development', 'Testing', 'Deployment'];
-        } else if (deptName === 'IT Services Department') {
-          tasks = ['Requirement Analysis', 'Development', 'Code Commit', 'Internal Review', 'Testing', 'Deployment'];
-        }
-
-        for (const taskTitle of tasks) {
-          await db.query(`
-            INSERT INTO general_tasks (title, project_id, status, priority, linked_type, linked_id, department_id, workflow_type)
-            VALUES (?, ?, ?, ?, 'Project', ?, ?, ?)
-          `, [taskTitle, projectId, 'To Do', 'Medium', projectId, department_id || null, service_type || deptName]);
-        }
+      if (resolvedServiceType || resolvedDepartmentId) {
+        await generateProjectTasks(db, projectId, { serviceType: resolvedServiceType, departmentId: resolvedDepartmentId });
       }
 
       const [project] = await db.query('SELECT * FROM projects WHERE id = ?', [projectId]);
@@ -1507,22 +1523,47 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           (SELECT COUNT(*) FROM general_tasks WHERE project_id = p.id AND status = 'In Progress') AS in_progress_tasks,
           (SELECT COUNT(*) FROM general_tasks WHERE project_id = p.id AND status = 'Review') AS review_tasks,
           (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', tm.user_id, 'first_name', tu.first_name, 'last_name', tu.last_name, 'avatar', tu.avatar)) 
-           FROM project_team tm 
-           JOIN users tu ON tm.user_id = tu.id 
-           WHERE tm.project_id = p.id) AS team_members
-        FROM projects p 
-        LEFT JOIN companies c ON p.company_id = c.id 
+           FROM project_team tm
+           JOIN users tu ON tm.user_id = tu.id
+           WHERE tm.project_id = p.id) AS team_members,
+          dept.name AS department_name,
+          sc.name AS service_name,
+          d.deal_name AS deal_name
+        FROM projects p
+        LEFT JOIN companies c ON p.company_id = c.id
         LEFT JOIN deals d ON p.deal_id = d.id
         LEFT JOIN companies dc ON d.company_id = dc.id
         LEFT JOIN users u ON p.manager_id = u.id
         LEFT JOIN teams t ON p.team_id = t.id
+        LEFT JOIN departments dept ON p.department_id = dept.id
+        LEFT JOIN service_categories sc ON d.service_category_id = sc.id
         WHERE p.id = ?
       `;
       const [projects] = await db.query(query, [id]);
       if (projects.length === 0) {
         return res.status(404).json({ error: 'Project not found' });
       }
-      return res.json(projects[0]);
+
+      // A client can buy several services on one deal (SEO + PPC + Social Media...).
+      // Surface that whole list so the project shows the client's full engagement.
+      const project = projects[0];
+      project.client_services = [];
+      if (project.deal_id) {
+        const [dealRows] = await db.query('SELECT services FROM deals WHERE id = ?', [project.deal_id]);
+        if (dealRows.length > 0 && dealRows[0].services) {
+          try {
+            const parsed = typeof dealRows[0].services === 'string'
+              ? JSON.parse(dealRows[0].services)
+              : dealRows[0].services;
+            if (Array.isArray(parsed)) project.client_services = parsed.filter(Boolean);
+          } catch (e) { /* leave empty, service_name below still applies */ }
+        }
+      }
+      if (project.client_services.length === 0 && project.service_name) {
+        project.client_services = [project.service_name];
+      }
+
+      return res.json(project);
     } catch (err) {
       responseError(res, 500, 'Failed to fetch project details', err);
     }

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Bell, Check, CheckCheck, Filter, MoreVertical, X, ExternalLink,
   MessageSquare, CheckSquare, AlertCircle, Upload, AtSign, Users,
   Calendar, Briefcase, ChevronRight, ChevronLeft, Tag
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { API_BASE_URL } from '../../config/environment';
 
 // ─── Mock Data ──────────────────────────────────────────────────────────────
 const AVATARS = {
@@ -61,11 +63,71 @@ function Avatar({ name, size = 32 }) {
   );
 }
 
+// Maps a stored notification type onto the categories this page filters by.
+const TYPE_TO_CATEGORY = {
+  assignment: 'Tasks', task: 'Tasks', status: 'Tasks',
+  comment: 'Comments', mention: 'Mentions',
+  issue: 'Issues', bug: 'Issues',
+  deployment: 'Deployments', file: 'Files',
+  calendar: 'Calendar', announcement: 'Team', handoff: 'Team', general: 'Team'
+};
+
+const dateLabel = (value) => {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return 'Earlier';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const day = new Date(d); day.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((today - day) / 86400000);
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 export default function NotificationsPage() {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
   const [activeTab, setActiveTab] = useState('All');
   const [selectedNotif, setSelectedNotif] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadNotifications = useCallback(async () => {
+    if (!user?.id) { setIsLoading(false); return; }
+    try {
+      const res = await fetch(`${API_BASE_URL}/notifications?user_id=${user.id}&limit=100`);
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      setNotifications((data.notifications || []).map(n => ({
+        id: n.id,
+        type: TYPE_TO_CATEGORY[n.type] || 'Team',
+        rawType: n.type,
+        title: n.title,
+        message: n.message || '',
+        actor: n.actor_name || 'System',
+        link: n.link,
+        entityKey: n.entity_key,
+        unread: !n.is_read,
+        important: n.type === 'assignment' || n.type === 'mention',
+        date: dateLabel(n.created_at),
+        time: new Date(n.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: n.created_at,
+        // Side panel reads these; only what we actually know is filled in.
+        details: {
+          task: n.title,
+          taskId: n.entity_key || '',
+          assignedBy: n.actor_name || 'System',
+          module: n.entity_type || '',
+          labels: []
+        }
+      })));
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => { loadNotifications(); }, [loadNotifications]);
 
   const unreadCount = notifications.filter(n => n.unread).length;
   const importantCount = notifications.filter(n => n.important).length;
@@ -83,8 +145,24 @@ export default function NotificationsPage() {
     return acc;
   }, {});
 
-  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
-  const markRead = (id) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n));
+  const markAllRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+    if (!user?.id) return;
+    try {
+      await fetch(`${API_BASE_URL}/notifications/read-all`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      });
+    } catch (err) { console.error('Failed to mark all read:', err); }
+  };
+
+  const markRead = async (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n));
+    try {
+      await fetch(`${API_BASE_URL}/notifications/${id}/read`, { method: 'PUT' });
+    } catch (err) { console.error('Failed to mark read:', err); }
+  };
 
   const handleClick = (notif) => {
     setSelectedNotif(notif);

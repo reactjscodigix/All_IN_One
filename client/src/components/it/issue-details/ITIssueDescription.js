@@ -5,6 +5,8 @@ import {
   Type
 } from 'lucide-react';
 import { API_BASE_URL } from '../../../config/environment';
+import { insertFilesIntoEditor, makeEditorPasteHandler } from '../../../utils/descriptionFiles';
+import Swal from 'sweetalert2';
 
 const stripHtmlTags = (str) => {
   if (!str) return '';
@@ -49,7 +51,7 @@ const renderFormattedDescription = (text) => {
   if (text.includes('<')) {
     return (
       <div
-        className="prose prose-xs max-w-none text-xs text-gray-800 leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_li]:my-1 [&_li]:text-gray-800 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:mt-3 [&_h3]:mb-1 [&_h4]:text-xs [&_h4]:font-bold [&_h4]:text-gray-900 [&_h4]:mt-2 [&_h4]:mb-1 [&_strong]:font-bold [&_b]:font-bold font-sans"
+        className="prose prose-xs max-w-none text-xs text-gray-800 leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_li]:my-1 [&_li]:text-gray-800 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:mt-3 [&_h3]:mb-1 [&_h4]:text-xs [&_h4]:font-bold [&_h4]:text-gray-900 [&_h4]:mt-2 [&_h4]:mb-1 [&_strong]:font-bold [&_b]:font-bold font-sans [&_a]:text-blue-600 [&_a]:no-underline [&_img]:max-w-full [&_img]:rounded"
         dangerouslySetInnerHTML={{ __html: text }}
       />
     );
@@ -125,6 +127,35 @@ const ITIssueDescription = ({
 }) => {
   const editorRef = useRef(null);
   const [isAiWriting, setIsAiWriting] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+
+  // Files pasted/dropped into the description are uploaded and embedded as real server
+  // URLs, so they stay openable after the issue is saved and reloaded.
+  const descriptionFileMeta = () => ({
+    project_id: issue?.project_id || undefined
+  });
+
+  const attachFilesToDescription = async (files) => {
+    if (!files || files.length === 0 || !editorRef.current) return;
+    setIsUploadingFile(true);
+    try {
+      await insertFilesIntoEditor(editorRef.current, files, {
+        meta: descriptionFileMeta,
+        onHtmlChange: (html) => setTempDescription(html),
+        onError: (err) => Swal.fire('Upload failed', err.message, 'error')
+      });
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
+
+  const handleDescriptionPaste = makeEditorPasteHandler({
+    getEditor: () => editorRef.current,
+    meta: descriptionFileMeta,
+    onHtmlChange: (html) => setTempDescription(html),
+    onError: (err) => Swal.fire('Upload failed', err.message, 'error'),
+    onBusyChange: setIsUploadingFile
+  });
 
   // Safely initialize editor content when mounted
   useEffect(() => {
@@ -146,9 +177,11 @@ const ITIssueDescription = ({
 
   const handleSave = () => {
     const finalHtml = editorRef.current ? editorRef.current.innerHTML : (tempDescription || description);
-    setDescription(finalHtml);
-    setIsEditingDescription(false);
-    handleUpdate({ description: finalHtml });
+    setTempDescription(finalHtml);
+    // Delegate to the parent's save handler and pass the html explicitly. The parent knows
+    // whether we're editing the issue or one of its subtasks; calling handleUpdate directly
+    // here would always write to the parent issue and overwrite its description.
+    handleSaveDescription(finalHtml);
   };
 
   const handleRovoAiWrite = async () => {
@@ -304,8 +337,22 @@ const ITIssueDescription = ({
                 onInput={() => {
                   if (editorRef.current) setTempDescription(editorRef.current.innerHTML);
                 }}
-                className="w-full text-xs p-3 focus:outline-none font-sans leading-relaxed text-gray-800 bg-white min-h-[180px] outline-none prose prose-xs max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:mt-2 [&_h3]:mb-1 [&_strong]:font-bold [&_b]:font-bold"
+                onPaste={handleDescriptionPaste}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  if (e.dataTransfer?.files?.length) {
+                    e.preventDefault();
+                    attachFilesToDescription(e.dataTransfer.files);
+                  }
+                }}
+                className="w-full text-xs p-3 focus:outline-none font-sans leading-relaxed text-gray-800 bg-white min-h-[180px] outline-none prose prose-xs max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:mt-2 [&_h3]:mb-1 [&_strong]:font-bold [&_b]:font-bold [&_a]:text-blue-600 [&_a]:underline [&_img]:max-w-full [&_img]:rounded"
               />
+              {isUploadingFile && (
+                <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-blue-600 border-t border-gray-200 bg-blue-50/50">
+                  <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  Uploading file…
+                </div>
+              )}
             </div>
 
             {/* Jira Rovo AI Floating Status Bar */}
@@ -465,8 +512,10 @@ const ITIssueDescription = ({
               <button
                 onClick={() => {
                   const cleanImp = stripHtmlTags(improvedDescription);
-                  setDescription(cleanImp);
-                  handleUpdate({ description: cleanImp });
+                  // Route through the parent's save handler so an AI rewrite applied while
+                  // viewing a subtask lands on that subtask, not on the parent issue.
+                  setTempDescription(cleanImp);
+                  handleSaveDescription(cleanImp);
                   setIsImprovingSideBySide(false);
                 }}
                 className="px-3.5 py-1.5 bg-indigo-600 text-white rounded font-semibold hover:bg-indigo-700 flex items-center gap-1 cursor-pointer"

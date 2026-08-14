@@ -765,10 +765,12 @@ module.exports = function setupFollowupsRoutes(app, pool) {
       let queryText = `
         SELECT f.*,
                CASE 
-                 WHEN f.related_type = 'Lead' THEN l.lead_name
-                 WHEN f.related_type = 'Deal' THEN d.deal_name
-                 WHEN f.related_type = 'Customer' THEN CONCAT(c.first_name, ' ', c.last_name)
-                 WHEN f.related_type = 'Invoice' THEN i.invoice_number
+                 WHEN f.related_type = 'Lead' THEN COALESCE(NULLIF(l.lead_name, ''), 'Lead')
+                 WHEN f.related_type = 'Deal' THEN COALESCE(NULLIF(d.deal_name, ''), 'Deal')
+                 WHEN f.related_type = 'Customer' THEN COALESCE(NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), ''), p.name, d.deal_name, 'SP Tech erp')
+                 WHEN f.related_type = 'Invoice' THEN COALESCE(NULLIF(i.invoice_number, ''), 'Invoice')
+                 WHEN p.name IS NOT NULL THEN p.name
+                 WHEN d.deal_name IS NOT NULL THEN d.deal_name
                  ELSE 'N/A'
                END as related_name,
                COALESCE(f.client_email, l.email, c.email) as client_email,
@@ -783,8 +785,9 @@ module.exports = function setupFollowupsRoutes(app, pool) {
                 WHERE (deal_id = d.id OR lead_id = l.id) AND status = 'Revised') as revision_count
         FROM followups f
         LEFT JOIN leads l ON f.related_type = 'Lead' AND f.related_id = l.id
-        LEFT JOIN deals d ON f.related_type = 'Deal' AND f.related_id = d.id
+        LEFT JOIN deals d ON (f.related_type = 'Deal' AND f.related_id = d.id) OR f.deal_id = d.id
         LEFT JOIN contacts c ON f.related_type = 'Customer' AND f.related_id = c.id
+        LEFT JOIN projects p ON f.project_id = p.id
         LEFT JOIN invoices i ON f.related_type = 'Invoice' AND f.related_id = i.id
         WHERE 1=1
       `;

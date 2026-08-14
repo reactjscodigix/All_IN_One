@@ -1,15 +1,22 @@
 const mysql = require('mysql2/promise');
+require('dotenv').config();
 
 async function testConnections() {
+  const appUser = process.env.DB_USER || 'all_in_one_user';
+  const appPassword = process.env.DB_PASSWORD;
+  if (!appPassword) {
+    console.error('DB_PASSWORD is not set in the environment. Aborting.');
+    process.exit(1);
+  }
   const configs = [
     { host: 'localhost', port: 3306, user: 'root', password: '' },
     { host: '127.0.0.1', port: 3306, user: 'root', password: '' },
     { host: 'localhost', port: 3307, user: 'root', password: '' },
     { host: '127.0.0.1', port: 3307, user: 'root', password: '' },
-    { host: 'localhost', port: 3306, user: 'all_in_one_user', password: 'C0digix$309' },
-    { host: '127.0.0.1', port: 3306, user: 'all_in_one_user', password: 'C0digix$309' },
-    { host: 'localhost', port: 3307, user: 'all_in_one_user', password: 'C0digix$309' },
-    { host: '127.0.0.1', port: 3307, user: 'all_in_one_user', password: 'C0digix$309' },
+    { host: 'localhost', port: 3306, user: appUser, password: appPassword },
+    { host: '127.0.0.1', port: 3306, user: appUser, password: appPassword },
+    { host: 'localhost', port: 3307, user: appUser, password: appPassword },
+    { host: '127.0.0.1', port: 3307, user: appUser, password: appPassword },
   ];
 
   for (const config of configs) {

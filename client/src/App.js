@@ -25,6 +25,7 @@ import ChatPage from './components/common/ChatPage';
 import VideoCallPage from './components/common/VideoCallPage';
 import ITTasksPage from './components/it/ITTasksPage';
 import ITKanbanPage from './components/it/ITKanbanPage';
+import MarketingKanbanPage from './components/marketing/MarketingKanbanPage';
 import ITAnalyticsPage from './components/it/ITAnalyticsPage';
 import ITActivitiesPage from './components/it/ITActivitiesPage';
 import ITUploadDocumentPage from './components/it/ITUploadDocumentPage';
@@ -473,7 +474,9 @@ function AppContent() {
         {/* Marketing Routes */}
         <Route path="/marketing/seo-gmb/:username/dashboard" element={<SeoGmbPage />} />
         <Route path="/marketing/:designation/:username/dashboard" element={<MarketingDashboard />} />
+        <Route path="/marketing/:designation/:username/kanban" element={<MarketingKanbanPage />} />
         <Route path="/marketing/:designation/:username/list" element={<CrmProjectsPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/projects" element={<CrmProjectsPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/tasks" element={<TasksPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/seo-gmb" element={<SeoGmbPage />} />
         <Route path="/marketing/:designation/:username/campaign" element={<CrmCampaignPage department="Marketing" />} />
@@ -482,6 +485,7 @@ function AppContent() {
         <Route path="/marketing/:designation/:username/file-manager" element={<FileManagerPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/analytics" element={<AnalyticsPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/activities" element={<ActivitiesPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/teams" element={<ITTeamsPage department="Marketing" />} />
 
         {/* SEO & GMB Department Routes */}
         <Route path="/seo-gmb/:designation/:username/dashboard" element={<SeoGmbPage mode="seo" tab="dashboard" />} />

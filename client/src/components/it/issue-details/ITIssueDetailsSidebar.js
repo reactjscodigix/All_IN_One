@@ -6,6 +6,16 @@ import {
   RefreshCw, CheckCircle, ExternalLink, X, Copy, Terminal
 } from 'lucide-react';
 
+// Read-only timestamp, shown in local time.
+const formatStamp = (value) => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+};
+
 const ITIssueDetailsSidebar = ({
   currentStatus,
   setCurrentStatus,
@@ -29,6 +39,10 @@ const ITIssueDetailsSidebar = ({
   setTeam,
   dueDate,
   setDueDate,
+  startDate,
+  setStartDate,
+  priority,
+  setPriority,
   sprint,
   setSprint,
   originalEstimate,
@@ -268,6 +282,14 @@ const ITIssueDetailsSidebar = ({
                     <CheckSquare size={13} className="shrink-0 text-blue-500" />
                     <span className="truncate">{parentIssueKey || 'WR-101'}: {parentIssueTitle || 'Parent Issue'}</span>
                   </button>
+                ) : issue?.parent_project_name ? (
+                  // Top-level issues link up to the project/campaign they belong to.
+                  <div className="flex items-center gap-1.5 p-1 -ml-1 text-blue-600 font-semibold truncate max-w-full" title={issue.parent_project_name}>
+                    <CheckSquare size={13} className="shrink-0 text-blue-500" />
+                    <span className="truncate">
+                      {issue.parent_project_code ? `${issue.parent_project_code}: ` : ''}{String(issue.parent_project_name).trim()}
+                    </span>
+                  </div>
                 ) : (
                   <span className="text-xs text-gray-500 font-medium">None</span>
                 )}
@@ -295,6 +317,23 @@ const ITIssueDetailsSidebar = ({
               </div>
             </div>
 
+            {/* Start date */}
+            <div className="grid grid-cols-3 items-center min-h-[30px]">
+              <span className="text-gray-500 font-medium">Start date</span>
+              <div className="col-span-2">
+                <input
+                  type="date"
+                  value={startDate || ''}
+                  max={dueDate || undefined}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    handleUpdate({ start_date: e.target.value });
+                  }}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white"
+                />
+              </div>
+            </div>
+
             {/* Due date */}
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Due date</span>
@@ -302,6 +341,7 @@ const ITIssueDetailsSidebar = ({
                 <input
                   type="date"
                   value={dueDate}
+                  min={startDate || undefined}
                   onChange={(e) => {
                     setDueDate(e.target.value);
                     handleUpdate({ due_date: e.target.value });
@@ -310,6 +350,86 @@ const ITIssueDetailsSidebar = ({
                 />
               </div>
             </div>
+
+            {/* Priority */}
+            <div className="grid grid-cols-3 items-center min-h-[30px]">
+              <span className="text-gray-500 font-medium">Priority</span>
+              <div className="col-span-2">
+                <select
+                  value={priority || 'Medium'}
+                  onChange={(e) => {
+                    if (setPriority) setPriority(e.target.value);
+                    handleUpdate({ priority: e.target.value });
+                  }}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer"
+                >
+                  {['Critical', 'High', 'Medium', 'Low'].map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Work type */}
+            <div className="grid grid-cols-3 items-center min-h-[30px]">
+              <span className="text-gray-500 font-medium">Type</span>
+              <div className="col-span-2">
+                <span className="text-xs text-gray-700 font-medium">{issue?.type || 'Task'}</span>
+              </div>
+            </div>
+
+            {/* Labels */}
+            <div className="grid grid-cols-3 items-start min-h-[30px] pt-1">
+              <span className="text-gray-500 font-medium">Labels</span>
+              <div className="col-span-2 flex flex-wrap gap-1">
+                {(() => {
+                  let labels = issue?.labels;
+                  if (typeof labels === 'string') {
+                    try { labels = JSON.parse(labels); } catch (e) { labels = labels ? [labels] : []; }
+                  }
+                  if (!Array.isArray(labels) || labels.length === 0) {
+                    return <span className="text-xs text-gray-400">None</span>;
+                  }
+                  return labels.map(l => (
+                    <span key={l} className="bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded text-[10px] font-medium">{l}</span>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {/* Effort points */}
+            <div className="grid grid-cols-3 items-center min-h-[30px]">
+              <span className="text-gray-500 font-medium">Effort points</span>
+              <div className="col-span-2">
+                <span className="text-xs text-gray-700 font-medium">{issue?.story_points || 'None'}</span>
+              </div>
+            </div>
+
+            {/* Flagged */}
+            {!!issue?.flagged && (
+              <div className="grid grid-cols-3 items-center min-h-[30px]">
+                <span className="text-gray-500 font-medium">Flagged</span>
+                <div className="col-span-2">
+                  <span className="text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">Impediment</span>
+                </div>
+              </div>
+            )}
+
+            {/* Created / Updated — read-only provenance */}
+            {issue?.created_at && (
+              <div className="grid grid-cols-3 items-center min-h-[30px]">
+                <span className="text-gray-500 font-medium">Created</span>
+                <div className="col-span-2">
+                  <span className="text-xs text-gray-600">{formatStamp(issue.created_at)}</span>
+                </div>
+              </div>
+            )}
+            {issue?.updated_at && (
+              <div className="grid grid-cols-3 items-center min-h-[30px]">
+                <span className="text-gray-500 font-medium">Updated</span>
+                <div className="col-span-2">
+                  <span className="text-xs text-gray-600">{formatStamp(issue.updated_at)}</span>
+                </div>
+              </div>
+            )}
 
             {/* Sprint Selection (Real Jira Sprint Management) */}
             <div className="grid grid-cols-3 items-center min-h-[30px]">
@@ -323,9 +443,14 @@ const ITIssueDetailsSidebar = ({
                   }}
                   className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer"
                 >
-                  {(SPRINTS && SPRINTS.length > 0 ? SPRINTS : ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog']).map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  {(() => {
+                    const base = (SPRINTS && SPRINTS.length > 0) ? SPRINTS : ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog'];
+                    // Include whatever is stored on the issue. Without this a value like
+                    // "Marketing Sprint 1" isn't in the list, so the select falls back to
+                    // the first option — misreporting the sprint and overwriting it on save.
+                    const options = sprint && !base.includes(sprint) ? [sprint, ...base] : base;
+                    return options.map(s => <option key={s} value={s}>{s}</option>);
+                  })()}
                 </select>
               </div>
             </div>

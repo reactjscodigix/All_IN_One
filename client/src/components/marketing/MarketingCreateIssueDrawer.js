@@ -3,15 +3,25 @@ import {
   X, Maximize2, Minus, ChevronDown,
   Bold, Italic, Link, List, MoreHorizontal,
   Type, Calendar, UploadCloud, Check, HelpCircle,
-  Paperclip, Image, Code, CheckSquare, Search, Columns, Clock
+  Paperclip, Image, Code, CheckSquare, Search, Columns, Clock,
+  Sparkles, Megaphone, Palette, Video, FileText, AlertCircle, Layers
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
+import { API_BASE_URL } from '../../config/environment';
 import { insertFilesIntoEditor, makeEditorPasteHandler } from '../../utils/descriptionFiles';
 import Swal from 'sweetalert2';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const WORK_TYPES = [
+  { name: 'Task', icon: CheckSquare, color: 'text-blue-500 bg-blue-50', description: 'General task or deliverable' },
+  { name: 'Campaign', icon: Megaphone, color: 'text-orange-500 bg-orange-50', description: 'Marketing campaign or promo' },
+  { name: 'Design', icon: Palette, color: 'text-purple-500 bg-purple-50', description: 'Graphic asset or UI design' },
+  { name: 'Video', icon: Video, color: 'text-red-500 bg-red-50', description: 'Video editing or motion graphics' },
+  { name: 'Content', icon: FileText, color: 'text-green-500 bg-green-50', description: 'Blog post, copy, or SEO article' },
+  { name: 'Bug', icon: AlertCircle, color: 'text-red-600 bg-red-100', description: 'Website error or tracking pixel issue' },
+];
 
+const STATUSES = ['TO DO', 'IN PROGRESS', 'IN REVIEW', 'APPROVAL / QA', 'DONE'];
 
 const SearchableDropdown = ({ value, options, onSelect, placeholder, labelRenderer, iconRenderer, searchPlaceholder, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +46,7 @@ const SearchableDropdown = ({ value, options, onSelect, placeholder, labelRender
     <div className={`relative w-full ${className}`} ref={wrapperRef}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full border border-gray-300 rounded-[3px] px-2.5 py-1.5 bg-white cursor-pointer hover:bg-gray-50 transition-colors "
+        className="flex items-center justify-between w-full border border-gray-300 rounded-[3px] px-2.5 py-1.5 bg-white cursor-pointer hover:bg-gray-50 transition-colors"
       >
         {value ? (
           <div className="flex items-center gap-2">
@@ -79,7 +89,7 @@ const SearchableDropdown = ({ value, options, onSelect, placeholder, labelRender
                 {iconRenderer && iconRenderer(opt)}
                 <span className="text-[13px] text-gray-700">{labelRenderer(opt)}</span>
                 {value && labelRenderer(value) === labelRenderer(opt) && (
-                  <Check size={12} className="ml-auto text-blue-600 " />
+                  <Check size={12} className="ml-auto text-blue-600" />
                 )}
               </div>
             )) : (
@@ -92,6 +102,7 @@ const SearchableDropdown = ({ value, options, onSelect, placeholder, labelRender
   );
 };
 
+// Compact pill dropdown used for Status / Priority, matching the IT drawer.
 const SimpleDropdown = ({ value, options, onSelect, placeholder, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
@@ -112,7 +123,7 @@ const SimpleDropdown = ({ value, options, onSelect, placeholder, className = "" 
         onClick={() => setIsOpen(!isOpen)}
         className="inline-flex items-center justify-between border border-gray-300 rounded-[3px] bg-gray-100 px-2.5 py-1 cursor-pointer hover:bg-gray-200 transition-colors min-w-[100px]"
       >
-        <span className="text-sm  text-gray-700  tracking-wide">{value || placeholder}</span>
+        <span className="text-sm text-gray-700 tracking-wide">{value || placeholder}</span>
         <ChevronDown size={14} className="text-gray-500 ml-2" />
       </div>
 
@@ -121,11 +132,8 @@ const SimpleDropdown = ({ value, options, onSelect, placeholder, className = "" 
           {options.map((opt, i) => (
             <div
               key={i}
-              onClick={() => {
-                onSelect(opt);
-                setIsOpen(false);
-              }}
-              className="flex items-center gap-2 p-2 hover:bg-gray-100 cursor-pointer text-[12px]  text-gray-700 "
+              onClick={() => { onSelect(opt); setIsOpen(false); }}
+              className="px-2.5 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
             >
               {opt}
             </div>
@@ -136,45 +144,136 @@ const SimpleDropdown = ({ value, options, onSelect, placeholder, className = "" 
   );
 };
 
-const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null, department }) => {
+const MarketingCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null }) => {
   const { user } = useAuth();
   const { designation, username } = useParams();
-  const path = window.location.pathname.toLowerCase();
-  const currentDept = department || (
-    path.includes('/marketing') ? 'Marketing' :
-    path.includes('/seo-gmb') ? 'Marketing' :
-    'IT'
-  );
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [teams, setTeams] = useState([]);
 
-  // Transition and display states
+  // Transition & Display state
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
-  // Label tag state
+  // Form State
+  const [formData, setFormData] = useState({
+    space: null,
+    workType: WORK_TYPES[0].name,
+    status: 'TO DO',
+    summary: '',
+    description: '',
+    team: null,
+    assignee: null,
+    reporter: null,
+    priority: 'Medium',
+    parent: null,
+    startDate: '',
+    dueDate: '',
+    storyPoints: '',
+    sprint: 'Marketing Sprint 1',
+    labels: ['Marketing'],
+    linkedType: '',
+    linkedTarget: null,
+    flagged: false,
+    createAnother: false
+  });
+
   const [newLabel, setNewLabel] = useState('');
-
-  // Attachment state — store actual File objects
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isImprovingDescription, setIsImprovingDescription] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
-  const [teamMembers, setTeamMembers] = useState([]);
-  const fileInputRef = useRef(null);          // drag-drop area
-  const toolbarFileInputRef = useRef(null);   // toolbar paperclip button
 
-  // Editor Ref
+  const fileInputRef = useRef(null);
+  const toolbarFileInputRef = useRef(null);
   const editorRef = useRef(null);
 
-  // Jira-like inline attachment insertion into Description editor
-  // Files dropped/pasted/attached into the description are uploaded to the server first, so
-  // the embedded link still resolves after the issue is saved and reopened.
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
+      const timer = setTimeout(() => setAnimateIn(true), 10);
+      return () => clearTimeout(timer);
+    } else {
+      setAnimateIn(false);
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+        setIsClosing(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Fetch users filtered for marketing
+      fetch(API_BASE_URL + '/users')
+        .then(res => res.json())
+        .then(data => {
+          const userList = Array.isArray(data?.value) ? data.value : (Array.isArray(data) ? data : []);
+          const marketingUsers = userList.filter(u => {
+            const dept = (u.department || '').toLowerCase();
+            const role = (u.role_name || u.role || '').toLowerCase();
+            return dept.includes('marketing') || dept.includes('seo') || role.includes('marketing') || role.includes('designer') || role.includes('video') || role.includes('seo') || role.includes('ppc') || role.includes('wordpress');
+          });
+          const finalUsers = marketingUsers.length > 0 ? marketingUsers : userList;
+          setUsers(finalUsers);
+
+          if (user) {
+            const currentReporter = {
+              id: user.id,
+              name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email: user.email
+            };
+            setFormData(prev => ({
+              ...prev,
+              reporter: prev.reporter || currentReporter,
+              assignee: prev.assignee || currentReporter
+            }));
+          }
+        })
+        .catch(err => console.error('Error fetching users:', err));
+
+      // Fetch projects
+      fetch(`${API_BASE_URL}/projects?department=Marketing`)
+        .then(res => res.json())
+        .then(data => {
+          const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+          setProjects(list);
+        })
+        .catch(err => console.error('Error fetching projects:', err));
+
+      // Fetch the real Marketing teams so tickets attach to an actual team, not a placeholder.
+      // Falls back to the built-in division list when none are set up yet.
+      fetch(`${API_BASE_URL}/teams`)
+        .then(res => res.json())
+        .then(data => {
+          const raw = Array.isArray(data) ? data : (data.data || []);
+          // Only Marketing teams belong on this board. The API exposes department_name /
+          // department_id (not `department`), so match on those.
+          const formatted = raw
+            .filter(t => String(t.department_name || '').toLowerCase().includes('marketing'))
+            .map(t => ({ id: t.id, name: t.name }));
+          setTeams(formatted);
+          setFormData(prev => ({
+            ...prev,
+            team: formatted.find(f => prev.team && f.id === prev.team.id) || formatted[0] || null
+          }));
+        })
+        .catch(err => console.error('Error fetching teams:', err));
+    }
+  }, [isOpen, user]);
+
+  // Files dropped/attached into the description are uploaded to the server first, so the
+  // embedded link keeps working after the ticket is saved and reopened.
   const descriptionFileMeta = () => ({
     userId: user?.id,
-    project_id: (formData.space && formData.space.id !== 1 ? formData.space.id : null)
-      || formData.parent?.id || projectId || undefined
+    project_id: formData.space?.id || formData.parent?.id || projectId || undefined
   });
 
   const handleToolbarFileUpload = async (filesList) => {
@@ -200,216 +299,12 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
     onBusyChange: setIsUploadingFile
   });
 
-  const [formData, setFormData] = useState({
-    space: { id: 1, name: 'My Kanban Space (KAN)', code: 'KAN' },
-    workType: 'Task',
-    status: 'To Do',
-    summary: '',
-    description: '',
-    assignee: null,
-    reporter: null,
-    parent: null,
-    dueDate: '',
-    labels: [],
-    team: null,
-    startDate: '',
-    linkedType: 'blocks',
-    linkedTarget: null,
-    flagged: false,
-    createAnother: false
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isImprovingDescription, setIsImprovingDescription] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setShouldRender(true);
-      setIsClosing(false);
-      const frame = requestAnimationFrame(() => {
-        setAnimateIn(true);
-      });
-      return () => cancelAnimationFrame(frame);
-    } else if (shouldRender) {
-      setIsClosing(true);
-      setAnimateIn(false);
-      const timer = setTimeout(() => {
-        setShouldRender(false);
-        setIsClosing(false);
-        setIsMaximized(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      // Fetch Real Teams
-      fetch(API_BASE_URL + '/teams')
-        .then(res => res.json())
-        .then(data => {
-          const rawTeams = Array.isArray(data) ? data : (data.data || []);
-          const formattedTeams = rawTeams.map(t => ({
-            ...t,
-            icon: t.name ? t.name.charAt(0).toUpperCase() : 'T'
-          }));
-          setTeams(formattedTeams);
-        })
-        .catch(err => console.error('Error fetching teams:', err));
-
-      // Fetch Real Users
-      fetch(API_BASE_URL + '/users')
-        .then(res => res.json())
-        .then(data => {
-          const userList = Array.isArray(data?.value) ? data.value : (Array.isArray(data) ? data : []);
-          setUsers(userList);
-
-          if (user) {
-            const currentReporter = {
-              id: user.id,
-              name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'User',
-              first_name: user.first_name,
-              last_name: user.last_name,
-              email: user.email
-            };
-            setFormData(prev => ({ 
-              ...prev, 
-              reporter: prev.reporter || currentReporter,
-              assignee: prev.assignee || currentReporter 
-            }));
-          } else if (userList.length > 0) {
-            const searchName = username || 'ashwini';
-            const currentUser = userList.find(u =>
-              (u.first_name && u.first_name.toLowerCase() === searchName.toLowerCase()) ||
-              (u.name && u.name.toLowerCase().includes(searchName.toLowerCase()))
-            ) || userList[0];
-            setFormData(prev => ({ ...prev, reporter: prev.reporter || currentUser }));
-          }
-        })
-        .catch(err => console.error('Error fetching users:', err));
-
-      // Fetch Real Projects (Spaces/Parents) — scoped to this department so an IT board
-      // never offers Marketing projects (and vice versa).
-      fetch(`${API_BASE_URL}/projects?department=${encodeURIComponent(currentDept)}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.data) {
-            setProjects(data.data);
-          } else if (Array.isArray(data)) {
-            setProjects(data);
-          }
-        })
-        .catch(err => console.error('Error fetching projects:', err));
-    }
-  }, [isOpen, currentDept]);
-
-  // Fetch Team Members whenever selected Team changes to filter Reporter and Assignee
-  useEffect(() => {
-    if (formData.team && formData.team.id) {
-      fetch(`${API_BASE_URL}/teams/${formData.team.id}/members`)
-        .then(res => res.json())
-        .then(data => {
-          const membersList = Array.isArray(data) ? data : [];
-          const formatted = membersList.map(m => ({
-            id: m.user_id || m.id,
-            name: (m.first_name || m.last_name) ? `${m.first_name || ''} ${m.last_name || ''}`.trim() : (m.name || 'Team Member'),
-            first_name: m.first_name,
-            last_name: m.last_name,
-            email: m.email,
-            avatar: m.avatar
-          }));
-
-          // Also include Team Manager if available and not already in member list
-          if (formData.team.manager_name || formData.team.manager_first_name) {
-            const mgrName = formData.team.manager_name || `${formData.team.manager_first_name || ''} ${formData.team.manager_last_name || ''}`.trim();
-            const exists = formatted.some(m => m.name.toLowerCase() === mgrName.toLowerCase());
-            if (!exists && mgrName) {
-              const mgrUser = users.find(u => (u.name && u.name.toLowerCase() === mgrName.toLowerCase()) || (u.id === formData.team.manager_id));
-              formatted.unshift({
-                id: formData.team.manager_id || (mgrUser ? mgrUser.id : 'mgr'),
-                name: mgrName,
-                first_name: formData.team.manager_first_name || (mgrUser ? mgrUser.first_name : mgrName),
-                last_name: formData.team.manager_last_name || (mgrUser ? mgrUser.last_name : ''),
-                email: mgrUser ? mgrUser.email : '',
-                avatar: mgrUser ? mgrUser.avatar : null
-              });
-            }
-          }
-
-          if (formatted.length > 0) {
-            setTeamMembers(formatted);
-
-            // Keep current reporter if in list, otherwise keep current or fallback to first
-            setFormData(prev => {
-              const currentReporterName = prev.reporter ? (prev.reporter.name || `${prev.reporter.first_name || ''} ${prev.reporter.last_name || ''}`.trim()).toLowerCase() : '';
-              const inTeam = formatted.find(m => m.name.toLowerCase() === currentReporterName);
-              return inTeam ? prev : { ...prev, reporter: prev.reporter || formatted[0] };
-            });
-          } else {
-            setTeamMembers([]);
-          }
-        })
-        .catch(err => {
-          console.error('Error fetching team members:', err);
-          setTeamMembers([]);
-        });
-    } else {
-      setTeamMembers([]);
-    }
-  }, [formData.team?.id, users]);
-
-  // Automatically select Team when Project / Space / Parent or projectId prop changes
-  useEffect(() => {
-    if (!isOpen || teams.length === 0) return;
-
-    let targetProject = null;
-    if (projectId) {
-      targetProject = projects.find(p => Number(p.id) === Number(projectId));
-    } else if (formData.space && formData.space.id) {
-      targetProject = projects.find(p => Number(p.id) === Number(formData.space.id));
-    } else if (formData.parent && formData.parent.id) {
-      targetProject = projects.find(p => Number(p.id) === Number(formData.parent.id));
-    }
-
-    if (targetProject) {
-      const matchedTeam = teams.find(t => 
-        (targetProject.team_id && Number(t.id) === Number(targetProject.team_id)) ||
-        (targetProject.team_name && t.name && t.name.toLowerCase() === targetProject.team_name.toLowerCase())
-      );
-      if (matchedTeam) {
-        setFormData(prev => ({ ...prev, team: matchedTeam }));
-      }
-    }
-  }, [isOpen, projectId, projects, teams, formData.space, formData.parent]);
-
-  // Set editor content when drawer opens
-  useEffect(() => {
-    if (isOpen && editorRef.current) {
-      editorRef.current.innerHTML = formData.description || "";
-    }
-  }, [isOpen]);
-
-  if (!shouldRender) return null;
-
-  const handleAssignToMe = () => {
-    const searchName = username || 'ashwini';
-    const me = users.find(u =>
-      (u.first_name && u.first_name.toLowerCase() === searchName.toLowerCase()) ||
-      (u.name && u.name.toLowerCase().includes(searchName.toLowerCase()))
-    );
-    if (me) {
-      setFormData(prev => ({ ...prev, assignee: me }));
-    } else if (users.length > 0) {
-      setFormData(prev => ({ ...prev, assignee: users[0] }));
-    }
-  };
-
   const handleImproveDescription = async () => {
     if (!formData.summary) {
       Swal.fire({
         icon: 'warning',
         title: 'Summary Required',
-        text: 'Please enter a summary/title first, as the AI needs it to understand the context of the issue!',
+        text: 'Please enter a task summary first so AI can understand context!',
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
@@ -419,38 +314,64 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
     }
     setIsImprovingDescription(true);
     try {
-      const res = await fetch(API_BASE_URL + '/it-kanban/ai/improve-description-draft', {
+      const res = await fetch(`${API_BASE_URL}/it-kanban/ai/improve-description-draft`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: formData.summary,
-          description: formData.description
+          draftDescription: formData.description
         })
       });
       if (!res.ok) throw new Error('Failed to improve description');
       const data = await res.json();
-
-      // Update form state
-      setFormData(prev => ({ ...prev, description: data.improvedDescription }));
-      // Sync editor element
+      const improved = data.improvedDescription || formData.description;
+      setFormData(prev => ({ ...prev, description: improved }));
       if (editorRef.current) {
-        editorRef.current.innerHTML = data.improvedDescription;
+        editorRef.current.innerHTML = improved;
       }
-
       Swal.fire({
         icon: 'success',
-        title: 'Description Improved',
-        text: 'The description has been enhanced by AI!',
+        title: 'Brief Enhanced',
+        text: 'Marketing brief enhanced with AI specs!',
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
         timer: 3000
       });
     } catch (err) {
-      console.error(err);
-      Swal.fire('Error', 'Failed to improve description: ' + err.message, 'error');
+      Swal.fire('Error', err.message || 'Failed to enhance brief', 'error');
     } finally {
       setIsImprovingDescription(false);
+    }
+  };
+
+  // Projects are shown as "Project Name (Client)" so it is obvious which client the
+  // deliverable belongs to. Also makes the dropdown searchable by client name.
+  const projectLabel = (p) => {
+    if (!p) return '';
+    const name = (p.name || p.title || '').trim();
+    const client = p.company_name || p.company || p.client;
+    return client ? `${name} (${client})` : name;
+  };
+
+  const handleAssignToMe = () => {
+    const searchName = username || (user && user.first_name) || '';
+    const me = users.find(u =>
+      (u.first_name && searchName && u.first_name.toLowerCase() === searchName.toLowerCase()) ||
+      (u.name && searchName && u.name.toLowerCase().includes(searchName.toLowerCase())) ||
+      (user && u.id === user.id)
+    );
+    if (me) {
+      setFormData(prev => ({ ...prev, assignee: me }));
+    } else if (users.length > 0) {
+      setFormData(prev => ({ ...prev, assignee: users[0] }));
+    }
+  };
+
+  const handleCommand = (command, value = null) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      setFormData(prev => ({ ...prev, description: editorRef.current.innerHTML }));
     }
   };
 
@@ -475,168 +396,109 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
   };
 
   const handleSubmit = async () => {
-    if (!formData.summary) {
-      Swal.fire({ icon: 'warning', title: 'Validation Error', text: 'Summary is required.' });
+    if (!formData.summary.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Validation Error', text: 'Summary / Task Title is required.' });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      let res;
+      const currentUserName = user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : (username || 'Marketing Lead');
+      const reporterVal = formData.reporter
+        ? (formData.reporter.name || `${formData.reporter.first_name || ''} ${formData.reporter.last_name || ''}`.trim() || currentUserName)
+        : currentUserName;
 
-      if (projectId) {
-        // Map Kanban status values to project_tasks schema ENUM values
-        const statusMap = {
-          'To Do': 'Open',
-          'In Progress': 'In Progress',
-          'In Review': 'On Hold',
-          'Done': 'Completed'
-        };
-        const mappedStatus = statusMap[formData.status] || 'Open';
-
-        // Create project task
-        const projectPayload = {
-          title: formData.summary,
-          description: formData.description || '',
-          status: mappedStatus,
-          priority: 'Medium',
-          assigned_to: formData.assignee ? formData.assignee.id : null,
-          linked_type: 'Project',
-          linked_id: parseInt(projectId)
-        };
-
-        res = await fetch(`${API_BASE_URL}/projects/${projectId}/tasks`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(projectPayload)
-        });
-      } else {
-        const selectedProjId = (formData.space && formData.space.id !== 1 ? formData.space.id : null) || (formData.parent ? formData.parent.id : null);
-
-        const currentUserName = user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : (username || 'Unassigned');
-
-        // Create Kanban issue
-        const reporterVal = formData.reporter
-          ? (formData.reporter.name || `${formData.reporter.first_name || ''} ${formData.reporter.last_name || ''}`.trim() || currentUserName)
-          : currentUserName;
-
-        const teamVal = formData.team
-          ? (typeof formData.team === 'string' ? formData.team : (formData.team.name || 'None'))
-          : 'None';
-
-        let assigneeVal = 'Unassigned';
-        if (formData.assignee && (formData.assignee.name || formData.assignee.first_name)) {
-          const aName = formData.assignee.name || `${formData.assignee.first_name || ''} ${formData.assignee.last_name || ''}`.trim();
-          if (aName !== 'Automatic' && aName !== 'Unassigned') {
-            assigneeVal = aName;
-          }
-        }
-
-        // Default Assignee fallback: Assignee defaults to Reporter (creator performing the work)
-        if (assigneeVal === 'Unassigned') {
-          assigneeVal = reporterVal !== 'Unassigned' ? reporterVal : currentUserName;
-        }
-
-        const cleanDescription = (formData.description || '')
-          .replace(/<a [^>]*class="[^"]*jira-inline-file[^"]*"[^>]*>[\s\S]*?<\/a>(<br\s*\/?>)?/gi, '')
-          .replace(/<div [^>]*class="[^"]*jira-inline-file[^"]*"[^>]*>[\s\S]*?<\/div>(<br\s*\/?>)?/gi, '')
-          .trim();
-
-        const payload = {
-          title: formData.summary,
-          type: formData.workType || 'Task',
-          status: formData.status ? formData.status.toUpperCase() : 'TO DO',
-          assignee: assigneeVal,
-          reporter: reporterVal,
-          team: teamVal,
-          team_id: formData.team && typeof formData.team === 'object' ? formData.team.id : null,
-          priority: 'Medium',
-          description: cleanDescription,
-          project_id: selectedProjId,
-          department: currentDept,
-          keyPrefix: currentDept === 'Marketing' ? 'MKT' : 'WR'
-        };
-
-        res = await fetch(API_BASE_URL + '/it-kanban/issues', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // Lets the server name the actor in the assignment notification.
-            'x-user-name': currentUserName,
-            'x-user-id': user?.id || ''
-          },
-          body: JSON.stringify(payload)
-        });
-      }
-
-      let createdData = null;
-      try { createdData = await res.json(); } catch (_) {}
-      if (!res.ok) throw new Error(createdData?.error || 'Failed to create issue');
-
-      // Upload attachments if any
-      if (attachedFiles.length > 0) {
-        const createdTaskId = createdData?.id || createdData?.insertId || null;
-        const issueKey = createdData?.issue_key;
-
-        for (const file of attachedFiles) {
-          try {
-            const fd = new FormData();
-            fd.append('file', file);
-            if (createdTaskId) fd.append('task_id', createdTaskId);
-            if (projectId) fd.append('project_id', projectId);
-            fd.append('userId', '1');
-            await fetch(API_BASE_URL + '/files/upload', { method: 'POST', body: fd });
-
-            if (issueKey) {
-              await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}/attachments`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  file_name: file.name,
-                  file_path: file.name,
-                  file_size: `${(file.size / 1024).toFixed(1)} KB`,
-                  file_type: file.type || 'document'
-                })
-              });
-            }
-          } catch (uploadErr) {
-            console.error('Failed to upload attachment:', file.name, uploadErr);
-          }
+      let assigneeVal = 'Unassigned';
+      if (formData.assignee && (formData.assignee.name || formData.assignee.first_name)) {
+        const aName = formData.assignee.name || `${formData.assignee.first_name || ''} ${formData.assignee.last_name || ''}`.trim();
+        if (aName !== 'Automatic' && aName !== 'Unassigned') {
+          assigneeVal = aName;
         }
       }
 
-      Swal.fire({
-        icon: 'success',
-        title: 'Ticket Created',
-        text: `Task "${formData.summary}" created successfully!`,
-        timer: 2000,
-        showConfirmButton: false
+      const payload = {
+        title: formData.summary,
+        type: formData.workType || 'Task',
+        status: formData.status ? formData.status.toUpperCase() : 'TO DO',
+        assignee: assigneeVal,
+        reporter: reporterVal,
+        team: formData.team ? formData.team.name : 'Marketing Team',
+        team_id: formData.team && typeof formData.team === 'object' ? formData.team.id : null,
+        priority: formData.priority || 'Medium',
+        description: formData.description || '',
+        department: 'Marketing',
+        keyPrefix: 'MKT',
+        // The project chosen as the Space wins; otherwise fall back to Parent or the prop.
+        project_id: formData.space?.id || formData.parent?.id || projectId || null,
+        parent_id: formData.parent?.id || null,
+        start_date: formData.startDate || null,
+        due_date: formData.dueDate || null,
+        sprint: formData.sprint || null,
+        story_points: formData.storyPoints || null,
+        labels: formData.labels || [],
+        flagged: formData.flagged || false,
+        linked_issues: (formData.linkedType && formData.linkedTarget)
+          ? [{ relation: formData.linkedType, key: formData.linkedTarget.name, id: formData.linkedTarget.id }]
+          : []
+      };
+
+      const res = await fetch(`${API_BASE_URL}/it-kanban/issues`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Lets the server name the actor in the assignment notification.
+          'x-user-name': currentUserName,
+          'x-user-id': user?.id || ''
+        },
+        body: JSON.stringify(payload)
       });
 
-      if (onIssueCreated) onIssueCreated();
+      if (res.ok) {
+        const created = await res.json();
+        Swal.fire({
+          icon: 'success',
+          title: 'Marketing Ticket Created',
+          text: `Ticket ${created.issue_key} created successfully!`,
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000
+        });
+        if (onIssueCreated) onIssueCreated();
 
-      if (!formData.createAnother) {
-        onClose();
+        if (formData.createAnother) {
+          // Keep the drawer open and retain space/type/team/status so a run of
+          // similar tickets can be filed back-to-back.
+          setFormData(prev => ({
+            ...prev,
+            summary: '',
+            description: '',
+            parent: null,
+            startDate: '',
+            dueDate: '',
+            storyPoints: '',
+            linkedType: '',
+            linkedTarget: null,
+            flagged: false
+          }));
+          if (editorRef.current) editorRef.current.innerHTML = '';
+          setAttachedFiles([]);
+        } else {
+          onClose();
+        }
       } else {
-        setFormData(prev => ({ ...prev, summary: '', description: '', labels: [] }));
-        if (editorRef.current) editorRef.current.innerHTML = "";
-        setAttachedFiles([]);
+        throw new Error('Failed to create ticket');
       }
     } catch (err) {
-      console.error(err);
-      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to create issue.' });
+      Swal.fire('Error', err.message || 'Error creating marketing ticket', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCommand = (command, value = null) => {
-    document.execCommand(command, false, value);
-    if (editorRef.current) {
-      setFormData(prev => ({ ...prev, description: editorRef.current.innerHTML }));
-    }
-  };
+
+  if (!shouldRender) return null;
 
   return (
     <>
@@ -660,7 +522,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
 
         {/* HEADER */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white rounded-t-lg">
-          <h2 className="text-xl text-gray-800 font-medium tracking-tight">Create Task</h2>
+          <h2 className="text-xl text-gray-800 font-medium tracking-tight">Create Marketing Ticket</h2>
           <div className="flex items-center gap-1 text-gray-500">
             <button type="button" className="p-1.5 hover:bg-gray-100 rounded-md transition-colors" onClick={onClose} title="Minimize"><Minus size={16} /></button>
             <button type="button" className="p-1.5 hover:bg-gray-100 rounded-md transition-colors" onClick={() => setIsMaximized(!isMaximized)} title={isMaximized ? "Shrink to side panel" : "Expand to centered modal"}><Maximize2 size={14} /></button>
@@ -678,25 +540,23 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Space <span className="text-red-500">*</span></label>
               <SearchableDropdown
-                options={[{ id: 1, name: 'My Kanban Space (KAN)', code: 'KAN' }, ...projects]}
+                options={projects}
                 value={formData.space}
                 onSelect={(v) => {
+                  // Selecting a project auto-selects that project's team.
                   let matchedTeam = formData.team;
                   if (v && v.id) {
-                    const proj = projects.find(p => Number(p.id) === Number(v.id));
-                    if (proj) {
-                      const found = teams.find(t =>
-                        (proj.team_id && Number(t.id) === Number(proj.team_id)) ||
-                        (proj.team_name && t.name && t.name.toLowerCase() === proj.team_name.toLowerCase())
-                      );
-                      if (found) matchedTeam = found;
-                    }
+                    const found = teams.find(t =>
+                      (v.team_id && Number(t.id) === Number(v.team_id)) ||
+                      (v.team_name && t.name && t.name.toLowerCase() === v.team_name.toLowerCase())
+                    );
+                    if (found) matchedTeam = found;
                   }
                   setFormData(prev => ({ ...prev, space: v, team: matchedTeam }));
                 }}
-                placeholder="Select space"
-                labelRenderer={(p) => p.name}
-                iconRenderer={(p) => p ? <div className="w-5 h-5 bg-indigo-600 rounded flex items-center justify-center text-white text-xs ">{p.code ? p.code[0] : p.name.charAt(0)}</div> : null}
+                placeholder={projects.length === 0 ? 'No Marketing projects available' : 'Select project'}
+                labelRenderer={projectLabel}
+                iconRenderer={(p) => p ? <div className="w-5 h-5 bg-indigo-600 rounded flex items-center justify-center text-white text-xs">{(p.name || '').trim().charAt(0).toUpperCase()}</div> : null}
               />
             </div>
 
@@ -704,16 +564,16 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Work type <span className="text-red-500">*</span></label>
               <SearchableDropdown
-                options={['Task', 'Story', 'Bug']}
+                options={WORK_TYPES.map(w => w.name)}
                 value={formData.workType}
-                onSelect={(v) => setFormData({ ...formData, workType: v })}
+                onSelect={(v) => setFormData(prev => ({ ...prev, workType: v }))}
                 placeholder="Select type"
                 labelRenderer={(t) => t}
                 iconRenderer={(t) => {
-                  if (t === 'Task') return <div className="bg-blue-100 p-0.5 rounded-sm"><CheckSquare size={12} className="text-blue-500" /></div>;
-                  if (t === 'Bug') return <div className="w-3.5 h-3.5 bg-red-500 rounded-sm"></div>;
-                  if (t === 'Story') return <div className="w-3.5 h-3.5 bg-green-500 rounded-sm"></div>;
-                  return null;
+                  const wt = WORK_TYPES.find(w => w.name === t);
+                  if (!wt) return null;
+                  const Icon = wt.icon;
+                  return <div className={`p-0.5 rounded-sm ${wt.color}`}><Icon size={12} /></div>;
                 }}
               />
               <div className="flex items-center gap-1 text-sm text-blue-600 font-medium cursor-pointer hover:underline mt-1">
@@ -727,11 +587,21 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Status</label>
               <SimpleDropdown
-                options={['To Do', 'In Progress', 'In Review', 'Done']}
+                options={STATUSES}
                 value={formData.status}
-                onSelect={(v) => setFormData({ ...formData, status: v })}
+                onSelect={(v) => setFormData(prev => ({ ...prev, status: v }))}
               />
               <p className="text-sm text-gray-500 mt-1">This is the initial status upon creation.</p>
+            </div>
+
+            {/* Priority */}
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Priority</label>
+              <SimpleDropdown
+                options={['High', 'Medium', 'Low']}
+                value={formData.priority}
+                onSelect={(v) => setFormData(prev => ({ ...prev, priority: v }))}
+              />
             </div>
 
             {/* Summary */}
@@ -740,7 +610,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
               <input
                 type="text"
                 value={formData.summary}
-                onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                onChange={(e) => setFormData(prev => ({ ...prev, summary: e.target.value }))}
                 className={`w-full border rounded-[3px] p-2 text-[14px] text-gray-900 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-shadow ${!formData.summary ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}
               />
               {!formData.summary && (
@@ -766,22 +636,21 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                     className="px-2 py-1 hover:bg-gray-200 rounded text-[12px] text-gray-600 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isImprovingDescription ? 'Improving...' : 'Improve description'}
-                    <span className="text-xs text-purple-600  border border-purple-200 bg-purple-50 px-1 rounded">AI</span>
+                    <span className="text-xs text-purple-600 border border-purple-200 bg-purple-50 px-1 rounded">AI</span>
                   </button>
                   <div className="w-px h-4 bg-gray-300 mx-1"></div>
                   <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600"><Type size={14} /></button>
-                  <button type="button" onClick={() => handleCommand('bold')} className="p-1 hover:bg-gray-200 rounded text-gray-600 "><Bold size={14} /></button>
+                  <button type="button" onClick={() => handleCommand('bold')} className="p-1 hover:bg-gray-200 rounded text-gray-600"><Bold size={14} /></button>
                   <button type="button" onClick={() => handleCommand('italic')} className="p-1 hover:bg-gray-200 rounded text-gray-600 italic"><Italic size={14} /></button>
                   <div className="w-px h-4 bg-gray-300 mx-1"></div>
                   <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600"><Columns size={14} /></button>
                   <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600"><CheckSquare size={14} /></button>
                   <button type="button" onClick={() => handleCommand('insertUnorderedList')} className="p-1 hover:bg-gray-200 rounded text-gray-600"><List size={14} /></button>
-                  <button type="button" onClick={() => handleCommand('formatBlock', '<pre>')} className="p-1 hover:bg-gray-200 rounded text-gray-600 font-serif  text-[12px] px-1.5">&lt;/&gt;</button>
+                  <button type="button" onClick={() => handleCommand('formatBlock', '<pre>')} className="p-1 hover:bg-gray-200 rounded text-gray-600 font-serif text-[12px] px-1.5">&lt;/&gt;</button>
                   <div className="w-px h-4 bg-gray-300 mx-1"></div>
                   <button type="button" onClick={() => toolbarFileInputRef.current?.click()} className="p-1 hover:bg-gray-200 rounded text-gray-600" title="Insert Image">
                     <Image size={14} />
                   </button>
-                  {/* Hidden input for toolbar paperclip */}
                   <input
                     type="file"
                     ref={toolbarFileInputRef}
@@ -829,8 +698,6 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
               </div>
             </div>
 
-
-
             {/* Assignee */}
             <div>
               <div className="flex justify-between items-center mb-1.5">
@@ -844,13 +711,13 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                 </button>
               </div>
               <SearchableDropdown
-                options={(teamMembers.length > 0) ? teamMembers : users}
+                options={users}
                 value={formData.assignee}
-                onSelect={(v) => setFormData({ ...formData, assignee: v })}
+                onSelect={(v) => setFormData(prev => ({ ...prev, assignee: v }))}
                 placeholder="Automatic"
-                labelRenderer={(u) => u.name || `${u.first_name} ${u.last_name}`}
+                labelRenderer={(u) => u ? (u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username) : 'Unassigned'}
                 iconRenderer={(u) => u ? (
-                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-700  border border-white  overflow-hidden shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-700 border border-white overflow-hidden shrink-0">
                     {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : (u.name ? u.name[0] : (u.first_name?.[0] || 'U'))}
                   </div>
                 ) : (
@@ -867,24 +734,11 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
               <SearchableDropdown
                 options={projects}
                 value={formData.parent}
-                onSelect={(v) => {
-                  let matchedTeam = formData.team;
-                  if (v && v.id) {
-                    const proj = projects.find(p => Number(p.id) === Number(v.id));
-                    if (proj) {
-                      const found = teams.find(t =>
-                        (proj.team_id && Number(t.id) === Number(proj.team_id)) ||
-                        (proj.team_name && t.name && t.name.toLowerCase() === proj.team_name.toLowerCase())
-                      );
-                      if (found) matchedTeam = found;
-                    }
-                  }
-                  setFormData(prev => ({ ...prev, parent: v, team: matchedTeam }));
-                }}
+                onSelect={(v) => setFormData(prev => ({ ...prev, parent: v }))}
                 placeholder="Select parent"
-                labelRenderer={(p) => p.name}
+                labelRenderer={projectLabel}
               />
-              <p className="text-sm text-gray-500 mt-1 leading-tight">Your work type hierarchy determines the work items you can select here.</p>
+              <p className="text-sm text-gray-500 mt-1 leading-tight">Link this deliverable to the client campaign or project it belongs to.</p>
             </div>
 
             {/* Due date */}
@@ -894,7 +748,8 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                 <input
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  min={formData.startDate || undefined}
+                  onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
                   className="w-full h-full outline-none text-[13px] text-gray-700 bg-transparent"
                 />
                 <Calendar size={14} className="absolute right-2.5 pointer-events-none text-gray-500" />
@@ -928,12 +783,12 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
               <SearchableDropdown
                 options={teams}
                 value={formData.team}
-                onSelect={(v) => setFormData({ ...formData, team: v })}
+                onSelect={(v) => setFormData(prev => ({ ...prev, team: v }))}
                 placeholder="Choose a team"
                 labelRenderer={(t) => t.name}
                 iconRenderer={(t) => t ? (
-                  <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center text-blue-700  text-xs">
-                    {t.icon}
+                  <div className="w-5 h-5 bg-blue-100 rounded flex items-center justify-center text-blue-700 text-xs">
+                    {t.name ? t.name[0].toUpperCase() : 'T'}
                   </div>
                 ) : (
                   <div className="w-5 h-5 bg-gray-100 rounded flex items-center justify-center text-gray-500 border border-gray-200">
@@ -941,7 +796,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                   </div>
                 )}
               />
-              <p className="text-sm text-gray-500 mt-1 leading-tight">Associates a team to an issue. You can use this field to search and filter issues by team.</p>
+              <p className="text-sm text-gray-500 mt-1 leading-tight">Associates a team to a ticket. You can use this field to search and filter tickets by team.</p>
             </div>
 
             {/* Start date */}
@@ -951,7 +806,8 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                 <input
                   type="date"
                   value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  max={formData.dueDate || undefined}
+                  onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                   className="w-full h-full outline-none text-[13px] text-gray-700 bg-transparent"
                 />
                 <Calendar size={14} className="absolute right-2.5 pointer-events-none text-gray-500" />
@@ -959,17 +815,28 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
               <p className="text-sm text-gray-500 mt-1 leading-tight">Allows the planned start date for a piece of work to be set.</p>
             </div>
 
+            {/* Effort points */}
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Effort points</label>
+              <SimpleDropdown
+                options={['None', '1', '2', '3', '5', '8']}
+                value={formData.storyPoints || 'None'}
+                onSelect={(v) => setFormData(prev => ({ ...prev, storyPoints: v === 'None' ? '' : v }))}
+              />
+              <p className="text-sm text-gray-500 mt-1 leading-tight">Relative effort estimate for this deliverable.</p>
+            </div>
+
             {/* Reporter */}
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Reporter <span className="text-red-500">*</span></label>
               <SearchableDropdown
-                options={(teamMembers.length > 0) ? teamMembers : users}
+                options={users}
                 value={formData.reporter}
-                onSelect={(v) => setFormData({ ...formData, reporter: v })}
+                onSelect={(v) => setFormData(prev => ({ ...prev, reporter: v }))}
                 placeholder="Select reporter"
-                labelRenderer={(u) => u.name || `${u.first_name} ${u.last_name}`}
+                labelRenderer={(u) => u ? (u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username) : 'Reporter'}
                 iconRenderer={(u) => u ? (
-                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-700  border border-white  overflow-hidden shrink-0 mr-2">
+                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-700 border border-white overflow-hidden shrink-0 mr-2">
                     {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : (u.name ? u.name[0] : (u.first_name?.[0] || 'U'))}
                   </div>
                 ) : null}
@@ -985,9 +852,9 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files.length > 0) {
-                    const newFiles = Array.from(e.target.files); // Store actual File objects
+                    const newFiles = Array.from(e.target.files);
                     setAttachedFiles(prev => [...prev, ...newFiles]);
-                    e.target.value = ''; // Reset so same file can be re-added
+                    e.target.value = '';
                   }
                 }}
                 multiple
@@ -998,11 +865,11 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
               >
                 <UploadCloud size={24} className="text-gray-400 group-hover:text-blue-500 transition-colors" />
                 <div className="text-[13px] text-gray-600">
-                  Drop files to attach or <span className="text-gray-900 bg-gray-100 border border-gray-300 rounded-[3px] px-2 py-0.5 ml-1  font-medium">Browse</span>
+                  Drop files to attach or <span className="text-gray-900 bg-gray-100 border border-gray-300 rounded-[3px] px-2 py-0.5 ml-1 font-medium">Browse</span>
                 </div>
               </div>
 
-              {/* Attached file list — Jira style cards */}
+              {/* Attached file list */}
               {attachedFiles.length > 0 && (
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {attachedFiles.map((file, i) => {
@@ -1018,7 +885,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                             <img src={previewUrl} alt="" className="w-9 h-9 rounded object-cover border border-gray-100 shrink-0" />
                           ) : (
                             <div className="w-9 h-9 rounded bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold shrink-0 border border-blue-100">
-                              📄
+                              <FileText size={16} />
                             </div>
                           )}
                           <div className="min-w-0">
@@ -1026,7 +893,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                               {file.name}
                             </div>
                             <div className="text-[10px] text-gray-400 font-medium">
-                              {formattedDate} • {formattedSize}
+                              {formattedDate} - {formattedSize}
                             </div>
                           </div>
                         </div>
@@ -1056,7 +923,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                   <SearchableDropdown
                     options={['blocks', 'is blocked by', 'clones', 'is cloned by', 'duplicates', 'is duplicated by', 'relates to']}
                     value={formData.linkedType}
-                    onSelect={(v) => setFormData({ ...formData, linkedType: v })}
+                    onSelect={(v) => setFormData(prev => ({ ...prev, linkedType: v }))}
                     placeholder="Select type"
                     labelRenderer={(t) => t}
                   />
@@ -1065,9 +932,9 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                   <SearchableDropdown
                     options={projects}
                     value={formData.linkedTarget}
-                    onSelect={(v) => setFormData({ ...formData, linkedTarget: v })}
+                    onSelect={(v) => setFormData(prev => ({ ...prev, linkedTarget: v }))}
                     placeholder="Type, search or paste URL"
-                    labelRenderer={(p) => p.name}
+                    labelRenderer={projectLabel}
                   />
                 </div>
               </div>
@@ -1076,16 +943,16 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
             {/* Flagged */}
             <div>
               <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Flagged</label>
-              <div className="flex items-center gap-2 mb-1 cursor-pointer" onClick={(e) => { e.preventDefault(); setFormData({ ...formData, flagged: !formData.flagged }); }}>
+              <div className="flex items-center gap-2 mb-1 cursor-pointer" onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, flagged: !prev.flagged })); }}>
                 <input
                   type="checkbox"
                   checked={formData.flagged}
-                  onChange={(e) => setFormData({ ...formData, flagged: e.target.checked })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, flagged: e.target.checked }))}
                   className="w-3.5 h-3.5 text-blue-600 rounded-[2px] border-gray-300 focus:ring-blue-500 focus:ring-offset-0 focus:ring-1 cursor-pointer pointer-events-none"
                 />
                 <span className="text-[13px] text-gray-900 select-none">Impediment</span>
               </div>
-              <p className="text-sm text-gray-500 mt-1 leading-tight">Allows to flag issues with impediments.</p>
+              <p className="text-sm text-gray-500 mt-1 leading-tight">Allows to flag tickets with impediments.</p>
             </div>
 
           </form>
@@ -1093,11 +960,11 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
 
         {/* FOOTER */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white rounded-b-lg">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={(e) => { e.preventDefault(); setFormData({ ...formData, createAnother: !formData.createAnother }); }}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={(e) => { e.preventDefault(); setFormData(prev => ({ ...prev, createAnother: !prev.createAnother })); }}>
             <input
               type="checkbox"
               checked={formData.createAnother}
-              onChange={(e) => setFormData({ ...formData, createAnother: e.target.checked })}
+              onChange={(e) => setFormData(prev => ({ ...prev, createAnother: e.target.checked }))}
               className="w-3.5 h-3.5 text-blue-600 rounded-[2px] border-gray-300 focus:ring-blue-500 focus:ring-offset-0 focus:ring-1 cursor-pointer pointer-events-none"
             />
             <span className="text-[13px] text-gray-700 font-medium select-none">Create Another</span>
@@ -1111,7 +978,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
             </button>
             <button
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !formData.summary}
               className={`px-4 py-1.5 rounded-[3px] text-[14px] font-medium transition-colors flex items-center justify-center ${!formData.summary || isSubmitting ? 'bg-blue-600/50 text-white cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
             >
               {isSubmitting ? 'Creating...' : 'Create'}
@@ -1146,4 +1013,4 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
   );
 };
 
-export default ITCreateIssueDrawer;
+export default MarketingCreateIssueDrawer;

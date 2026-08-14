@@ -86,10 +86,11 @@ const ProjectDetailsPage = () => {
     }
   };
 
-  const handleTaskDelete = async (taskId) => {
+  const handleTaskDelete = async (taskId, taskSource) => {
     if (!window.confirm('Are you sure you want to delete this task?')) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/project-tasks/${taskId}`, { method: 'DELETE' });
+      const sourceParam = taskSource ? `?task_source=${taskSource}` : '';
+      const res = await fetch(`${API_BASE_URL}/project-tasks/${taskId}${sourceParam}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete task');
 
       const tRes = await fetch(`${API_BASE_URL}/projects/${id}/tasks`);
@@ -135,6 +136,7 @@ const ProjectDetailsPage = () => {
         priority: updates.priority !== undefined ? updates.priority : currentTask.priority,
         assigned_to: updates.assignee !== undefined ? (updates.assignee === 'Unassigned' ? null : currentTask.assigned_to) : currentTask.assigned_to,
         due_date: updates.due_date !== undefined ? updates.due_date : currentTask.due_date,
+        task_source: currentTask.task_source,
       };
 
       const res = await fetch(`${API_BASE_URL}/project-tasks/${taskId}`, {
@@ -154,7 +156,8 @@ const ProjectDetailsPage = () => {
     const taskId = key.split('-')[1];
     if (!taskId) return;
 
-    await handleTaskDelete(taskId);
+    const task = projectTasks.find(t => String(t.id) === String(taskId));
+    await handleTaskDelete(taskId, task?.task_source);
     setSelectedIssueId(null);
   };
 
@@ -465,6 +468,15 @@ const ProjectDetailsPage = () => {
                 ['Project ID', project.project_id_code || `PRJ-00${project.id}`],
                 ['Client', project.company_name || project.client || '-'],
                 ['Department', project.department_name || project.workflow_type || '-'],
+                ['Services', (project.client_services && project.client_services.length > 0) ? (
+                  <div className="flex flex-wrap gap-1">
+                    {project.client_services.map((s, si) => (
+                      <span key={si} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-bold border border-indigo-100 text-[10px]">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                ) : (project.service_name || '-')],
                 ['Assigned Team', (project.team_name || assignedTeamName) ? <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-bold border border-emerald-100 text-[10px]">{project.team_name || assignedTeamName}</span> : 'No team assigned'],
                 ['Project Manager', `${project.manager_first_name || ''} ${project.manager_last_name || ''}`.trim() || 'Unassigned'],
                 ['Priority', <span className="text-red-500 bg-red-50 px-1.5 py-0.5 rounded text-[9px] font-medium border border-red-200">{project.priority || '-'}</span>],
@@ -682,7 +694,7 @@ const ProjectDetailsPage = () => {
                   <div className="hidden group-hover:block absolute right-0 z-10 w-24 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <div className="py-1">
                       <button onClick={() => setSelectedIssueId(t.id)} className="text-gray-700 block p-2 text-xs w-full text-left hover:bg-gray-100">Edit</button>
-                      <button onClick={() => handleTaskDelete(t.id)} className="text-red-600 block p-2 text-xs w-full text-left hover:bg-gray-100">Delete</button>
+                      <button onClick={() => handleTaskDelete(t.id, t.task_source)} className="text-red-600 block p-2 text-xs w-full text-left hover:bg-gray-100">Delete</button>
                     </div>
                   </div>
                 </div>
@@ -1463,7 +1475,7 @@ const ProjectDetailsPage = () => {
                 <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-500"><Flag size={16} /></div>
                 <div className="text-right">
                   <div className="text-xs text-gray-500 font-medium">Milestones</div>
-                  <div className="text-lg  text-gray-900 leading-tight">3 / 5</div>
+                  <div className="text-lg  text-gray-900 leading-tight">{milestones.filter(m => m.status === 'Completed').length} / {milestones.length}</div>
                 </div>
               </div>
             </div>

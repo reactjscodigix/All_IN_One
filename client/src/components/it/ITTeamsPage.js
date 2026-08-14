@@ -10,9 +10,15 @@ import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const ITTeamsPage = () => {
+const ITTeamsPage = ({ department }) => {
   const navigate = useNavigate();
   const { designation, username } = useParams();
+  const path = window.location.pathname.toLowerCase();
+  const currentDept = department || (
+    path.includes('/marketing') ? 'Marketing' :
+    path.includes('/seo-gmb') ? 'Marketing' :
+    'IT'
+  );
   const [teams, setTeams] = useState([]);
   const [users, setUsers] = useState([]);
 
@@ -63,7 +69,10 @@ const ITTeamsPage = () => {
 
   const [activeDropdown, setActiveDropdown] = useState(null); // 'manager', 'managerRole', 'member', 'memberRole'
 
-  const commonRoles = [
+  const commonRoles = currentDept === 'Marketing' ? [
+    'Graphics Designer', 'Video Editor', 'Social Media Marketing',
+    'SEO & GMB', 'PPC Manager', 'Wordpress Developer', 'Marketing Manager'
+  ] : [
     'Frontend Developer', 'Backend Developer', 'Full Stack Developer',
     'UI/UX Designer', 'Mobile Developer', 'QA   Engineer',
     'DevOps Engineer', 'Data Scientist', 'Project Manager',
@@ -79,7 +88,7 @@ const ITTeamsPage = () => {
     };
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
+  }, [currentDept]);
 
   const fetchData = async () => {
     try {
@@ -91,10 +100,10 @@ const ITTeamsPage = () => {
         fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/departments`).then(res => res.json())
       ]);
 
-      const itDept = departmentsData.find(d => d.name === 'IT Department');
-      const itDeptId = itDept ? itDept.id : 4;
+      const deptRecord = departmentsData.find(d => (d.name || '').toLowerCase().includes(currentDept.toLowerCase()));
+      const targetDeptId = deptRecord ? deptRecord.id : (currentDept === 'Marketing' ? 2 : 4);
 
-      const filteredTeams = teamsData.filter(t => t.department_id === itDeptId || !t.department_id);
+      const filteredTeams = teamsData.filter(t => t.department_id === targetDeptId || !t.department_id || (t.department && t.department.toLowerCase().includes(currentDept.toLowerCase())));
 
       // Fetch members for each team
       const teamsWithMembers = await Promise.all(filteredTeams.map(async (team) => {
@@ -110,10 +119,11 @@ const ITTeamsPage = () => {
       setTeams(teamsWithMembers);
       setUsers(usersData);
       setProjects(projectsData.filter(p =>
-        p.workflow_type === 'IT' ||
-        p.project_type === 'IT' ||
-        p.category === 'IT' ||
-        p.department_id === itDeptId
+        p.workflow_type === currentDept ||
+        p.project_type === currentDept ||
+        p.category === currentDept ||
+        p.department_id === targetDeptId ||
+        (p.department && p.department.toLowerCase().includes(currentDept.toLowerCase()))
       ));
     } catch (error) {
       console.error('Failed to fetch teams data:', error);
@@ -127,13 +137,13 @@ const ITTeamsPage = () => {
     e.preventDefault();
     try {
       const departmentsData = await fetch(`${process.env.REACT_APP_API_URL || API_BASE_URL + ''}/departments`).then(res => res.json());
-      const itDept = departmentsData.find(d => d.name === 'IT Department');
-      const itDeptId = itDept ? itDept.id : 4;
+      const deptRecord = departmentsData.find(d => (d.name || '').toLowerCase().includes(currentDept.toLowerCase()));
+      const targetDeptId = deptRecord ? deptRecord.id : (currentDept === 'Marketing' ? 2 : 4);
 
       const teamData = {
         name: newTeam.name,
         description: newTeam.description,
-        department_id: itDeptId,
+        department_id: targetDeptId,
         manager_id: newTeam.manager_id,
         manager_role: newTeam.manager_role || 'Manager'
       };
@@ -309,12 +319,26 @@ const ITTeamsPage = () => {
     }
   };
 
-  const filteredManagers = users.filter(u =>
+  const deptUsers = users.filter(u => {
+    const dept = (u.department || '').toLowerCase();
+    const role = (u.job_title || u.role_name || u.role || '').toLowerCase();
+    if (currentDept === 'Marketing') {
+      return dept.includes('marketing') || dept.includes('seo') || role.includes('marketing') || role.includes('designer') || role.includes('video') || role.includes('seo') || role.includes('ppc') || role.includes('wordpress');
+    }
+    return dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester') || role.includes('devops') || role.includes('qa') || role.includes('manager');
+  });
+
+  const deptManagers = deptUsers.filter(u => {
+    const role = (u.job_title || u.role_name || u.role || '').toLowerCase();
+    return u.department_role === 'Manager' || role.includes('manager');
+  });
+
+  const filteredManagers = deptManagers.filter(u =>
     `${u.first_name} ${u.last_name}`.toLowerCase().includes(managerSearch.toLowerCase()) ||
     u.email.toLowerCase().includes(managerSearch.toLowerCase())
   );
 
-  const filteredMembers = users.filter(u =>
+  const filteredMembers = deptUsers.filter(u =>
     `${u.first_name} ${u.last_name}`.toLowerCase().includes(memberSearch.toLowerCase()) ||
     u.email.toLowerCase().includes(memberSearch.toLowerCase())
   );
@@ -359,11 +383,11 @@ const ITTeamsPage = () => {
         {/* HEADER */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-xl  text-gray-900 mb-1">Team Management</h1>
+            <h1 className="text-xl  text-gray-900 mb-1">{currentDept === 'Marketing' ? 'Marketing Team Management' : 'IT Team Management'}</h1>
             <div className="flex items-center gap-1 text-sm text-gray-500">
-              <span className="hover:text-indigo-600 cursor-pointer transition-colors">Dashboard</span>
+              <span className="hover:text-indigo-600 cursor-pointer transition-colors">{currentDept} Dashboard</span>
               <ChevronRight size={10} />
-              <span className="text-gray-900 font-medium">Team Management</span>
+              <span className="text-gray-900 font-medium">{currentDept === 'Marketing' ? 'Marketing Team Management' : 'Team Management'}</span>
             </div>
           </div>
 
@@ -1089,7 +1113,7 @@ const ITTeamsPage = () => {
                     />
                     {memberFormUserSearchActive && (
                       <div className="absolute z-30 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-auto">
-                        {users.filter(u =>
+                        {deptUsers.filter(u =>
                           `${u.first_name} ${u.last_name}`.toLowerCase().includes(memberFormUserName.toLowerCase()) ||
                           u.email.toLowerCase().includes(memberFormUserName.toLowerCase())
                         ).map(u => (

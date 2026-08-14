@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { ArrowUp, ArrowDown, CheckSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../config/environment';
+import { uploadDescriptionFile, formatFileSize } from '../../utils/descriptionFiles';
 
 import ITIssueHeaderBar from './issue-details/ITIssueHeaderBar';
 import ITIssueDescription from './issue-details/ITIssueDescription';
@@ -40,6 +41,17 @@ const getInitials = (name) => {
 
 const SPRINTS = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog'];
 
+// Formats a stored date for <input type="date">, which requires YYYY-MM-DD.
+// Uses local date parts on purpose: a DATE column serialises as UTC (e.g.
+// 2026-08-13T18:30:00Z for 14 Aug in IST), so toISOString() would show the day before.
+const toDateInputValue = (value) => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
 const DEFAULT_USERS = [
   { id: 1, name: 'Purvesh Patil' },
   { id: 2, name: 'Ashwini Khedekar' },
@@ -68,6 +80,7 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
   const [reporter, setReporter] = useState({ name: loggedUser, initial: getInitials(loggedUser), color: 'bg-blue-100 text-blue-700' });
   const [team, setTeam] = useState('IT Team');
   const [dueDate, setDueDate] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [sprint, setSprint] = useState('Sprint 1');
   const [originalEstimate, setOriginalEstimate] = useState('0h');
   const [remainingEstimate, setRemainingEstimate] = useState('0h');
@@ -98,6 +111,9 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
   const [linkRelation, setLinkRelation] = useState('is blocked by');
   const [linkSearchInput, setLinkSearchInput] = useState('');
   const [comments, setComments] = useState([]);
+  const [historyEntries, setHistoryEntries] = useState([]);
+  const [worklogData, setWorklogData] = useState({ worklogs: [], totalSpent: '0h', originalEstimate: '0h', remainingEstimate: '0h' });
+  const [aiDocsLoading, setAiDocsLoading] = useState(false);
   const [newCommentText, setNewCommentText] = useState('');
   const [isCommenting, setIsCommenting] = useState(false);
 
@@ -119,8 +135,16 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
   const commentInputRef = useRef(null);
 
   // Load team users & issue details on mount
+  // Baseline assignee list = people in this issue's department. Without this the picker
+  // offered every user in the company, so a Marketing ticket could be assigned to IT staff.
+  // When the issue also has a team, the effect below narrows this further to that team.
+  const issueDepartment = issue?.department || '';
+
   useEffect(() => {
-    fetch(`${API_BASE_URL}/users`)
+    const params = new URLSearchParams({ limit: '200', excludeSystem: 'true' });
+    if (issueDepartment) params.set('department', issueDepartment);
+
+    fetch(`${API_BASE_URL}/users?${params.toString()}`)
       .then(res => res.json())
       .then(data => {
         const raw = Array.isArray(data?.value) ? data.value : (Array.isArray(data) ? data : []);
@@ -143,7 +167,7 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
       .then(res => res.json())
       .then(data => Array.isArray(data) && setTeamsList(data))
       .catch(console.error);
-  }, []);
+  }, [issueDepartment]);
 
   useEffect(() => {
     if (!issue) return;
@@ -185,7 +209,53 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
     });
     setSubtasks(sanitizedList);
     setTeam(issue.team || 'IT Team');
+
+    // These were never populated from the issue, so dates and sprint always looked empty
+    // even though they were saved. Dates must be read in local time: a DATE column comes
+    // back as e.g. 2026-08-13T18:30:00Z, which is 14 Aug in IST — using toISOString()
+    // here would show the previous day.
+    setDueDate(toDateInputValue(issue.due_date));
+    setStartDate(toDateInputValue(issue.start_date));
+    setSprint(issue.sprint || 'Sprint 1');
+
+    // Load stored comments so they survive closing and reopening the issue.
+    let rawComments = issue.comments;
+    if (typeof rawComments === 'string') {
+      try { rawComments = JSON.parse(rawComments); } catch (e) { rawComments = []; }
+    }
+    setComments(Array.isArray(rawComments) ? rawComments : []);
   }, [issue]);
+
+  const issueKey = issue?.issue_key || issue?.key;
+
+  // Switching between the issue and one of its subtasks must not carry the previous
+  // item's draft text across, so clear the in-progress edit state on every switch.
+  useEffect(() => {
+    setIsEditingDescription(false);
+    setTempDescription('');
+  }, [currentSubtask?.id]);
+
+  // History + work log come from their own tables, so refetch whenever the issue changes.
+  const loadHistory = React.useCallback(() => {
+    if (!issueKey) return;
+    fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}/history`)
+      .then(res => res.json())
+      .then(data => setHistoryEntries(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Failed to load history:', err));
+  }, [issueKey]);
+
+  const loadWorklogs = React.useCallback(() => {
+    if (!issueKey) return;
+    fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}/worklogs`)
+      .then(res => res.json())
+      .then(data => setWorklogData(data && data.worklogs ? data : { worklogs: [], totalSpent: '0h', originalEstimate: '0h', remainingEstimate: '0h' }))
+      .catch(err => console.error('Failed to load work logs:', err));
+  }, [issueKey]);
+
+  useEffect(() => {
+    loadHistory();
+    loadWorklogs();
+  }, [loadHistory, loadWorklogs]);
 
   // Filter user list to ONLY show team members of the current task's team
   useEffect(() => {
@@ -312,14 +382,15 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
 
   const handleSubtaskAiImprove = async (subtask, index) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/it-kanban/issues/${issue.issue_key || issue.key}/ai/subtask-specs`, {
+      const subtaskIdx = index !== undefined && index !== null ? index : 0;
+      const res = await fetch(`${API_BASE_URL}/it-kanban/issues/${issue.issue_key || issue.key}/ai/subtask/${subtaskIdx}/improve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subtaskTitle: subtask.title, parentTitle: title })
       });
       if (!res.ok) throw new Error('Failed to fetch AI specs');
       const data = await res.json();
-      setSubtaskAiDetails(data.specs);
+      setSubtaskAiDetails(data.specs || data.improvement);
       setSelectedSubtaskForAi({ subtask, index });
       setShowSubtaskAiModal(true);
     } catch (err) {
@@ -344,16 +415,35 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
     }
   };
 
-  const handleSaveDescription = () => {
-    setDescription(tempDescription);
+  // `html` is passed by the editor so we save exactly what's on screen rather than
+  // whatever tempDescription happened to hold when this closure was created.
+  const handleSaveDescription = (html) => {
+    const finalHtml = html !== undefined ? html : tempDescription;
+    setDescription(finalHtml);
     setIsEditingDescription(false);
-    handleUpdate({ description: tempDescription });
+    handleUpdate({ description: finalHtml });
   };
 
-  const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const newAtts = files.map(f => ({ name: f.name, size: `${Math.round(f.size / 1024)} KB`, url: URL.createObjectURL(f) }));
-    setAttachments(prev => [...prev, ...newAtts]);
+  // Upload attachments to the server so their URLs survive a reload, instead of using
+  // session-only blob URLs that break as soon as the panel is closed.
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    for (const f of files) {
+      try {
+        const saved = await uploadDescriptionFile(f, { project_id: issue?.project_id || undefined });
+        setAttachments(prev => [...prev, {
+          name: saved.name,
+          size: formatFileSize(saved.sizeBytes),
+          url: saved.url,
+          type: saved.mimeType
+        }]);
+      } catch (err) {
+        Swal.fire('Upload failed', err.message, 'error');
+      }
+    }
+    if (e.target) e.target.value = '';
   };
 
   const handleRemoveAttachment = (idx) => {
@@ -371,15 +461,82 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
     setLinkedIssues(prev => prev.filter(l => l.key !== key));
   };
 
+  // Comments are stored on the issue itself (comments JSON column), so every change
+  // is written back to the server rather than living only in component state.
+  const persistComments = async (next) => {
+    setComments(next);
+    if (!issueKey) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-user-name': loggedUser },
+        body: JSON.stringify({ comments: next })
+      });
+      if (!res.ok) throw new Error('Failed to save comment');
+    } catch (err) {
+      Swal.fire('Error', 'Could not save comment. Please try again.', 'error');
+    }
+  };
+
   const handleAddComment = () => {
     if (!newCommentText.trim()) return;
-    setComments(prev => [...prev, { author: loggedUser, text: newCommentText.trim(), time: 'Just now' }]);
+    const entry = {
+      author: loggedUser,
+      text: newCommentText.trim(),
+      time: new Date().toISOString()
+    };
+    persistComments([...comments, entry]);
     setNewCommentText('');
     setIsCommenting(false);
   };
 
+  const handleLogWork = async ({ timeSpent, description, startedAt, originalEstimate }) => {
+    if (!issueKey) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}/worklogs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timeSpent, description, startedAt, originalEstimate, author: loggedUser })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to log work');
+      loadWorklogs();
+    } catch (err) {
+      Swal.fire('Could not log work', err.message, 'error');
+    }
+  };
+
+  const handleDeleteWorklog = async (id) => {
+    if (!issueKey) return;
+    try {
+      await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}/worklogs/${id}`, { method: 'DELETE' });
+      loadWorklogs();
+    } catch (err) {
+      Swal.fire('Error', 'Could not delete work log', 'error');
+    }
+  };
+
+  const handleGenerateDocs = async () => {
+    if (!issueKey) return;
+    setAiDocsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}/ai/generate-docs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, description })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate docs');
+      setDocsData(data.docs || data);
+    } catch (err) {
+      Swal.fire('Could not generate docs', err.message, 'error');
+    } finally {
+      setAiDocsLoading(false);
+    }
+  };
+
   const deleteComment = (idx) => {
-    setComments(prev => prev.filter((_, i) => i !== idx));
+    persistComments(comments.filter((_, i) => i !== idx));
   };
 
   if (!issue) return null;
@@ -470,8 +627,12 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
               )}
             </div>
 
-            {/* Description & Attachments */}
+            {/* Description & Attachments.
+                Keyed per entity so switching between the issue and a subtask remounts the
+                editor with a clean contentEditable — otherwise the previous item's HTML
+                lingers in the DOM node and can be saved onto the wrong record. */}
             <ITIssueDescription
+              key={currentSubtask ? `subtask-${currentSubtask.id}` : `issue-${issue?.issue_key || issue?.key || 'none'}`}
               issue={currentSubtask ? { ...issue, title: currentSubtask.title } : issue}
               description={currentSubtask ? (currentSubtask.description || '') : description}
               setDescription={(newDesc) => {
@@ -490,17 +651,19 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
               setIsEditingDescription={setIsEditingDescription}
               tempDescription={tempDescription}
               setTempDescription={setTempDescription}
-              handleSaveDescription={() => {
+              handleSaveDescription={(html) => {
+                const finalHtml = html !== undefined ? html : tempDescription;
                 if (currentSubtask) {
+                  // Editing a subtask: write to that subtask only, never to the parent issue.
                   const updatedSubtasks = subtasks.map(item =>
-                    item.id === currentSubtask.id ? { ...item, description: tempDescription } : item
+                    item.id === currentSubtask.id ? { ...item, description: finalHtml } : item
                   );
                   setSubtasks(updatedSubtasks);
-                  setCurrentSubtask(prev => ({ ...prev, description: tempDescription }));
+                  setCurrentSubtask(prev => ({ ...prev, description: finalHtml }));
                   setIsEditingDescription(false);
                   handleUpdate({ subtasks: updatedSubtasks });
                 } else {
-                  handleSaveDescription();
+                  handleSaveDescription(finalHtml);
                 }
               }}
               handleImproveDescription={handleImproveDescription}
@@ -567,6 +730,13 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
               deleteComment={deleteComment}
               commentInputRef={commentInputRef}
               docsData={docsData}
+              historyEntries={historyEntries}
+              worklogData={worklogData}
+              handleLogWork={handleLogWork}
+              handleDeleteWorklog={handleDeleteWorklog}
+              handleGenerateDocs={handleGenerateDocs}
+              aiDocsLoading={aiDocsLoading}
+              loggedUser={loggedUser}
             />
           </div>
 
@@ -622,6 +792,10 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
             setTeam={setTeam}
             dueDate={dueDate}
             setDueDate={setDueDate}
+            startDate={startDate}
+            setStartDate={setStartDate}
+            priority={priority}
+            setPriority={setPriority}
             sprint={sprint}
             setSprint={setSprint}
             originalEstimate={originalEstimate}

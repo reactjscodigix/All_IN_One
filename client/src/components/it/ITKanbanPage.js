@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   Search, Bell, HelpCircle, Settings, ChevronDown, ChevronRight,
   Share2, Download, MoreHorizontal, LayoutList, Plus, AlertCircle, ArrowUp, ArrowDown, CheckSquare,
-  Trash2, User, Check
+  Trash2, User, Check, Megaphone, Palette, Video, FileText
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ITCreateIssueDrawer from './ITCreateIssueDrawer';
 import ITIssueDetailsPanel from './ITIssueDetailsPanel';
+import MarketingCreateIssueDrawer from '../marketing/MarketingCreateIssueDrawer';
+import { DEPARTMENT_KANBAN_CONFIG } from '../../config/departmentKanbanConfig';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -27,10 +29,28 @@ const PRIORITY_ICONS = {
 };
 
 const TYPE_ICONS = {
+  // IT deliverables
   Task: <CheckSquare size={14} className="text-blue-500 fill-blue-100" />,
   Story: <BookmarkIcon size={14} className="text-green-500 fill-green-100" />,
   Bug: <AlertCircle size={14} className="text-red-500 fill-red-100" />,
-  Test: <TestTubeIcon size={14} className="text-purple-500 fill-purple-100" />
+  Test: <TestTubeIcon size={14} className="text-purple-500 fill-purple-100" />,
+  // Marketing deliverables
+  Campaign: <Megaphone size={14} className="text-orange-500" />,
+  Design: <Palette size={14} className="text-purple-500" />,
+  Video: <Video size={14} className="text-red-500" />,
+  Content: <FileText size={14} className="text-green-600" />
+};
+
+// Small icon used inside the inline "create issue" type picker (12px variant).
+const TYPE_ICONS_SM = {
+  Task: <CheckSquare size={12} className="text-blue-500 fill-blue-100" />,
+  Story: <BookmarkIcon size={12} className="text-green-500 fill-green-100" />,
+  Bug: <AlertCircle size={12} className="text-red-500 fill-red-100" />,
+  Test: <TestTubeIcon size={12} className="text-purple-500 fill-purple-100" />,
+  Campaign: <Megaphone size={12} className="text-orange-500" />,
+  Design: <Palette size={12} className="text-purple-500" />,
+  Video: <Video size={12} className="text-red-500" />,
+  Content: <FileText size={12} className="text-green-600" />
 };
 
 const COLUMN_COLORS = {
@@ -66,9 +86,22 @@ const INITIAL_KANBAN_DATA = {
   'DONE': []
 };
 
-const ITKanbanPage = () => {
+const ITKanbanPage = ({ department }) => {
   const { user } = useAuth();
   const { designation, username } = useParams();
+  const location = useLocation();
+
+  const path = window.location.pathname.toLowerCase();
+  const currentDept = department || (
+    path.includes('/marketing') ? 'Marketing' :
+    path.includes('/seo-gmb') ? 'Marketing' :
+    'IT'
+  );
+
+  // Board vocabulary (issue types, prefix, spaces) comes from the department config so the
+  // Marketing board shows Campaign/Design/Video/Content instead of IT's Story/Bug/Test.
+  const deptConfig = DEPARTMENT_KANBAN_CONFIG[currentDept] || DEPARTMENT_KANBAN_CONFIG['IT'];
+  const deptIssueTypes = deptConfig.issueTypes.map(t => t.name);
 
   const isManager = designation ? (
     designation.toLowerCase().includes('manager') ||
@@ -99,7 +132,7 @@ const ITKanbanPage = () => {
     'DONE': []
   });
   const [columnOrder, setColumnOrder] = useState(() => {
-    const saved = localStorage.getItem('kanbanColumnOrder');
+    const saved = localStorage.getItem(`${currentDept}_kanbanColumnOrder`);
     return saved ? JSON.parse(saved) : Object.keys(INITIAL_KANBAN_DATA);
   });
 
@@ -228,7 +261,7 @@ const ITKanbanPage = () => {
   };
 
   const fetchKanbanData = () => {
-    fetch(API_BASE_URL + '/it-kanban/issues')
+    fetch(`${API_BASE_URL}/it-kanban/issues?department=${currentDept}`)
       .then(res => res.json())
       .then(data => {
         setAllRawIssues(Array.isArray(data) ? data : []);
@@ -240,7 +273,7 @@ const ITKanbanPage = () => {
     fetchKanbanData();
 
     // Fetch projects list for filter dropdown
-    fetch(API_BASE_URL + '/projects')
+    fetch(`${API_BASE_URL}/projects?department=${currentDept}`)
       .then(res => res.json())
       .then(data => {
         const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
@@ -256,7 +289,7 @@ const ITKanbanPage = () => {
         setUsersList(list);
       })
       .catch(err => console.error('Error fetching users for kanban filter:', err));
-  }, []);
+  }, [currentDept]);
 
   const itUsersList = React.useMemo(() => {
     const SYSTEM_DUMMY_USERNAMES = ['admin', 'leads', 'deals', 'sales', 'marketing', 'it', 'accounting'];
@@ -265,9 +298,12 @@ const ITKanbanPage = () => {
       if (SYSTEM_DUMMY_USERNAMES.includes(un)) return false;
       const dept = (u.department || '').toLowerCase();
       const role = (u.role_name || u.role || '').toLowerCase();
+      if (currentDept === 'Marketing') {
+        return dept.includes('marketing') || dept.includes('seo') || role.includes('marketing') || role.includes('designer') || role.includes('video') || role.includes('seo') || role.includes('ppc');
+      }
       return dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester') || role.includes('devops');
     });
-  }, [usersList]);
+  }, [usersList, currentDept]);
 
   // Re-build board data whenever issues or filters change
   useEffect(() => {
@@ -282,7 +318,12 @@ const ITKanbanPage = () => {
       if (!newBoard[col]) newBoard[col] = [];
     });
 
-    let filtered = allRawIssues;
+    let filtered = allRawIssues.filter(issue => {
+      if (currentDept === 'Marketing') {
+        return issue.department === 'Marketing' || (issue.issue_key && !issue.issue_key.startsWith('WR-'));
+      }
+      return issue.department !== 'Marketing' && (!issue.issue_key || !issue.issue_key.startsWith('MKT'));
+    });
 
     if (selectedProjectId !== 'ALL') {
       filtered = filtered.filter(issue => Number(issue.project_id) === Number(selectedProjectId));
@@ -350,8 +391,11 @@ const ITKanbanPage = () => {
     setBoardData(newBoard);
   }, [allRawIssues, columnOrder, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignee, onlyMyIssues, searchQuery, username]);
 
+  // Opens a ticket straight from a URL like ...&/kanban?ticketKey=MKT-104, which is how
+  // notifications deep-link. Depends on location.search so clicking a notification while
+  // already on this board still opens the ticket.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search || window.location.search);
     const ticketKey = params.get('ticketKey');
     if (ticketKey) {
       const allIssues = Object.values(boardData).flat();
@@ -362,7 +406,7 @@ const ITKanbanPage = () => {
         }
       }
     }
-  }, [boardData]);
+  }, [boardData, location.search]);
 
 
 
@@ -415,6 +459,7 @@ const ITKanbanPage = () => {
     }
 
     try {
+      const prefix = deptConfig.defaultPrefix;
       const res = await fetch(API_BASE_URL + '/it-kanban/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -424,7 +469,9 @@ const ITKanbanPage = () => {
           status: col,
           assignee: assigneeVal,
           reporter: reporterVal,
-          priority: 'Medium'
+          priority: 'Medium',
+          department: currentDept,
+          keyPrefix: prefix
         })
       });
       const data = await res.json();
@@ -436,7 +483,7 @@ const ITKanbanPage = () => {
         status: col,
         assignee: assigneeVal,
         priority: 'Medium',
-        labels: ['IT'],
+        labels: [currentDept],
         sprint: 'Sprint 1',
         subtasks: [],
         linked_issues: [],
@@ -519,7 +566,11 @@ const ITKanbanPage = () => {
     try {
       await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Lets the server attribute this change to a person in the History tab.
+          'x-user-name': user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : (username || 'System')
+        },
         body: JSON.stringify(updates)
       });
     } catch (err) {
@@ -587,7 +638,11 @@ const ITKanbanPage = () => {
 
   return (
     <>
-      <ITCreateIssueDrawer isOpen={isCreateDrawerOpen} onIssueCreated={fetchKanbanData} onClose={() => setIsCreateDrawerOpen(false)} />
+      {currentDept === 'Marketing' ? (
+        <MarketingCreateIssueDrawer isOpen={isCreateDrawerOpen} onIssueCreated={fetchKanbanData} onClose={() => setIsCreateDrawerOpen(false)} />
+      ) : (
+        <ITCreateIssueDrawer department={currentDept} isOpen={isCreateDrawerOpen} onIssueCreated={fetchKanbanData} onClose={() => setIsCreateDrawerOpen(false)} />
+      )}
       <div className="flex w-full h-full max-h-full bg-white overflow-hidden font-sans">
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           {/* HEADER */}
@@ -719,7 +774,7 @@ const ITKanbanPage = () => {
                       </button>
                       {activeFilterDropdown === 'type' && (
                         <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-xs text-gray-700">
-                          {['ALL', 'Task', 'Story', 'Bug', 'Test'].map(t => (
+                          {['ALL', ...deptIssueTypes].map(t => (
                             <div
                               key={t}
                               onClick={() => { setSelectedType(t); setActiveFilterDropdown(null); }}
@@ -1201,29 +1256,21 @@ const ITKanbanPage = () => {
                                               onClick={() => setOpenInlineDropdown(openInlineDropdown === 'type' ? null : 'type')}
                                               className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition"
                                             >
-                                              {newIssueType === 'Task' && <CheckSquare size={14} className="text-blue-500 fill-blue-100" />}
-                                              {newIssueType === 'Story' && <BookmarkIcon size={14} className="text-green-500 fill-green-100" />}
-                                              {newIssueType === 'Bug' && <AlertCircle size={14} className="text-red-500 fill-red-100" />}
-                                              {newIssueType === 'Test' && <TestTubeIcon size={14} className="text-purple-500 fill-purple-100" />}
+                                              {TYPE_ICONS[newIssueType] || <CheckSquare size={14} className="text-blue-500 fill-blue-100" />}
                                               <ChevronDown size={10} />
                                             </button>
                                             {openInlineDropdown === 'type' && (
                                               <div className="absolute left-0 bottom-full mb-1.5 w-36 bg-white border border-gray-200 rounded shadow-lg py-1 z-50 text-sm">
-                                                {[
-                                                  { type: 'Story', icon: <BookmarkIcon size={12} className="text-green-500 fill-green-100" /> },
-                                                  { type: 'Feature', icon: <svg viewBox="0 0 24 24" className="w-3 h-3 text-green-600 fill-green-100" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8" cy="8" r="1.5" /><circle cx="16" cy="8" r="1.5" /><circle cx="8" cy="16" r="1.5" /><circle cx="16" cy="16" r="1.5" /></svg> },
-                                                  { type: 'Bug', icon: <AlertCircle size={12} className="text-red-500 fill-red-100" /> },
-                                                  { type: 'Task', icon: <CheckSquare size={12} className="text-blue-500 fill-blue-100" /> }
-                                                ].map(item => (
+                                                {deptIssueTypes.map(type => (
                                                   <div
-                                                    key={item.type}
+                                                    key={type}
                                                     onClick={() => {
-                                                      setNewIssueType(item.type === 'Feature' ? 'Task' : item.type);
+                                                      setNewIssueType(type);
                                                       setOpenInlineDropdown(null);
                                                     }}
                                                     className="px-2.5 py-1.5 hover:bg-gray-50 flex items-center gap-2 cursor-pointer text-gray-700 font-medium"
                                                   >
-                                                    {item.icon} {item.type}
+                                                    {TYPE_ICONS_SM[type] || <CheckSquare size={12} className="text-blue-500 fill-blue-100" />} {type}
                                                   </div>
                                                 ))}
                                                 <div className="border-t border-gray-100 my-1"></div>
