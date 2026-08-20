@@ -595,6 +595,42 @@ Acceptance Criteria
   };
 
   // GET all kanban issues (supports optional department query parameter)
+  /**
+   * The labels already in use on a board, most-used first.
+   *
+   * Offering these when someone types is what stops a label set fragmenting into near
+   * duplicates — the main way free-form tags stop being useful.
+   */
+  app.get('/api/it-kanban/labels', async (req, res) => {
+    try {
+      const department = String(req.query.department || 'IT').replace(/\s*department\s*$/i, '').trim();
+      const [rows] = await db.query(
+        'SELECT labels FROM it_kanban_issues WHERE department = ? AND labels IS NOT NULL',
+        [department]
+      );
+
+      const counts = new Map();
+      for (const row of rows) {
+        let list = row.labels;
+        if (typeof list === 'string') {
+          try { list = JSON.parse(list); } catch (e) { list = []; }
+        }
+        for (const raw of Array.isArray(list) ? list : []) {
+          const label = String(raw || '').trim();
+          if (label) counts.set(label, (counts.get(label) || 0) + 1);
+        }
+      }
+
+      const labels = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([label, count]) => ({ label, count }));
+
+      res.json(labels);
+    } catch (error) {
+      responseError(res, 500, 'Failed to fetch labels', error);
+    }
+  });
+
   app.get('/api/it-kanban/issues', async (req, res) => {
     try {
       const { department } = req.query;
@@ -650,10 +686,11 @@ Acceptance Criteria
       const dept = department || 'IT';
       const prefix = keyPrefix || (dept === 'Marketing' ? 'MKT' : 'WR');
 
-      // Created straight into a sprint that belongs to a project? Then it belongs to that
-      // project too, unless the caller named one explicitly.
+      // Created into a sprint that owns a project? Then it belongs to that project — the
+      // sprint wins, so a mismatched project on the form cannot contradict the sprint.
+      // With no sprint (or a sprint with no project) the caller's choice stands.
       let resolvedProjectId = project_id || null;
-      if (!resolvedProjectId && sprint_id) {
+      if (sprint_id) {
         const [[s]] = await db.query('SELECT project_id FROM sprints WHERE id = ?', [sprint_id]);
         if (s && s.project_id != null) resolvedProjectId = s.project_id;
       }
@@ -829,7 +866,9 @@ Acceptance Criteria
       // 'flagged' and 'story_points' are written by the backlog row menu, which mirrors
       // Jira's Add flag and Story point estimate actions.
       const allowedFields = ['title', 'description', 'type', 'priority', 'status', 'assignee', 'reporter', 'team', 'team_id', 'project_id', 'sprint', 'sprint_id', 'due_date', 'start_date', 'flagged', 'story_points', 'progress', 'original_estimate', 'remaining_estimate', 'time_spent', 'components', 'environment', 'vulnerability'];
-      const jsonFields = ['subtasks', 'linked_issues', 'comments'];
+      // 'labels' belongs here, not in allowedFields: it is stored as JSON, and without it
+      // labels could be set at creation but never changed afterwards.
+      const jsonFields = ['subtasks', 'linked_issues', 'comments', 'labels'];
 
       for (const [field, value] of Object.entries(updates)) {
         if (allowedFields.includes(field)) {

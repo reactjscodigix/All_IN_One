@@ -147,6 +147,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
   );
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [sprints, setSprints] = useState([]);
   const [teams, setTeams] = useState([]);
 
   // Transition and display states
@@ -213,6 +214,7 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
     labels: [],
     team: null,
     startDate: '',
+    sprint: null,
     linkedType: 'blocks',
     linkedTarget: null,
     flagged: false,
@@ -300,6 +302,12 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
           }
         })
         .catch(err => console.error('Error fetching projects:', err));
+
+      // Real sprints for this board, so work can be created straight into one.
+      fetch(`${API_BASE_URL}/sprints?department=${encodeURIComponent(currentDept)}`)
+        .then(res => res.json())
+        .then(data => setSprints(Array.isArray(data?.sprints) ? data.sprints : []))
+        .catch(err => console.error('Error fetching sprints:', err));
     }
   }, [isOpen, currentDept]);
 
@@ -554,6 +562,10 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
           priority: 'Medium',
           description: cleanDescription,
           project_id: selectedProjId,
+          // The sprint owns the project, so the server may override project_id with the
+          // sprint's own project — that keeps sprint and project from contradicting.
+          sprint_id: formData.sprint?.id || null,
+          sprint: formData.sprint?.name || null,
           department: currentDept,
           keyPrefix: currentDept === 'Marketing' ? 'MKT' : 'WR'
         };
@@ -692,12 +704,38 @@ const ITCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId = null
                       if (found) matchedTeam = found;
                     }
                   }
-                  setFormData(prev => ({ ...prev, space: v, team: matchedTeam }));
+                  // ...and that project's sprint. A sprint owns a project, so picking
+                  // the project implies the sprint; prefer the running one.
+                  let matchedSprint = formData.sprint;
+                  if (v && v.id) {
+                    const owning = sprints.filter(sp => Number(sp.project_id) === Number(v.id));
+                    matchedSprint = owning.find(sp => sp.status === 'Active') || owning[0] || null;
+                  }
+                  setFormData(prev => ({ ...prev, space: v, team: matchedTeam, sprint: matchedSprint }));
                 }}
                 placeholder="Select space"
                 labelRenderer={(p) => p.name}
                 iconRenderer={(p) => p ? <div className="w-5 h-5 bg-indigo-600 rounded flex items-center justify-center text-white text-xs ">{p.code ? p.code[0] : p.name.charAt(0)}</div> : null}
               />
+            </div>
+
+            {/* Sprint. Filled in automatically when the chosen Space has a sprint;
+                still selectable so work can go into any sprint, or stay in the Backlog. */}
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Sprint</label>
+              <SearchableDropdown
+                options={sprints}
+                value={formData.sprint}
+                onSelect={(v) => setFormData(prev => ({ ...prev, sprint: v }))}
+                placeholder={sprints.length === 0 ? 'No sprints yet — goes to Backlog' : 'Backlog'}
+                labelRenderer={(sp) => sp ? `${sp.name}${sp.status === 'Active' ? ' (active)' : ''}` : ''}
+                iconRenderer={(sp) => sp ? <div className="w-5 h-5 bg-emerald-600 rounded flex items-center justify-center text-white text-xs">S</div> : null}
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                {formData.sprint
+                  ? 'This work item will be created inside the sprint.'
+                  : 'Leave empty to create it in the Backlog.'}
+              </p>
             </div>
 
             {/* Work type */}

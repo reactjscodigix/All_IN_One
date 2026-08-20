@@ -5,6 +5,7 @@ import {
   Clock, Github, LinkIcon, CheckSquare, GitBranch, GitPullRequest,
   RefreshCw, CheckCircle, ExternalLink, X, Copy, Terminal
 } from 'lucide-react';
+import { normalizeLabel } from '../../../utils/labels';
 
 // Read-only timestamp, shown in local time.
 const formatStamp = (value) => {
@@ -63,6 +64,18 @@ const ITIssueDetailsSidebar = ({
   onBackToParent,
   issue
 }) => {
+  const [isEditingLabels, setIsEditingLabels] = useState(false);
+  const [labelDraft, setLabelDraft] = useState('');
+
+  // Stored as JSON, so it arrives as either an array or a string.
+  const labels = (() => {
+    let list = issue?.labels;
+    if (typeof list === 'string') {
+      try { list = JSON.parse(list); } catch (e) { list = list ? [list] : []; }
+    }
+    return Array.isArray(list) ? list : [];
+  })();
+
   const [isRefreshingAutomation, setIsRefreshingAutomation] = useState(false);
   const [showDevModal, setShowDevModal] = useState(false);
   const [showAutomationModal, setShowAutomationModal] = useState(false);
@@ -214,21 +227,31 @@ const ITIssueDetailsSidebar = ({
 
         {!collapsedSections.details && (
           <div className="p-3.5 space-y-3.5 text-xs bg-white">
-            {/* Read-only. A work item's project follows the sprint it belongs to, which is
-                decided in the Backlog (move/drag) or when the sprint is created — so it is
-                shown here for context but not editable. */}
+            {/* Editable. Note a sprint still owns its project: moving this item into a
+                project-owning sprint will overwrite whatever is chosen here. */}
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Project</span>
               <div className="col-span-2">
-                {(() => {
-                  const project = projectsList.find(p => String(p.id) === String(projectId));
-                  if (!projectId) return <span className="text-gray-400 font-medium">None</span>;
-                  return (
-                    <span className="text-gray-800 font-medium">
-                      {project ? project.name : `Project #${projectId}`}
-                    </span>
-                  );
-                })()}
+                {projectsList && projectsList.length > 0 ? (
+                  <select
+                    value={projectId || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setProjectId(value);
+                      handleUpdate({ project_id: value === '' ? null : Number(value) });
+                    }}
+                    className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer max-w-full"
+                  >
+                    <option value="">None</option>
+                    {projectsList.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}{p.client_name ? ` (${p.client_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-xs text-gray-400">No projects in this department</span>
+                )}
               </div>
             </div>
 
@@ -397,22 +420,55 @@ const ITIssueDetailsSidebar = ({
               </div>
             </div>
 
-            {/* Labels */}
+            {/* Labels — editable, so tags can be corrected and added after creation. */}
             <div className="grid grid-cols-3 items-start min-h-[30px] pt-1">
               <span className="text-gray-500 font-medium">Labels</span>
-              <div className="col-span-2 flex flex-wrap gap-1">
-                {(() => {
-                  let labels = issue?.labels;
-                  if (typeof labels === 'string') {
-                    try { labels = JSON.parse(labels); } catch (e) { labels = labels ? [labels] : []; }
-                  }
-                  if (!Array.isArray(labels) || labels.length === 0) {
-                    return <span className="text-xs text-gray-400">None</span>;
-                  }
-                  return labels.map(l => (
-                    <span key={l} className="bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded text-[10px] font-medium">{l}</span>
-                  ));
-                })()}
+              <div className="col-span-2">
+                <div className="flex flex-wrap gap-1 items-center">
+                  {labels.length === 0 && !isEditingLabels && (
+                    <span className="text-xs text-gray-400">None</span>
+                  )}
+                  {labels.map(l => (
+                    <span key={l} className="bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1">
+                      {l}
+                      <X
+                        size={9}
+                        className="cursor-pointer text-indigo-400 hover:text-indigo-800"
+                        onClick={() => handleUpdate({ labels: labels.filter(x => x !== l) })}
+                      />
+                    </span>
+                  ))}
+                  {!isEditingLabels && (
+                    <button
+                      onClick={() => setIsEditingLabels(true)}
+                      className="text-[10px] px-1.5 py-0.5 rounded border border-dashed border-gray-300 text-gray-500 hover:bg-gray-50 transition"
+                    >
+                      + Add
+                    </button>
+                  )}
+                </div>
+
+                {isEditingLabels && (
+                  <input
+                    autoFocus
+                    value={labelDraft}
+                    onChange={(e) => setLabelDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const clean = normalizeLabel(labelDraft);
+                        if (clean && !labels.includes(clean)) {
+                          handleUpdate({ labels: [...labels, clean] });
+                        }
+                        setLabelDraft('');
+                      }
+                      if (e.key === 'Escape') { setIsEditingLabels(false); setLabelDraft(''); }
+                    }}
+                    onBlur={() => { setIsEditingLabels(false); setLabelDraft(''); }}
+                    placeholder="Type and press enter…"
+                    className="mt-1 w-full text-xs border border-gray-300 rounded px-2 py-1 outline-none focus:border-blue-500"
+                  />
+                )}
               </div>
             </div>
 
@@ -451,20 +507,40 @@ const ITIssueDetailsSidebar = ({
                 </div>
               </div>
             )}
-            {/* Read-only. Sprint membership is changed in the Backlog — by moving or
-                dragging the item — not from here. */}
+            {/* Editable. Selecting a sprint moves the work item for real (sprint_id), which
+                is what the Board and Backlog filter on. Choosing Backlog removes it from its
+                sprint — and with it the project, since backlog work belongs to neither. */}
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Sprint</span>
               <div className="col-span-2">
-                {(() => {
-                  const sprint = sprintsList.find(x => String(x.id) === String(sprintId));
-                  if (!sprintId || !sprint) return <span className="text-gray-400 font-medium">Backlog</span>;
-                  return (
-                    <span className="text-gray-800 font-medium">
-                      {sprint.name}{sprint.status === 'Active' ? ' (active)' : ''}
-                    </span>
-                  );
-                })()}
+                {sprintsList && sprintsList.length > 0 ? (
+                  <select
+                    value={sprintId || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSprintId(value);
+                      const chosen = sprintsList.find(x => String(x.id) === String(value));
+                      // Mirror the server's rule here so the Project field doesn't show a
+                      // stale value until the panel is reopened.
+                      if (!value) setProjectId('');
+                      else if (chosen && chosen.project_id != null) setProjectId(String(chosen.project_id));
+                      handleUpdate({
+                        sprint_id: value === '' ? null : Number(value),
+                        sprint: chosen ? chosen.name : 'Backlog'
+                      });
+                    }}
+                    className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer max-w-full"
+                  >
+                    <option value="">Backlog</option>
+                    {sprintsList.map(sp => (
+                      <option key={sp.id} value={sp.id}>
+                        {sp.name}{sp.status === 'Active' ? ' (active)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-xs text-gray-400">No sprints on this board yet</span>
+                )}
               </div>
             </div>
 

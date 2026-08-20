@@ -10,6 +10,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { API_BASE_URL } from '../../config/environment';
 import { insertFilesIntoEditor, makeEditorPasteHandler } from '../../utils/descriptionFiles';
+import { normalizeLabel, suggestionsFor } from '../../utils/labels';
 import Swal from 'sweetalert2';
 
 const WORK_TYPES = [
@@ -149,6 +150,8 @@ const MarketingCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId
   const { designation, username } = useParams();
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [sprints, setSprints] = useState([]);
+  const [knownLabels, setKnownLabels] = useState([]);
   const [teams, setTeams] = useState([]);
 
   // Transition & Display state
@@ -172,8 +175,8 @@ const MarketingCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId
     startDate: '',
     dueDate: '',
     storyPoints: '',
-    sprint: 'Marketing Sprint 1',
-    labels: ['Marketing'],
+    sprint: null,
+    labels: [],
     linkedType: '',
     linkedTarget: null,
     flagged: false,
@@ -247,6 +250,19 @@ const MarketingCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId
           setProjects(list);
         })
         .catch(err => console.error('Error fetching projects:', err));
+
+      // Real sprints for this board, so work can be created straight into one.
+      fetch(`${API_BASE_URL}/sprints?department=Marketing`)
+        .then(res => res.json())
+        .then(data => setSprints(Array.isArray(data?.sprints) ? data.sprints : []))
+        .catch(err => console.error('Error fetching sprints:', err));
+
+      // Labels already used on this board, so typing offers real options instead of
+      // letting near-duplicates accumulate.
+      fetch(`${API_BASE_URL}/it-kanban/labels?department=Marketing`)
+        .then(res => res.json())
+        .then(data => setKnownLabels(Array.isArray(data) ? data.map(d => d.label) : []))
+        .catch(err => console.error('Error fetching labels:', err));
 
       // Fetch the real Marketing teams so tickets attach to an actual team, not a placeholder.
       // Falls back to the built-in division list when none are set up yet.
@@ -378,13 +394,11 @@ const MarketingCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId
   const handleAddLabel = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (newLabel.trim() && !formData.labels.includes(newLabel.trim())) {
-        setFormData(prev => ({
-          ...prev,
-          labels: [...prev.labels, newLabel.trim()]
-        }));
-        setNewLabel('');
+      const clean = normalizeLabel(newLabel);
+      if (clean && !formData.labels.includes(clean)) {
+        setFormData(prev => ({ ...prev, labels: [...prev.labels, clean] }));
       }
+      setNewLabel('');
     }
   };
 
@@ -434,7 +448,8 @@ const MarketingCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId
         parent_id: formData.parent?.id || null,
         start_date: formData.startDate || null,
         due_date: formData.dueDate || null,
-        sprint: formData.sprint || null,
+        sprint_id: formData.sprint?.id || null,
+        sprint: formData.sprint?.name || null,
         story_points: formData.storyPoints || null,
         labels: formData.labels || [],
         flagged: formData.flagged || false,
@@ -552,12 +567,41 @@ const MarketingCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId
                     );
                     if (found) matchedTeam = found;
                   }
-                  setFormData(prev => ({ ...prev, space: v, team: matchedTeam }));
+
+                  // ...and that project's sprint. A sprint owns a project, so picking the
+                  // project implies the sprint. Prefer the running one when several match.
+                  let matchedSprint = formData.sprint;
+                  if (v && v.id) {
+                    const owning = sprints.filter(sp => Number(sp.project_id) === Number(v.id));
+                    matchedSprint = owning.find(sp => sp.status === 'Active') || owning[0] || null;
+                  }
+
+                  setFormData(prev => ({ ...prev, space: v, team: matchedTeam, sprint: matchedSprint }));
                 }}
                 placeholder={projects.length === 0 ? 'No Marketing projects available' : 'Select project'}
                 labelRenderer={projectLabel}
                 iconRenderer={(p) => p ? <div className="w-5 h-5 bg-indigo-600 rounded flex items-center justify-center text-white text-xs">{(p.name || '').trim().charAt(0).toUpperCase()}</div> : null}
               />
+            </div>
+
+            {/* Sprint. Choosing a Space fills this in automatically when that project has a
+                sprint; it stays selectable so work can go straight into any sprint, or be
+                left in the Backlog. */}
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-700 mb-1.5">Sprint</label>
+              <SearchableDropdown
+                options={sprints}
+                value={formData.sprint}
+                onSelect={(v) => setFormData(prev => ({ ...prev, sprint: v }))}
+                placeholder={sprints.length === 0 ? 'No sprints yet — goes to Backlog' : 'Backlog'}
+                labelRenderer={(sp) => sp ? `${sp.name}${sp.status === 'Active' ? ' (active)' : ''}` : ''}
+                iconRenderer={(sp) => sp ? <div className="w-5 h-5 bg-emerald-600 rounded flex items-center justify-center text-white text-xs">S</div> : null}
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                {formData.sprint
+                  ? 'This work item will be created inside the sprint.'
+                  : 'Leave empty to create it in the Backlog.'}
+              </p>
             </div>
 
             {/* Work type */}
@@ -775,6 +819,42 @@ const MarketingCreateIssueDrawer = ({ isOpen, onClose, onIssueCreated, projectId
                   className="flex-1 min-w-[100px] text-[13px] outline-none border-none bg-transparent"
                 />
               </div>
+
+              {/* Offering what already exists is what keeps a label set from fragmenting
+                  into near-duplicates. Falls back to starters on an unlabelled board. */}
+              {(() => {
+                const pool = knownLabels.length > 0 ? knownLabels : suggestionsFor('Marketing');
+                const typed = normalizeLabel(newLabel);
+                const options = pool
+                  .filter(l => !formData.labels.includes(l))
+                  .filter(l => !typed || l.includes(typed))
+                  .slice(0, 8);
+                if (options.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <span className="text-[11px] text-gray-400 mr-0.5">
+                      {knownLabels.length > 0 ? 'Used on this board:' : 'Suggestions:'}
+                    </span>
+                    {options.map(l => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, labels: [...prev.labels, l] }));
+                          setNewLabel('');
+                        }}
+                        className="text-[11px] px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+              <p className="text-[11px] text-gray-500 mt-1.5">
+                Group work across projects — the kind of work or the campaign. Not the
+                department or team; those are already fields.
+              </p>
             </div>
 
             {/* Team */}
