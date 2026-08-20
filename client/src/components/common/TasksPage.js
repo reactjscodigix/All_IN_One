@@ -6,7 +6,11 @@ import {
 } from 'lucide-react';
 import ITCreateIssueDrawer from '../it/ITCreateIssueDrawer';
 import ITIssueDetailsPanel from '../it/ITIssueDetailsPanel';
+import BoardTabs from './BoardTabs';
 import { useAuth } from '../../hooks/useAuth';
+
+// Matches the server's definition of finished work.
+const isDoneStatus = (s) => ['DONE', 'COMPLETED', 'CLOSED'].includes(String(s || '').toUpperCase().trim());
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -163,13 +167,19 @@ const TasksPage = ({ department }) => {
         onIssueCreated={fetchTasks}
         onClose={() => setIsCreateDrawerOpen(false)}
       />
-      <div className="flex w-full h-screen bg-white overflow-hidden font-sans">
+      {/* Grows with its content and lets the app shell do the scrolling. Pinning this to
+          h-screen with its own overflow-y-auto put a second scrollbar inside the one the
+          shell already provides. */}
+      <div className="flex w-full min-h-screen bg-white font-sans">
         {/* MAIN CONTENT */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0">
 
+          {/* Keeps List inside the workspace shell, so switching to it from Board or
+              Backlog doesn't feel like leaving the space. */}
+          <BoardTabs department={currentDept} spaceName={`${currentDept} Workspace`} />
 
           {/* CONTENT AREA */}
-          <div className="flex-1 overflow-y-auto flex relative">
+          <div className="flex-1 flex relative">
 
             {/* BOARD & LIST */}
             <div className="flex-1 flex flex-col p-4 pb-0 min-w-0 bg-white">
@@ -323,7 +333,8 @@ const TasksPage = ({ department }) => {
                         return (
                         <tr key={rowKey || i} className={`hover:bg-blue-50 cursor-pointer ${selectedIssue === rowKey ? 'bg-blue-50' : ''}`} onClick={() => setSelectedIssue(rowKey)}>
                           <td className="p-3 text-center text-gray-400 text-xs">{(page - 1) * PAGE_SIZE + i + 1}</td>
-                          <td className="p-3 text-blue-600 font-medium hover:underline">{rowKey}</td>
+                          {/* Jira strikes through the key of a finished work item. */}
+                          <td className={`p-3 text-blue-600 font-medium hover:underline ${isDoneStatus(row.status) ? 'line-through' : ''}`}>{rowKey}</td>
                           <td className="p-3 text-gray-900 font-medium">{row.title}</td>
                           <td className="p-3">
                             <div className="flex items-center gap-1.5 text-gray-600 text-xs">

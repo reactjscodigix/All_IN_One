@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   Search, Bell, HelpCircle, Settings, ChevronDown, ChevronRight,
   Share2, Download, MoreHorizontal, LayoutList, Plus, AlertCircle, ArrowUp, ArrowDown, CheckSquare,
-  Trash2, User, Check, Megaphone, Palette, Video, FileText
+  Trash2, User, Check, Megaphone, Palette, Video, FileText, IterationCw
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import ITCreateIssueDrawer from './ITCreateIssueDrawer';
 import ITIssueDetailsPanel from './ITIssueDetailsPanel';
 import MarketingCreateIssueDrawer from '../marketing/MarketingCreateIssueDrawer';
 import { DEPARTMENT_KANBAN_CONFIG } from '../../config/departmentKanbanConfig';
+import BoardTabs from '../common/BoardTabs';
+import CompleteSprintModal from '../common/CompleteSprintModal';
+import Swal from 'sweetalert2';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -65,6 +68,41 @@ const CheckCircleIcon = ({ size = 16, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
 );
 
+// A DATE column comes back as e.g. 2026-08-31T18:30:00Z, which is 1 Sep in IST. Comparing
+// or printing that as UTC lands a day early, so both helpers work off local date parts.
+const localMidnight = (value) => {
+  // Guard falsy input explicitly: new Date(null) is the epoch, not an invalid date, so a
+  // sprint with no dates would otherwise read "Jan 1, 1970".
+  if (!value) return null;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+};
+
+const formatSprintDate = (value) => {
+  const d = localMidnight(value);
+  if (!d) return 'Not set';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+// Jira counts whole days between today and the end date: 18 Aug → 1 Sep reads "14 days left".
+const sprintTimeLeft = (endDate) => {
+  const end = localMidnight(endDate);
+  if (!end) return 'No end date set';
+  const days = Math.round((end - localMidnight(new Date())) / 86400000);
+  if (days > 1) return `${days} days left`;
+  if (days === 1) return '1 day left';
+  if (days === 0) return 'Ends today';
+  return `Overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'}`;
+};
+
+// Matches the server's definition of finished work.
+const isDoneStatus = (s) => ['DONE', 'COMPLETED', 'CLOSED'].includes(String(s || '').toUpperCase().trim());
+
+// People are stored as display names ("karan gusinge"). Normalising both sides lets the
+// employee board compare identities exactly instead of by substring.
+const normalizePerson = (value) => String(value || '').toLowerCase().replace(/s+/g, ' ').trim();
+
 const getInitials = (name) => {
   if (!name || name === 'Unassigned') return 'U';
   return name
@@ -90,6 +128,7 @@ const ITKanbanPage = ({ department }) => {
   const { user } = useAuth();
   const { designation, username } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const path = window.location.pathname.toLowerCase();
   const currentDept = department || (
@@ -97,6 +136,15 @@ const ITKanbanPage = ({ department }) => {
     path.includes('/seo-gmb') ? 'Marketing' :
     'IT'
   );
+
+  // The active sprint, if any. Drives the Scrum behaviour below: with a sprint running the
+  // board shows only its work items; with none, the board points you at the Backlog.
+  // A board can run several sprints in parallel, so the board shows the union of their work.
+  const [activeSprints, setActiveSprints] = useState([]);
+  const [allSprints, setAllSprints] = useState([]);
+  const [isCompletingSprint, setIsCompletingSprint] = useState(false);
+  const [showSprintDetails, setShowSprintDetails] = useState(false);
+  const workspaceBase = `/${currentDept.toLowerCase() === 'marketing' ? 'marketing' : 'it'}/${designation}/${username}`;
 
   // Board vocabulary (issue types, prefix, spaces) comes from the department config so the
   // Marketing board shows Campaign/Design/Video/Content instead of IT's Story/Bug/Test.
@@ -122,6 +170,19 @@ const ITKanbanPage = ({ department }) => {
       if (user.name) user.name.toLowerCase().split(/\s+/).forEach(t => { if (t.length > 2) terms.add(t); });
     }
     return Array.from(terms);
+  }, [username, user]);
+
+  // Every spelling that means "this is me", compared exactly by the employee board.
+  const myIdentities = React.useMemo(() => {
+    const ids = new Set();
+    const add = (v) => { const n = normalizePerson(v); if (n) ids.add(n); };
+    if (username) add(username);
+    if (user) {
+      add(user.username);
+      add(user.name);
+      add(`${user.first_name || ''} ${user.last_name || ''}`);
+    }
+    return Array.from(ids);
   }, [username, user]);
 
   const [boardData, setBoardData] = useState({
@@ -261,6 +322,16 @@ const ITKanbanPage = ({ department }) => {
   };
 
   const fetchKanbanData = () => {
+    // Which sprints are running determines what the board is allowed to show.
+    fetch(`${API_BASE_URL}/sprints?department=${encodeURIComponent(currentDept)}`)
+      .then(res => res.json())
+      .then(data => {
+        const running = data.activeSprints || (data.activeSprint ? [data.activeSprint] : []);
+        setActiveSprints(running);
+        setAllSprints(data.sprints || []);
+      })
+      .catch(err => console.error('Error fetching active sprints:', err));
+
     fetch(`${API_BASE_URL}/it-kanban/issues?department=${currentDept}`)
       .then(res => res.json())
       .then(data => {
@@ -325,6 +396,13 @@ const ITKanbanPage = ({ department }) => {
       return issue.department !== 'Marketing' && (!issue.issue_key || !issue.issue_key.startsWith('MKT'));
     });
 
+    // Scrum rule: the board shows the running sprints only — all of them, since sprints can
+    // run in parallel. Everything else lives in the Backlog until its sprint is started.
+    if (activeSprints.length > 0) {
+      const runningIds = new Set(activeSprints.map(s => Number(s.id)));
+      filtered = filtered.filter(issue => runningIds.has(Number(issue.sprint_id)));
+    }
+
     if (selectedProjectId !== 'ALL') {
       filtered = filtered.filter(issue => Number(issue.project_id) === Number(selectedProjectId));
     }
@@ -351,7 +429,19 @@ const ITKanbanPage = ({ department }) => {
       return userSearchTerms.some(term => assigneeStr.includes(term) || reporterStr.includes(term));
     };
 
-    if (onlyMyIssues) {
+    // The employee gate is an access boundary, not a convenience filter, so it matches the
+    // person exactly. Substring matching would leak: two staff share the surname "khedekar",
+    // two share "patil", and one has the last name "IT", which appears inside plenty of
+    // unrelated names.
+    const isMine = (issue) =>
+      myIdentities.includes(normalizePerson(issue.assignee)) ||
+      myIdentities.includes(normalizePerson(issue.reporter));
+
+    // Employees get a personal board: their own work from the running sprints, nothing else.
+    // Managers keep the whole board and can narrow it with the "Only My Issues" toggle.
+    if (!isManager) {
+      filtered = filtered.filter(issue => isMine(issue));
+    } else if (onlyMyIssues) {
       filtered = filtered.filter(issue => isUserTask(issue));
     }
     if (searchQuery.trim()) {
@@ -389,7 +479,7 @@ const ITKanbanPage = ({ department }) => {
     });
 
     setBoardData(newBoard);
-  }, [allRawIssues, columnOrder, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignee, onlyMyIssues, searchQuery, username]);
+  }, [allRawIssues, activeSprints, columnOrder, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignee, onlyMyIssues, isManager, userSearchTerms, myIdentities, searchQuery, username]);
 
   // Opens a ticket straight from a URL like ...&/kanban?ticketKey=MKT-104, which is how
   // notifications deep-link. Depends on location.search so clicking a notification while
@@ -442,10 +532,13 @@ const ITKanbanPage = ({ department }) => {
       if (openSubtasksPopover && !e.target.closest('.card-subtask-popover')) {
         setOpenSubtasksPopover(null);
       }
+      if (showSprintDetails && !e.target.closest('.sprint-details-popover')) {
+        setShowSprintDetails(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [activeCreateColumn, activeFilterDropdown, openCardAssigneeDropdown, openSubtasksPopover]);
+  }, [activeCreateColumn, activeFilterDropdown, openCardAssigneeDropdown, openSubtasksPopover, showSprintDetails]);
 
 
   const handleCreateInlineIssue = async (col) => {
@@ -564,7 +657,7 @@ const ITKanbanPage = ({ department }) => {
     });
 
     try {
-      await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, {
+      const res = await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -573,9 +666,48 @@ const ITKanbanPage = ({ department }) => {
         },
         body: JSON.stringify(updates)
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        // The optimistic move already happened, so refetch to put the card back where the
+        // server says it belongs rather than leaving the board showing a change that failed.
+        fetchKanbanData();
+
+        if (data.code === 'SUBTASKS_INCOMPLETE') {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Finish the subtasks first',
+            html: `<div style="text-align:left;font-size:13px">
+                     <p style="margin-bottom:8px">${data.error}</p>
+                     <ul style="margin:0;padding-left:18px">
+                       ${(data.openSubtasks || []).map(t => `<li>${t}</li>`).join('')}
+                     </ul>
+                   </div>`
+          });
+        } else {
+          Swal.fire('Could not save the change', data.error || 'Update rejected by the server', 'error');
+        }
+      }
     } catch (err) {
       console.error('Failed to update issue in DB', err);
+      fetchKanbanData();
     }
+  };
+
+  // Completing from the board reloads the issues too: the finished sprint's work leaves the
+  // board and anything rolled into a still-running sprint stays visible.
+  const handleCompleteSprint = async (sprint, moveTo) => {
+    const res = await fetch(`${API_BASE_URL}/sprints/${sprint.id}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ moveTo })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to complete sprint');
+
+    setIsCompletingSprint(false);
+    fetchKanbanData();
+    return data;
   };
 
   const deleteIssue = async (key) => {
@@ -619,12 +751,11 @@ const ITKanbanPage = ({ department }) => {
         [source.droppableId]: sourceCol,
         [destination.droppableId]: destCol
       });
-      // Persist status change to DB
-      fetch(`${API_BASE_URL}/it-kanban/issues/${removed.key}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: destination.droppableId })
-      }).catch(err => console.error('Failed to update status', err));
+      // Persist through updateIssue rather than a bare fetch: it reports a rejected
+      // transition (such as the unfinished-subtasks rule) and snaps the card back, instead
+      // of leaving it parked in a column the server never accepted. It also attributes the
+      // change to a person in the History tab.
+      updateIssue(removed.key, { status: destination.droppableId });
     } else {
       const col = [...boardData[source.droppableId]];
       const [removed] = col.splice(source.index, 1);
@@ -669,12 +800,16 @@ const ITKanbanPage = ({ department }) => {
             </div>
           </div>
 
+          <BoardTabs department={currentDept} />
+
           <div className="flex-1 overflow-hidden flex relative">
             <div className="flex-1 flex flex-col p-4 pb-0 min-w-0 bg-white">
 
               <div className="flex items-end justify-between mb-6">
                 <div>
-                  <h1 className="text-2xl text-gray-900 mb-4 font-bold">Board</h1>
+                  {/* No sprint name or status here: Jira's board header carries only the
+                      toolbar and the Complete sprint button. Which sprints are running is
+                      the Backlog's job to show. */}
                   <div className="flex items-center gap-2 flex-wrap relative">
                     <div className="relative">
                       <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
@@ -911,6 +1046,52 @@ const ITKanbanPage = ({ department }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {/* Sprint controls are manager-only; employees just work the board. */}
+                  {isManager && activeSprints.length > 0 && (
+                    <>
+                      <button
+                        onClick={() => setIsCompletingSprint(true)}
+                        className="px-4 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      >
+                        Complete sprint
+                      </button>
+
+                      {/* Jira's sprint details popover: what is running, and how long is left. */}
+                      <div className="relative sprint-details-popover">
+                        <button
+                          onClick={() => setShowSprintDetails(!showSprintDetails)}
+                          title="Sprint details"
+                          className={`p-1.5 rounded border transition-colors ${showSprintDetails
+                            ? 'bg-blue-50 border-blue-300 text-blue-700'
+                            : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                        >
+                          <IterationCw size={16} />
+                        </button>
+
+                        {showSprintDetails && (
+                          <div className="absolute right-0 top-full mt-2 w-[350px] bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-5 max-h-[70vh] overflow-y-auto">
+                            {activeSprints.map((s, i) => (
+                              <div key={s.id} className={i > 0 ? 'mt-5 pt-5 border-t border-gray-200' : ''}>
+                                <h4 className="text-[15px] font-semibold text-gray-900">{s.name}</h4>
+                                <p className="text-[14px] text-gray-700 mt-1.5">{sprintTimeLeft(s.end_date)}</p>
+                                {s.goal && <p className="text-[12px] text-gray-500 mt-1.5 italic">{s.goal}</p>}
+                                <div className="grid grid-cols-2 gap-3 mt-3">
+                                  <div>
+                                    <div className="text-[12px] text-gray-500">Start date</div>
+                                    <div className="text-[13px] text-gray-900">{formatSprintDate(s.start_date)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[12px] text-gray-500">End date</div>
+                                    <div className="text-[13px] text-gray-900">{formatSprintDate(s.end_date)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                   <button className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 font-medium"><Share2 size={14} /> Share</button>
                   <button className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 font-medium"><Download size={14} /> Export</button>
                   <button className="text-gray-400 hover:text-gray-600"><MoreHorizontal size={16} /></button>
@@ -919,7 +1100,36 @@ const ITKanbanPage = ({ department }) => {
 
               {/* METRICS ROW */}
 
-              {/* KANBAN BOARD */}
+              {/* KANBAN BOARD.
+                  With no sprint running the board is intentionally empty — work waits in the
+                  Backlog until a sprint is started, which is how a Scrum board behaves. */}
+              {activeSprints.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
+                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                    <LayoutList size={24} className="text-gray-400" />
+                  </div>
+                  {isManager ? (
+                    <>
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">Get started in the backlog</h3>
+                      <p className="text-sm text-gray-500 mb-4">Plan and start a sprint to see work items here.</p>
+                      <button
+                        onClick={() => navigate(`${workspaceBase}/backlog`)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+                      >
+                        Go to Backlog
+                      </button>
+                    </>
+                  ) : (
+                    // Employees cannot open the Backlog, so pointing them there would dead-end.
+                    <>
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">No work items yet</h3>
+                      <p className="text-sm text-gray-500">
+                        Your manager hasn't started a sprint. Work will appear here once it does.
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : (
               <div className=" flex-1 flex flex-col min-h-0">
                 <DragDropContext onDragEnd={onDragEnd}>
                   <Droppable droppableId="all-columns" direction="horizontal" type="column">
@@ -980,7 +1190,8 @@ const ITKanbanPage = ({ department }) => {
                                                 >
                                                   <Trash2 size={13} />
                                                 </button>
-                                                <div className="text-blue-600 text-xs hover:underline mb-1 font-medium cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedIssue(card.key); }}>{card.key}</div>
+                                                {/* Jira strikes through the key of a finished work item. */}
+                                                <div className={`text-blue-600 text-xs hover:underline mb-1 font-medium cursor-pointer ${isDoneStatus(card.status) ? 'line-through' : ''}`} onClick={(e) => { e.stopPropagation(); setSelectedIssue(card.key); }}>{card.key}</div>
                                                 <div className="text-xs text-gray-900 font-medium mb-3 leading-snug cursor-grab active:cursor-grabbing">{card.title}</div>
 
                                                 {/* JIRA INLINE EXPANDABLE SUBTASKS LIST */}
@@ -1466,6 +1677,7 @@ const ITKanbanPage = ({ department }) => {
                   </Droppable>
                 </DragDropContext>
               </div>
+              )}
 
             </div>
 
@@ -1476,6 +1688,14 @@ const ITKanbanPage = ({ department }) => {
               deleteIssue={deleteIssue}
               onClose={() => setSelectedIssue(null)}
               onIssueCreated={fetchKanbanData}
+            />
+
+            <CompleteSprintModal
+              isOpen={isCompletingSprint}
+              sprints={allSprints}
+              initialSprintId={activeSprints[0]?.id}
+              onCancel={() => setIsCompletingSprint(false)}
+              onComplete={handleCompleteSprint}
             />
 
           </div>

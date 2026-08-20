@@ -60,11 +60,15 @@ const AnalyticsPage = () => {
     }
   };
 
-  const getInitials = (name = '') => {
-    const parts = name.split(' ');
+  // Must tolerate null, not just undefined: a follow-up with no executive comes back as
+  // NULL, and a default parameter does not cover that.
+  const getInitials = (name) => {
+    const clean = String(name ?? '').trim();
+    if (!clean) return 'U';
+    const parts = clean.split(/\s+/);
     return parts.length > 1
       ? (parts[0][0] + parts[1][0]).toUpperCase()
-      : (name[0] || 'U').toUpperCase();
+      : clean[0].toUpperCase();
   };
 
   const getAvatarColor = (index) => {
@@ -309,7 +313,7 @@ const AnalyticsPage = () => {
                         <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs  text-gray-600">
                           {getInitials(value)}
                         </div>
-                        <span className="text-xs font-medium text-gray-900">{value}</span>
+                        <span className="text-xs font-medium text-gray-900">{value || 'Unassigned'}</span>
                       </div>
                     )
                   },

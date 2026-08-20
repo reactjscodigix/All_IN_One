@@ -1,6 +1,16 @@
 const OpenAI = require('openai');
 const nodemailer = require('nodemailer');
 
+// Matches the definition of finished work used by sprint completion and the UI.
+const isDoneStatus = (s) => ['DONE', 'COMPLETED', 'CLOSED'].includes(String(s || '').toUpperCase().trim());
+
+// A subtask records completion two ways — a `completed` boolean and a `status` string.
+// Either one counting as done keeps the check honest if only one was written.
+const isSubtaskDone = (s) => {
+  if (!s || typeof s !== 'object') return true; // Malformed entries must not block anyone.
+  return s.completed === true || isDoneStatus(s.status);
+};
+
 module.exports = function setupItKanbanRoutes(app, pool) {
   const db = {
     query: (sql, params) => pool.query(sql, params)
@@ -602,7 +612,9 @@ Acceptance Criteria
         query += ' WHERE i.department = ? OR (i.department IS NULL AND ? = "IT")';
         params.push(department, department);
       }
-      query += ' ORDER BY i.created_at DESC';
+      // Rank first, so the List and Board show the priority order set by dragging in the
+      // Backlog. Unranked rows keep the old newest-first behaviour at the end.
+      query += ' ORDER BY i.rank_order IS NULL, i.rank_order ASC, i.created_at DESC';
 
       const [issues] = await db.query(query, params);
 
@@ -627,7 +639,7 @@ Acceptance Criteria
       const {
         title, type, priority, status, assignee, reporter, team, team_id, project_id,
         description, department, keyPrefix,
-        due_date, start_date, sprint, labels, story_points, flagged, parent_id, linked_issues
+        due_date, start_date, sprint, sprint_id, labels, story_points, flagged, parent_id, linked_issues
       } = req.body;
 
       // Normalise the optional planning fields the create drawers send.
@@ -637,6 +649,14 @@ Acceptance Criteria
 
       const dept = department || 'IT';
       const prefix = keyPrefix || (dept === 'Marketing' ? 'MKT' : 'WR');
+
+      // Created straight into a sprint that belongs to a project? Then it belongs to that
+      // project too, unless the caller named one explicitly.
+      let resolvedProjectId = project_id || null;
+      if (!resolvedProjectId && sprint_id) {
+        const [[s]] = await db.query('SELECT project_id FROM sprints WHERE id = ?', [sprint_id]);
+        if (s && s.project_id != null) resolvedProjectId = s.project_id;
+      }
 
       // Generate a new key (e.g., MKT-XXX, DES-XXX, WR-XXX)
       const [maxKeyResult] = await db.query('SELECT issue_key FROM it_kanban_issues WHERE issue_key LIKE ? ORDER BY id DESC LIMIT 1', [`${prefix}-%`]);
@@ -650,8 +670,8 @@ Acceptance Criteria
       const newKey = `${prefix}-${nextNum}`;
 
       const [result] = await db.query(`
-        INSERT INTO it_kanban_issues (issue_key, title, type, priority, status, assignee, reporter, team, team_id, project_id, description, department, due_date, start_date, sprint, labels, story_points, flagged, parent_id, subtasks, linked_issues, comments, progress, original_estimate, remaining_estimate, time_spent, components, environment, vulnerability)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '0h', '0h', '0h', '', '', '')
+        INSERT INTO it_kanban_issues (issue_key, title, type, priority, status, assignee, reporter, team, team_id, project_id, description, department, due_date, start_date, sprint, sprint_id, labels, story_points, flagged, parent_id, subtasks, linked_issues, comments, progress, original_estimate, remaining_estimate, time_spent, components, environment, vulnerability)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '0h', '0h', '0h', '', '', '')
       `, [
         newKey,
         title,
@@ -662,12 +682,14 @@ Acceptance Criteria
         reporter || 'Unassigned',
         team || 'None',
         team_id || null,
-        project_id || null,
+        resolvedProjectId,
         description || '',
         dept,
         toDate(due_date),
         toDate(start_date),
         sprint || null,
+        // Lets the Backlog create work straight into a sprint section; NULL means backlog.
+        sprint_id == null || sprint_id === '' ? null : Number(sprint_id),
         labelsJson,
         story_points || null,
         flagged ? 1 : 0,
@@ -758,11 +780,55 @@ Acceptance Criteria
         return res.status(400).json({ error: 'No fields to update' });
       }
 
+      // Jira's "all sub-tasks must be resolved" workflow validator. A parent is the unit of
+      // commitment, so it must not reach Done while its checklist is unfinished — otherwise
+      // a sprint closes with the parent counted complete and open subtasks riding along.
+      // Enforced here rather than in the UI because every surface (board drag, backlog
+      // dropdown, details panel) writes through this one endpoint.
+      if (updates.status && isDoneStatus(updates.status)) {
+        // Use the subtasks from this same request when it is also changing them, so a
+        // combined update is validated against what is actually being saved.
+        let subtasks = updates.subtasks;
+        if (subtasks === undefined) {
+          const [[row]] = await db.query('SELECT subtasks FROM it_kanban_issues WHERE issue_key = ?', [key]);
+          subtasks = row ? row.subtasks : [];
+        }
+        if (typeof subtasks === 'string') {
+          try { subtasks = JSON.parse(subtasks); } catch (e) { subtasks = []; }
+        }
+        const open = (Array.isArray(subtasks) ? subtasks : []).filter(s => !isSubtaskDone(s));
+
+        if (open.length > 0) {
+          return res.status(409).json({
+            error: `This work item has ${open.length} unfinished subtask${open.length === 1 ? '' : 's'}. Complete ${open.length === 1 ? 'it' : 'them'} before marking the parent Done.`,
+            code: 'SUBTASKS_INCOMPLETE',
+            openSubtasks: open.map(s => s.title).filter(Boolean)
+          });
+        }
+      }
+
+      // A work item's project follows its sprint, matching what the Backlog's move and drag
+      // do: joining a project-owning sprint adopts that project, and returning to the
+      // Backlog (sprint_id null) drops it, because backlog work belongs to no project.
+      if (Object.prototype.hasOwnProperty.call(updates, 'sprint_id') && updates.project_id === undefined) {
+        const joining = updates.sprint_id != null && updates.sprint_id !== '';
+        if (joining) {
+          const [[s]] = await db.query('SELECT project_id FROM sprints WHERE id = ?', [updates.sprint_id]);
+          if (s && s.project_id != null) updates.project_id = s.project_id;
+        } else {
+          updates.project_id = null;
+        }
+      }
+
       const updateFields = [];
       const updateValues = [];
 
       // Only allow updating these specific fields
-      const allowedFields = ['title', 'description', 'type', 'priority', 'status', 'assignee', 'reporter', 'team', 'team_id', 'project_id', 'sprint', 'due_date', 'start_date', 'progress', 'original_estimate', 'remaining_estimate', 'time_spent', 'components', 'environment', 'vulnerability'];
+      // 'sprint' is a display label; 'sprint_id' is the real membership the board and the
+      // backlog filter on, so the details panel has to be able to write it.
+      // 'flagged' and 'story_points' are written by the backlog row menu, which mirrors
+      // Jira's Add flag and Story point estimate actions.
+      const allowedFields = ['title', 'description', 'type', 'priority', 'status', 'assignee', 'reporter', 'team', 'team_id', 'project_id', 'sprint', 'sprint_id', 'due_date', 'start_date', 'flagged', 'story_points', 'progress', 'original_estimate', 'remaining_estimate', 'time_spent', 'components', 'environment', 'vulnerability'];
       const jsonFields = ['subtasks', 'linked_issues', 'comments'];
 
       for (const [field, value] of Object.entries(updates)) {

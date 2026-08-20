@@ -337,6 +337,7 @@ const setupDepartmentDashboardRoutes = require('./routes/department-dashboard-ro
 const setupMarketingITWorkflowRoutes = require('./routes/marketing-it-workflow-routes');
 const setupFollowupsRoutes = require('./routes/followups-routes');
 const setupNotificationsRoutes = require('./routes/notifications-routes');
+const setupSprintsRoutes = require('./routes/sprints-routes');
 const setupGithubRoutes = require('./routes/github-routes');
 
 setupEntitiesRoutes(app, pool);
@@ -357,6 +358,7 @@ setupDepartmentDashboardRoutes(app, pool);
 setupMarketingITWorkflowRoutes(app, pool);
 setupFollowupsRoutes(app, pool);
 setupNotificationsRoutes(app, pool);
+setupSprintsRoutes(app, pool);
 setupGithubRoutes(app, pool);
 
 const testerDashboardRoutes = require('./routes/tester-dashboard-routes');

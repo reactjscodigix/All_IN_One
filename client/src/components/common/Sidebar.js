@@ -6,7 +6,7 @@ import {
   MessageSquare, HelpCircle, Lock, Layout, TrendingUp, Search,
   Database, Code, Terminal, Palette, Megaphone, Receipt, Wallet,
   PieChart, Activity, CheckCircle, AlertCircle, Calendar, FileCheck, Layers,
-  ClipboardList, Target, Percent, Bell, UserCircle, FileStack,
+  ClipboardList, Target, Percent, Bell, UserCircle, FileStack, Inbox,
   Workflow, Zap, ShieldCheck, BarChart, HardDrive, Cpu, Bug, GitBranch,
   Rocket, Gauge, AlertTriangle, FileBarChart, CreditCard, Banknote,
   Scale, History, Eye, SearchCode, Star, Globe, Link, Image, Map, BookOpen,
@@ -104,7 +104,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
         'notes', 'file-manager', 'social-feed', 'seo-gmb', 'ppc-ads',
         'graphics-video', 'content-calendar', 'blogs-calendar', 'marketing-drive',
         'it-inventory', 'it-ticketing', 'seo-', 'gmb-', 'teams',
-        'documents', 'projects', 'leads', 'bugs', 'test-cases', 'repositories'
+        'documents', 'projects', 'leads', 'bugs', 'test-cases', 'repositories', 'backlog'
       ];
 
       const userNameValue = user?.username || user?.first_name || user?.name || 'user';
@@ -223,6 +223,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       <SubmenuItem label="Dashboard" page="dashboard" icon={Layout} />
       <SubmenuItem label="Daily Task" page="tasks" icon={ClipboardList} />
       <SubmenuItem label="Kanban Board" page="kanban" icon={Layers} />
+      <SubmenuItem label="Backlog" page="backlog" icon={Inbox} />
       <SubmenuItem label="Calendar" page="calendar" icon={Calendar} />
     </>
   );

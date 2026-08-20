@@ -1317,15 +1317,15 @@ module.exports = function setupFollowupsRoutes(app, pool) {
   app.get('/api/followups/analytics/effectiveness', async (req, res) => {
     try {
       const [stats] = await pool.query(`
-        SELECT 
-          assigned_to_name as executive,
+        SELECT
+          COALESCE(NULLIF(TRIM(assigned_to_name), ''), 'Unassigned') as executive,
           COUNT(*) as total_meetings,
           SUM(CASE WHEN ai_outcome_classification = 'Useful' THEN 1 ELSE 0 END) as successful_meetings,
           SUM(CASE WHEN outcome = 'Converted to Deal' THEN 1 ELSE 0 END) as conversions,
           AVG(CASE WHEN call_duration REGEXP '^[0-9]+$' THEN CAST(call_duration AS UNSIGNED) ELSE 0 END) as avg_duration
         FROM followups
         WHERE status = 'Completed'
-        GROUP BY assigned_to_name
+        GROUP BY executive
       `);
       res.json(stats);
     } catch (error) {

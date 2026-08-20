@@ -96,6 +96,7 @@ import CommissionPage from './components/sales/CommissionPage';
 import ApprovalsPage from './components/sales/ApprovalsPage';
 import SalesReportsPage from './components/sales/SalesReportsPage';
 import NotificationsPage from './components/common/NotificationsPage';
+import BacklogPage from './components/common/BacklogPage';
 import ProfileSettingsPage from './components/common/ProfileSettingsPage';
 import DepartmentsPage from './components/common/DepartmentsPage';
 import AutomationRulesPage from './components/common/AutomationRulesPage';
@@ -475,6 +476,7 @@ function AppContent() {
         <Route path="/marketing/seo-gmb/:username/dashboard" element={<SeoGmbPage />} />
         <Route path="/marketing/:designation/:username/dashboard" element={<MarketingDashboard />} />
         <Route path="/marketing/:designation/:username/kanban" element={<MarketingKanbanPage />} />
+        <Route path="/marketing/:designation/:username/backlog" element={<BacklogPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/list" element={<CrmProjectsPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/projects" element={<CrmProjectsPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/tasks" element={<TasksPage department="Marketing" />} />
@@ -521,6 +523,7 @@ function AppContent() {
         <Route path="/it/:designation/:username/projects" element={<CrmProjectsPage department="IT" />} />
         <Route path="/it/:designation/:username/tasks" element={<ITTasksPage />} />
         <Route path="/it/:designation/:username/kanban" element={<ITKanbanPage />} />
+        <Route path="/it/:designation/:username/backlog" element={<BacklogPage department="IT" />} />
         <Route path="/it/:designation/:username/bugs" element={<ITBugTrackingPage />} />
         <Route path="/it/:designation/:username/bugs/:subpage" element={<ITBugTrackingPage />} />
         <Route path="/it/:designation/:username/test-cases" element={<ITTestCasesPage />} />

@@ -43,15 +43,18 @@ const ITIssueDetailsSidebar = ({
   setStartDate,
   priority,
   setPriority,
-  sprint,
-  setSprint,
+  sprintId,
+  setSprintId,
+  projectId,
+  setProjectId,
+  projectsList,
   originalEstimate,
   setOriginalEstimate,
   remainingEstimate,
   setRemainingEstimate,
   usersList,
   teamsList,
-  SPRINTS,
+  sprintsList,
   handleUpdate,
   handleAssignToMe,
   currentSubtask,
@@ -211,6 +214,24 @@ const ITIssueDetailsSidebar = ({
 
         {!collapsedSections.details && (
           <div className="p-3.5 space-y-3.5 text-xs bg-white">
+            {/* Read-only. A work item's project follows the sprint it belongs to, which is
+                decided in the Backlog (move/drag) or when the sprint is created — so it is
+                shown here for context but not editable. */}
+            <div className="grid grid-cols-3 items-center min-h-[30px]">
+              <span className="text-gray-500 font-medium">Project</span>
+              <div className="col-span-2">
+                {(() => {
+                  const project = projectsList.find(p => String(p.id) === String(projectId));
+                  if (!projectId) return <span className="text-gray-400 font-medium">None</span>;
+                  return (
+                    <span className="text-gray-800 font-medium">
+                      {project ? project.name : `Project #${projectId}`}
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+
             {/* Assignee */}
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Assignee</span>
@@ -430,30 +451,23 @@ const ITIssueDetailsSidebar = ({
                 </div>
               </div>
             )}
-
-            {/* Sprint Selection (Real Jira Sprint Management) */}
+            {/* Read-only. Sprint membership is changed in the Backlog — by moving or
+                dragging the item — not from here. */}
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Sprint</span>
               <div className="col-span-2">
-                <select
-                  value={sprint || 'Sprint 1'}
-                  onChange={(e) => {
-                    setSprint(e.target.value);
-                    handleUpdate({ sprint: e.target.value });
-                  }}
-                  className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer"
-                >
-                  {(() => {
-                    const base = (SPRINTS && SPRINTS.length > 0) ? SPRINTS : ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog'];
-                    // Include whatever is stored on the issue. Without this a value like
-                    // "Marketing Sprint 1" isn't in the list, so the select falls back to
-                    // the first option — misreporting the sprint and overwriting it on save.
-                    const options = sprint && !base.includes(sprint) ? [sprint, ...base] : base;
-                    return options.map(s => <option key={s} value={s}>{s}</option>);
-                  })()}
-                </select>
+                {(() => {
+                  const sprint = sprintsList.find(x => String(x.id) === String(sprintId));
+                  if (!sprintId || !sprint) return <span className="text-gray-400 font-medium">Backlog</span>;
+                  return (
+                    <span className="text-gray-800 font-medium">
+                      {sprint.name}{sprint.status === 'Active' ? ' (active)' : ''}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
+
           </div>
         )}
       </div>

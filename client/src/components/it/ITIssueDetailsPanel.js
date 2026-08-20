@@ -39,7 +39,6 @@ const getInitials = (name) => {
   return name.slice(0, 2).toUpperCase();
 };
 
-const SPRINTS = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog'];
 
 // Formats a stored date for <input type="date">, which requires YYYY-MM-DD.
 // Uses local date parts on purpose: a DATE column serialises as UTC (e.g.
@@ -81,7 +80,11 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
   const [team, setTeam] = useState('IT Team');
   const [dueDate, setDueDate] = useState('');
   const [startDate, setStartDate] = useState('');
-  const [sprint, setSprint] = useState('Sprint 1');
+  // Sprint membership is the id; the name is only what the field displays.
+  const [sprintId, setSprintId] = useState('');
+  const [sprintsList, setSprintsList] = useState([]);
+  const [projectId, setProjectId] = useState('');
+  const [projectsList, setProjectsList] = useState([]);
   const [originalEstimate, setOriginalEstimate] = useState('0h');
   const [remainingEstimate, setRemainingEstimate] = useState('0h');
 
@@ -167,6 +170,22 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
       .then(res => res.json())
       .then(data => Array.isArray(data) && setTeamsList(data))
       .catch(console.error);
+
+    // Real sprints for this board, so the Sprint field offers what actually exists rather
+    // than a hardcoded "Sprint 1/2/3" list.
+    fetch(`${API_BASE_URL}/sprints?department=${encodeURIComponent(issueDepartment || 'IT')}`)
+      .then(res => res.json())
+      .then(data => setSprintsList(Array.isArray(data?.sprints) ? data.sprints : []))
+      .catch(err => console.error('Error fetching sprints:', err));
+
+    // Which project this work belongs to — without it the panel gives no clue.
+    fetch(`${API_BASE_URL}/projects?department=${encodeURIComponent(issueDepartment || 'IT')}`)
+      .then(res => res.json())
+      .then(data => {
+        const list = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+        setProjectsList(list);
+      })
+      .catch(err => console.error('Error fetching projects:', err));
   }, [issueDepartment]);
 
   useEffect(() => {
@@ -216,7 +235,8 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
     // here would show the previous day.
     setDueDate(toDateInputValue(issue.due_date));
     setStartDate(toDateInputValue(issue.start_date));
-    setSprint(issue.sprint || 'Sprint 1');
+    setSprintId(issue.sprint_id == null ? '' : String(issue.sprint_id));
+    setProjectId(issue.project_id == null ? '' : String(issue.project_id));
 
     // Load stored comments so they survive closing and reopening the issue.
     let rawComments = issue.comments;
@@ -561,6 +581,10 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
       >
         {/* HEADER BAR */}
         <ITIssueHeaderBar
+          projectName={
+            projectsList.find(p => String(p.id) === String(projectId))?.name
+            || (projectId ? `Project #${projectId}` : '')
+          }
           issue={issue}
           type={currentSubtask ? 'Task' : type}
           TYPE_ICONS={TYPE_ICONS}
@@ -796,15 +820,18 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
             setStartDate={setStartDate}
             priority={priority}
             setPriority={setPriority}
-            sprint={sprint}
-            setSprint={setSprint}
+            sprintId={sprintId}
+            setSprintId={setSprintId}
+            projectId={projectId}
+            setProjectId={setProjectId}
+            projectsList={projectsList}
             originalEstimate={originalEstimate}
             setOriginalEstimate={setOriginalEstimate}
             remainingEstimate={remainingEstimate}
             setRemainingEstimate={setRemainingEstimate}
             usersList={usersList}
             teamsList={teamsList}
-            SPRINTS={SPRINTS}
+            sprintsList={sprintsList}
             handleUpdate={handleUpdate}
             handleAssignToMe={handleAssignToMe}
             currentSubtask={currentSubtask}

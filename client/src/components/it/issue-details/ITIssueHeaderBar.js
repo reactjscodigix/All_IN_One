@@ -1,8 +1,11 @@
 import React from 'react';
 import {
   Edit3, Eye, Share2, MoreHorizontal, Lock, Paperclip,
-  Minimize2, Maximize2, X
+  Minimize2, Maximize2, X, Folder
 } from 'lucide-react';
+
+// Matches the server's definition of finished work.
+const isDoneStatus = (s) => ['DONE', 'COMPLETED', 'CLOSED'].includes(String(s || '').toUpperCase().trim());
 
 const ITIssueHeaderBar = ({
   issue,
@@ -18,12 +21,24 @@ const ITIssueHeaderBar = ({
   openDropdown,
   toggleDropdown,
   currentSubtask,
-  onBackToParent
+  onBackToParent,
+  projectName
 }) => {
   return (
     <div className="h-14 border-b border-gray-200 px-5 flex items-center justify-between bg-white shrink-0">
       {/* Breadcrumb Info */}
-      <div className="flex items-center gap-1 text-sm text-gray-500 font-medium">
+      <div className="flex items-center gap-1 text-sm text-gray-500 font-medium min-w-0">
+        {/* The project leads the breadcrumb, so which project the work belongs to is visible
+            without scrolling the Details list down to the Project field. */}
+        {projectName && (
+          <>
+            <div className="flex items-center gap-1 py-1 px-1.5 text-gray-700 font-semibold truncate max-w-[220px]" title={projectName}>
+              <Folder size={12} className="text-gray-400 shrink-0" />
+              <span className="truncate">{projectName}</span>
+            </div>
+            <span className="text-gray-300">/</span>
+          </>
+        )}
         {currentSubtask ? (
           <>
             <button
@@ -54,7 +69,10 @@ const ITIssueHeaderBar = ({
             <span className="text-gray-300">/</span>
             <div className="flex items-center gap-1 py-1 px-1.5 text-blue-600 font-semibold hover:underline cursor-pointer">
               {TYPE_ICONS[type] || TYPE_ICONS.Task}
-              <span>{issue?.issue_key || issue?.key}</span>
+              {/* Jira strikes through the key of a finished work item. */}
+              <span className={isDoneStatus(issue?.status) ? 'line-through' : ''}>
+                {issue?.issue_key || issue?.key}
+              </span>
             </div>
           </>
         )}
