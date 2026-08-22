@@ -1225,8 +1225,8 @@ module.exports = function(app, pool) {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS?.trim() // Ensure no accidental spaces
+          user: process.env.EMAIL_USER || process.env.SMTP_USER,
+          pass: (process.env.EMAIL_PASS || process.env.SMTP_PASS)?.trim() // Ensure no accidental spaces
         }
       });
 
@@ -1298,7 +1298,7 @@ module.exports = function(app, pool) {
       // 5. Send Email
       console.log(`📧 Attempting to send email to: ${targetEmail}`);
       const info = await transporter.sendMail({
-        from: `"Quotation System" <${process.env.SMTP_USER}>`,
+        from: `"Quotation System" <${process.env.EMAIL_FROM || process.env.EMAIL_USER || process.env.SMTP_USER}>`,
         to: targetEmail,
         subject: `Quotation ${est.estimation_number} - ${est.client_name || est.lead_name || ''}`,
         html: emailHtml

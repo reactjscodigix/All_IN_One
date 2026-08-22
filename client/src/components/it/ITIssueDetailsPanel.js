@@ -3,6 +3,7 @@ import Swal from 'sweetalert2';
 import { ArrowUp, ArrowDown, CheckSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../config/environment';
+import { DEPARTMENT_KANBAN_CONFIG } from '../../config/departmentKanbanConfig';
 import { uploadDescriptionFile, formatFileSize } from '../../utils/descriptionFiles';
 
 import ITIssueHeaderBar from './issue-details/ITIssueHeaderBar';
@@ -85,6 +86,7 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
   const [sprintsList, setSprintsList] = useState([]);
   const [projectId, setProjectId] = useState('');
   const [projectsList, setProjectsList] = useState([]);
+  const [issuesList, setIssuesList] = useState([]);
   const [originalEstimate, setOriginalEstimate] = useState('0h');
   const [remainingEstimate, setRemainingEstimate] = useState('0h');
 
@@ -166,9 +168,20 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
         setUsersList(DEFAULT_USERS);
       });
 
+    // Only this issue's own department's teams. The endpoint returns every team with a
+    // department_name, so without filtering a Marketing ticket could be handed to an IT team.
     fetch(`${API_BASE_URL}/teams`)
       .then(res => res.json())
-      .then(data => Array.isArray(data) && setTeamsList(data))
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        const target = String(issueDepartment || '').replace(/\s*department\s*$/i, '').trim().toLowerCase();
+        const ofDept = data.filter(t => {
+          const dept = String(t.department_name || '').replace(/\s*department\s*$/i, '').trim().toLowerCase();
+          // Teams with no department stay visible rather than becoming unreachable.
+          return !target || !dept || dept === target;
+        });
+        setTeamsList(ofDept);
+      })
       .catch(console.error);
 
     // Real sprints for this board, so the Sprint field offers what actually exists rather
@@ -177,6 +190,12 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
       .then(res => res.json())
       .then(data => setSprintsList(Array.isArray(data?.sprints) ? data.sprints : []))
       .catch(err => console.error('Error fetching sprints:', err));
+
+    // Candidate parents: other work items on the same board.
+    fetch(`${API_BASE_URL}/it-kanban/issues?department=${encodeURIComponent(issueDepartment || 'IT')}`)
+      .then(res => res.json())
+      .then(data => setIssuesList(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Error fetching issues for parent picker:', err));
 
     // Which project this work belongs to — without it the panel gives no clue.
     fetch(`${API_BASE_URL}/projects?department=${encodeURIComponent(issueDepartment || 'IT')}`)
@@ -245,6 +264,15 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
     }
     setComments(Array.isArray(rawComments) ? rawComments : []);
   }, [issue]);
+
+  // Work types come from the issue's own department, so a Marketing ticket never offers
+  // IT types and the other way round.
+  const typeOptions = (DEPARTMENT_KANBAN_CONFIG[issueDepartment]?.issueTypes
+    || DEPARTMENT_KANBAN_CONFIG.IT.issueTypes).map(t => t.name);
+
+  // Git branches, pull requests and build automation only mean something for engineering.
+  const showDevTools = String(issueDepartment || '')
+    .replace(/\s*department\s*$/i, '').trim().toLowerCase() === 'it';
 
   const issueKey = issue?.issue_key || issue?.key;
 
@@ -825,6 +853,9 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
             projectId={projectId}
             setProjectId={setProjectId}
             projectsList={projectsList}
+            typeOptions={typeOptions}
+            showDevTools={showDevTools}
+            issuesList={issuesList}
             originalEstimate={originalEstimate}
             setOriginalEstimate={setOriginalEstimate}
             remainingEstimate={remainingEstimate}

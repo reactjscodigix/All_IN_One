@@ -25,9 +25,10 @@ const BoardTabs = ({ department, spaceName }) => {
     // Sprint planning is a manager activity, so employees get no Backlog tab.
     { key: 'backlog', label: 'Backlog', icon: Rows3, hidden: !canPlanSprints },
     { key: 'projects', label: 'Projects', icon: Folder },
-    { key: 'calendar', label: 'Calendar', icon: Calendar },
-    // Marketing reports live under analytics; IT has its own reports page.
-    { key: isMarketing ? 'analytics' : 'reports', label: 'Reports', icon: BarChart2 }
+    // Planning views are for managers; an employee works from the Board and List.
+    { key: 'calendar', label: 'Calendar', icon: Calendar, hidden: !canPlanSprints },
+    // Both departments now share the workload report at /reports.
+    { key: 'reports', label: 'Reports', icon: BarChart2 }
   ].filter(t => !t.hidden);
 
   const current = location.pathname.split('/').filter(Boolean).pop();

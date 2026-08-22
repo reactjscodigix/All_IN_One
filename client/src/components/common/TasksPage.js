@@ -367,7 +367,13 @@ const TasksPage = ({ department }) => {
                               ))}
                             </div>
                           </td>
-                          <td className="p-3 text-gray-600 text-xs">{row.sprint || '—'}</td>
+                          {/* The joined sprint, not the stored text label — the label is
+                              written once and goes stale as soon as the item moves. */}
+                          <td className="p-3 text-gray-600 text-xs">
+                            {row.sprint_name
+                              ? <>{row.sprint_name}{row.sprint_status === 'Active' && <span className="ml-1 text-[10px] text-emerald-600 font-medium">active</span>}</>
+                              : <span className="text-gray-400">Backlog</span>}
+                          </td>
                           <td className="p-3 text-gray-500 text-xs">{due}</td>
                         </tr>
                         );

@@ -167,8 +167,42 @@ const Header = ({ toggleSidebar }) => {
     }
   };
 
+  const closeAllPanels = () => {
+    setShowQuickAccess(false);
+    setShowHelp(false);
+    setShowMessages(false);
+    setShowNotifications(false);
+    setShowProfile(false);
+  };
+
+  /**
+   * Header panels are mutually exclusive. They are all absolutely positioned in the same
+   * corner, so two open at once overlap and the one behind shows through as a blank area
+   * inside the other.
+   */
+  const togglePanel = (isOpen, setOpen, onOpen) => {
+    const opening = !isOpen;
+    closeAllPanels();
+    setOpen(opening);
+    if (opening && onOpen) onOpen();
+  };
+
+  const anyPanelOpen = showQuickAccess || showHelp || showMessages || showNotifications || showProfile;
+
+  // Clicking anywhere else closes them, so one can't be left open behind another.
+  useEffect(() => {
+    if (!anyPanelOpen) return;
+    const onDocClick = (e) => {
+      if (e.target.closest('.dropdown-menu') || e.target.closest('.header-dropdown-trigger')) return;
+      closeAllPanels();
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [anyPanelOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleOpenNotifications = () => {
     const opening = !showNotifications;
+    closeAllPanels();
     setShowNotifications(opening);
     // Refresh on open. Deliberately does NOT mark everything read — that's an explicit
     // action ("Mark all read") or happens per item when clicked, as in Jira.
@@ -176,7 +210,9 @@ const Header = ({ toggleSidebar }) => {
   };
 
   const handleOpenMessages = () => {
-    setShowMessages(!showMessages);
+    const opening = !showMessages;
+    closeAllPanels();
+    setShowMessages(opening);
     if (!showMessages) {
       setMessagesData(prev => prev.map(m => ({ ...m, read: true })));
     }
@@ -194,8 +230,11 @@ const Header = ({ toggleSidebar }) => {
     { label: 'Analytics', desc: 'Analytics', path: `/analytics` },
   ];
 
+  // z-40 keeps the header above page content. The workspace tab strip is also sticky, and
+  // at an equal z-index it painted over this header's dropdowns just by coming later in
+  // the DOM — which clipped the top of the profile card on those pages.
   return (
-    <header className="bg-white border-b border-border-light sticky top-0 z-20  transition-smooth">
+    <header className="bg-white border-b border-border-light sticky top-0 z-40 transition-smooth">
       <div className="px-2 sm:px-6 lg:px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Left: Menu Toggle & Search */}
@@ -241,8 +280,8 @@ const Header = ({ toggleSidebar }) => {
             {/* Quick Access Menu */}
             <div className="relative">
               <button
-                onClick={() => setShowQuickAccess(!showQuickAccess)}
-                className="icon-btn p-2 hover:bg-teal-100 rounded text-teal-600 active:scale-95 transition-all"
+                onClick={() => togglePanel(showQuickAccess, setShowQuickAccess)}
+                className="header-dropdown-trigger icon-btn p-2 hover:bg-teal-100 rounded text-teal-600 active:scale-95 transition-all"
                 title="Quick Access"
               >
                 <Grid size={20} />
@@ -272,8 +311,8 @@ const Header = ({ toggleSidebar }) => {
             {/* Help */}
             <div className="relative">
               <button
-                onClick={() => setShowHelp(!showHelp)}
-                className="icon-btn p-2 hover:bg-purple-100 rounded text-purple-600 active:scale-95 transition-all"
+                onClick={() => togglePanel(showHelp, setShowHelp)}
+                className="header-dropdown-trigger icon-btn p-2 hover:bg-purple-100 rounded text-purple-600 active:scale-95 transition-all"
                 title="Help"
               >
                 <HelpCircle size={20} />
@@ -300,7 +339,7 @@ const Header = ({ toggleSidebar }) => {
             <div className="relative">
               <button
                 onClick={handleOpenMessages}
-                className="icon-btn relative p-2 hover:bg-gray-100 rounded text-gray-600 active:scale-95 transition-all"
+                className="header-dropdown-trigger icon-btn relative p-2 hover:bg-gray-100 rounded text-gray-600 active:scale-95 transition-all"
                 title="Messages"
               >
                 <MessageSquare size={20} />
@@ -359,7 +398,7 @@ const Header = ({ toggleSidebar }) => {
             <div className="relative">
               <button
                 onClick={handleOpenNotifications}
-                className="icon-btn relative p-2 hover:bg-gray-100 rounded text-gray-600 active:scale-95 transition-all"
+                className="header-dropdown-trigger icon-btn relative p-2 hover:bg-gray-100 rounded text-gray-600 active:scale-95 transition-all"
                 title="Notifications"
               >
                 <Bell size={20} />
@@ -446,8 +485,8 @@ const Header = ({ toggleSidebar }) => {
             {/* Profile Menu */}
             <div className="relative">
               <button
-                onClick={() => setShowProfile(!showProfile)}
-                className="flex items-center p-1 hover:bg-gray-100 rounded transition-smooth active:scale-95"
+                onClick={() => togglePanel(showProfile, setShowProfile)}
+                className="header-dropdown-trigger flex items-center p-1 hover:bg-gray-100 rounded transition-smooth active:scale-95"
                 title="Profile"
               >
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-300 to-pink-500 flex items-center justify-center text-white text-xs  border-2 border-green-400 hover-lift">

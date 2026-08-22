@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -142,6 +143,41 @@ authRouter.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error.message);
     res.status(500).json({ error: 'Failed to login', details: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+authRouter.post('/sso-verify', async (req, res) => {
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Token required' });
+  }
+
+  let connection;
+  try {
+    const secretKey = process.env.SSO_SECRET_KEY || 'hr-flow-plus-super-secret-key-2024';
+    const decoded = jwt.verify(token, secretKey);
+    const userEmail = decoded.email;
+
+    connection = await pool.getConnection();
+
+    const [users] = await connection.query(
+      'SELECT u.*, r.name as role_name FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.email = ?',
+      [userEmail]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({ success: false, message: 'User not found in CRM' });
+    }
+
+    const user = users[0];
+    const { password: _, ...userWithoutPassword } = user;
+
+    res.json({ success: true, user: userWithoutPassword });
+  } catch (error) {
+    console.error('SSO verify error:', error.message);
+    res.status(401).json({ success: false, message: 'Invalid SSO Token' });
   } finally {
     if (connection) connection.release();
   }
@@ -338,6 +374,7 @@ const setupMarketingITWorkflowRoutes = require('./routes/marketing-it-workflow-r
 const setupFollowupsRoutes = require('./routes/followups-routes');
 const setupNotificationsRoutes = require('./routes/notifications-routes');
 const setupSprintsRoutes = require('./routes/sprints-routes');
+const setupImportRoutes = require('./routes/import-routes');
 const setupGithubRoutes = require('./routes/github-routes');
 
 setupEntitiesRoutes(app, pool);
@@ -359,6 +396,7 @@ setupMarketingITWorkflowRoutes(app, pool);
 setupFollowupsRoutes(app, pool);
 setupNotificationsRoutes(app, pool);
 setupSprintsRoutes(app, pool);
+setupImportRoutes(app, pool);
 setupGithubRoutes(app, pool);
 
 const testerDashboardRoutes = require('./routes/tester-dashboard-routes');

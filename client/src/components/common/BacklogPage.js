@@ -13,6 +13,7 @@ import BoardTabs from './BoardTabs';
 import StartSprintModal from './StartSprintModal';
 import CreateSprintModal from './CreateSprintModal';
 import CompleteSprintModal from './CompleteSprintModal';
+import ImportCalendarModal from './ImportCalendarModal';
 import ITIssueDetailsPanel from '../it/ITIssueDetailsPanel';
 import Swal from 'sweetalert2';
 
@@ -66,6 +67,17 @@ const formatDate = (v) => {
   const d = new Date(v);
   if (isNaN(d.getTime())) return null;
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+};
+
+// Compared as calendar days in local time: a DATE column comes back as e.g.
+// 2026-08-04T18:30:00Z, which is 5 Aug in IST, so a UTC comparison would call it a day early.
+const isPastDate = (v) => {
+  if (!v) return false;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return false;
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const now = new Date();
+  return day < new Date(now.getFullYear(), now.getMonth(), now.getDate());
 };
 
 /**
@@ -340,6 +352,28 @@ const WorkItemRow = ({ item, index, sprints, currentSprintId, users, currentUser
       </span>
       <span className="text-xs text-gray-800 flex-1 truncate group-hover:underline">{item.title}</span>
 
+      {/* Due date, or the start date when only that is set. Overdue work is called out,
+          but only while it is still unfinished — a late-finished item is just done. */}
+      {(() => {
+        const value = item.due_date || item.start_date;
+        const text = formatDate(value);
+        if (!text) return null;
+        const isDue = !!item.due_date;
+        const overdue = isDue && !isDoneStatus(item.status) && isPastDate(value);
+        return (
+          <span
+            title={`${isDue ? 'Due' : 'Starts'} ${text}${overdue ? ' — overdue' : ''}`}
+            className={`shrink-0 flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border ${
+              overdue
+                ? 'bg-red-50 text-red-700 border-red-200 font-medium'
+                : 'bg-gray-50 text-gray-600 border-gray-200'
+            }`}
+          >
+            <Calendar size={10} /> {text}
+          </span>
+        );
+      })()}
+
       <StatusPicker status={item.status} onChange={(s) => onUpdate(item.issue_key, { status: s })} />
 
       <span className="shrink-0" title={item.priority}>{PRIORITY_ICONS[item.priority] || PRIORITY_ICONS.Medium}</span>
@@ -428,6 +462,9 @@ const BacklogPage = ({ department }) => {
   const [sprintToEdit, setSprintToEdit] = useState(null);
   const [sprintToComplete, setSprintToComplete] = useState(null);
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  // Which sprint the import lands in; null means the Backlog.
+  const [importSprintId, setImportSprintId] = useState(null);
   const [projects, setProjects] = useState([]);
   const [selectedKey, setSelectedKey] = useState(null);
 
@@ -822,6 +859,8 @@ const BacklogPage = ({ department }) => {
       { label: 'Move sprint to top', hidden: index === 0, run: () => reorderSprint(sprint, 'top') },
       { label: 'Move sprint to bottom', hidden: index === total - 1, run: () => reorderSprint(sprint, 'bottom') },
       { label: 'Edit sprint', run: () => setSprintToEdit(sprint) },
+      // Imports straight into this sprint rather than the backlog.
+      { label: 'Import calendar', run: () => { setImportSprintId(sprint.id); setIsImporting(true); } },
       // Always offered, running or not: deleting only removes the sprint, never the work.
       { label: 'Delete sprint', danger: true, run: () => deleteSprint(sprint) }
     ].filter(a => !a.hidden);
@@ -910,6 +949,24 @@ const BacklogPage = ({ department }) => {
         projects={projects}
         onCancel={() => setIsCreatingSprint(false)}
         onCreate={createSprint}
+      />
+
+      <ImportCalendarModal
+        isOpen={isImporting}
+        department={currentDept}
+        sprints={sprints}
+        defaultSprintId={importSprintId}
+        currentUserName={currentUserName}
+        onCancel={() => setIsImporting(false)}
+        onImported={(count) => {
+          setIsImporting(false);
+          load();
+          Swal.fire({
+            icon: 'success', title: 'Calendar imported',
+            text: `${count} work item${count === 1 ? '' : 's'} created.`,
+            timer: 2600, showConfirmButton: false
+          });
+        }}
       />
 
       <CompleteSprintModal

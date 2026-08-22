@@ -7,6 +7,7 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import DepartmentRoute from './components/common/DepartmentRoute';
 import LoginPage from './components/common/LoginPage';
 import SignupPage from './components/common/SignupPage';
+import SSOLogin from './components/common/SSOLogin';
 import Layout from './components/common/Layout';
 import DealsDashboard from './components/sales/DealsDashboard';
 import LeadsDashboard from './components/sales/LeadsDashboard';
@@ -64,6 +65,7 @@ import EstimationsPage from './components/common/EstimationsPage';
 import ActivitiesPage from './components/common/ActivitiesPage';
 import FollowupsPage from './components/common/FollowupsPage';
 import AnalyticsPage from './components/common/AnalyticsPage';
+import WorkloadReportPage from './components/common/WorkloadReportPage';
 import LeadReport from './components/sales/LeadReport';
 import DealReport from './components/sales/DealReport';
 import ContactReportsPage from './components/common/ContactReportsPage';
@@ -486,6 +488,7 @@ function AppContent() {
         <Route path="/marketing/:designation/:username/all-blogs" element={<AllBlogsPage />} />
         <Route path="/marketing/:designation/:username/file-manager" element={<FileManagerPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/analytics" element={<AnalyticsPage department="Marketing" />} />
+        <Route path="/marketing/:designation/:username/reports" element={<WorkloadReportPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/activities" element={<ActivitiesPage department="Marketing" />} />
         <Route path="/marketing/:designation/:username/teams" element={<ITTeamsPage department="Marketing" />} />
 
@@ -528,7 +531,7 @@ function AppContent() {
         <Route path="/it/:designation/:username/bugs/:subpage" element={<ITBugTrackingPage />} />
         <Route path="/it/:designation/:username/test-cases" element={<ITTestCasesPage />} />
         <Route path="/it/:designation/:username/analytics" element={<ITAnalyticsPage />} />
-        <Route path="/it/:designation/:username/reports" element={<ITAnalyticsPage />} />
+        <Route path="/it/:designation/:username/reports" element={<WorkloadReportPage department="IT" />} />
         <Route path="/it/:designation/:username/activities" element={<ITActivitiesPage />} />
         <Route path="/it/:designation/:username/documents" element={<SeoGmbDocumentsPage />} />
         <Route path="/it/:designation/:username/documents/upload" element={<ITUploadDocumentPage />} />
@@ -661,6 +664,7 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
+          <Route path="/sso-login" element={<SSOLogin />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route

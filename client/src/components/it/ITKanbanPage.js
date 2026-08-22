@@ -311,13 +311,24 @@ const ITKanbanPage = ({ department }) => {
     setAllRawIssues(prev => prev.map(t => (t.issue_key === issueKey || t.key === issueKey) ? { ...t, assignee: newAssignee } : t));
     setOpenCardAssigneeDropdown(null);
     try {
-      await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}`, {
+      const res = await fetch(`${API_BASE_URL}/it-kanban/issues/${issueKey}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Without this the assignment notification reads "Someone assigned you…" instead
+          // of naming the manager who did it.
+          'x-user-name': user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : (username || 'System')
+        },
         body: JSON.stringify({ assignee: newAssignee })
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        fetchKanbanData(); // The optimistic change didn't stick; show what the server has.
+        Swal.fire('Could not assign', data.error || 'Update rejected by the server', 'error');
+      }
     } catch (err) {
       console.error('Failed to update assignee', err);
+      fetchKanbanData();
     }
   };
 

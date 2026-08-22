@@ -112,7 +112,9 @@ const ITTasksPage = () => {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch(API_BASE_URL + '/it-kanban/issues');
+      // Scoped to this department. Without it the IT list showed Marketing work too — the
+      // two departments are separate workspaces and shouldn't see each other's tickets.
+      const res = await fetch(`${API_BASE_URL}/it-kanban/issues?department=IT`);
       if (res.ok) {
         const data = await res.json();
         setTasks(data);

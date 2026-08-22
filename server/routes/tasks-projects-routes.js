@@ -63,10 +63,10 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
   };
 
   const sendAssignmentEmail = async (assigneeEmail, assigneeName, ticketKey, ticketTitle, ticketType, ticketDescription, ticketStatus, ticketPriority, projectId = null) => {
-    const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const SMTP_PORT = process.env.SMTP_PORT || '587';
-    const SMTP_USER = process.env.SMTP_USER;
-    const SMTP_PASS = process.env.SMTP_PASS;
+    const SMTP_HOST = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+    const SMTP_PORT = process.env.EMAIL_PORT || process.env.SMTP_PORT || '587';
+    const SMTP_USER = process.env.EMAIL_USER || process.env.SMTP_USER;
+    const SMTP_PASS = process.env.EMAIL_PASS || process.env.SMTP_PASS;
 
     if (!SMTP_USER || !SMTP_PASS) {
       console.warn('⚠️ SMTP credentials missing. Cannot send assignment notification email.');

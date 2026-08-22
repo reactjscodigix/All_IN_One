@@ -49,6 +49,9 @@ const ITIssueDetailsSidebar = ({
   projectId,
   setProjectId,
   projectsList,
+  typeOptions = [],
+  showDevTools = true,
+  issuesList = [],
   originalEstimate,
   setOriginalEstimate,
   remainingEstimate,
@@ -66,6 +69,12 @@ const ITIssueDetailsSidebar = ({
 }) => {
   const [isEditingLabels, setIsEditingLabels] = useState(false);
   const [labelDraft, setLabelDraft] = useState('');
+
+  // Everything on this board except this item and the items already parented to it —
+  // either would make a loop.
+  const parentOptions = (issuesList || []).filter(o =>
+    Number(o.id) !== Number(issue?.id) && Number(o.parent_id || 0) !== Number(issue?.id)
+  );
 
   // Stored as JSON, so it arrives as either an array or a string.
   const labels = (() => {
@@ -326,16 +335,22 @@ const ITIssueDetailsSidebar = ({
                     <CheckSquare size={13} className="shrink-0 text-blue-500" />
                     <span className="truncate">{parentIssueKey || 'WR-101'}: {parentIssueTitle || 'Parent Issue'}</span>
                   </button>
-                ) : issue?.parent_project_name ? (
-                  // Top-level issues link up to the project/campaign they belong to.
-                  <div className="flex items-center gap-1.5 p-1 -ml-1 text-blue-600 font-semibold truncate max-w-full" title={issue.parent_project_name}>
-                    <CheckSquare size={13} className="shrink-0 text-blue-500" />
-                    <span className="truncate">
-                      {issue.parent_project_code ? `${issue.parent_project_code}: ` : ''}{String(issue.parent_project_name).trim()}
-                    </span>
-                  </div>
                 ) : (
-                  <span className="text-xs text-gray-500 font-medium">None</span>
+                  // A top-level item can sit under another work item on the same board.
+                  // Itself and its own children are excluded, so a cycle can't be chosen.
+                  <select
+                    value={issue?.parent_id ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      handleUpdate({ parent_id: v === '' ? null : Number(v) });
+                    }}
+                    className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer max-w-full w-full"
+                  >
+                    <option value="">None</option>
+                    {parentOptions.map(o => (
+                      <option key={o.id} value={o.id}>{o.issue_key}: {o.title}</option>
+                    ))}
+                  </select>
                 )}
               </div>
             </div>
@@ -344,11 +359,25 @@ const ITIssueDetailsSidebar = ({
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Reporter</span>
               <div className="col-span-2">
-                <div className="flex items-center gap-2 p-1 -ml-1 rounded text-gray-800">
+                <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold shrink-0">
                     {reporter?.initial || 'U'}
                   </div>
-                  <span className="text-xs text-gray-700 font-medium truncate">{reporter?.name || 'Unassigned'}</span>
+                  <select
+                    value={reporter?.name || ''}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      const initial = name
+                        ? name.trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase()
+                        : 'U';
+                      setReporter({ name: name || 'Unassigned', initial, color: 'bg-blue-100 text-blue-700' });
+                      handleUpdate({ reporter: name || 'Unassigned' });
+                    }}
+                    className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer min-w-0 flex-1"
+                  >
+                    <option value="">Unassigned</option>
+                    {usersList.map(u => <option key={u.id || u.name} value={u.name}>{u.name}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
@@ -357,7 +386,23 @@ const ITIssueDetailsSidebar = ({
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Team</span>
               <div className="col-span-2">
-                <span className="text-xs font-semibold text-gray-700">{team || 'None'}</span>
+                {teamsList && teamsList.length > 0 ? (
+                  <select
+                    value={team || ''}
+                    onChange={(e) => {
+                      const name = e.target.value;
+                      const match = teamsList.find(t => t.name === name);
+                      setTeam(name);
+                      handleUpdate({ team: name || 'None', team_id: match ? match.id : null });
+                    }}
+                    className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer max-w-full"
+                  >
+                    <option value="">None</option>
+                    {teamsList.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                  </select>
+                ) : (
+                  <span className="text-xs text-gray-400">No teams set up</span>
+                )}
               </div>
             </div>
 
@@ -416,7 +461,13 @@ const ITIssueDetailsSidebar = ({
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Type</span>
               <div className="col-span-2">
-                <span className="text-xs text-gray-700 font-medium">{issue?.type || 'Task'}</span>
+                <select
+                  value={issue?.type || 'Task'}
+                  onChange={(e) => handleUpdate({ type: e.target.value })}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer max-w-full"
+                >
+                  {typeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
               </div>
             </div>
 
@@ -476,7 +527,14 @@ const ITIssueDetailsSidebar = ({
             <div className="grid grid-cols-3 items-center min-h-[30px]">
               <span className="text-gray-500 font-medium">Effort points</span>
               <div className="col-span-2">
-                <span className="text-xs text-gray-700 font-medium">{issue?.story_points || 'None'}</span>
+                <select
+                  value={issue?.story_points ?? ''}
+                  onChange={(e) => handleUpdate({ story_points: e.target.value === '' ? null : Number(e.target.value) })}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 outline-none text-gray-700 bg-white font-medium cursor-pointer"
+                >
+                  <option value="">None</option>
+                  {[1, 2, 3, 5, 8, 13, 21].map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
               </div>
             </div>
 
@@ -548,144 +606,151 @@ const ITIssueDetailsSidebar = ({
         )}
       </div>
 
-      {/* COLLAPSIBLE DEVELOPMENT ACCORDION (REAL JIRA CODE INTEGRATION) */}
-      <div className="border border-gray-200 rounded">
-        <div
-          onClick={() => toggleSection('development')}
-          className="flex items-center justify-between p-2 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition"
-        >
-          <div className="flex items-center gap-1.5">
-            {collapsedSections.development ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-            <span className="text-xs font-semibold text-gray-700 tracking-wide">Development</span>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowDevModal(true);
-            }}
-            className="text-gray-400 hover:text-gray-600"
-            title="Configure Git Repositories"
+      {/* Development and Automation are engineering tooling — git branches, pull requests,
+          build rules. They have no meaning on a Marketing board, so they are shown only
+          where they apply. */}
+      {showDevTools && (
+        <>
+        {/* COLLAPSIBLE DEVELOPMENT ACCORDION (REAL JIRA CODE INTEGRATION) */}
+        <div className="border border-gray-200 rounded">
+          <div
+            onClick={() => toggleSection('development')}
+            className="flex items-center justify-between p-2 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition"
           >
-            <Settings size={14} />
-          </button>
-        </div>
-
-        {!collapsedSections.development && (
-          <div className="p-3.5 space-y-3 text-xs bg-white">
-            {/* Git Branch Info */}
-            <div className="p-2 bg-gray-50 rounded border border-gray-200 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1 text-[11px] font-bold text-gray-700">
-                  <GitBranch size={13} className="text-purple-600" /> {issueKey} Branch
-                </span>
-                <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">Active</span>
-              </div>
-              <div className="text-[11px] font-mono text-gray-600 bg-white p-1 rounded border border-gray-200 truncate" title={branchName}>
-                {branchName}
-              </div>
-              <button
-                onClick={handleCopyBranch}
-                className="flex items-center gap-1 text-[11px] text-purple-700 font-semibold hover:underline cursor-pointer"
-              >
-                <Copy size={11} /> {copiedBranch ? 'Copied to clipboard!' : 'Copy git checkout command'}
-              </button>
+            <div className="flex items-center gap-1.5">
+              {collapsedSections.development ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+              <span className="text-xs font-semibold text-gray-700 tracking-wide">Development</span>
             </div>
-
-            {/* Pull Requests & Builds */}
-            <div className="flex items-center justify-between text-gray-600 pt-1">
-              <span className="flex items-center gap-1 font-medium">
-                <GitPullRequest size={13} className="text-blue-600" /> Pull Request #101
-              </span>
-              <span className="text-blue-600 font-semibold">OPEN 🟢</span>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="pt-2 border-t border-gray-100 space-y-2">
-              <button
-                onClick={() => setShowDevModal(true)}
-                className="flex items-center gap-2 text-blue-600 hover:underline font-semibold p-1 -ml-1 rounded transition w-full text-left cursor-pointer"
-              >
-                <Github size={13} className="text-gray-700" />
-                <span>Connect development tools</span>
-              </button>
-              <button
-                onClick={handleOpenInVsCode}
-                className="flex items-center gap-2 text-blue-600 hover:underline font-semibold p-1 -ml-1 rounded transition w-full text-left cursor-pointer"
-              >
-                <Terminal size={13} className="text-blue-600" />
-                <span>Open in VS Code IDE</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* COLLAPSIBLE AUTOMATION ACCORDION (REAL JIRA AUTOMATION ENGINE) */}
-      <div className="border border-gray-200 rounded">
-        <div
-          onClick={() => toggleSection('automation')}
-          className="flex items-center justify-between p-2 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition"
-        >
-          <div className="flex items-center gap-1.5">
-            {collapsedSections.automation ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-            <span className="text-xs font-semibold text-gray-700 tracking-wide">Automation</span>
-          </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowAutomationModal(true);
-            }}
-            className="text-gray-400 hover:text-gray-600"
-            title="Automation Rules"
-          >
-            <Settings size={14} />
-          </button>
-        </div>
-
-        {!collapsedSections.automation && (
-          <div className="p-3.5 space-y-3 bg-white text-xs">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-700 font-medium">Recent rule runs</span>
-              <button
-                onClick={handleRefreshAutomation}
-                disabled={isRefreshingAutomation}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw size={11} className={isRefreshingAutomation ? 'animate-spin' : ''} />
-                <span>Refresh</span>
-              </button>
-            </div>
-
-            {/* Automation Run Logs List */}
-            <div className="space-y-2">
-              {automationLogs.map(log => (
-                <div key={log.id} className="p-2 bg-gray-50 border border-gray-200 rounded flex items-start justify-between">
-                  <div className="space-y-0.5 min-w-0 pr-2">
-                    <div className="flex items-center gap-1 font-semibold text-gray-800 truncate text-[11px]">
-                      <Zap size={11} className="text-amber-500 shrink-0" />
-                      <span className="truncate">{log.rule}</span>
-                    </div>
-                    <div className="text-[10px] text-gray-500 truncate">{log.trigger}</div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1 py-0.5 rounded border border-green-200 block">
-                      {log.status}
-                    </span>
-                    <span className="text-[9px] text-gray-400 mt-0.5 block">{log.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
             <button
-              onClick={() => setShowAutomationModal(true)}
-              className="w-full text-center text-xs text-blue-600 hover:underline font-semibold pt-1 block cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDevModal(true);
+              }}
+              className="text-gray-400 hover:text-gray-600"
+              title="Configure Git Repositories"
             >
-              View all 4 active rules →
+              <Settings size={14} />
             </button>
           </div>
-        )}
-      </div>
+
+          {!collapsedSections.development && (
+            <div className="p-3.5 space-y-3 text-xs bg-white">
+              {/* Git Branch Info */}
+              <div className="p-2 bg-gray-50 rounded border border-gray-200 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-[11px] font-bold text-gray-700">
+                    <GitBranch size={13} className="text-purple-600" /> {issueKey} Branch
+                  </span>
+                  <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">Active</span>
+                </div>
+                <div className="text-[11px] font-mono text-gray-600 bg-white p-1 rounded border border-gray-200 truncate" title={branchName}>
+                  {branchName}
+                </div>
+                <button
+                  onClick={handleCopyBranch}
+                  className="flex items-center gap-1 text-[11px] text-purple-700 font-semibold hover:underline cursor-pointer"
+                >
+                  <Copy size={11} /> {copiedBranch ? 'Copied to clipboard!' : 'Copy git checkout command'}
+                </button>
+              </div>
+
+              {/* Pull Requests & Builds */}
+              <div className="flex items-center justify-between text-gray-600 pt-1">
+                <span className="flex items-center gap-1 font-medium">
+                  <GitPullRequest size={13} className="text-blue-600" /> Pull Request #101
+                </span>
+                <span className="text-blue-600 font-semibold">OPEN 🟢</span>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="pt-2 border-t border-gray-100 space-y-2">
+                <button
+                  onClick={() => setShowDevModal(true)}
+                  className="flex items-center gap-2 text-blue-600 hover:underline font-semibold p-1 -ml-1 rounded transition w-full text-left cursor-pointer"
+                >
+                  <Github size={13} className="text-gray-700" />
+                  <span>Connect development tools</span>
+                </button>
+                <button
+                  onClick={handleOpenInVsCode}
+                  className="flex items-center gap-2 text-blue-600 hover:underline font-semibold p-1 -ml-1 rounded transition w-full text-left cursor-pointer"
+                >
+                  <Terminal size={13} className="text-blue-600" />
+                  <span>Open in VS Code IDE</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* COLLAPSIBLE AUTOMATION ACCORDION (REAL JIRA AUTOMATION ENGINE) */}
+        <div className="border border-gray-200 rounded">
+          <div
+            onClick={() => toggleSection('automation')}
+            className="flex items-center justify-between p-2 bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-gray-100 transition"
+          >
+            <div className="flex items-center gap-1.5">
+              {collapsedSections.automation ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+              <span className="text-xs font-semibold text-gray-700 tracking-wide">Automation</span>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowAutomationModal(true);
+              }}
+              className="text-gray-400 hover:text-gray-600"
+              title="Automation Rules"
+            >
+              <Settings size={14} />
+            </button>
+          </div>
+
+          {!collapsedSections.automation && (
+            <div className="p-3.5 space-y-3 bg-white text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 font-medium">Recent rule runs</span>
+                <button
+                  onClick={handleRefreshAutomation}
+                  disabled={isRefreshingAutomation}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw size={11} className={isRefreshingAutomation ? 'animate-spin' : ''} />
+                  <span>Refresh</span>
+                </button>
+              </div>
+
+              {/* Automation Run Logs List */}
+              <div className="space-y-2">
+                {automationLogs.map(log => (
+                  <div key={log.id} className="p-2 bg-gray-50 border border-gray-200 rounded flex items-start justify-between">
+                    <div className="space-y-0.5 min-w-0 pr-2">
+                      <div className="flex items-center gap-1 font-semibold text-gray-800 truncate text-[11px]">
+                        <Zap size={11} className="text-amber-500 shrink-0" />
+                        <span className="truncate">{log.rule}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-500 truncate">{log.trigger}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1 py-0.5 rounded border border-green-200 block">
+                        {log.status}
+                      </span>
+                      <span className="text-[9px] text-gray-400 mt-0.5 block">{log.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowAutomationModal(true)}
+                className="w-full text-center text-xs text-blue-600 hover:underline font-semibold pt-1 block cursor-pointer"
+              >
+                View all 4 active rules →
+              </button>
+            </div>
+          )}
+        </div>
+        </>
+      )}
 
       {/* DEV TOOLS MODAL */}
       {showDevModal && (

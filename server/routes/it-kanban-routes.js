@@ -1,5 +1,6 @@
 const OpenAI = require('openai');
 const nodemailer = require('nodemailer');
+const { resolvePrefix, nextIssueKey } = require('../utils/issueKeys');
 
 // Matches the definition of finished work used by sprint completion and the UI.
 const isDoneStatus = (s) => ['DONE', 'COMPLETED', 'CLOSED'].includes(String(s || '').toUpperCase().trim());
@@ -69,26 +70,48 @@ module.exports = function setupItKanbanRoutes(app, pool) {
     }).catch(err => console.error('Failed to send assignment notification:', err.message));
   };
 
-  const getAssigneeEmail = async (assigneeName) => {
+  /**
+   * Turns an assignee's display name into an email address.
+   *
+   * Work items store the assignee as a name, and names are not unique — two people here
+   * share "abhijit khedekar" and two share "Ashwini khedekar". Taking the first match sent
+   * assignment mail to the wrong person, so the ticket's own department breaks the tie.
+   * A name that is still ambiguous after that is skipped rather than mailed to a guess.
+   */
+  const getAssigneeEmail = async (assigneeName, department) => {
     if (!assigneeName || assigneeName === 'Unassigned') return null;
     if (assigneeName.includes('@')) return assigneeName;
     try {
       const [users] = await db.query(
-        "SELECT email FROM users WHERE CONCAT(first_name, ' ', last_name) = ? OR first_name = ? OR email = ?",
+        "SELECT email, department FROM users WHERE CONCAT(first_name, ' ', last_name) = ? OR first_name = ? OR email = ?",
         [assigneeName, assigneeName, assigneeName]
       );
-      if (users.length > 0) return users[0].email;
+      if (users.length === 0) return null;
+      if (users.length === 1) return users[0].email;
+
+      const norm = (d) => String(d || '').replace(/\s*department\s*$/i, '').trim().toLowerCase();
+      const target = norm(department);
+      const sameDept = users.filter(u => norm(u.department) === target);
+
+      if (sameDept.length === 1) return sameDept[0].email;
+
+      console.warn(
+        `⚠️ "${assigneeName}" matches ${users.length} users` +
+        `${target ? ` (${sameDept.length} in ${department})` : ''} — assignment email skipped ` +
+        'rather than sent to the wrong person.'
+      );
+      return null;
     } catch (e) {
       console.error('Failed to get assignee email:', e);
     }
     return null;
   };
 
-  const sendAssignmentEmail = async (assigneeEmail, assigneeName, ticketKey, ticketTitle, ticketType, ticketDescription, ticketStatus, ticketPriority) => {
-    const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const SMTP_PORT = process.env.SMTP_PORT || '587';
-    const SMTP_USER = process.env.SMTP_USER;
-    const SMTP_PASS = process.env.SMTP_PASS;
+  const sendAssignmentEmail = async (assigneeEmail, assigneeName, ticketKey, ticketTitle, ticketType, ticketDescription, ticketStatus, ticketPriority, ticketDepartment) => {
+    const SMTP_HOST = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.gmail.com';
+    const SMTP_PORT = process.env.EMAIL_PORT || process.env.SMTP_PORT || '587';
+    const SMTP_USER = process.env.EMAIL_USER || process.env.SMTP_USER;
+    const SMTP_PASS = process.env.EMAIL_PASS || process.env.SMTP_PASS;
 
     if (!SMTP_USER || !SMTP_PASS) {
       console.warn('⚠️ SMTP credentials missing. Cannot send assignment notification email.');
@@ -107,7 +130,11 @@ module.exports = function setupItKanbanRoutes(app, pool) {
       });
 
       const clientBaseUrl = process.env.CLIENT_URL || process.env.CORS_ORIGIN || 'http://localhost:3001';
-      const link = `${clientBaseUrl}/it/employee/it/tasks?ticketKey=${ticketKey}`;
+      // Point at the assignee's own workspace. This was hardcoded to /it/..., so someone
+      // assigned a Marketing ticket landed on the IT board looking at another department.
+      const workspace = String(ticketDepartment || '')
+        .replace(/\s*department\s*$/i, '').trim().toLowerCase() === 'marketing' ? 'marketing' : 'it';
+      const link = `${clientBaseUrl}/${workspace}/employee/${workspace}/tasks?ticketKey=${ticketKey}`;
 
       const mailOptions = {
         from: `"CRM Notifications" <${SMTP_USER}>`,
@@ -162,7 +189,15 @@ module.exports = function setupItKanbanRoutes(app, pool) {
       };
 
       const info = await transporter.sendMail(mailOptions);
-      console.log(`✉️ Assignment notification email sent successfully to ${assigneeEmail}:`, info.messageId);
+      // Log what the mail server actually said, not just that we tried. "Accepted" with a
+      // 250 means delivery is the receiving server's responsibility from here — which is the
+      // difference between "we failed to send" and "it was delivered but filed as spam".
+      console.log(
+        `✉️ Assignment email for ${ticketKey} → ${assigneeEmail}\n` +
+        `   accepted: ${JSON.stringify(info.accepted)}  rejected: ${JSON.stringify(info.rejected)}\n` +
+        `   server said: ${info.response}\n` +
+        `   messageId: ${info.messageId}`
+      );
       return true;
     } catch (error) {
       console.error('❌ Failed to send assignment notification email:', error.message);
@@ -638,9 +673,15 @@ Acceptance Criteria
       let query = `
         SELECT i.*,
                p.name AS parent_project_name,
-               COALESCE(p.project_id_code, CONCAT('PRJ-', p.id)) AS parent_project_code
+               COALESCE(p.project_id_code, CONCAT('PRJ-', p.id)) AS parent_project_code,
+               -- The real sprint this work belongs to. The 'sprint' column is only a text
+               -- label and goes stale the moment an item moves, so anything showing a sprint
+               -- should read this instead.
+               s.name AS sprint_name,
+               s.status AS sprint_status
         FROM it_kanban_issues i
         LEFT JOIN projects p ON p.id = COALESCE(i.parent_id, i.project_id)
+        LEFT JOIN sprints s ON s.id = i.sprint_id
       `;
       const params = [];
 
@@ -684,7 +725,6 @@ Acceptance Criteria
       const linkedJson = JSON.stringify(Array.isArray(linked_issues) ? linked_issues.filter(Boolean) : []);
 
       const dept = department || 'IT';
-      const prefix = keyPrefix || (dept === 'Marketing' ? 'MKT' : 'WR');
 
       // Created into a sprint that owns a project? Then it belongs to that project — the
       // sprint wins, so a mismatched project on the form cannot contradict the sprint.
@@ -695,16 +735,15 @@ Acceptance Criteria
         if (s && s.project_id != null) resolvedProjectId = s.project_id;
       }
 
-      // Generate a new key (e.g., MKT-XXX, DES-XXX, WR-XXX)
-      const [maxKeyResult] = await db.query('SELECT issue_key FROM it_kanban_issues WHERE issue_key LIKE ? ORDER BY id DESC LIMIT 1', [`${prefix}-%`]);
-      let nextNum = 101;
-      if (maxKeyResult.length > 0) {
-        const parts = maxKeyResult[0].issue_key.split('-');
-        if (parts.length === 2 && !isNaN(parts[1])) {
-          nextNum = parseInt(parts[1]) + 1;
-        }
-      }
-      const newKey = `${prefix}-${nextNum}`;
+      // The key's prefix comes from the project the work belongs to — "bakul catering
+      // services" gives BCS-101 — so a key says what it is part of. Work with no project
+      // falls back to the department prefix.
+      const prefix = await resolvePrefix(db, {
+        projectId: resolvedProjectId,
+        department: dept,
+        fallbackPrefix: keyPrefix
+      });
+      const newKey = await nextIssueKey(db, prefix);
 
       const [result] = await db.query(`
         INSERT INTO it_kanban_issues (issue_key, title, type, priority, status, assignee, reporter, team, team_id, project_id, description, department, due_date, start_date, sprint, sprint_id, labels, story_points, flagged, parent_id, subtasks, linked_issues, comments, progress, original_estimate, remaining_estimate, time_spent, components, environment, vulnerability)
@@ -738,9 +777,9 @@ Acceptance Criteria
 
       // Send assignment email notification asynchronously
       if (assignee && assignee !== 'Unassigned') {
-        getAssigneeEmail(assignee).then(email => {
+        getAssigneeEmail(assignee, dept).then(email => {
           if (email) {
-            sendAssignmentEmail(email, assignee, newKey, title, type, description, status, priority);
+            sendAssignmentEmail(email, assignee, newKey, title, type, description, status, priority, dept);
           }
         }).catch(err => console.error('Failed to trigger email notify:', err));
 
@@ -844,6 +883,19 @@ Acceptance Criteria
         }
       }
 
+      // A work item cannot be its own parent, and cannot adopt one of its own children —
+      // either would create a cycle that the board and any roll-up would loop on.
+      if (updates.parent_id != null && updates.parent_id !== '') {
+        const [[self]] = await db.query('SELECT id FROM it_kanban_issues WHERE issue_key = ?', [key]);
+        if (self && Number(updates.parent_id) === Number(self.id)) {
+          return res.status(400).json({ error: 'A work item cannot be its own parent.' });
+        }
+        const [[candidate]] = await db.query('SELECT parent_id FROM it_kanban_issues WHERE id = ?', [updates.parent_id]);
+        if (self && candidate && Number(candidate.parent_id) === Number(self.id)) {
+          return res.status(400).json({ error: 'That work item is already a child of this one.' });
+        }
+      }
+
       // A work item's project follows its sprint, matching what the Backlog's move and drag
       // do: joining a project-owning sprint adopts that project, and returning to the
       // Backlog (sprint_id null) drops it, because backlog work belongs to no project.
@@ -865,7 +917,7 @@ Acceptance Criteria
       // backlog filter on, so the details panel has to be able to write it.
       // 'flagged' and 'story_points' are written by the backlog row menu, which mirrors
       // Jira's Add flag and Story point estimate actions.
-      const allowedFields = ['title', 'description', 'type', 'priority', 'status', 'assignee', 'reporter', 'team', 'team_id', 'project_id', 'sprint', 'sprint_id', 'due_date', 'start_date', 'flagged', 'story_points', 'progress', 'original_estimate', 'remaining_estimate', 'time_spent', 'components', 'environment', 'vulnerability'];
+      const allowedFields = ['title', 'description', 'type', 'priority', 'status', 'assignee', 'reporter', 'team', 'team_id', 'project_id', 'sprint', 'sprint_id', 'parent_id', 'due_date', 'start_date', 'flagged', 'story_points', 'progress', 'original_estimate', 'remaining_estimate', 'time_spent', 'components', 'environment', 'vulnerability'];
       // 'labels' belongs here, not in allowedFields: it is stored as JSON, and without it
       // labels could be set at creation but never changed afterwards.
       const jsonFields = ['subtasks', 'linked_issues', 'comments', 'labels'];
@@ -897,7 +949,7 @@ Acceptance Criteria
             const currentIssue = currentIssues[0];
             const newAssignee = updates.assignee;
             if (newAssignee !== currentIssue.assignee && newAssignee !== 'Unassigned') {
-              getAssigneeEmail(newAssignee).then(email => {
+              getAssigneeEmail(newAssignee, currentIssue.department).then(email => {
                 if (email) {
                   sendAssignmentEmail(
                     email,
@@ -907,7 +959,8 @@ Acceptance Criteria
                     updates.type || currentIssue.type,
                     updates.description || currentIssue.description,
                     updates.status || currentIssue.status,
-                    updates.priority || currentIssue.priority
+                    updates.priority || currentIssue.priority,
+                    currentIssue.department
                   );
                 }
               }).catch(err => console.error('Failed to trigger email notify on update:', err));
