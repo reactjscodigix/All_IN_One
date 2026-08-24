@@ -128,6 +128,13 @@ import ITManagerDashboard from './components/it/ITManagerDashboard';
 import ITBugTrackingPage from './components/it/ITBugTrackingPage';
 import ITTestCasesPage from './components/it/ITTestCasesPage';
 import ITRepositoriesPage from './components/it/ITRepositoriesPage';
+import HRDashboard from './components/hr/HRDashboard';
+import HREmployees from './components/hr/HREmployees';
+import HRAttendance from './components/hr/HRAttendance';
+import HRLeaveRequests from './components/hr/HRLeaveRequests';
+import HRRecruitment from './components/hr/HRRecruitment';
+import HRPerformance from './components/hr/HRPerformance';
+import HRPayroll from './components/hr/HRPayroll';
 
 // Shared modules across departments
 const SHARED_MODULES = [
@@ -140,7 +147,7 @@ const SHARED_MODULES = [
   'notes', 'file-manager', 'social-feed', 'seo-gmb'
 ];
 
-const DEPARTMENTS = ['deals', 'leads', 'projects', 'sales', 'super-admin', 'marketing', 'it', 'seo-gmb'];
+const DEPARTMENTS = ['deals', 'leads', 'projects', 'sales', 'super-admin', 'marketing', 'it', 'seo-gmb', 'hr'];
 
 const routeMap = {
   '/': 'dashboard-router',
@@ -295,6 +302,8 @@ const DashboardRouter = () => {
       navigate(`/it/${designation}/${username}/dashboard`);
     } else if (dept.includes('Account')) {
       navigate('/invoices');
+    } else if (role.includes('HR')) {
+      navigate(`/hr/${designation}/${username}/dashboard`);
     } else if (dept.includes('Sales') || dept.includes('Lead') || dept.includes('Deal')) {
       navigate(`/sales/${designation}/${username}/dashboard`);
     } else if (role === 'Admin' || role.includes('Sales') || role.includes('Lead') || role.includes('Deal')) {
@@ -305,6 +314,8 @@ const DashboardRouter = () => {
       navigate(`/marketing/${designation}/${username}/dashboard`);
     } else if (role.includes('IT')) {
       navigate(`/it/${designation}/${username}/dashboard`);
+    } else if (role.includes('HR')) {
+      navigate(`/hr/${designation}/${username}/dashboard`);
     } else {
       navigate(`/deals/${designation}/${username}/dashboard`);
     }
@@ -541,6 +552,16 @@ function AppContent() {
         <Route path="/:dept/:designation/:username/notes/create" element={<CreateNotePage />} />
         <Route path="/it/:designation/:username/teams" element={<ITTeamsPage />} />
         <Route path="/it/:designation/:username/manager-dashboard" element={<ITManagerDashboard />} />
+        
+        {/* HR Routes */}
+        <Route path="/hr/:designation/:username/dashboard" element={<HRDashboard />} />
+        <Route path="/hr/:designation/:username/employees" element={<HREmployees />} />
+        <Route path="/hr/:designation/:username/attendance" element={<HRAttendance />} />
+        <Route path="/hr/:designation/:username/leaves" element={<HRLeaveRequests />} />
+        <Route path="/hr/:designation/:username/recruitment" element={<HRRecruitment />} />
+        <Route path="/hr/:designation/:username/performance" element={<HRPerformance />} />
+        <Route path="/hr/:designation/:username/payroll" element={<HRPayroll />} />
+        <Route path="/hr/:designation/:username/tasks" element={<TasksPage department="HR" />} />
         
         {/* Dynamic tasks routes based on department */}
         <Route path="/deals/:designation/:username/tasks" element={<TasksPage />} />

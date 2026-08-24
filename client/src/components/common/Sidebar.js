@@ -88,6 +88,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
         if (role.includes('SEO') || role.includes('GMB')) return '/seo-gmb';
         if (role === 'Admin' || role.includes('Sales') || role.includes('Lead') || role.includes('Deal')) return '/sales';
         if (role.includes('Account')) return '/invoices';
+        if (role.includes('HR')) return '/hr';
 
         return '';
       };
@@ -215,7 +216,20 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
   const userDept = user?.department || '';
   const userRole = user?.role || '';
   const isSuperAdmin = userRole === 'Super Admin';
-  const isManager = userRole === 'Manager' || userRole.includes('Manager') || isSuperAdmin;
+  const isManager = userRole === 'Manager' || userRole.includes('Manager') || isSuperAdmin || userRole.includes('HR');
+  // Scoped deliberately: the Marketing manager's own sidebar, not the whole department and
+  // not any other department.
+  const isMarketingDept = userDept.toLowerCase().includes('marketing');
+  const hideForMarketingManager = isMarketingDept && isManager && !isSuperAdmin;
+  // Per-role sidebar trimming. Add or remove a role in these lists rather than editing the
+  // sections themselves, so the underlying role gating stays intact and reversible.
+  const HIDE_CREATIVE_ROLES = ['Graphics Designer', 'Video Editor'];
+  const HIDE_DOCUMENTS_ROLES = ['Graphics Designer', 'Video Editor', 'Wordpress Developer'];
+  const HIDE_WORDPRESS_SECTION_ROLES = ['Wordpress Developer'];
+
+  const hideForCreativeRole = HIDE_CREATIVE_ROLES.includes(userRole);
+  const hideDocumentsForRole = HIDE_DOCUMENTS_ROLES.includes(userRole);
+  const hideWordpressSectionForRole = HIDE_WORDPRESS_SECTION_ROLES.includes(userRole);
 
   const renderTopCommonPages = () => (
     <>
@@ -223,8 +237,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       <SubmenuItem label="Dashboard" page="dashboard" icon={Layout} />
       <SubmenuItem label="Daily Task" page="tasks" icon={ClipboardList} />
       <SubmenuItem label="Kanban Board" page="kanban" icon={Layers} />
-      <SubmenuItem label="Backlog" page="backlog" icon={Inbox} />
-      <SubmenuItem label="Calendar" page="calendar" icon={Calendar} />
+      {/* Sprint planning is manager-only, matching the workspace tab strip and the Backlog
+          page's own guard. This sidebar link was the one route in that hadn't been gated. */}
+      {isManager && <SubmenuItem label="Backlog" page="backlog" icon={Inbox} />}
+      {isManager && <SubmenuItem label="Calendar" page="calendar" icon={Calendar} />}
     </>
   );
 
@@ -232,7 +248,13 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
     <>
       <div className="p-2 text-xs text-[#1F2020]  tracking-wider bg-gray-50/50 mt-2">System</div>
       <SubmenuItem label="Reports" page="reports" icon={BarChart3} />
-      <SubmenuItem label="Documents" page="documents" icon={HardDrive} />
+      {/* Hidden for the Marketing manager and the Graphics Designer. This block is shared by
+          every department, so Documents is gated rather than commented out — removing the
+          line outright would take it away from IT and everyone else. Drop a guard to
+          restore it for that role. */}
+      {/* {!hideForMarketingManager && !hideForCreativeRole && (
+        <SubmenuItem label="Documents" page="documents" icon={HardDrive} />
+      )} */}
       <SubmenuItem label="Settings" page="profile-settings" icon={Settings} />
     </>
   );
@@ -329,7 +351,11 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       <>
 
 
-        {showPPC && (
+        {/* HIDDEN FOR THE MARKETING MANAGER ONLY (hideForMarketingManager).
+            Every other role — Graphics Designer, Video Editor, Social Media Marketing,
+            Wordpress Developer, PPC Manager — still sees these, and no other department is
+            affected. To bring a section back for the manager, drop its guard. */}
+        {showPPC && !hideForMarketingManager && (
           <>
             <div className="p-2 text-xs  text-[#1F2020]  tracking-wider bg-gray-50/50 mt-2">PPC Campaigns</div>
             <SubmenuItem label="Ad Campaigns" page="campaign" icon={Megaphone} prefix="/marketing" />
@@ -337,7 +363,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
           </>
         )}
 
-        {showCreative && (
+        {showCreative && !hideForMarketingManager && !hideForCreativeRole && (
           <>
             <div className="p-2 text-xs  text-[#1F2020]  tracking-wider bg-gray-50/50 mt-2">Creative & Media</div>
             <SubmenuItem label="Creative Assets" page="media-management" icon={Image} prefix="/marketing" />
@@ -345,23 +371,32 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
           </>
         )}
 
-        {showWordpress && (
-          <>
-            <div className="p-2 text-xs text-[#1F2020]  tracking-wider bg-gray-50/50 mt-2">Wordpress</div>
-            <SubmenuItem label="Projects" page="projects" icon={FolderOpen} prefix="/marketing" />
-            <SubmenuItem label="File Manager" page="file-manager" icon={FileText} prefix="/marketing" />
-            <SubmenuItem label="Team Chat" page="chat" icon={MessageCircle} prefix="/marketing" />
-            <SubmenuItem label="Activities" page="activities" icon={Activity} prefix="/marketing" />
-          </>
-        )}
-
-        {showSocial && (
+        {showSocial && !hideForMarketingManager && (
           <>
             <div className="p-2 text-xs  text-[#1F2020]  tracking-wider bg-gray-50/50 mt-2">Social Media</div>
             <SubmenuItem label="Social Feed" page="social-feed" icon={MessageCircle} prefix="/marketing" />
             <SubmenuItem label="Blogs Calendar" page="all-blogs" icon={FileJson} prefix="/marketing" />
           </>
         )}
+
+        {showWordpress && (
+          <>
+            {!hideForMarketingManager && (
+              <div className="p-2 text-xs text-[#1F2020]  tracking-wider bg-gray-50/50 mt-2">Wordpress</div>
+            )}
+            {/* <SubmenuItem label="Projects" page="projects" icon={FolderOpen} prefix="/marketing" /> */}
+            {/* {!hideForMarketingManager && (
+              <SubmenuItem label="File Manager" page="file-manager" icon={FileText} prefix="/marketing" />
+            )} */}
+            {/* {!hideForMarketingManager && (
+              <SubmenuItem label="Activities" page="activities" icon={Activity} prefix="/marketing" />
+            )} */}
+          </>
+        )}
+
+        {/* Everyone in Marketing gets Team Chat. It used to live inside the Wordpress block,
+            so only Wordpress Developers, managers and Super Admin could reach it. */}
+        <SubmenuItem label="Team Chat" page="chat" icon={MessageCircle} prefix="/marketing" />
 
         {isManager && (
           <>
@@ -408,6 +443,22 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
     </>
   );
 
+  const renderHRPages = () => (
+    <>
+      <div className="p-2 text-xs text-[#1F2020] tracking-wider bg-gray-50/50 mt-2">HR Management</div>
+      <SubmenuItem label="Employees" page="employees" icon={Users} prefix="/hr" />
+      <SubmenuItem label="Attendance" page="attendance" icon={Calendar} prefix="/hr" />
+      <SubmenuItem label="Leave Requests" page="leaves" icon={FileCheck} prefix="/hr" />
+      <SubmenuItem label="HR Tasks" page="tasks" icon={ClipboardList} prefix="/hr" />
+      <SubmenuItem label="HR Board" page="kanban" icon={Layers} prefix="/hr" />
+      <SubmenuItem label="Team Chat" page="chat" icon={MessageCircle} prefix="/hr" />
+      <SubmenuItem label="Activities" page="activities" icon={Activity} prefix="/hr" />
+      <SubmenuItem label="Recruitment" page="recruitment" icon={Briefcase} prefix="/hr" />
+      <SubmenuItem label="Performance" page="performance" icon={TrendingUp} prefix="/hr" />
+      <SubmenuItem label="Payroll" page="payroll" icon={Banknote} prefix="/hr" />
+    </>
+  );
+
   const mainMenuItems = (
     <>
       {renderTopCommonPages()}
@@ -416,6 +467,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
       {(isSuperAdmin || userDept === 'IT Department') && renderITPages()}
       {(isSuperAdmin || userDept === 'Marketing Department') && renderMarketingPages()}
       {(isSuperAdmin || userDept === 'SEO & GMB Department' || userRole === 'SEO Manager' || userRole === 'SEO Executive' || userRole === 'SEO & GMB') && renderSEOGMBPages()}
+      {(isSuperAdmin || userRole.includes('HR')) && renderHRPages()}
       {renderBottomCommonPages()}
     </>
   );

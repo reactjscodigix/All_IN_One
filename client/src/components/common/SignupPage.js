@@ -44,7 +44,7 @@ const SignupPage = () => {
   ];
 
   const DESIGNATIONS = {
-    'Management': ['Super Admin'],
+    'Management': ['Super Admin', 'HR Management'],
     'Sales Department': ['Manager', 'Sales Executive', 'Employee'],
     'IT Department': ['Manager', 'Developer', 'Tester', 'DevOps Engineer'],
     'Marketing Department': ['Graphics Designer', 'Video Editor', 'Social Media Marketing', 'SEO & GMB', 'Manager', 'PPC Manager', 'Wordpress Developer'],
@@ -190,6 +190,7 @@ const SignupPage = () => {
       return roleType;
     } else if (department === 'Management') {
       if (roleType === 'Super Admin') return 'Super Admin';
+      return roleType;
     }
     
     return roleType;
