@@ -55,6 +55,8 @@ export default function SSOLogin() {
           });
 
           navigate('/'); // Go to CRM dashboard
+        } else if (data.success && data.action === 'register') {
+          navigate('/signup', { state: { prefillData: data.prefillData } });
         } else {
           alert("SSO Login Failed: " + (data.message || "Invalid Token"));
           navigate('/login');

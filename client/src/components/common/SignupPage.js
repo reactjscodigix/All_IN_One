@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Mail, Lock, User, LogIn, Check, AlertCircle, Plus, X } from 'lucide-react';
 import AddNewDealModal from '../sales/AddNewDealModal';
@@ -33,6 +33,7 @@ const SignupPage = () => {
   const [deals, setDeals] = useState([]);
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, isAuthenticated } = useAuth();
 
   const DEPARTMENTS = [
@@ -49,6 +50,19 @@ const SignupPage = () => {
     'Marketing Department': ['Graphics Designer', 'Video Editor', 'Social Media Marketing', 'SEO & GMB', 'Manager', 'PPC Manager', 'Wordpress Developer'],
     '': []
   };
+
+  useEffect(() => {
+    if (location.state?.prefillData) {
+      const { email, firstName, lastName, phone } = location.state.prefillData;
+      setFormData(prev => ({
+        ...prev,
+        email: email || prev.email,
+        firstName: firstName || prev.firstName,
+        lastName: lastName || prev.lastName,
+        phone: phone || prev.phone
+      }));
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (isAuthenticated) {

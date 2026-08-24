@@ -168,7 +168,16 @@ authRouter.post('/sso-verify', async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ success: false, message: 'User not found in CRM' });
+      return res.json({
+        success: true,
+        action: 'register',
+        prefillData: {
+          email: decoded.email,
+          firstName: decoded.firstName || '',
+          lastName: decoded.lastName || '',
+          phone: decoded.phone || ''
+        }
+      });
     }
 
     const user = users[0];
