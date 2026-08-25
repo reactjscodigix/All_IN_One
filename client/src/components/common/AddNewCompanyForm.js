@@ -174,7 +174,7 @@ const AddNewCompanyForm = ({ isOpen, onClose, onSubmit }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/20" onClick={handleCancel}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/20">
       <div
         className="h-full w-full md:w-[72%] lg:w-[60%] xl:w-[55%] bg-white shadow-xl overflow-y-auto border-l border-gray-200"
         onClick={(e) => e.stopPropagation()}

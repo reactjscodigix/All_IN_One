@@ -287,9 +287,10 @@ const UniversalKanbanPage = ({ department = 'IT' }) => {
 
     let filtered = allRawIssues.filter(issue => {
       // Department Isolation Guard
-      if (issue.department && issue.department !== department) return false;
+      // Removed department-based validation so everyone can view tasks of everyone
+      /* if (issue.department && issue.department !== department) return false;
       if (department === 'Marketing' && issue.issue_key?.startsWith('WR-') && issue.department !== 'Marketing') return false;
-      if (department === 'IT' && issue.issue_key?.startsWith('MKT-') && issue.department !== 'IT') return false;
+      if (department === 'IT' && issue.issue_key?.startsWith('MKT-') && issue.department !== 'IT') return false; */
       return true;
     });
 

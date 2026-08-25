@@ -104,9 +104,11 @@ const ITTasksPage = () => {
     return usersList.filter(u => {
       const un = (u.username || '').toLowerCase();
       if (SYSTEM_DUMMY_USERNAMES.includes(un)) return false;
-      const dept = (u.department || '').toLowerCase();
+      // Removed department-based validation so everyone can assign task to everyone
+      /* const dept = (u.department || '').toLowerCase();
       const role = (u.role_name || u.role || '').toLowerCase();
-      return dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester') || role.includes('devops');
+      return dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester') || role.includes('devops'); */
+      return true;
     });
   }, [usersList]);
 

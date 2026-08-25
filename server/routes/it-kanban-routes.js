@@ -640,8 +640,7 @@ Acceptance Criteria
     try {
       const department = String(req.query.department || 'IT').replace(/\s*department\s*$/i, '').trim();
       const [rows] = await db.query(
-        'SELECT labels FROM it_kanban_issues WHERE department = ? AND labels IS NOT NULL',
-        [department]
+        'SELECT labels FROM it_kanban_issues WHERE labels IS NOT NULL'
       );
 
       const counts = new Map();
@@ -685,10 +684,11 @@ Acceptance Criteria
       `;
       const params = [];
 
-      if (department) {
+      // Removed department-based validation so everyone can view tasks of everyone
+      /* if (department) {
         query += ' WHERE i.department = ? OR (i.department IS NULL AND ? = "IT")';
         params.push(department, department);
-      }
+      } */
       // Rank first, so the List and Board show the priority order set by dragging in the
       // Backlog. Unranked rows keep the old newest-first behaviour at the end.
       query += ' ORDER BY i.rank_order IS NULL, i.rank_order ASC, i.created_at DESC';

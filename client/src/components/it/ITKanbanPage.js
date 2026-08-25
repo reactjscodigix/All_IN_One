@@ -378,12 +378,14 @@ const ITKanbanPage = ({ department }) => {
     return usersList.filter(u => {
       const un = (u.username || '').toLowerCase();
       if (SYSTEM_DUMMY_USERNAMES.includes(un)) return false;
-      const dept = (u.department || '').toLowerCase();
+      // Removed department-based validation so everyone can assign task to everyone
+      /* const dept = (u.department || '').toLowerCase();
       const role = (u.role_name || u.role || '').toLowerCase();
       if (currentDept === 'Marketing') {
         return dept.includes('marketing') || dept.includes('seo') || role.includes('marketing') || role.includes('designer') || role.includes('video') || role.includes('seo') || role.includes('ppc');
       }
-      return dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester') || role.includes('devops');
+      return dept.includes('it') || role.includes('it') || role.includes('developer') || role.includes('tester') || role.includes('devops'); */
+      return true;
     });
   }, [usersList, currentDept]);
 
@@ -401,10 +403,12 @@ const ITKanbanPage = ({ department }) => {
     });
 
     let filtered = allRawIssues.filter(issue => {
-      if (currentDept === 'Marketing') {
+      // Removed department-based validation so everyone can view tasks of everyone
+      /* if (currentDept === 'Marketing') {
         return issue.department === 'Marketing' || (issue.issue_key && !issue.issue_key.startsWith('WR-'));
       }
-      return issue.department !== 'Marketing' && (!issue.issue_key || !issue.issue_key.startsWith('MKT'));
+      return issue.department !== 'Marketing' && (!issue.issue_key || !issue.issue_key.startsWith('MKT')); */
+      return true;
     });
 
     // Scrum rule: the board shows the running sprints only — all of them, since sprints can
@@ -450,9 +454,10 @@ const ITKanbanPage = ({ department }) => {
 
     // Employees get a personal board: their own work from the running sprints, nothing else.
     // Managers keep the whole board and can narrow it with the "Only My Issues" toggle.
-    if (!isManager) {
+    // Removed isManager validation so everyone can view tasks of everyone
+    /* if (!isManager) {
       filtered = filtered.filter(issue => isMine(issue));
-    } else if (onlyMyIssues) {
+    } else */ if (onlyMyIssues) {
       filtered = filtered.filter(issue => isUserTask(issue));
     }
     if (searchQuery.trim()) {

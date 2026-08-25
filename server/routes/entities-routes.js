@@ -362,11 +362,12 @@ module.exports = function setupEntitiesRoutes(app, pool) {
 
       // Scope to a department so pickers (e.g. issue assignee) don't offer staff
       // from other departments. Accepts "Marketing" or "Marketing Department".
-      if (department) {
+      // Removed department-based validation to allow everyone to assign tasks to everyone.
+      /* if (department) {
         const dept = String(department).replace(/\s*department\s*$/i, '').trim();
         query += ' AND u.department LIKE ?';
         params.push(`%${dept}%`);
-      }
+      } */
 
       // Placeholder logins seeded per department (admin@, marketing@, it@ ...) are not
       // real people and shouldn't appear in assignee lists.

@@ -248,20 +248,8 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
       `;
       const params = [];
 
-      if (role && role !== 'Admin' && role !== 'Super Admin') {
-        if (role.includes('Manager')) {
-          // Managers see tasks for their department
-          if (department) {
-            sql += ` AND (d.name = ? OR d.name IS NULL) `;
-            params.push(department);
-          }
-        } else {
-          // Regular employees only see tasks assigned to them
-          sql += ` AND t.assigned_to = ? `;
-          params.push(user_id);
-        }
-      }
-
+      // Removed role-based validation to allow everyone to view tasks of everyone
+      
       sql += ` ORDER BY t.created_at DESC`;
 
       const [tasks] = await db.query(sql, params);

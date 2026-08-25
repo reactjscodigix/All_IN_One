@@ -349,7 +349,8 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
 
     return (
       <>
-
+        <div className="p-2 text-xs text-[#1F2020] tracking-wider bg-gray-50/50 mt-2">Marketing Operations</div>
+        <SubmenuItem label="All Projects" page="projects" icon={FolderOpen} prefix="/marketing" />
 
         {/* HIDDEN FOR THE MARKETING MANAGER ONLY (hideForMarketingManager).
             Every other role — Graphics Designer, Video Editor, Social Media Marketing,
@@ -384,7 +385,6 @@ const Sidebar = ({ isOpen, toggleSidebar, onNavigate, currentPage }) => {
             {!hideForMarketingManager && (
               <div className="p-2 text-xs text-[#1F2020]  tracking-wider bg-gray-50/50 mt-2">Wordpress</div>
             )}
-            {/* <SubmenuItem label="Projects" page="projects" icon={FolderOpen} prefix="/marketing" /> */}
             {/* {!hideForMarketingManager && (
               <SubmenuItem label="File Manager" page="file-manager" icon={FileText} prefix="/marketing" />
             )} */}

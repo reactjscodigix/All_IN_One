@@ -141,8 +141,9 @@ module.exports = function setupSprintsRoutes(app, pool) {
       const department = deptFilter(req.query.department);
       const includeCompleted = req.query.includeCompleted === 'true';
 
-      let sql = 'SELECT * FROM sprints WHERE department = ?';
-      const params = [department];
+      // Removed department-based validation so everyone can view tasks of everyone
+      let sql = 'SELECT * FROM sprints WHERE 1=1';
+      const params = [];
       if (!includeCompleted) sql += " AND status <> 'Completed'";
       sql += " ORDER BY FIELD(status,'Active','Planned','Completed'), sort_order ASC, id ASC";
 
@@ -166,9 +167,9 @@ module.exports = function setupSprintsRoutes(app, pool) {
       }
 
       // Anything not in a sprint is the backlog.
+      // Removed department-based validation so everyone can view tasks of everyone
       const [backlog] = await db.query(
-        'SELECT * FROM it_kanban_issues WHERE sprint_id IS NULL AND (department = ? OR (department IS NULL AND ? = "IT")) ORDER BY rank_order IS NULL, rank_order ASC, id ASC',
-        [department, department]
+        'SELECT * FROM it_kanban_issues WHERE sprint_id IS NULL ORDER BY rank_order IS NULL, rank_order ASC, id ASC'
       );
 
       // A board can run several sprints at once, so the board filters on the whole set.
