@@ -71,7 +71,7 @@ const ITTasksPage = () => {
   const [selectedType, setSelectedType] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedPriority, setSelectedPriority] = useState('ALL');
-  const [selectedAssignee, setSelectedAssignee] = useState('ALL');
+  const [selectedAssignees, setSelectedAssignees] = useState([]);
   const [onlyMyIssues, setOnlyMyIssues] = useState(false);
 
   const [projectsList, setProjectsList] = useState([]);
@@ -156,13 +156,16 @@ const ITTasksPage = () => {
     if (selectedPriority !== 'ALL') {
       result = result.filter(issue => issue.priority === selectedPriority);
     }
-    if (selectedAssignee !== 'ALL') {
-      if (selectedAssignee === 'UNASSIGNED') {
-        result = result.filter(issue => !issue.assignee || issue.assignee === 'Unassigned' || issue.assignee === 'Automatic');
-      } else {
-        const a = selectedAssignee.toLowerCase();
-        result = result.filter(issue => issue.assignee && issue.assignee.toLowerCase().includes(a));
-      }
+    if (selectedAssignees.length > 0) {
+      result = result.filter(issue => {
+        const isUnassigned = !issue.assignee || issue.assignee === 'Unassigned' || issue.assignee === 'Automatic';
+        if (selectedAssignees.includes('UNASSIGNED') && isUnassigned) return true;
+
+        return selectedAssignees.some(a => {
+          if (a === 'UNASSIGNED') return false;
+          return issue.assignee && issue.assignee.toLowerCase().includes(a.toLowerCase());
+        });
+      });
     }
 
     const isUserTask = (issue) => {
@@ -176,7 +179,7 @@ const ITTasksPage = () => {
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(issue => 
+      result = result.filter(issue =>
         (issue.title && issue.title.toLowerCase().includes(q)) ||
         (issue.issue_key && issue.issue_key.toLowerCase().includes(q)) ||
         (issue.assignee && issue.assignee.toLowerCase().includes(q)) ||
@@ -184,16 +187,12 @@ const ITTasksPage = () => {
       );
     }
     return result;
-  }, [tasks, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignee, onlyMyIssues, isManager, userSearchTerms, searchQuery]);
+  }, [tasks, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignees, onlyMyIssues, isManager, userSearchTerms, searchQuery]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   const totalPages = Math.ceil(filteredTasks.length / rowsPerPage) || 1;
   const paginatedTasks = filteredTasks.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
 
   useEffect(() => {
     if (tasks.length > 0) {
@@ -209,14 +208,12 @@ const ITTasksPage = () => {
   }, [tasks]);
 
   const updateIssue = async (key, updates) => {
-    // Optimistic local update
     setTasks(prev => prev.map(t => t.issue_key === key || t.key === key ? { ...t, ...updates } : t));
     try {
       await fetch(`${API_BASE_URL}/it-kanban/issues/${key}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          // Attributes this change to a person in the issue History tab.
           'x-user-name': user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : 'System'
         },
         body: JSON.stringify(updates)
@@ -236,8 +233,6 @@ const ITTasksPage = () => {
     }
   };
 
-
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (openFilterDropdown && !e.target.closest('.interactive-dropdown')) {
@@ -255,28 +250,16 @@ const ITTasksPage = () => {
   return (
     <>
       <ITCreateIssueDrawer isOpen={isCreateDrawerOpen} onIssueCreated={fetchTasks} onClose={() => setIsCreateDrawerOpen(false)} />
-      {/* Grows with its content and lets the app shell do the scrolling. Pinning this to
-          h-screen with its own overflow-y-auto put a second scrollbar inside the one the
-          shell already provides. */}
       <div className="flex w-full min-h-screen bg-white font-sans">
-        {/* MAIN CONTENT */}
         <div className="flex-1 flex flex-col min-w-0">
-
-          {/* Keeps List inside the workspace shell, so switching to it from Board or
-              Backlog doesn't feel like leaving the space. */}
           <BoardTabs department="IT" spaceName="IT Workspace" />
-
-          {/* CONTENT AREA */}
           <div className="flex-1 flex relative">
-
-            {/* BOARD & LIST */}
             <div className="flex-1 flex flex-col p-4 pb-0 min-w-0 bg-white">
-
               <div className="flex items-end justify-between mb-6">
                 <div>
                   <h1 className="text-2xl text-gray-900 mb-4">All Issues</h1>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="relative">
+                    {/* <div className="relative">
                       <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
                       <input
                         type="text"
@@ -285,21 +268,19 @@ const ITTasksPage = () => {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-400 w-40"
                       />
-                    </div>
+                    </div> */}
 
-                    {/* JIRA USER AVATAR BUBBLES */}
                     <div className="flex items-center -space-x-1.5 mx-1">
-                      {itUsersList.map((u) => {
+                      {usersList.slice(0, 5).map((u) => {
                         const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'User';
-                        const initials = (u.first_name ? u.first_name[0] : (u.username ? u.username[0] : 'U')) + 
-                                         (u.last_name ? u.last_name[0] : '');
+                        const initials = (u.first_name ? u.first_name[0] : (u.username ? u.username[0] : 'U')) +
+                          (u.last_name ? u.last_name[0] : '');
                         const uppercaseInitials = initials.toUpperCase();
-                        
-                        const a = selectedAssignee.toLowerCase();
-                        const isSelected = selectedAssignee !== 'ALL' && (
-                          a === fullName.toLowerCase() || 
-                          a === (u.username || '').toLowerCase() ||
-                          (u.first_name && a.includes(u.first_name.toLowerCase()))
+
+                        const isSelected = selectedAssignees.some(a =>
+                          a.toLowerCase() === fullName.toLowerCase() ||
+                          a.toLowerCase() === (u.username || '').toLowerCase() ||
+                          (u.first_name && a.toLowerCase().includes(u.first_name.toLowerCase()))
                         );
 
                         const colors = [
@@ -318,25 +299,32 @@ const ITTasksPage = () => {
                             key={u.id || u.username}
                             onClick={() => {
                               if (isSelected) {
-                                setSelectedAssignee('ALL');
+                                setSelectedAssignees(prev => prev.filter(a =>
+                                  a.toLowerCase() !== fullName.toLowerCase() &&
+                                  a.toLowerCase() !== (u.username || '').toLowerCase() &&
+                                  !(u.first_name && a.toLowerCase().includes(u.first_name.toLowerCase()))
+                                ));
                               } else {
-                                setSelectedAssignee(fullName);
+                                setSelectedAssignees(prev => [...prev, fullName]);
                               }
                             }}
-                            title={`Filter issues by ${fullName}`}
-                            className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative border-2 border-white cursor-pointer ${
-                              isSelected 
-                                ? 'ring-2 ring-blue-600 ring-offset-1 z-20 scale-110 shadow-md' 
-                                : 'hover:z-10 hover:scale-105 opacity-90 hover:opacity-100'
-                            } ${colorClass}`}
+                            title={`Filter tasks by ${fullName}`}
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative border-2 border-white cursor-pointer ${isSelected
+                              ? 'ring-2 ring-blue-600 ring-offset-1 z-20 scale-110 shadow-md'
+                              : 'hover:z-10 hover:scale-105 opacity-90 hover:opacity-100'
+                              } ${colorClass}`}
                           >
                             {uppercaseInitials}
                           </button>
                         );
                       })}
+                      {usersList.length > 5 && (
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-100 text-gray-600 border-2 border-white z-0 ml-[-8px]" title={`${usersList.length - 5} more members`}>
+                          +{usersList.length - 5}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Project Filter */}
                     <div className="relative interactive-dropdown">
                       <button onClick={() => toggleDropdown('project')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-blue-50 border-blue-100 text-blue-700 hover:bg-blue-100 transition-colors">
                         Project: {selectedProjectId === 'ALL' ? 'All Projects' : (projectsList.find(p => Number(p.id) === Number(selectedProjectId))?.name || 'Selected Project')} <ChevronDown size={14} />
@@ -355,7 +343,6 @@ const ITTasksPage = () => {
                       )}
                     </div>
 
-                    {/* Type Filter */}
                     <div className="relative interactive-dropdown">
                       <button onClick={() => toggleDropdown('type')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
                         Type: {selectedType === 'ALL' ? 'All' : selectedType} <ChevronDown size={14} />
@@ -371,7 +358,6 @@ const ITTasksPage = () => {
                       )}
                     </div>
 
-                    {/* Status Filter */}
                     <div className="relative interactive-dropdown">
                       <button onClick={() => toggleDropdown('status')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
                         Status: {selectedStatus === 'ALL' ? 'All' : selectedStatus} <ChevronDown size={14} />
@@ -387,7 +373,6 @@ const ITTasksPage = () => {
                       )}
                     </div>
 
-                    {/* Priority Filter */}
                     <div className="relative interactive-dropdown">
                       <button onClick={() => toggleDropdown('priority')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
                         Priority: {selectedPriority === 'ALL' ? 'All' : selectedPriority} <ChevronDown size={14} />
@@ -403,25 +388,41 @@ const ITTasksPage = () => {
                       )}
                     </div>
 
-                    {/* Assignee Filter & Only My Issues (for Managers) */}
                     {isManager && (
                       <>
                         <div className="relative interactive-dropdown">
-                          <button onClick={() => toggleDropdown('assignee')} className="flex items-center gap-1.5 p-2 rounded text-xs font-medium border bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors">
-                            Assignee: {selectedAssignee === 'ALL' ? 'All' : selectedAssignee} <ChevronDown size={14} />
+                          <button
+                            onClick={() => setOpenFilterDropdown(openFilterDropdown === 'assignee' ? null : 'assignee')}
+                            className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${selectedAssignees.length > 0 ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700'}`}
+                          >
+                            Assignee: {selectedAssignees.length === 0 ? 'All' : selectedAssignees.length === 1 ? selectedAssignees[0] : `${selectedAssignees.length} Selected`} <ChevronDown size={14} />
                           </button>
                           {openFilterDropdown === 'assignee' && (
-                            <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs max-h-60 overflow-y-auto">
-                              <div onClick={() => { setSelectedAssignee('ALL'); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedAssignee === 'ALL' ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                            <div className="absolute left-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-xs text-gray-700 max-h-60 overflow-y-auto">
+                              <div onClick={() => { setSelectedAssignees([]); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedAssignees.length === 0 ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
                                 All Assignees
                               </div>
-                              <div onClick={() => { setSelectedAssignee('UNASSIGNED'); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedAssignee === 'UNASSIGNED' ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                              <div onClick={() => {
+                                if (selectedAssignees.includes('UNASSIGNED')) {
+                                  setSelectedAssignees(prev => prev.filter(a => a !== 'UNASSIGNED'));
+                                } else {
+                                  setSelectedAssignees(prev => [...prev, 'UNASSIGNED']);
+                                }
+                              }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedAssignees.includes('UNASSIGNED') ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
                                 Unassigned
                               </div>
                               {usersList.map(u => {
-                                const uName = u.first_name ? `${u.first_name} ${u.last_name || ''}`.trim() : u.username;
+                                const uName = u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim();
+                                if (!uName) return null;
+                                const isSelected = selectedAssignees.includes(uName);
                                 return (
-                                  <div key={u.id} onClick={() => { setSelectedAssignee(uName); setOpenFilterDropdown(null); }} className={`p-2 hover:bg-gray-50 cursor-pointer ${selectedAssignee === uName ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
+                                  <div key={u.id} onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedAssignees(prev => prev.filter(a => a !== uName));
+                                    } else {
+                                      setSelectedAssignees(prev => [...prev, uName]);
+                                    }
+                                  }} className={`p-2 hover:bg-gray-50 cursor-pointer ${isSelected ? 'font-bold text-blue-600 bg-blue-50' : 'text-gray-700'}`}>
                                     {uName}
                                   </div>
                                 );
@@ -446,26 +447,6 @@ const ITTasksPage = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="relative interactive-dropdown">
-                    <button onClick={() => toggleDropdown('share')} className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 font-medium"><Share2 size={14} /> Share</button>
-                    {openFilterDropdown === 'share' && (
-                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs">
-                        <div className="p-2 hover:bg-gray-50 cursor-pointer text-gray-700">Copy link</div>
-                        <div className="p-2 hover:bg-gray-50 cursor-pointer text-gray-700">Email</div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="relative interactive-dropdown">
-                    <button onClick={() => toggleDropdown('export')} className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 font-medium"><Download size={14} /> Export</button>
-                    {openFilterDropdown === 'export' && (
-                      <div className="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg py-1 z-30 text-xs">
-                        <div className="p-2 hover:bg-gray-50 cursor-pointer text-gray-700">Export Excel</div>
-                        <div className="p-2 hover:bg-gray-50 cursor-pointer text-gray-700">Export CSV</div>
-                      </div>
-                    )}
-                  </div>
-
                   <div className="relative interactive-dropdown">
                     <button onClick={() => toggleDropdown('moreOptions')} className="text-gray-400 hover:text-gray-600"><MoreHorizontal size={16} /></button>
                     {openFilterDropdown === 'moreOptions' && (
@@ -630,9 +611,8 @@ const ITTasksPage = () => {
                               case 'key':
                                 // Jira strikes through the key of a finished work item.
                                 return (
-                                  <td key={col.key} className={`p-3 text-blue-600 font-semibold hover:underline ${
-                                    isDoneStatus(row.status) ? 'line-through' : ''
-                                  }`}>
+                                  <td key={col.key} className={`p-3 text-blue-600 font-semibold hover:underline ${isDoneStatus(row.status) ? 'line-through' : ''
+                                    }`}>
                                     {(row.issue_key || row.key)}
                                   </td>
                                 );

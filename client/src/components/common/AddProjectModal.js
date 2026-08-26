@@ -10,6 +10,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [fetchedCategories, setFetchedCategories] = useState([]);
+  const [customProjectName, setCustomProjectName] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -99,7 +100,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
     if (initialData) {
       setFormData({
         name: initialData.name || initialData.title || '',
-        projectId: initialData.project_id_code || initialData.project_id || initialData.projectId || initialData.id || '',
+        projectId: initialData.project_id_code || initialData.project_id || initialData.projectId || `PRJ-00${initialData.id}` || '',
         projectType: initialData.project_type || initialData.projectType || '',
         client: initialData.company_name || initialData.company || initialData.client || '',
         category: initialData.category || initialData.department_name || initialData.workflow_type || '',
@@ -115,10 +116,14 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
         description: initialData.description || '',
         team_id: initialData.team_id || '',
       });
+      // If the project name isn't in confirmedProjects, customProjectName needs to be set so it doesn't get lost
+      if (initialData.name && !confirmedProjects.find(p => p.name === initialData.name)) {
+        // We'll still set formData.name to initialData.name, but we also ensure it's in the select options below.
+      }
     } else {
       setFormData({
         name: '',
-        projectId: '',
+        projectId: 'PRJ-' + Math.floor(100000 + Math.random() * 900000), // Auto-generated ID
         projectType: '',
         client: '',
         category: '',
@@ -134,13 +139,14 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
         team_id: '',
       });
     }
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, confirmedProjects]);
 
   const [personInput, setPersonInput] = useState('');
 
   const assignableUsers = users.length > 0 ? users.map((u, i) => ({
     id: u.id,
     name: u.first_name ? `${u.first_name} ${u.last_name || ''}`.trim() : u.username,
+    role_name: u.role_name || u.role || '',
     color: ['bg-purple-500', 'bg-cyan-500', 'bg-pink-500', 'bg-blue-500', 'bg-green-500'][i % 5]
   })) : [
     { id: 1, name: 'Robert Johnson', color: 'bg-purple-500' },
@@ -208,8 +214,15 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
     });
     const manager_id = selectedManager ? selectedManager.id : null;
 
+    const finalName = formData.name === 'custom_add_project' ? customProjectName.trim() : formData.name.trim();
+
+    if (!finalName) {
+      alert('Project name is required');
+      return;
+    }
+
     if (onSubmit) {
-      onSubmit({ ...formData, company_id, manager_id });
+      onSubmit({ ...formData, name: finalName, company_id, manager_id });
     }
     setFormData({
       name: '',
@@ -249,6 +262,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
       description: '',
       team_id: '',
     });
+    setCustomProjectName('');
     onClose();
   };
 
@@ -288,40 +302,50 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
               disabled={isFetching}
               className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400 disabled:opacity-50"
             >
-              <option value="">{isFetching ? 'Loading projects...' : `Select ${department || 'IT'} Project`}</option>
-              {formData.name && !confirmedProjects.some(p => p.name === formData.name) && (
-                <option value={formData.name}>{formData.name}</option>
-              )}
+              <option value="">{isFetching ? 'Loading projects...' : 'Select Project'}</option>
               {confirmedProjects.map(project => (
                 <option key={project.id} value={project.name}>
                   {project.name} ({project.company_name})
                 </option>
               ))}
+              {formData.name && formData.name !== 'custom_add_project' && !confirmedProjects.find(p => p.name === formData.name) && (
+                <option value={formData.name}>{formData.name}</option>
+              )}
               {!isFetching && confirmedProjects.length === 0 && (
                 <option disabled>No confirmed {department || 'IT'} projects found</option>
               )}
+              <option value="custom_add_project">+ Add Project</option>
             </select>
+            {formData.name === 'custom_add_project' && (
+              <input
+                type="text"
+                placeholder="Enter custom project name"
+                value={customProjectName}
+                onChange={(e) => setCustomProjectName(e.target.value)}
+                className="w-full mt-2 p-2 border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400 transition"
+              />
+            )}
           </div>
 
           {/* Project ID */}
           <div>
             <label className="block text-xs    mb-2  text-gray-600">
-              Project ID <span className="text-red-500">*</span>
+              Project ID
             </label>
             <input
               type="text"
               name="projectId"
-              value={formData.projectId}
-              onChange={handleInputChange}
-              placeholder="ID"
-              className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
+              value={formData.projectId || 'Auto-generated'}
+              readOnly
+              disabled
+              className="w-full  p-2  border border-gray-300 rounded text-xs bg-gray-50 text-gray-500 focus:ring-0 focus:border-gray-400 cursor-not-allowed"
             />
           </div>
 
           {/* Project Type */}
           <div>
             <label className="block text-xs    mb-2  text-gray-600">
-              Project Type <span className="text-red-500">*</span>
+              Project Type
             </label>
             <select
               name="projectType"
@@ -342,7 +366,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
           {/* Client */}
           <div>
             <label className="block text-xs    mb-2  text-gray-600">
-              Client <span className="text-red-500">*</span>
+              Client
             </label>
             <select
               name="client"
@@ -366,7 +390,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
           {/* Category */}
           <div>
             <label className="block text-xs    mb-2  text-gray-600">
-              Category <span className="text-red-500">*</span>
+              Category
             </label>
             <select
               name="category"
@@ -387,7 +411,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
           {/* Project Timing */}
           <div>
             <label className="block text-xs    mb-2  text-gray-600">
-              Project Timing <span className="text-red-500">*</span>
+              Project Timing
             </label>
             <select
               name="projectTiming"
@@ -405,7 +429,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
           {/* Price */}
           <div>
             <label className="block text-xs    mb-2  text-gray-600">
-              Price <span className="text-red-500">*</span>
+              Price
             </label>
             <input
               type="text"
@@ -438,7 +462,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
           {/* Responsible Persons */}
           <div className="md:col-span-2">
             <label className="block text-xs    mb-2  text-gray-600">
-              Responsible Persons <span className="text-red-500">*</span>
+              Responsible Persons
             </label>
             <div className="flex gap-2 mb-3">
               <select
@@ -483,7 +507,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
           {/* Team Leader */}
           <div className="md:col-span-2">
             <label className="block text-xs    mb-2  text-gray-600">
-              Team Leader <span className="text-red-500">*</span>
+              Team Leader
             </label>
             <select
               name="teamLeader"
@@ -492,19 +516,21 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
               className="w-full  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
             >
               <option value="">Select</option>
-              {formData.teamLeader && !teams.some(t => t.name === formData.teamLeader) && (
+              {assignableUsers
+                .filter(u => u.role_name.toLowerCase().includes('manager') || u.role_name.toLowerCase().includes('admin'))
+                .map(user => (
+                  <option key={user.id} value={user.name}>{user.name}</option>
+                ))}
+              {formData.teamLeader && !assignableUsers.some(u => u.name === formData.teamLeader) && (
                 <option value={formData.teamLeader}>{formData.teamLeader}</option>
               )}
-              {teams.map(team => (
-                <option key={team.id} value={team.name}>{team.name}</option>
-              ))}
             </select>
           </div>
 
           {/* Start Date */}
           <div>
             <label className="block text-xs    mb-2  text-gray-600">
-              Start Date <span className="text-red-500">*</span>
+              Start Date
             </label>
             <input
               type="date"
@@ -518,7 +544,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
           {/* Due Date */}
           <div>
             <label className="block text-xs    mb-2  text-gray-600">
-              Due Date <span className="text-red-500">*</span>
+              Due Date
             </label>
             <input
               type="date"
@@ -568,7 +594,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
           {/* Description */}
           <div className="md:col-span-2">
             <label className="block text-xs    mb-2  text-gray-600">
-              Description <span className="text-red-500">*</span>
+              Description
             </label>
             <textarea
               name="description"

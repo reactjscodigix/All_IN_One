@@ -17,7 +17,7 @@ import ITIssueDetailsPanel from '../it/ITIssueDetailsPanel';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 
-const TABS = ['Overview', 'Tasks', 'Milestones', 'Team', 'Documents', 'Discussions', 'Time Logs', 'Activity', 'Reports', 'Timeline', 'Calendar', 'Budget', 'Settings'];
+const TABS = ['Overview', 'Tasks', 'Milestones', 'Team', 'Documents', 'Time Logs', 'Activity', 'Reports', 'Timeline', 'Calendar', 'Settings'];
 
 const ProjectDetailsPage = () => {
   const { id } = useParams();
@@ -43,9 +43,30 @@ const ProjectDetailsPage = () => {
   const [assignedTeam, setAssignedTeam] = useState(null);
   const [teamRoster, setTeamRoster] = useState([]); // team_members table (for overview card)
   const [milestones, setMilestones] = useState([]);
+  const [discussions, setDiscussions] = useState([]);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [newDiscussionMsg, setNewDiscussionMsg] = useState('');
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [milestoneForm, setMilestoneForm] = useState({ title: '', description: '', owner_id: '', start_date: '', due_date: '', status: 'Not Started', progress: 0 });
+
+  const handleSendDiscussion = async () => {
+    if (!newDiscussionMsg.trim()) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/projects/${id}/discussions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: newDiscussionMsg, user_id: 1 }) // Hardcoded user_id for now as per mock auth
+      });
+      if (res.ok) {
+        const newMsg = await res.json();
+        setDiscussions([...discussions, newMsg]);
+        setNewDiscussionMsg('');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleTaskSubmit = async (formData) => {
     try {
@@ -374,6 +395,16 @@ const ProjectDetailsPage = () => {
         const docsRes = await fetch(`${API_BASE_URL}/files?project_id=${id}`);
         if (docsRes.ok) {
           setDocuments(await docsRes.json());
+        }
+
+        const discRes = await fetch(`${API_BASE_URL}/projects/${id}/discussions`);
+        if (discRes.ok) {
+          setDiscussions(await discRes.json());
+        }
+
+        const actRes = await fetch(`${API_BASE_URL}/projects/${id}/activity`);
+        if (actRes.ok) {
+          setActivityLogs(await actRes.json());
         }
       } catch (err) {
         console.error(err);
@@ -1044,48 +1075,6 @@ const ProjectDetailsPage = () => {
     );
   };
 
-  const renderDiscussions = () => (
-    <div className="bg-white rounded border border-gray-200  animate-fade-in flex flex-col" style={{ height: '500px' }}>
-      <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 rounded-t-xl">
-        <h3 className=" text-gray-900 text-sm">Project Discussions</h3>
-        <div className="text-xs text-gray-500">6 Messages</div>
-      </div>
-      <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-6">
-        <div className="flex gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center  text-xs">E</div>
-          <div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-medium text-sm text-gray-900">Emma Johnson</span>
-              <span className="text-xs text-gray-400">11:30 AM</span>
-            </div>
-            <div className="bg-gray-100 text-gray-800 text-sm p-3 rounded rounded-tl-none mt-1  w-fit max-w-[80%]">
-              Hey team, I've just uploaded the new wireframes. Please review them by tomorrow.
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3 flex-row-reverse">
-          <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center  text-xs">O</div>
-          <div className="flex flex-col items-end">
-            <div className="flex items-baseline gap-2">
-              <span className="text-xs text-gray-400">11:45 AM</span>
-              <span className="font-medium text-sm text-gray-900">Olivia Taylor</span>
-            </div>
-            <div className="bg-blue-600 text-white text-sm p-3 rounded rounded-tr-none mt-1  w-fit max-w-[80%]">
-              Looks good! I'll add the new color palette to the style guide today.
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="p-4 border-t border-gray-100">
-        <div className="relative">
-          <input type="text" placeholder="Type your message..." className="w-full border border-gray-200 rounded pl-4 pr-12 py-3 text-sm focus:outline-none focus:border-blue-500 bg-gray-50 focus:bg-white transition-colors" />
-          <button className="absolute right-2 top-2 w-8 h-8 bg-blue-600 text-white rounded flex items-center justify-center hover:bg-blue-700 transition">
-            <Send size={14} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderTimeLogs = () => {
     const totalHoursLogged = timeLogs.reduce((acc, log) => acc + (parseFloat(log.hours_worked) || 0), 0);
@@ -1155,25 +1144,23 @@ const ProjectDetailsPage = () => {
     <div className="bg-white rounded border border-gray-200  animate-fade-in p-6">
       <h3 className=" text-gray-900 text-sm mb-6">Recent Activity</h3>
       <div className="relative border-l border-gray-200 ml-4 space-y-6 pb-4">
-        {[
-          { act: 'Project created', by: 'Emma Johnson', date: '01 May 2024, 09:00 AM', det: 'Project has been created' },
-          { act: 'Milestone added', by: 'Emma Johnson', date: '01 May 2024, 09:15 AM', det: 'Planning & Research added' },
-          { act: 'Task created', by: 'Olivia Taylor', date: '02 May 2024, 10:30 AM', det: 'Wireframe Design task created' },
-          { act: 'Document uploaded', by: 'Michael Brown', date: '05 May 2024, 11:45 AM', det: 'Project Proposal.pdf uploaded' },
-          { act: 'Task status changed', by: 'Michael Brown', date: '07 May 2024, 02:00 PM', det: 'UI Design status changed to Review' },
-        ].map((a, i) => (
-          <div key={i} className="pl-6 relative">
+        {activityLogs.length > 0 ? activityLogs.map(a => (
+          <div key={a.id} className="pl-6 relative">
             <div className="w-3 h-3 bg-blue-500 rounded-full border-4 border-white absolute -left-1.5 top-1"></div>
             <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 mb-1">
-              <span className="font-medium text-sm text-gray-900">{a.act}</span>
-              <span className="text-xs text-gray-400">{a.date}</span>
+              <span className="font-medium text-sm text-gray-900">{a.action}</span>
+              <span className="text-xs text-gray-400">
+                {new Date(a.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+              </span>
             </div>
-            <div className="text-xs text-gray-500 flex gap-2 items-center">
-              <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-xs">{a.by}</span>
-              <span>{a.det}</span>
+            <div className="text-xs text-gray-500 flex gap-2 items-center mt-1">
+              {a.first_name && <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px]">{a.first_name} {a.last_name || ''}</span>}
+              <span>{a.details}</span>
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="text-gray-500 pl-4 text-sm">No recent activity.</div>
+        )}
       </div>
     </div>
   );
@@ -1229,65 +1216,6 @@ const ProjectDetailsPage = () => {
     </div>
   );
 
-  const renderBudget = () => (
-    <div className="flex flex-col gap-6 animate-fade-in">
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded p-4  text-center">
-          <div className="text-xs text-gray-500 font-medium mb-1">Total Budget</div>
-          <div className="text-2xl  text-gray-900">$15,000</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded p-4  text-center">
-          <div className="text-xs text-gray-500 font-medium mb-1">Spent</div>
-          <div className="text-2xl  text-red-500">$9,750</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded p-4  text-center">
-          <div className="text-xs text-gray-500 font-medium mb-1">Remaining</div>
-          <div className="text-2xl  text-green-500">$5,250</div>
-        </div>
-      </div>
-      <div className="bg-white rounded border border-gray-200  p-2">
-        <table className="w-full text-left whitespace-nowrap text-xs">
-          <thead className="bg-gray-50 border-b border-gray-100 text-gray-500">
-            <tr>
-              <th className="p-3 font-medium">Category</th>
-              <th className="p-3 font-medium">Budget</th>
-              <th className="p-3 font-medium">Spent</th>
-              <th className="p-3 font-medium">Remaining</th>
-              <th className="p-3 font-medium">% Used</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 text-gray-700">
-            {[
-              ['Design', '$3,000', '$2,200', '$800', 73],
-              ['Development', '$8,000', '$5,100', '$2,900', 64],
-              ['Testing', '$2,000', '$1,300', '$700', 65],
-              ['Others', '$2,000', '$1,150', '$850', 58],
-            ].map((r, i) => (
-              <tr key={i} className="hover:bg-gray-50">
-                <td className="p-3 font-medium text-gray-900">{r[0]}</td>
-                <td className="p-3">{r[1]}</td>
-                <td className="p-3 text-red-500">{r[2]}</td>
-                <td className="p-3 text-green-500">{r[3]}</td>
-                <td className="p-3 flex items-center gap-2">
-                  <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-blue-600" style={{ width: `${r[4]}%` }}></div>
-                  </div>
-                  <span className="text-xs text-gray-500">{r[4]}%</span>
-                </td>
-              </tr>
-            ))}
-            <tr className="bg-gray-50  text-gray-900">
-              <td className="p-3">Total</td>
-              <td className="p-3">$15,000</td>
-              <td className="p-3 text-red-500">$9,750</td>
-              <td className="p-3 text-green-500">$5,250</td>
-              <td className="p-3">65%</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
 
   const renderSettings = () => (
     <div className="bg-white rounded border border-gray-200  animate-fade-in p-6">
@@ -1338,13 +1266,11 @@ const ProjectDetailsPage = () => {
       case 'Milestones': return renderMilestones();
       case 'Team': return renderTeam();
       case 'Documents': return renderDocuments();
-      case 'Discussions': return renderDiscussions();
       case 'Time Logs': return renderTimeLogs();
       case 'Activity': return renderActivity();
       case 'Reports': return renderReports();
       case 'Timeline': return renderTimeline();
       case 'Calendar': return renderCalendar();
-      case 'Budget': return renderBudget();
       case 'Settings': return renderSettings();
       default: return renderOverview();
     }
@@ -1512,7 +1438,6 @@ const ProjectDetailsPage = () => {
               >
                 {tab}
                 {tab === 'Documents' && <span className="ml-1 bg-gray-100 text-gray-600 py-0.5 px-1.5 rounded-full text-[9px]">24</span>}
-                {tab === 'Discussions' && <span className="ml-1 bg-gray-100 text-gray-600 py-0.5 px-1.5 rounded-full text-[9px]">6</span>}
               </button>
             ))}
           </div>

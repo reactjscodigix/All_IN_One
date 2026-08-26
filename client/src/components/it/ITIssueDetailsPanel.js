@@ -270,9 +270,8 @@ const ITIssueDetailsPanel = ({ issue, updateIssue, deleteIssue, onClose, onIssue
   const typeOptions = (DEPARTMENT_KANBAN_CONFIG[issueDepartment]?.issueTypes
     || DEPARTMENT_KANBAN_CONFIG.IT.issueTypes).map(t => t.name);
 
-  // Git branches, pull requests and build automation only mean something for engineering.
-  const showDevTools = String(issueDepartment || '')
-    .replace(/\s*department\s*$/i, '').trim().toLowerCase() === 'it';
+  // Git branches, pull requests and build automation are being hidden for now
+  const showDevTools = false;
 
   const issueKey = issue?.issue_key || issue?.key;
 

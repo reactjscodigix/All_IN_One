@@ -154,16 +154,16 @@ export default function ITActivitiesPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-6 gap-4">
+      <div className="grid grid-cols-5 gap-2">
         {kpis.map((kpi, idx) => (
-          <div key={idx} className="bg-white p-4 rounded  border border-gray-100 flex items-center gap-4">
+          <div key={idx} className="bg-white p-2 rounded  border border-gray-100 flex items-center gap-4">
             <div className={`w-12 h-12 rounded-full ${kpi.bg} flex items-center justify-center shrink-0`}>
               {kpi.icon}
             </div>
             <div>
               <span className="text-xs  text-gray-500  tracking-wider block mb-1">{kpi.label}</span>
               <div className="flex items-end gap-2">
-                <span className="text-[22px] font-black text-gray-900 leading-none">{kpi.count}</span>
+                <span className="text-[22px]  text-gray-900 leading-none">{kpi.count}</span>
               </div>
               <span className={`text-xs  ${kpi.isPositive ? 'text-green-500' : 'text-red-500'} flex items-center gap-1 mt-1`}>
                 &uarr; {kpi.trend} <span className="text-gray-400 font-medium">vs last week</span>
@@ -296,17 +296,17 @@ export default function ITActivitiesPage() {
                     {activity.icon}
                   </div>
 
-                  <div className="flex-1 pt-1">
+                  <div className="flex-1 pt-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="text-xs  text-gray-900">{activity.title}</h4>
+                      <h4 className="text-xs text-gray-900 truncate" title={activity.title}>{activity.title}</h4>
                       {activity.titleBadge && (
                         <span className={`px-2 py-0.5 rounded text-xs  border ${activity.titleBadge.color}`}>
                           {activity.titleBadge.text}
                         </span>
                       )}
                     </div>
-                    <p className="text-[12px]  text-gray-700 mb-1">{activity.subtitle}</p>
-                    <p className="text-[12px] text-gray-500">{activity.details}</p>
+                    <p className="text-[12px] text-gray-700 mb-1 line-clamp-2" title={activity.subtitle}>{activity.subtitle}</p>
+                    <p className="text-[12px] text-gray-500 truncate" title={activity.details}>{activity.details}</p>
                   </div>
 
                   <div className="flex items-start gap-4 pt-1 w-64 shrink-0 justify-between">
@@ -362,7 +362,7 @@ export default function ITActivitiesPage() {
                     <div className={`w-5 h-5 rounded-full ${selectedActivity.iconBg} flex items-center justify-center shrink-0`}>
                       {React.cloneElement(selectedActivity.icon, { size: 10 })}
                     </div>
-                    <h4 className="text-xs  text-gray-900">{selectedActivity.title}</h4>
+                    <h4 className="text-xs text-gray-900 line-clamp-2 break-words leading-relaxed" title={selectedActivity.title}>{selectedActivity.title}</h4>
                     {selectedActivity.titleBadge && (
                       <span className={`px-2 py-0.5 rounded text-[9px]  border ${selectedActivity.titleBadge.color}`}>
                         {selectedActivity.titleBadge.text}

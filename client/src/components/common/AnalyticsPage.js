@@ -248,7 +248,7 @@ const AnalyticsPage = () => {
 
         {/* AI Meeting Insights Summary Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
+          <div className="bg-white p-2 rounded border border-gray-200  flex items-center gap-4">
             <div className="w-12 h-12 bg-blue-50 rounded flex items-center justify-center text-blue-600">
               <TrendingUp size={24} />
             </div>
@@ -261,7 +261,7 @@ const AnalyticsPage = () => {
               </h3>
             </div>
           </div>
-          <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
+          <div className="bg-white p-2 rounded border border-gray-200  flex items-center gap-4">
             <div className="w-12 h-12 bg-green-50 rounded flex items-center justify-center text-green-600">
               <Users size={24} />
             </div>
@@ -272,7 +272,7 @@ const AnalyticsPage = () => {
               </h3>
             </div>
           </div>
-          <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
+          <div className="bg-white p-2 rounded border border-gray-200  flex items-center gap-4">
             <div className="w-12 h-12 bg-purple-50 rounded flex items-center justify-center text-purple-600">
               <Clock size={24} />
             </div>
@@ -283,7 +283,7 @@ const AnalyticsPage = () => {
               </h3>
             </div>
           </div>
-          <div className="bg-white p-4 rounded border border-gray-200  flex items-center gap-4">
+          <div className="bg-white p-2 rounded border border-gray-200  flex items-center gap-4">
             <div className="w-12 h-12 bg-orange-50 rounded flex items-center justify-center text-orange-600">
               <CheckCircle size={24} />
             </div>

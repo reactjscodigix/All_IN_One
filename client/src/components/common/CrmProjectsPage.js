@@ -37,6 +37,21 @@ const CrmProjectsPage = ({ department }) => {
   const [assignTeamId, setAssignTeamId] = useState('');
   const [teamsList, setTeamsList] = useState([]);
 
+  const defaultColumns = ['Project ID & Client', 'Project Name', 'Department', 'Team', 'Project Manager', 'Status', 'Priority', 'Date Range', 'Progress', 'Tasks', 'Actions'];
+  const [visibleColumns, setVisibleColumns] = useState(defaultColumns);
+  const [showColumnsMenu, setShowColumnsMenu] = useState(false);
+
+  // DataTable States
+  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterPriority, setFilterPriority] = useState('');
+  const [filterManager, setFilterManager] = useState('');
+  const [filterClient, setFilterClient] = useState('');
+
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   useEffect(() => {
     loadProjects();
   }, []);
@@ -170,13 +185,14 @@ const CrmProjectsPage = ({ department }) => {
         budget: parseFloat(String(formData.price).replace(/[^0-9.]/g, '')) || 0,
         due_date: formData.dueDate,
         start_date: formData.startDate,
-        project_type: formData.projectType,
+        project_type: formData.projectType || department || 'IT',
         company: formData.client,
         company_id: formData.company_id,
         project_id: formData.projectId,
         manager_id: formData.manager_id,
         deal_id: formData.dealId || null,
-        service_type: formData.category || null
+        service_type: formData.category || null,
+        department: department || 'IT'
       };
 
       if (editingProject) {
@@ -195,10 +211,58 @@ const CrmProjectsPage = ({ department }) => {
     const projectTitle = (p.title || p.name || '').toLowerCase();
     const company = (p.company || p.client || p.company_name || '').toLowerCase();
     const projectIdCode = (p.project_id_code || '').toLowerCase();
-    return projectTitle.includes(searchTerm.toLowerCase()) ||
+    const manager = (p.manager_first_name ? `${p.manager_first_name} ${p.manager_last_name || ''}` : '').toLowerCase();
+    const departmentName = (p.department_name || p.workflow_type || '').toLowerCase();
+    const status = (p.status || '').toLowerCase();
+    const priority = (p.priority || '').toLowerCase();
+
+    const matchesSearch = projectTitle.includes(searchTerm.toLowerCase()) ||
       company.includes(searchTerm.toLowerCase()) ||
       projectIdCode.includes(searchTerm.toLowerCase());
+
+    const matchesDepartment = !filterDepartment || departmentName.includes(filterDepartment.toLowerCase());
+    const matchesStatus = !filterStatus || status === filterStatus.toLowerCase();
+    const matchesPriority = !filterPriority || priority === filterPriority.toLowerCase();
+    const matchesManager = !filterManager || manager.includes(filterManager.toLowerCase());
+    const matchesClient = !filterClient || company.includes(filterClient.toLowerCase());
+
+    return matchesSearch && matchesDepartment && matchesStatus && matchesPriority && matchesManager && matchesClient;
   });
+
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+
+    // special handling for nested/computed fields
+    let valA = a[sortConfig.key];
+    let valB = b[sortConfig.key];
+
+    if (sortConfig.key === 'manager') {
+      valA = `${a.manager_first_name || ''} ${a.manager_last_name || ''}`.trim();
+      valB = `${b.manager_first_name || ''} ${b.manager_last_name || ''}`.trim();
+    } else if (sortConfig.key === 'client') {
+      valA = a.company_name || a.company || a.client || '';
+      valB = b.company_name || b.company || b.client || '';
+    } else if (sortConfig.key === 'department') {
+      valA = a.department_name || a.workflow_type || '';
+      valB = b.department_name || b.workflow_type || '';
+    }
+
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+
+    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const totalPages = Math.ceil(sortedProjects.length / itemsPerPage);
+  const currentProjects = sortedProjects.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const requestSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
+    setSortConfig({ key, direction });
+  };
 
   const getStatusBadge = (status) => {
     const s = (status || '').toLowerCase();
@@ -243,9 +307,8 @@ const CrmProjectsPage = ({ department }) => {
   return (
     <div className="w-full bg-gray-50 min-h-screen flex flex-col p-4 font-sans">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl  text-gray-900">Projects</h1>
-        <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+      <div className="mb-3">
+        <div className="text-sm text-gray-500 mt-1 flex items-center gap-1">
           <span>Dashboard</span> <span className="text-gray-400">›</span>
           <span>Projects</span> <span className="text-gray-400">›</span>
           <span className="text-gray-900 font-medium">All Projects</span>
@@ -253,62 +316,7 @@ const CrmProjectsPage = ({ department }) => {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-6 gap-2 mb-6">
-        <div className="bg-white p-4 rounded border border-gray-100  flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-            <Folder size={24} />
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 font-medium">Total Projects</div>
-            <div className="text-xl  text-gray-900">{totalProjects}</div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded border border-gray-100  flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-            <PlayCircle size={24} />
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 font-medium">In Progress</div>
-            <div className="text-xl  text-gray-900">{inProgress}</div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded border border-gray-100  flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
-            <CheckCircle size={24} />
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 font-medium">Completed</div>
-            <div className="text-xl  text-gray-900">{completed}</div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded border border-gray-100  flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
-            <PauseCircle size={24} />
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 font-medium">On Hold</div>
-            <div className="text-xl  text-gray-900">{onHold}</div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded border border-gray-100  flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
-            <Clock size={24} />
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 font-medium">Overdue</div>
-            <div className="text-xl  text-gray-900">{overdue}</div>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded border border-gray-100  flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
-            <XCircle size={24} />
-          </div>
-          <div>
-            <div className="text-xs text-gray-500 font-medium">Cancelled</div>
-            <div className="text-xl  text-gray-900">{cancelled}</div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Main Table Container */}
       <div className="">
@@ -316,7 +324,7 @@ const CrmProjectsPage = ({ department }) => {
         {/* Toolbar */}
         <div className=" border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg  text-gray-900">All Projects</h2>
+            <h2 className="text-xl  text-gray-900">All Projects</h2>
             <span className="bg-gray-100 text-gray-600 text-xs px-2.5 py-1 rounded-full">{filteredProjects.length} Projects</span>
           </div>
           <div className="flex items-center gap-3 my-4">
@@ -326,12 +334,37 @@ const CrmProjectsPage = ({ department }) => {
             <button className="flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 p-2 rounded hover:bg-gray-50 transition">
               <Download size={14} /> Export
             </button>
-            <button className="flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 p-2 rounded hover:bg-gray-50 transition">
-              <Columns size={14} /> Columns
-            </button>
-            <button className="flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 p-2 rounded hover:bg-gray-50 transition">
-              <Filter size={14} /> Filters
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowColumnsMenu(!showColumnsMenu)}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 p-2 rounded hover:bg-gray-50 transition"
+              >
+                <Columns size={14} /> Columns
+              </button>
+              {showColumnsMenu && (
+                <div className="absolute right-0 mt-1 bg-white border border-gray-200 shadow-xl rounded w-48 z-50 p-2 text-xs text-gray-700">
+                  <div className="font-medium text-gray-900 border-b pb-2 mb-2">Show/Hide Columns</div>
+                  {defaultColumns.map(col => (
+                    <label key={col} className="flex items-center gap-2 p-1.5 hover:bg-gray-50 cursor-pointer rounded select-none">
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns.includes(col)}
+                        onChange={() => {
+                          if (visibleColumns.includes(col)) {
+                            setVisibleColumns(visibleColumns.filter(c => c !== col));
+                          } else {
+                            setVisibleColumns([...visibleColumns, col]);
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                      {col}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {isManager && (
               <button
                 onClick={handleAddProject}
@@ -344,93 +377,56 @@ const CrmProjectsPage = ({ department }) => {
         </div>
 
         {/* Filters Row */}
-        <div className=" border-b border-gray-100 flex items-center gap-3">
-          <div className="relative w-64">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search projects, client, manager..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-gray-200 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <select className="text-xs border border-gray-200 rounded-md p-2 text-gray-600 outline-none w-36">
-            <option>Department</option>
-          </select>
-          <select className="text-xs border border-gray-200 rounded-md p-2 text-gray-600 outline-none w-32">
-            <option>All Status</option>
-          </select>
-          <select className="text-xs border border-gray-200 rounded-md p-2 text-gray-600 outline-none w-32">
-            <option>All Priority</option>
-          </select>
-          <select className="text-xs border border-gray-200 rounded-md p-2 text-gray-600 outline-none w-36">
-            <option>Project Manager</option>
-          </select>
-          <select className="text-xs border border-gray-200 rounded-md p-2 text-gray-600 outline-none w-32">
-            <option>All Client</option>
-          </select>
-          <button className="flex items-center justify-center gap-1.5 text-xs font-medium text-gray-600 border border-gray-200 rounded-md p-2 ml-auto hover:bg-gray-50">
-            <Filter size={14} /> More Filters
-          </button>
-        </div>
+
 
         {/* Views Row */}
-        <div className="p-2 border-b border-gray-100 flex items-center gap-6 text-xs font-medium">
+        <div className="px-4 mt-4 border-b border-gray-200 flex items-center gap-6 bg-white">
           <button
             onClick={() => setActiveView('table')}
-            className={`flex items-center gap-1.5 pb-2 -mb-2.5 border-b-2 transition-colors ${activeView === 'table' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-900'
-              }`}
+            className={`flex items-center gap-1.5 py-3 -mb-px text-xs font-medium border-b-2 transition-colors ${activeView === 'table' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-900'}`}
           >
             <AlignJustify size={14} /> Table View
           </button>
           <button
             onClick={() => setActiveView('kanban')}
-            className={`flex items-center gap-1.5 pb-2 -mb-2.5 border-b-2 transition-colors ${activeView === 'kanban' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-900'
-              }`}
+            className={`flex items-center gap-1.5 py-3 -mb-px text-xs font-medium border-b-2 transition-colors ${activeView === 'kanban' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-900'}`}
           >
             <LayoutGrid size={14} /> Kanban View
           </button>
           <button
             onClick={() => setActiveView('timeline')}
-            className={`flex items-center gap-1.5 pb-2 -mb-2.5 border-b-2 transition-colors ${activeView === 'timeline' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-900'
-              }`}
+            className={`flex items-center gap-1.5 py-3 -mb-px text-xs font-medium border-b-2 transition-colors ${activeView === 'timeline' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-900'}`}
           >
             <AlignJustify size={14} /> Timeline View
           </button>
           <button
             onClick={() => setActiveView('calendar')}
-            className={`flex items-center gap-1.5 pb-2 -mb-2.5 border-b-2 transition-colors ${activeView === 'calendar' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-900'
-              }`}
+            className={`flex items-center gap-1.5 py-3 -mb-px text-xs font-medium border-b-2 transition-colors ${activeView === 'calendar' ? 'text-blue-600 border-blue-600' : 'text-gray-500 border-transparent hover:text-gray-900'}`}
           >
             <Calendar size={14} /> Calendar View
           </button>
         </div>
 
         {/* ── TABLE VIEW ── */}
-        {activeView === 'table' && <div className="overflow-x-auto min-h-[300px] pb-16">
-          <table className="w-full text-left whitespace-nowrap">
-            <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-600  ">
+        {activeView === 'table' && <div className="overflow-x-auto w-full">
+          <table className="w-full text-left whitespace-nowrap border border-slate-200">
+            <thead className="bg-gray-50 border-b border-gray-200 text-xs text-gray-600">
               <tr>
-                <th className="p-3">Project ID</th>
-                <th className="p-3">Project Name</th>
-                <th className="p-3">Client</th>
-                <th className="p-3">Department</th>
-                <th className="p-3">Team</th>
-                <th className="p-3">Project Manager</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Priority</th>
-                <th className="p-3">Start Date</th>
-                <th className="p-3">End Date</th>
-                <th className="p-3">Progress</th>
-                <th className="p-3">Budget</th>
-                <th className="p-3">Spent</th>
-                <th className="p-3">Tasks</th>
-                <th className="p-3 text-center">Actions</th>
+                {visibleColumns.includes('Project ID & Client') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('project_id_code')}>Project ID & Client {sortConfig.key === 'project_id_code' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Project Name') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('name')}>Project Name {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Department') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('department')}>Department {sortConfig.key === 'department' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Team') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('team_name')}>Team {sortConfig.key === 'team_name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Project Manager') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('manager')}>Project Manager {sortConfig.key === 'manager' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Status') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('status')}>Status {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Priority') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('priority')}>Priority {sortConfig.key === 'priority' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Date Range') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('start_date')}>Date Range {sortConfig.key === 'start_date' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Progress') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('progress')}>Progress {sortConfig.key === 'progress' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Tasks') && <th className="p-3 cursor-pointer hover:bg-gray-100" onClick={() => requestSort('completed_tasks')}>Tasks {sortConfig.key === 'completed_tasks' && (sortConfig.direction === 'asc' ? '↑' : '↓')}</th>}
+                {visibleColumns.includes('Actions') && <th className="p-3 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-xs">
-              {filteredProjects.map((project) => {
+              {currentProjects.map((project) => {
                 const progress = project.progress || 0;
                 let teamMembers = [];
                 if (project.team_members) {
@@ -441,29 +437,29 @@ const CrmProjectsPage = ({ department }) => {
 
                 return (
                   <tr key={project.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigateToProject(project.id)}>
-                    <td className="p-3 text-gray-500">{project.project_id_code || `PRJ-00${project.id}`}</td>
-                    <td className="p-3">
-                      <div className="font-medium text-gray-900">{project.name || project.title}</div>
-                      <div className="text-xs text-gray-500">{project.description ? project.description.substring(0, 30) + '...' : project.project_type || 'General'}</div>
-                    </td>
-                    <td className="p-3">
+                    {visibleColumns.includes('Project ID & Client') && <td className="p-3">
+                      <div className="text-gray-900 font-medium mb-1">{project.project_id_code || `PRJ-00${project.id}`}</div>
                       {(project.company_name || project.company || project.client) ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center text-xs font-semibold">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-5 h-5 rounded bg-emerald-50 text-emerald-700 flex items-center justify-center text-[10px] font-bold">
                             {(project.company_name || project.company || project.client).charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-gray-900 font-medium">{project.company_name || project.company || project.client}</span>
+                          <span className="text-gray-500 text-xs truncate max-w-[120px]">{project.company_name || project.company || project.client}</span>
                         </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-gray-400 text-xs">-</span>
                       )}
-                    </td>
-                    <td className="p-3">
+                    </td>}
+                    {visibleColumns.includes('Project Name') && <td className="p-3">
+                      <div className="font-medium text-gray-900">{project.name || project.title}</div>
+                      <div className="text-xs text-gray-500">{project.description ? project.description.substring(0, 30) + '...' : project.project_type || 'General'}</div>
+                    </td>}
+                    {visibleColumns.includes('Department') && <td className="p-3">
                       <span className="px-2 py-0.5 rounded text-xs text-purple-600 bg-purple-50 border border-purple-100">
                         {project.department_name || project.workflow_type || 'Department'}
                       </span>
-                    </td>
-                    <td className="p-3">
+                    </td>}
+                    {visibleColumns.includes('Team') && <td className="p-3">
                       {(project.team_name || project.assigned_team) ? (
                         <span className="px-2 py-0.5 rounded text-xs text-blue-600 bg-blue-50 border border-blue-100 font-medium">
                           {project.team_name || project.assigned_team}
@@ -471,8 +467,8 @@ const CrmProjectsPage = ({ department }) => {
                       ) : (
                         <span className="text-gray-400 text-xs">-</span>
                       )}
-                    </td>
-                    <td className="p-3">
+                    </td>}
+                    {visibleColumns.includes('Project Manager') && <td className="p-3">
                       <div className="flex items-center gap-2">
                         {project.manager_avatar ? (
                           <img src={project.manager_avatar} alt="Manager" className="w-6 h-6 rounded-full object-cover border border-gray-200" />
@@ -483,33 +479,29 @@ const CrmProjectsPage = ({ department }) => {
                         ) : null}
                         <span className="text-gray-700">{project.manager_first_name ? `${project.manager_first_name} ${project.manager_last_name || ''}` : '-'}</span>
                       </div>
-                    </td>
-                    <td className="p-3">{getStatusBadge(project.status)}</td>
-                    <td className="p-3">{getPriorityBadge(project.priority)}</td>
-                    <td className="p-3 text-gray-600">{formatDate(project.start_date)}</td>
-                    <td className="p-3 text-gray-600">{formatDate(project.due_date || project.end_date)}</td>
-                    <td className="p-3">
+                    </td>}
+                    {visibleColumns.includes('Status') && <td className="p-3">{getStatusBadge(project.status)}</td>}
+                    {visibleColumns.includes('Priority') && <td className="p-3">{getPriorityBadge(project.priority)}</td>}
+                    {visibleColumns.includes('Date Range') && <td className="p-3 text-gray-600">
+                      {formatDate(project.start_date)} - {formatDate(project.due_date || project.end_date)}
+                    </td>}
+                    {visibleColumns.includes('Progress') && <td className="p-3">
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                           <div className="h-full bg-blue-600 rounded-full" style={{ width: `${progress}%` }}></div>
                         </div>
                         <span className="text-xs text-gray-600">{progress}%</span>
                       </div>
-                    </td>
-                    <td className="p-3 font-medium text-gray-900">{formatCurrency(project.budget)}</td>
-                    <td className="p-3 font-medium text-gray-900">{formatCurrency(project.spent)}</td>
-                    <td className="p-3 text-gray-600">{project.completed_tasks || 0}/{project.total_tasks || 0}</td>
-                    <td className="p-3 text-center relative" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={(e) => { e.stopPropagation(); setOpenActionMenu(openActionMenu === project.id ? null : project.id); }} className="text-gray-400 hover:text-gray-600"><MoreHorizontal size={16} /></button>
-                      {openActionMenu === project.id && (
-                        <div className="absolute right-8 top-8 bg-white border border-gray-200 shadow-2xl rounded w-32 z-[9999] overflow-hidden text-left py-1">
-                          <button onClick={() => { setOpenActionMenu(null); navigateToProject(project.id); }} className="w-full p-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Eye size={14} /> View Details</button>
-                          <button onClick={() => { setOpenActionMenu(null); handleEditProject(project); }} className="w-full p-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Edit size={14} /> Edit</button>
-                          <button onClick={() => { setOpenActionMenu(null); handleAssignTeamOpen(project); }} className="w-full p-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Network size={14} /> Assign Team</button>
-                          <button onClick={() => { setOpenActionMenu(null); handleDeleteProject(project.id); }} className="w-full p-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 size={14} /> Delete</button>
-                        </div>
-                      )}
-                    </td>
+                    </td>}
+                    {visibleColumns.includes('Tasks') && <td className="p-3 text-gray-600">{project.completed_tasks || 0}/{project.total_tasks || 0}</td>}
+                    {visibleColumns.includes('Actions') && <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); navigateToProject(project.id); }} title="View" className="text-gray-400 hover:text-blue-600"><Eye size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleEditProject(project); }} title="Edit" className="text-gray-400 hover:text-green-600"><Edit size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleAssignTeamOpen(project); }} title="Assign Team" className="text-gray-400 hover:text-purple-600"><Network size={16} /></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteProject(project.id); }} title="Delete" className="text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
+                      </div>
+                    </td>}
                   </tr>
                 )
               })}
@@ -762,17 +754,35 @@ const CrmProjectsPage = ({ department }) => {
           );
         })()}
 
-        {/* Pagination Footer (table only) */}
-        {activeView === 'table' && <div className="p-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-          <div>Showing 1 to {Math.min(10, filteredProjects.length)} of {filteredProjects.length} projects</div>
+        {/* Pagination */}
+        {activeView === 'table' && <div className="p-4 border-t border-gray-200 bg-white flex items-center justify-between text-xs text-gray-500">
+          <div>Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, sortedProjects.length)} of {sortedProjects.length} projects</div>
           <div className="flex items-center gap-1">
-            <button className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-50">&lt;</button>
-            <button className="w-6 h-6 flex items-center justify-center rounded bg-blue-600 text-white font-medium">1</button>
-            <button className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-50">2</button>
-            <button className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-50">3</button>
-            <span>...</span>
-            <button className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-50">7</button>
-            <button className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-50">&gt;</button>
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+            >
+              &lt;
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-6 h-6 flex items-center justify-center rounded ${page === currentPage ? 'bg-blue-600 text-white font-medium' : 'border border-gray-200 hover:bg-gray-50'}`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="w-6 h-6 flex items-center justify-center rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+            >
+              &gt;
+            </button>
             <select className="ml-2 border border-gray-200 rounded px-2 py-1 outline-none">
               <option>10 / page</option>
             </select>
@@ -811,7 +821,7 @@ const CrmProjectsPage = ({ department }) => {
                   </div>
                 </div>
               )}
-              
+
               <div className="mb-5">
                 <label className="block text-xs font-medium text-gray-700 mb-2">
                   {(selectedProjectToAssign && (selectedProjectToAssign.team_name || selectedProjectToAssign.assigned_team)) ? 'Assign New Team' : 'Select a Team'}

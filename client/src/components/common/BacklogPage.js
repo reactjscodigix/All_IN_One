@@ -178,9 +178,8 @@ const AssigneePicker = ({ assignee, users, currentUserName, onChange }) => {
           setQuery('');
         }}
         title={name || 'Unassigned'}
-        className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold ring-1 ring-white hover:ring-blue-400 transition ${
-          name ? `${avatarColor(name)} text-white` : 'bg-gray-200 text-gray-500'
-        }`}
+        className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold ring-1 ring-white hover:ring-blue-400 transition ${name ? `${avatarColor(name)} text-white` : 'bg-gray-200 text-gray-500'
+          }`}
       >
         {name ? initials(name) : '?'}
       </button>
@@ -332,109 +331,106 @@ const WorkItemRow = ({ item, index, sprints, currentSprintId, users, currentUser
   return (
     <Draggable draggableId={item.issue_key} index={index}>
       {(provided, snapshot) => (
-    <div
-      ref={provided.innerRef}
-      {...provided.draggableProps}
-      {...provided.dragHandleProps}
-      onClick={() => onOpen(item.issue_key)}
-      className={`flex items-center gap-3 px-3 py-2 border-b border-gray-100 last:border-0 cursor-pointer group transition ${
-        snapshot.isDragging ? 'bg-white shadow-lg ring-1 ring-blue-300' :
-        isSelected ? 'bg-blue-50 ring-1 ring-inset ring-blue-300' : 'bg-white hover:bg-blue-50/40'
-      }`}
-      style={provided.draggableProps.style}
-    >
-      <CheckSquare size={13} className="text-blue-500 shrink-0" />
-      {/* Jira strikes through the key of a finished item — the key only, not the title. */}
-      <span className={`text-xs text-blue-600 font-medium shrink-0 w-20 group-hover:underline ${
-        isDoneStatus(item.status) ? 'line-through' : ''
-      }`}>
-        {item.issue_key}
-      </span>
-      <span className="text-xs text-gray-800 flex-1 truncate group-hover:underline">{item.title}</span>
-
-      {/* Due date, or the start date when only that is set. Overdue work is called out,
-          but only while it is still unfinished — a late-finished item is just done. */}
-      {(() => {
-        const value = item.due_date || item.start_date;
-        const text = formatDate(value);
-        if (!text) return null;
-        const isDue = !!item.due_date;
-        const overdue = isDue && !isDoneStatus(item.status) && isPastDate(value);
-        return (
-          <span
-            title={`${isDue ? 'Due' : 'Starts'} ${text}${overdue ? ' — overdue' : ''}`}
-            className={`shrink-0 flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border ${
-              overdue
-                ? 'bg-red-50 text-red-700 border-red-200 font-medium'
-                : 'bg-gray-50 text-gray-600 border-gray-200'
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          onClick={() => onOpen(item.issue_key)}
+          className={`flex items-center gap-3 px-3 py-2 border-b border-gray-100 last:border-0 cursor-pointer group transition ${snapshot.isDragging ? 'bg-white shadow-lg ring-1 ring-blue-300' :
+              isSelected ? 'bg-blue-50 ring-1 ring-inset ring-blue-300' : 'bg-white hover:bg-blue-50/40'
             }`}
-          >
-            <Calendar size={10} /> {text}
-          </span>
-        );
-      })()}
-
-      <StatusPicker status={item.status} onChange={(s) => onUpdate(item.issue_key, { status: s })} />
-
-      <span className="shrink-0" title={item.priority}>{PRIORITY_ICONS[item.priority] || PRIORITY_ICONS.Medium}</span>
-
-      <AssigneePicker
-        assignee={item.assignee}
-        users={users}
-        currentUserName={currentUserName}
-        onChange={(a) => onUpdate(item.issue_key, { assignee: a })}
-      />
-
-      <div className="shrink-0">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setAnchorRect(e.currentTarget.getBoundingClientRect());
-            setMenuOpen(!menuOpen);
-          }}
-          className="p-1 text-gray-400 hover:text-gray-700 transition"
+          style={provided.draggableProps.style}
         >
-          <MoreHorizontal size={14} />
-        </button>
-        <AnchoredMenu open={menuOpen} anchorRect={anchorRect} width={230} onClose={() => setMenuOpen(false)}>
-          <div className="px-3 py-1 text-[10px] text-gray-400 uppercase tracking-wide">Move to</div>
-          {destinations.length === 0 && (
-            <div className="px-3 py-1.5 text-gray-400 text-xs">No other sprint yet</div>
-          )}
-          {destinations.map(d => (
-            <div
-              key={String(d.id)}
-              onClick={() => { onMove(item.issue_key, d.id); setMenuOpen(false); }}
-              className="px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-700"
+          <CheckSquare size={13} className="text-blue-500 shrink-0" />
+          {/* Jira strikes through the key of a finished item — the key only, not the title. */}
+          <span className={`text-xs text-blue-600 font-medium shrink-0 w-20 group-hover:underline ${isDoneStatus(item.status) ? 'line-through' : ''
+            }`}>
+            {item.issue_key}
+          </span>
+          <span className="text-xs text-gray-800 flex-1 truncate group-hover:underline">{item.title}</span>
+
+          {/* Due date, or the start date when only that is set. Overdue work is called out,
+          but only while it is still unfinished — a late-finished item is just done. */}
+          {(() => {
+            const value = item.due_date || item.start_date;
+            const text = formatDate(value);
+            if (!text) return null;
+            const isDue = !!item.due_date;
+            const overdue = isDue && !isDoneStatus(item.status) && isPastDate(value);
+            return (
+              <span
+                title={`${isDue ? 'Due' : 'Starts'} ${text}${overdue ? ' — overdue' : ''}`}
+                className={`shrink-0 flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border ${overdue
+                    ? 'bg-red-50 text-red-700 border-red-200 font-medium'
+                    : 'bg-gray-50 text-gray-600 border-gray-200'
+                  }`}
+              >
+                <Calendar size={10} /> {text}
+              </span>
+            );
+          })()}
+
+          <StatusPicker status={item.status} onChange={(s) => onUpdate(item.issue_key, { status: s })} />
+
+          <span className="shrink-0" title={item.priority}>{PRIORITY_ICONS[item.priority] || PRIORITY_ICONS.Medium}</span>
+
+          <AssigneePicker
+            assignee={item.assignee}
+            users={users}
+            currentUserName={currentUserName}
+            onChange={(a) => onUpdate(item.issue_key, { assignee: a })}
+          />
+
+          <div className="shrink-0">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setAnchorRect(e.currentTarget.getBoundingClientRect());
+                setMenuOpen(!menuOpen);
+              }}
+              className="p-1 text-gray-400 hover:text-gray-700 transition"
             >
-              {d.label}
-            </div>
-          ))}
+              <MoreHorizontal size={14} />
+            </button>
+            <AnchoredMenu open={menuOpen} anchorRect={anchorRect} width={230} onClose={() => setMenuOpen(false)}>
+              <div className="px-3 py-1 text-[10px] text-gray-400 uppercase tracking-wide">Move to</div>
+              {destinations.length === 0 && (
+                <div className="px-3 py-1.5 text-gray-400 text-xs">No other sprint yet</div>
+              )}
+              {destinations.map(d => (
+                <div
+                  key={String(d.id)}
+                  onClick={() => { onMove(item.issue_key, d.id); setMenuOpen(false); }}
+                  className="px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-700"
+                >
+                  {d.label}
+                </div>
+              ))}
 
-          <div className="border-t border-gray-100 my-1" />
-          <div
-            onClick={() => { setMenuOpen(false); onCopy('link', item.issue_key); }}
-            className="px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-700"
-          >
-            Copy link
-          </div>
-          <div
-            onClick={() => { setMenuOpen(false); onCopy('key', item.issue_key); }}
-            className="px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-700"
-          >
-            Copy key
-          </div>
+              <div className="border-t border-gray-100 my-1" />
+              <div
+                onClick={() => { setMenuOpen(false); onCopy('link', item.issue_key); }}
+                className="px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-700"
+              >
+                Copy link
+              </div>
+              <div
+                onClick={() => { setMenuOpen(false); onCopy('key', item.issue_key); }}
+                className="px-3 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-700"
+              >
+                Copy key
+              </div>
 
-          <div className="border-t border-gray-100 my-1" />
-          <div
-            onClick={() => { setMenuOpen(false); onDelete(item); }}
-            className="px-3 py-1.5 hover:bg-red-50 cursor-pointer text-red-600 flex items-center gap-2"
-          >
-            <Trash2 size={12} /> Delete
+              <div className="border-t border-gray-100 my-1" />
+              <div
+                onClick={() => { setMenuOpen(false); onDelete(item); }}
+                className="px-3 py-1.5 hover:bg-red-50 cursor-pointer text-red-600 flex items-center gap-2"
+              >
+                <Trash2 size={12} /> Delete
+              </div>
+            </AnchoredMenu>
           </div>
-        </AnchoredMenu>
-      </div>
-    </div>
+        </div>
       )}
     </Draggable>
   );
@@ -978,149 +974,149 @@ const BacklogPage = ({ department }) => {
       />
 
       <DragDropContext onDragEnd={onDragEnd}>
-      <div className="p-6">
+        <div className="p-6">
 
-      {/* Sprint sections */}
-      {sprints.map((sprint, idx) => {
-        const isCollapsed = collapsed[`s${sprint.id}`];
-        const dates = formatDate(sprint.start_date) && formatDate(sprint.end_date)
-          ? `${formatDate(sprint.start_date)} – ${formatDate(sprint.end_date)}` : null;
+          {/* Sprint sections */}
+          {sprints.map((sprint, idx) => {
+            const isCollapsed = collapsed[`s${sprint.id}`];
+            const dates = formatDate(sprint.start_date) && formatDate(sprint.end_date)
+              ? `${formatDate(sprint.start_date)} – ${formatDate(sprint.end_date)}` : null;
 
-        return (
-          <div key={sprint.id} className="mb-4 border border-gray-200 rounded-lg bg-white overflow-hidden">
-            <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border-b border-gray-200">
-              <button onClick={() => toggle(`s${sprint.id}`)} className="text-gray-500 hover:text-gray-800">
-                {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-              </button>
-              <span className="font-semibold text-sm text-gray-900">{sprint.name}</span>
+            return (
+              <div key={sprint.id} className="mb-4 border border-gray-200 rounded-lg bg-white overflow-hidden">
+                <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border-b border-gray-200">
+                  <button onClick={() => toggle(`s${sprint.id}`)} className="text-gray-500 hover:text-gray-800">
+                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                  <span className="font-semibold text-sm text-gray-900">{sprint.name}</span>
 
-              {sprint.status === 'Active' && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">ACTIVE</span>
-              )}
-              {dates ? (
-                <button
-                  onClick={() => setSprintToEdit(sprint)}
-                  className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-blue-600 hover:underline"
-                  title="Edit sprint dates"
-                >
-                  <Calendar size={11} /> {dates}
-                </button>
-              ) : (
-                <button
-                  onClick={() => setSprintToEdit(sprint)}
-                  className="flex items-center gap-1 text-[11px] text-blue-600 hover:underline font-medium"
-                >
-                  <Calendar size={11} /> Add dates
-                </button>
-              )}
-              <span className="text-[11px] text-gray-500">
-                ({sprint.issues.length} work item{sprint.issues.length === 1 ? '' : 's'})
-              </span>
-              {/* Which project this sprint's work belongs to. */}
-              {sprint.project_id != null && (
+                  {sprint.status === 'Active' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">ACTIVE</span>
+                  )}
+                  {dates ? (
+                    <button
+                      onClick={() => setSprintToEdit(sprint)}
+                      className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-blue-600 hover:underline"
+                      title="Edit sprint dates"
+                    >
+                      <Calendar size={11} /> {dates}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setSprintToEdit(sprint)}
+                      className="flex items-center gap-1 text-[11px] text-blue-600 hover:underline font-medium"
+                    >
+                      <Calendar size={11} /> Add dates
+                    </button>
+                  )}
+                  <span className="text-[11px] text-gray-500">
+                    ({sprint.issues.length} work item{sprint.issues.length === 1 ? '' : 's'})
+                  </span>
+                  {/* Which project this sprint's work belongs to. */}
+                  {/* {sprint.project_id != null && (
                 <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
                   {projects.find(p => Number(p.id) === Number(sprint.project_id))?.name || `Project #${sprint.project_id}`}
                 </span>
-              )}
-              {sprint.goal && <span className="text-[11px] text-gray-400 italic truncate max-w-[220px]">{sprint.goal}</span>}
+              )} */}
+                  {sprint.goal && <span className="text-[11px] text-gray-400 italic truncate max-w-[220px]">{sprint.goal}</span>}
 
-              <div className="ml-auto flex items-center gap-3">
-                <CountBadges counts={sprint.counts} />
-                {sprint.status === 'Active' ? (
-                  <button
-                    onClick={() => setSprintToComplete(sprint)}
-                    className="px-3 py-1 text-xs font-medium rounded bg-emerald-600 text-white hover:bg-emerald-700 transition"
-                  >
-                    Complete sprint
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setSprintToStart(sprint)}
-                    className="px-3 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition"
-                  >
-                    Start sprint
-                  </button>
+                  <div className="ml-auto flex items-center gap-3">
+                    <CountBadges counts={sprint.counts} />
+                    {sprint.status === 'Active' ? (
+                      <button
+                        onClick={() => setSprintToComplete(sprint)}
+                        className="px-3 py-1 text-xs font-medium rounded bg-emerald-600 text-white hover:bg-emerald-700 transition"
+                      >
+                        Complete sprint
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setSprintToStart(sprint)}
+                        className="px-3 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+                      >
+                        Start sprint
+                      </button>
+                    )}
+                    <SprintMenu sprint={sprint} index={idx} total={sprints.length} />
+                  </div>
+                </div>
+
+                {!isCollapsed && (
+                  <Droppable droppableId={`sprint-${sprint.id}`}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={snapshot.isDraggingOver ? 'bg-blue-50/60' : ''}
+                      >
+                        {sprint.issues.map((item, i) => (
+                          <WorkItemRow key={item.issue_key} item={item} index={i} sprints={sprints}
+                            currentSprintId={sprint.id} users={assignableUsers}
+                            currentUserName={currentUserName} isSelected={selectedKey === item.issue_key}
+                            onMove={moveItem} onOpen={openIssue} onUpdate={updateItem}
+                            onDelete={(item) => deleteItem(item.issue_key)} onCopy={copyToClipboard} />
+                        ))}
+                        {sprint.issues.length === 0 && (
+                          <div className="px-4 py-6 text-center text-xs text-gray-400">
+                            Plan this sprint by dragging work items in from the backlog below,
+                            or create them here.
+                          </div>
+                        )}
+                        {provided.placeholder}
+                        <InlineCreateRow sprintId={sprint.id} onCreate={createWorkItem} />
+                      </div>
+                    )}
+                  </Droppable>
                 )}
-                <SprintMenu sprint={sprint} index={idx} total={sprints.length} />
               </div>
+            );
+          })}
+
+          {/* Backlog section */}
+          <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
+            <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border-b border-gray-200">
+              <button onClick={() => toggle('backlog')} className="text-gray-500 hover:text-gray-800">
+                {collapsed.backlog ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+              </button>
+              <Inbox size={14} className="text-gray-500" />
+              <span className="font-semibold text-sm text-gray-900">Backlog</span>
+              <span className="text-[11px] text-gray-500">
+                ({backlog.length} work item{backlog.length === 1 ? '' : 's'})
+              </span>
+              <button
+                onClick={() => setIsCreatingSprint(true)}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition"
+              >
+                <Plus size={13} /> Create sprint
+              </button>
             </div>
 
-            {!isCollapsed && (
-              <Droppable droppableId={`sprint-${sprint.id}`}>
+            {!collapsed.backlog && (
+              <Droppable droppableId="backlog">
                 {(provided, snapshot) => (
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     className={snapshot.isDraggingOver ? 'bg-blue-50/60' : ''}
                   >
-                    {sprint.issues.map((item, i) => (
+                    {backlog.map((item, i) => (
                       <WorkItemRow key={item.issue_key} item={item} index={i} sprints={sprints}
-                        currentSprintId={sprint.id} users={assignableUsers}
+                        currentSprintId={null} users={assignableUsers}
                         currentUserName={currentUserName} isSelected={selectedKey === item.issue_key}
                         onMove={moveItem} onOpen={openIssue} onUpdate={updateItem}
-                      onDelete={(item) => deleteItem(item.issue_key)} onCopy={copyToClipboard} />
+                        onDelete={(item) => deleteItem(item.issue_key)} onCopy={copyToClipboard} />
                     ))}
-                    {sprint.issues.length === 0 && (
-                      <div className="px-4 py-6 text-center text-xs text-gray-400">
-                        Plan this sprint by dragging work items in from the backlog below,
-                        or create them here.
-                      </div>
+                    {backlog.length === 0 && (
+                      <div className="px-4 py-8 text-center text-xs text-gray-400">Your backlog is empty.</div>
                     )}
                     {provided.placeholder}
-                    <InlineCreateRow sprintId={sprint.id} onCreate={createWorkItem} />
+                    <InlineCreateRow sprintId={null} onCreate={createWorkItem} />
                   </div>
                 )}
               </Droppable>
             )}
           </div>
-        );
-      })}
-
-      {/* Backlog section */}
-      <div className="border border-gray-200 rounded-lg bg-white overflow-hidden">
-        <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 border-b border-gray-200">
-          <button onClick={() => toggle('backlog')} className="text-gray-500 hover:text-gray-800">
-            {collapsed.backlog ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-          </button>
-          <Inbox size={14} className="text-gray-500" />
-          <span className="font-semibold text-sm text-gray-900">Backlog</span>
-          <span className="text-[11px] text-gray-500">
-            ({backlog.length} work item{backlog.length === 1 ? '' : 's'})
-          </span>
-          <button
-            onClick={() => setIsCreatingSprint(true)}
-            className="ml-auto flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 transition"
-          >
-            <Plus size={13} /> Create sprint
-          </button>
         </div>
-
-        {!collapsed.backlog && (
-          <Droppable droppableId="backlog">
-            {(provided, snapshot) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                className={snapshot.isDraggingOver ? 'bg-blue-50/60' : ''}
-              >
-                {backlog.map((item, i) => (
-                  <WorkItemRow key={item.issue_key} item={item} index={i} sprints={sprints}
-                    currentSprintId={null} users={assignableUsers}
-                    currentUserName={currentUserName} isSelected={selectedKey === item.issue_key}
-                    onMove={moveItem} onOpen={openIssue} onUpdate={updateItem}
-                      onDelete={(item) => deleteItem(item.issue_key)} onCopy={copyToClipboard} />
-                ))}
-                {backlog.length === 0 && (
-                  <div className="px-4 py-8 text-center text-xs text-gray-400">Your backlog is empty.</div>
-                )}
-                {provided.placeholder}
-                <InlineCreateRow sprintId={null} onCreate={createWorkItem} />
-              </div>
-            )}
-          </Droppable>
-        )}
-      </div>
-      </div>
       </DragDropContext>
 
       {/* The board's work item panel, opened straight from a backlog row. */}

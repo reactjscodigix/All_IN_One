@@ -24,14 +24,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api
 
 
 
-const attendanceLogs = [
-  { time: '09:02 AM', activity: 'Check In', status: 'Office', note: '-' },
-  { time: '11:15 AM', activity: 'Break Start', status: 'Office', note: '-' },
-  { time: '11:30 AM', activity: 'Break End', status: 'Office', note: '-' },
-  { time: '01:00 PM', activity: 'Lunch Break Start', status: 'Office', note: '-' },
-  { time: '01:30 PM', activity: 'Lunch Break End', status: 'Office', note: '-' },
-  { time: '06:05 PM', activity: 'Check Out', status: 'Office', note: 'Early by 5m' }
-];
+const attendanceLogs = [];
 
 const getHeatmapBg = (intensity) => {
   switch (intensity) {
@@ -254,52 +247,75 @@ const ProfileSettingsPage = () => {
           axios.get(API_BASE_URL + '/invoices').catch(() => ({ data: [] }))
         ]);
 
-        setProjects(projRes.data.map(p => ({
-          name: p.name || 'Unnamed Project',
-          status: p.status || 'Active',
-          progress: p.progress || 0,
-          startDate: p.start_date ? new Date(p.start_date).toLocaleDateString() : '-',
-          dueDate: p.end_date ? new Date(p.end_date).toLocaleDateString() : '-',
-          manager: p.project_manager || 'Admin',
-          avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg'
+        const userNameMatches = (nameField) => {
+          if (!nameField || !user) return false;
+          const search = nameField.toLowerCase();
+          const un = (user.username || '').toLowerCase();
+          const fn = (user.first_name || '').toLowerCase();
+          const ln = (user.last_name || '').toLowerCase();
+          const full = `${fn} ${ln}`.trim();
+          
+          return (un && search.includes(un)) || 
+                 (full && search.includes(full)) ||
+                 (fn && search.includes(fn));
+        };
+
+        setProjects(projRes.data
+          .filter(p => userNameMatches(p.project_manager))
+          .map(p => ({
+            name: p.name || 'Unnamed Project',
+            status: p.status || 'Active',
+            progress: p.progress || 0,
+            startDate: p.start_date ? new Date(p.start_date).toLocaleDateString() : '-',
+            dueDate: p.end_date ? new Date(p.end_date).toLocaleDateString() : '-',
+            manager: p.project_manager || 'Admin',
+            avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg'
         })));
 
-        setTasks(tasksRes.data.map(t => ({
-          name: t.title || 'Unnamed Task',
-          project: t.project || 'General',
-          status: t.status || 'To Do',
-          priority: t.priority || 'Medium',
-          dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString() : '-',
-          assignedTo: t.assigned_to || 'Unassigned',
-          avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg'
+        setTasks(tasksRes.data
+          .filter(t => userNameMatches(t.assigned_to))
+          .map(t => ({
+            name: t.title || 'Unnamed Task',
+            project: t.project || 'General',
+            status: t.status || 'To Do',
+            priority: t.priority || 'Medium',
+            dueDate: t.due_date ? new Date(t.due_date).toLocaleDateString() : '-',
+            assignedTo: t.assigned_to || 'Unassigned',
+            avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg'
         })));
 
-        setTickets(issuesRes.data.map(i => ({
-          id: `#IT-${i.id}`,
-          subject: i.title || 'No Title',
-          status: i.status || 'Open',
-          priority: i.priority || 'Medium',
-          category: i.category || 'General',
-          assignedTo: i.assigned_to || 'Unassigned',
-          avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg',
-          createdAt: i.created_at ? new Date(i.created_at).toISOString() : null
+        setTickets(issuesRes.data
+          .filter(i => userNameMatches(i.assigned_to) || userNameMatches(i.reporter))
+          .map(i => ({
+            id: `#IT-${i.id}`,
+            subject: i.title || 'No Title',
+            status: i.status || 'Open',
+            priority: i.priority || 'Medium',
+            category: i.category || 'General',
+            assignedTo: i.assigned_to || 'Unassigned',
+            avatar: 'https://preadmin.dreamstechnologies.com/html/crm/assets/img/profiles/avatar-02.jpg',
+            createdAt: i.created_at ? new Date(i.created_at).toISOString() : null
         })));
 
-        setActivities(activitiesRes.data.map(a => ({
-          id: a.id,
-          user: a.created_by || 'System',
-          action: a.action || 'performed an action',
-          target: a.details || 'on a record',
-          time: new Date(a.created_at).toLocaleString(),
-          type: a.activity_type || 'system'
+        setActivities(activitiesRes.data
+          .filter(a => userNameMatches(a.created_by_name) || userNameMatches(a.created_by))
+          .map(a => ({
+            id: a.id,
+            user: a.created_by_name || a.created_by || 'System',
+            action: a.action || 'performed an action',
+            target: a.details || 'on a record',
+            time: new Date(a.created_at).toLocaleString(),
+            type: a.activity_type || 'system'
         })));
 
-        setInvoices(invoicesRes.data.map(i => ({
-          id: i.invoice_number || `INV-${i.id}`,
-          date: i.invoice_date ? new Date(i.invoice_date).toLocaleDateString() : '-',
-          amount: `$${parseFloat(i.amount || 0).toFixed(2)}`,
-          status: i.status || 'Draft',
-          client: i.bill_to || 'Unknown Client'
+        setInvoices(invoicesRes.data
+          .filter(i => userNameMatches(i.bill_to) || userNameMatches(i.created_by))
+          .map(i => ({
+            id: i.invoice_number || `INV-${i.id}`,
+            date: i.invoice_date ? new Date(i.invoice_date).toLocaleDateString() : '-',
+            amount: `$${parseFloat(i.amount || 0).toFixed(2)}`,
+            status: i.status || 'Draft',
+            client: i.bill_to || 'Unknown Client'
         })));
 
       } catch (err) {

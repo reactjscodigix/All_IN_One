@@ -1442,7 +1442,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
 
   app.post('/api/projects', async (req, res) => {
     try {
-      const { title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, service_type, progress, spent, manager_id, team_id } = req.body;
+      const { title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, department, deal_id, created_by, service_type, progress, spent, manager_id, team_id, project_type } = req.body;
 
       if (!title && !name) {
         return res.status(400).json({ error: 'Project name/title required' });
@@ -1452,6 +1452,12 @@ module.exports = function setupEntitiesRoutes(app, pool) {
       // preferring the originating deal's own department/service over a guessed category name.
       let resolvedDepartmentId = department_id || null;
       let resolvedServiceType = service_type || null;
+      
+      if (!resolvedDepartmentId && department) {
+        const [deptRows] = await db.query('SELECT id FROM departments WHERE name LIKE ? LIMIT 1', [`%${department}%`]);
+        if (deptRows.length > 0) resolvedDepartmentId = deptRows[0].id;
+      }
+
       if (deal_id) {
         const [dealRows] = await db.query('SELECT department_id, service_category_id FROM deals WHERE id = ?', [deal_id]);
         if (dealRows.length > 0) {
@@ -1467,10 +1473,17 @@ module.exports = function setupEntitiesRoutes(app, pool) {
         if (cat.length > 0) resolvedDepartmentId = cat[0].suggested_department_id;
       }
 
+      let workflowType = 'Standard';
+      if (department === 'IT' || project_type === 'IT' || resolvedServiceType === 'IT') {
+        workflowType = 'IT';
+      } else if (department === 'Marketing' || project_type === 'Marketing' || resolvedServiceType === 'Marketing') {
+        workflowType = 'Marketing';
+      }
+
       // Connection handled by db.query
       const [result] = await db.query(
-        `INSERT INTO projects (title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, progress, spent, manager_id, team_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO projects (title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, progress, spent, manager_id, team_id, workflow_type)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           title || name || null,
           name || title || null,
@@ -1488,7 +1501,8 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           progress || 0,
           spent || 0,
           manager_id || null,
-          team_id !== undefined ? team_id : null
+          team_id !== undefined ? team_id : null,
+          workflowType
         ]
       );
 

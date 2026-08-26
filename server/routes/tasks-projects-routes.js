@@ -1096,4 +1096,73 @@ module.exports = function setupTasksProjectsRoutes(app, pool) {
     }
   });
 
+  // --- Project Discussions ---
+  app.get('/api/projects/:projectId/discussions', async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const [rows] = await db.query(
+        `SELECT d.*, u.first_name, u.last_name, u.avatar 
+         FROM project_discussions d 
+         JOIN users u ON d.user_id = u.id 
+         WHERE d.project_id = ? 
+         ORDER BY d.created_at ASC`,
+        [projectId]
+      );
+      res.json(rows);
+    } catch (err) {
+      console.error('Error fetching discussions:', err);
+      res.status(500).json({ error: 'Failed to fetch discussions' });
+    }
+  });
+
+  app.post('/api/projects/:projectId/discussions', async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { message, user_id } = req.body;
+      
+      const [result] = await db.query(
+        'INSERT INTO project_discussions (project_id, user_id, message) VALUES (?, ?, ?)',
+        [projectId, user_id || 1, message] // Default user_id to 1 if missing for now
+      );
+      
+      const [newMsg] = await db.query(
+        `SELECT d.*, u.first_name, u.last_name, u.avatar 
+         FROM project_discussions d 
+         JOIN users u ON d.user_id = u.id 
+         WHERE d.id = ?`,
+        [result.insertId]
+      );
+      
+      // Log activity
+      await db.query(
+        'INSERT INTO project_activities (project_id, user_id, action, details) VALUES (?, ?, ?, ?)',
+        [projectId, user_id || 1, 'Posted a message', message.substring(0, 50)]
+      );
+
+      res.status(201).json(newMsg[0]);
+    } catch (err) {
+      console.error('Error posting discussion:', err);
+      res.status(500).json({ error: 'Failed to post discussion' });
+    }
+  });
+
+  // --- Project Activity ---
+  app.get('/api/projects/:projectId/activity', async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const [rows] = await db.query(
+        `SELECT a.*, u.first_name, u.last_name, u.avatar 
+         FROM project_activities a 
+         LEFT JOIN users u ON a.user_id = u.id 
+         WHERE a.project_id = ? 
+         ORDER BY a.created_at DESC`,
+        [projectId]
+      );
+      res.json(rows);
+    } catch (err) {
+      console.error('Error fetching activity:', err);
+      res.status(500).json({ error: 'Failed to fetch activity' });
+    }
+  });
+
 };
