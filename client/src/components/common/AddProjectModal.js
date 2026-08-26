@@ -8,6 +8,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
   const [confirmedProjects, setConfirmedProjects] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [fetchedCategories, setFetchedCategories] = useState([]);
 
   const [formData, setFormData] = useState({
@@ -25,6 +26,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
     priority: '',
     status: '',
     description: '',
+    team_id: '',
   });
 
   useEffect(() => {
@@ -38,11 +40,12 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
     try {
       const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
       const deptParam = encodeURIComponent(department || 'IT');
-      const [companiesRes, confirmedRes, usersRes, catRes] = await Promise.all([
+      const [companiesRes, confirmedRes, usersRes, catRes, teamsRes] = await Promise.all([
         fetch(`${apiUrl}/confirmed-it-clients?department=${deptParam}`),
         fetch(`${apiUrl}/confirmed-it-projects?department=${deptParam}`),
         fetch(`${apiUrl}/users`),
-        fetch(`${apiUrl}/service-categories`)
+        fetch(`${apiUrl}/service-categories`),
+        fetch(`${apiUrl}/teams?department=${deptParam}`)
       ]);
 
       if (companiesRes.ok) {
@@ -64,12 +67,18 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
         const catData = await catRes.json();
         setFetchedCategories(Array.isArray(catData) ? catData : []);
       }
+
+      if (teamsRes.ok) {
+        const teamsData = await teamsRes.json();
+        setTeams(Array.isArray(teamsData) ? teamsData : []);
+      }
     } catch (err) {
       console.error('Error fetching data:', err);
       setCompanies([]);
       setConfirmedProjects([]);
       setUsers([]);
       setFetchedCategories([]);
+      setTeams([]);
     } finally {
       setIsFetching(false);
     }
@@ -104,6 +113,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
         priority: initialData.priority || 'Medium',
         status: initialData.status || initialData.stage || 'Planning',
         description: initialData.description || '',
+        team_id: initialData.team_id || '',
       });
     } else {
       setFormData({
@@ -121,13 +131,14 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
         priority: '',
         status: '',
         description: '',
+        team_id: '',
       });
     }
   }, [initialData, isOpen]);
 
   const [personInput, setPersonInput] = useState('');
 
-  const teams = users.length > 0 ? users.map((u, i) => ({
+  const assignableUsers = users.length > 0 ? users.map((u, i) => ({
     id: u.id,
     name: u.first_name ? `${u.first_name} ${u.last_name || ''}`.trim() : u.username,
     color: ['bg-purple-500', 'bg-cyan-500', 'bg-pink-500', 'bg-blue-500', 'bg-green-500'][i % 5]
@@ -215,6 +226,7 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
       priority: '',
       status: '',
       description: '',
+      team_id: '',
     });
     onClose();
   };
@@ -235,13 +247,14 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
       priority: '',
       status: '',
       description: '',
+      team_id: '',
     });
     onClose();
   };
 
   const getTeamColor = (name) => {
-    const team = teams.find(t => t.name === name);
-    return team ? team.color : 'bg-gray-500';
+    const user = assignableUsers.find(t => t.name === name);
+    return user ? user.color : 'bg-gray-500';
   };
 
   if (!isOpen) return null;
@@ -404,6 +417,24 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
             />
           </div>
 
+          {/* Assigned Team */}
+          <div className="md:col-span-2">
+            <label className="block text-xs    mb-2  text-gray-600">
+              Assigned Team
+            </label>
+            <select
+              name="team_id"
+              value={formData.team_id || ''}
+              onChange={handleInputChange}
+              className="w-full p-2 border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
+            >
+              <option value="">No Team Assigned</option>
+              {teams.map(team => (
+                <option key={team.id} value={team.id}>{team.name}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Responsible Persons */}
           <div className="md:col-span-2">
             <label className="block text-xs    mb-2  text-gray-600">
@@ -416,8 +447,8 @@ const AddProjectModal = ({ isOpen, onClose, onSubmit, initialData, department })
                 className="flex-1  p-2  border border-gray-300 rounded text-xs bg-white focus:ring-0 focus:border-gray-400"
               >
                 <option value="">Add person</option>
-                {teams.map(team => (
-                  <option key={team.id} value={team.name}>{team.name}</option>
+                {assignableUsers.map(user => (
+                  <option key={user.id} value={user.name}>{user.name}</option>
                 ))}
               </select>
               <button

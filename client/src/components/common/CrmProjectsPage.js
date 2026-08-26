@@ -32,6 +32,10 @@ const CrmProjectsPage = ({ department }) => {
   const [activeView, setActiveView] = useState('table');
   const [openActionMenu, setOpenActionMenu] = useState(null);
   const [calendarDate, setCalendarDate] = useState(new Date());
+  const [isAssignTeamModalOpen, setIsAssignTeamModalOpen] = useState(false);
+  const [selectedProjectToAssign, setSelectedProjectToAssign] = useState(null);
+  const [assignTeamId, setAssignTeamId] = useState('');
+  const [teamsList, setTeamsList] = useState([]);
 
   useEffect(() => {
     loadProjects();
@@ -114,6 +118,44 @@ const CrmProjectsPage = ({ department }) => {
       } catch (err) {
         alert('Failed to delete project: ' + err.message);
       }
+    }
+  };
+
+  const handleAssignTeamOpen = async (project) => {
+    setSelectedProjectToAssign(project);
+    setIsAssignTeamModalOpen(true);
+    setAssignTeamId(project.team_id || '');
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const deptParam = encodeURIComponent(department || 'IT');
+      const res = await fetch(`${apiUrl}/teams?department=${deptParam}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTeamsList(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAssignTeamSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${apiUrl}/projects/${selectedProjectToAssign.id}/assign-team`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ team_id: assignTeamId })
+      });
+      if (res.ok) {
+        setIsAssignTeamModalOpen(false);
+        loadProjects();
+      } else {
+        alert('Failed to assign team');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error assigning team');
     }
   };
 
@@ -374,6 +416,7 @@ const CrmProjectsPage = ({ department }) => {
                 <th className="p-3">Project Name</th>
                 <th className="p-3">Client</th>
                 <th className="p-3">Department</th>
+                <th className="p-3">Team</th>
                 <th className="p-3">Project Manager</th>
                 <th className="p-3">Status</th>
                 <th className="p-3">Priority</th>
@@ -421,6 +464,15 @@ const CrmProjectsPage = ({ department }) => {
                       </span>
                     </td>
                     <td className="p-3">
+                      {(project.team_name || project.assigned_team) ? (
+                        <span className="px-2 py-0.5 rounded text-xs text-blue-600 bg-blue-50 border border-blue-100 font-medium">
+                          {project.team_name || project.assigned_team}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
+                    </td>
+                    <td className="p-3">
                       <div className="flex items-center gap-2">
                         {project.manager_avatar ? (
                           <img src={project.manager_avatar} alt="Manager" className="w-6 h-6 rounded-full object-cover border border-gray-200" />
@@ -453,6 +505,7 @@ const CrmProjectsPage = ({ department }) => {
                         <div className="absolute right-8 top-8 bg-white border border-gray-200 shadow-2xl rounded w-32 z-[9999] overflow-hidden text-left py-1">
                           <button onClick={() => { setOpenActionMenu(null); navigateToProject(project.id); }} className="w-full p-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Eye size={14} /> View Details</button>
                           <button onClick={() => { setOpenActionMenu(null); handleEditProject(project); }} className="w-full p-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Edit size={14} /> Edit</button>
+                          <button onClick={() => { setOpenActionMenu(null); handleAssignTeamOpen(project); }} className="w-full p-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Network size={14} /> Assign Team</button>
                           <button onClick={() => { setOpenActionMenu(null); handleDeleteProject(project.id); }} className="w-full p-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 size={14} /> Delete</button>
                         </div>
                       )}
@@ -737,6 +790,63 @@ const CrmProjectsPage = ({ department }) => {
         initialData={editingProject}
         department={department}
       />
+
+      {/* Assign Team Modal */}
+      {isAssignTeamModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2"><Network size={16} className="text-blue-600" /> Assign Team to Project</h2>
+              <button onClick={() => setIsAssignTeamModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <XCircle size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleAssignTeamSubmit} className="p-5">
+              {selectedProjectToAssign && (selectedProjectToAssign.team_name || selectedProjectToAssign.assigned_team) && (
+                <div className="mb-4 bg-blue-50/50 p-3 rounded border border-blue-100">
+                  <h3 className="text-[11px] font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Currently Assigned Team</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></div>
+                    <span className="text-sm font-medium text-blue-700">{selectedProjectToAssign.team_name || selectedProjectToAssign.assigned_team}</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mb-5">
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  {(selectedProjectToAssign && (selectedProjectToAssign.team_name || selectedProjectToAssign.assigned_team)) ? 'Assign New Team' : 'Select a Team'}
+                </label>
+                <select
+                  value={assignTeamId}
+                  onChange={(e) => setAssignTeamId(e.target.value)}
+                  className="w-full border border-gray-300 rounded p-2.5 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm bg-white"
+                >
+                  <option value="">-- No Team Assigned --</option>
+                  {teamsList.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <p className="mt-2 text-[10px] text-gray-500">Selecting a team will assign all its members to this project.</p>
+              </div>
+              <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAssignTeamModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition"
+                >
+                  Assign Team
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

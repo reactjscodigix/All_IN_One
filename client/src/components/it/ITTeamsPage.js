@@ -500,6 +500,7 @@ const ITTeamsPage = ({ department }) => {
                         <th className="py-3 px-4">Description</th>
                         <th className="py-3 px-4">Manager</th>
                         <th className="py-3 px-4 text-center">Members Count</th>
+                        <th className="py-3 px-4 text-center">Projects Count</th>
                         <th className="py-3 px-4 text-right pr-6">Actions</th>
                       </tr>
                     </thead>
@@ -536,6 +537,11 @@ const ITTeamsPage = ({ department }) => {
                               <td className="py-3.5 px-4 text-center">
                                 <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold">
                                   {team.members?.length || 0} Members
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-bold">
+                                  {projects.filter(p => p.team_id === team.id).length} Projects
                                 </span>
                               </td>
                               <td className="py-3.5 px-4 text-right pr-6" onClick={(e) => e.stopPropagation()}>
@@ -615,7 +621,7 @@ const ITTeamsPage = ({ department }) => {
                             {/* Collapsible Inner Nested Table */}
                             {isExpanded && (
                               <tr className="bg-gray-50/30">
-                                <td colSpan="6" className="py-3 px-8">
+                                <td colSpan="7" className="py-3 px-8">
                                   <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden mb-2">
                                     <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Allocated Team Members</span>
@@ -666,7 +672,7 @@ const ITTeamsPage = ({ department }) => {
                                                     className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
                                                     title="Remove Member"
                                                   >
-                                                    <UserX size={13} />
+                                                    <Trash2 size={13} />
                                                   </button>
                                                 </td>
                                               </tr>
@@ -679,6 +685,58 @@ const ITTeamsPage = ({ department }) => {
                                             </td>
                                           </tr>
                                         )}
+                                      </tbody>
+                                    </table>
+                                  </div>
+
+                                  <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden mt-4 mb-2">
+                                    <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Assigned Projects</span>
+                                      <button
+                                        onClick={() => { setSelectedTeam(team); setIsAssignProjectModalOpen(true); }}
+                                        className="text-[11px] text-emerald-600 hover:text-emerald-800 font-bold flex items-center gap-1"
+                                      >
+                                        <Plus size={12} /> Assign Project
+                                      </button>
+                                    </div>
+                                    <table className="w-full text-left text-xs">
+                                      <thead>
+                                        <tr className="border-b border-gray-100 text-gray-400 bg-gray-50/20">
+                                          <th className="py-2 px-4">Project Name</th>
+                                          <th className="py-2 px-4">Status</th>
+                                          <th className="py-2 px-4 text-right pr-6">Action</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {(() => {
+                                          const teamProjects = projects.filter(p => p.team_id === team.id);
+                                          return teamProjects.length > 0 ? (
+                                            teamProjects.map(p => (
+                                              <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                                                <td className="py-2 px-4 font-bold text-gray-800">{p.name}</td>
+                                                <td className="py-2 px-4">
+                                                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-bold">
+                                                    {p.status || 'Planning'}
+                                                  </span>
+                                                </td>
+                                                <td className="py-2 px-4 text-right pr-6">
+                                                  <button
+                                                    onClick={() => navigate(`/projects/${designation || 'it-manager'}/${username || 'ashwini'}/details/${p.id}`)}
+                                                    className="p-1 hover:bg-indigo-50 text-indigo-650 rounded transition-colors inline-flex items-center gap-1 font-bold text-[10px]"
+                                                  >
+                                                    <Eye size={12} /> View Project
+                                                  </button>
+                                                </td>
+                                              </tr>
+                                            ))
+                                          ) : (
+                                            <tr>
+                                              <td colSpan="3" className="py-6 text-center text-gray-400">
+                                                No projects currently assigned to this team.
+                                              </td>
+                                            </tr>
+                                          );
+                                        })()}
                                       </tbody>
                                     </table>
                                   </div>
@@ -1475,8 +1533,33 @@ const ITTeamsPage = ({ department }) => {
                   </select>
                 </div>
               )}
+
+              {/* Show Currently Assigned Projects */}
+              {(() => {
+                const activeTeamId = selectedTeam?.id || projectAssignment.team_id;
+                if (!activeTeamId) return null;
+                const assignedProjects = projects.filter(p => String(p.team_id) === String(activeTeamId));
+                return (
+                  <div className="bg-gray-50 rounded p-3 border border-gray-100">
+                    <h3 className="text-[11px] font-bold text-gray-700 mb-2 uppercase tracking-wider">Currently Assigned Projects</h3>
+                    {assignedProjects.length > 0 ? (
+                      <ul className="text-xs text-gray-600 space-y-1.5 max-h-24 overflow-y-auto custom-scrollbar">
+                        {assignedProjects.map(p => (
+                          <li key={p.id} className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+                            <span className="truncate">{p.name}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-xs text-gray-400 italic">No projects assigned yet</div>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Select IT Project <span className="text-red-500">*</span></label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Select IT Project to Assign <span className="text-red-500">*</span></label>
                 <select
                   required
                   className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 outline-none text-xs bg-white"
@@ -1484,7 +1567,10 @@ const ITTeamsPage = ({ department }) => {
                   onChange={e => setProjectAssignment(prev => ({ ...prev, project_id: e.target.value }))}
                 >
                   <option value="">Select Project</option>
-                  {projects.map(p => (
+                  {projects.filter(p => {
+                    const activeTeamId = selectedTeam?.id || projectAssignment.team_id;
+                    return String(p.team_id) !== String(activeTeamId);
+                  }).map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>

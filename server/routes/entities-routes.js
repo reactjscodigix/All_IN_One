@@ -1442,7 +1442,7 @@ module.exports = function setupEntitiesRoutes(app, pool) {
 
   app.post('/api/projects', async (req, res) => {
     try {
-      const { title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, service_type, progress, spent, manager_id } = req.body;
+      const { title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, service_type, progress, spent, manager_id, team_id } = req.body;
 
       if (!title && !name) {
         return res.status(400).json({ error: 'Project name/title required' });
@@ -1469,8 +1469,8 @@ module.exports = function setupEntitiesRoutes(app, pool) {
 
       // Connection handled by db.query
       const [result] = await db.query(
-        `INSERT INTO projects (title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, progress, spent, manager_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO projects (title, name, description, status, company_id, priority, budget, due_date, start_date, parent_project_id, department_id, deal_id, created_by, progress, spent, manager_id, team_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           title || name || null,
           name || title || null,
@@ -1487,7 +1487,8 @@ module.exports = function setupEntitiesRoutes(app, pool) {
           created_by || null,
           progress || 0,
           spent || 0,
-          manager_id || null
+          manager_id || null,
+          team_id !== undefined ? team_id : null
         ]
       );
 
