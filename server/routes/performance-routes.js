@@ -282,8 +282,8 @@ module.exports = function setupPerformanceRoutes(app, pool) {
         },
         teamBreakdown: teamBreakdown.map(m => ({
           name: `${m.first_name} ${m.last_name}`,
-          target: '$25,000',
-          achieved: `$${(parseFloat(m.achieved) || 0).toLocaleString()}`,
+          target: '₹25,000',
+          achieved: `₹${(parseFloat(m.achieved) || 0).toLocaleString()}`,
           leads: m.leads_count || 0,
           status: (parseFloat(m.achieved) || 0) >= 20000 ? 'Completed' : 
                   (parseFloat(m.achieved) || 0) >= 10000 ? 'On Track' : 'At Risk',
@@ -362,7 +362,7 @@ module.exports = function setupPerformanceRoutes(app, pool) {
           type: 'Financial', 
           date: today, 
           format: 'PDF',
-          details: `Total Revenue: $${(parseFloat(s.total_revenue) || 0).toLocaleString()}`
+          details: `Total Revenue: ₹${(parseFloat(s.total_revenue) || 0).toLocaleString()}`
         },
         { 
           id: 2, 

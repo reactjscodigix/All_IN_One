@@ -874,7 +874,7 @@ module.exports = function(app, pool) {
   app.get('/api/estimations', async (req, res) => {
     let connection;
     try {
-      const { skip = 0, limit = 50, status, search } = req.query;
+      const { skip = 0, limit = 50, status, search, deal_id, lead_id, client_id } = req.query;
       connection = await getConnection();
 
       let query = `
@@ -889,6 +889,23 @@ module.exports = function(app, pool) {
         WHERE 1=1
       `;
       const params = [];
+      const entityConditions = [];
+      if (deal_id) {
+        entityConditions.push('e.deal_id = ?');
+        params.push(deal_id);
+      }
+      if (lead_id) {
+        entityConditions.push('e.lead_id = ?');
+        params.push(lead_id);
+      }
+      if (client_id) {
+        entityConditions.push('e.client_id = ?');
+        params.push(client_id);
+      }
+
+      if (entityConditions.length > 0) {
+        query += ` AND (${entityConditions.join(' OR ')})`;
+      }
 
       if (status) {
         query += ' AND e.status = ?';
@@ -960,38 +977,105 @@ module.exports = function(app, pool) {
 
       const estimationId = result.insertId;
 
-      if (status === 'Sent') {
-        const targetStatus = (version > 1) ? 'Revised Quotation' : 'Quotation';
+      const [estimations] = await connection.query(`
+        SELECT e.*, c.company_name as client_name, l.lead_name, d.deal_name, u.first_name, u.last_name, u.email as user_email, l.email as lead_email, l.phone as lead_phone
+        FROM estimations e 
+        LEFT JOIN companies c ON e.client_id = c.id 
+        LEFT JOIN leads l ON e.lead_id = l.id
+        LEFT JOIN deals d ON e.deal_id = d.id
+        LEFT JOIN users u ON e.estimate_by = u.id
+        WHERE e.id = ?`, [estimationId]
+      );
+      
+      const est = estimations[0];
+
+      if (status === 'Sent' || status === 'Accepted') {
         const finalAmount = amount || total || 0;
         
-        // Update linked deal if exists
-        if (deal_id) {
-          await connection.query(
-            'UPDATE deals SET pipeline = ?, deal_stage = ?, deal_value = ?, updated_at = NOW() WHERE id = ?',
-            [targetStatus, targetStatus, finalAmount, deal_id]
-          );
-        }
-        
-        // Update linked lead if exists
-        if (lead_id) {
-          await connection.query(
-            'UPDATE leads SET lead_status = ?, value = ?, updated_at = NOW() WHERE id = ?',
-            [targetStatus, finalAmount, lead_id]
-          );
+        if (status === 'Sent') {
+          const targetStatus = (version > 1) ? 'Revised Quotation' : 'Quotation';
+          if (deal_id) {
+            await connection.query(
+              'UPDATE deals SET pipeline = ?, deal_stage = ?, deal_value = ?, updated_at = NOW() WHERE id = ?',
+              [targetStatus, targetStatus, finalAmount, deal_id]
+            );
+          }
+          if (lead_id) {
+            await connection.query(
+              'UPDATE leads SET lead_status = ?, value = ?, updated_at = NOW() WHERE id = ?',
+              [targetStatus, finalAmount, lead_id]
+            );
+          }
+        } else if (status === 'Accepted') {
+          if (deal_id) {
+            await connection.query("UPDATE deals SET pipeline = 'Won', deal_stage = 'Won', status = 'Won', updated_at = NOW() WHERE id = ?", [deal_id]);
+          }
+          if (lead_id) {
+            await connection.query("UPDATE leads SET lead_status = 'Won', updated_at = NOW() WHERE id = ?", [lead_id]);
+          }
+          if (client_id) {
+            await connection.query("UPDATE companies SET status = 'Active', updated_at = NOW() WHERE id = ?", [client_id]);
+          }
         }
       }
 
-      const [estimation] = await connection.query(
-        `SELECT e.*, c.company_name as client_name, l.lead_name 
-         FROM estimations e 
-         LEFT JOIN companies c ON e.client_id = c.id 
-         LEFT JOIN leads l ON e.lead_id = l.id
-         WHERE e.id = ?`,
-        [estimationId]
-      );
+      if (status) {
+        const createFollowup = async (isCompleted, type, subject, outcome, daysOffset = 0) => {
+          const related_type = deal_id ? 'Deal' : (lead_id ? 'Lead' : 'Customer');
+          const related_id = deal_id || lead_id || client_id;
+          if (!related_id) return;
+          
+          const targetDate = new Date();
+          targetDate.setDate(targetDate.getDate() + daysOffset);
+          const dateStr = targetDate.toISOString().split('T')[0];
+          
+          await connection.query(`
+            INSERT INTO followups 
+            (related_type, related_id, type, subject, status, outcome, scheduled_date, scheduled_time, priority, assigned_to, assigned_to_name, assigned_to_email, client_email, client_phone, lead_id, deal_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, '10:00:00', 'Medium', ?, ?, ?, ?, ?, ?, ?)
+          `, [
+            related_type, related_id, type, subject, 
+            isCompleted ? 'Completed' : 'Scheduled', 
+            outcome || null, dateStr,
+            estimate_by, 
+            (est?.first_name ? `${est.first_name} ${est.last_name || ''}` : null),
+            est?.user_email || null,
+            est?.lead_email || null,
+            est?.lead_phone || null,
+            lead_id, deal_id
+          ]);
+        };
+
+        const cancelPendingFollowups = async () => {
+           const related_type = deal_id ? 'Deal' : (lead_id ? 'Lead' : 'Customer');
+           const related_id = deal_id || lead_id || client_id;
+           if (!related_id) return;
+           await connection.query(
+             "UPDATE followups SET status = 'Cancelled', outcome = 'Superseded by Quotation Action' WHERE related_type = ? AND related_id = ? AND status IN ('Scheduled', 'Pending', 'Overdue')",
+             [related_type, related_id]
+           );
+        };
+
+        if (status === 'Sent') {
+          // await cancelPendingFollowups();
+          await createFollowup(true, 'Email', `Quotation Sent (Ver: ${version || 1}, Amount: ₹${amount || total || 0})`, 'Sent');
+          await createFollowup(false, 'Call', `Follow-up on Sent Quotation (${finalEstimationNumber || 'No.'})`, null, 2);
+        } else if (status === 'Revised') {
+          // await cancelPendingFollowups();
+          await createFollowup(true, 'Task', 'Client Requested Revision / Quotation Revised', 'Revised');
+          await createFollowup(false, 'Task', `Send Revised Quotation (${finalEstimationNumber || 'No.'})`, null, 0);
+        } else if (status === 'Accepted') {
+          // await cancelPendingFollowups();
+          await createFollowup(true, 'Meeting', 'Quotation Accepted', 'Accepted');
+        } else if (status === 'Declined') {
+          // await cancelPendingFollowups();
+          await createFollowup(true, 'Meeting', 'Quotation Declined', 'Declined');
+        }
+      }
+
       connection.release();
 
-      return res.status(201).json(estimation[0]);
+      return res.status(201).json(est);
     } catch (err) {
       responseError(res, 500, 'Failed to create estimation', err);
     } finally {
@@ -1069,6 +1153,9 @@ module.exports = function(app, pool) {
         return res.status(400).json({ error: 'No valid fields provided for update' });
       }
 
+      const [oldEstRows] = await connection.query('SELECT status FROM estimations WHERE id = ?', [id]);
+      const oldStatus = oldEstRows.length > 0 ? oldEstRows[0].status : null;
+
       values.push(id);
       
       await connection.query(
@@ -1076,14 +1163,23 @@ module.exports = function(app, pool) {
         values
       );
 
-      if (updates.status === 'Sent' || updates.status === 'Accepted') {
-        const [estimations] = await connection.query('SELECT * FROM estimations WHERE id = ?', [id]);
+      if (updates.status && updates.status !== oldStatus) {
+        const [estimations] = await connection.query(`
+          SELECT e.*, c.company_name as client_name, l.lead_name, d.deal_name, u.first_name, u.last_name, u.email as user_email, l.email as lead_email, l.phone as lead_phone
+          FROM estimations e 
+          LEFT JOIN companies c ON e.client_id = c.id 
+          LEFT JOIN leads l ON e.lead_id = l.id
+          LEFT JOIN deals d ON e.deal_id = d.id
+          LEFT JOIN users u ON e.estimate_by = u.id
+          WHERE e.id = ?`, [id]
+        );
+        
         if (estimations.length > 0) {
           const est = estimations[0];
           
+          // Legacy deal/lead status updates
           if (updates.status === 'Sent') {
             const targetStatus = (est.version > 1) ? 'Revised Quotation' : 'Quotation';
-            
             if (est.deal_id) {
               await connection.query(
                 'UPDATE deals SET pipeline = ?, deal_stage = ?, deal_value = ?, updated_at = NOW() WHERE id = ?',
@@ -1097,25 +1193,75 @@ module.exports = function(app, pool) {
               );
             }
           } else if (updates.status === 'Accepted') {
-            // When accepted, mark deal as Won and company as Active
             if (est.deal_id) {
               await connection.query(
-                "UPDATE deals SET pipeline = 'Won', deal_stage = 'Won', status = 'Won', updated_at = NOW() WHERE id = ?",
-                [est.deal_id]
+                "UPDATE deals SET pipeline = 'Won', deal_stage = 'Won', status = 'Won', updated_at = NOW() WHERE id = ?", [est.deal_id]
               );
             }
             if (est.lead_id) {
               await connection.query(
-                "UPDATE leads SET lead_status = 'Won', updated_at = NOW() WHERE id = ?",
-                [est.lead_id]
+                "UPDATE leads SET lead_status = 'Won', updated_at = NOW() WHERE id = ?", [est.lead_id]
               );
             }
             if (est.client_id) {
               await connection.query(
-                "UPDATE companies SET status = 'Active', updated_at = NOW() WHERE id = ?",
-                [est.client_id]
+                "UPDATE companies SET status = 'Active', updated_at = NOW() WHERE id = ?", [est.client_id]
               );
             }
+          }
+          
+          // Follow-up Automations
+          const createFollowup = async (isCompleted, type, subject, outcome, daysOffset = 0) => {
+            const related_type = est.deal_id ? 'Deal' : (est.lead_id ? 'Lead' : 'Customer');
+            const related_id = est.deal_id || est.lead_id || est.client_id;
+            if (!related_id) return;
+            
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + daysOffset);
+            const dateStr = targetDate.toISOString().split('T')[0];
+            
+            await connection.query(`
+              INSERT INTO followups 
+              (related_type, related_id, type, subject, status, outcome, scheduled_date, scheduled_time, priority, assigned_to, assigned_to_name, assigned_to_email, client_email, client_phone, lead_id, deal_id)
+              VALUES (?, ?, ?, ?, ?, ?, ?, '10:00:00', 'Medium', ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              related_type, related_id, type, subject, 
+              isCompleted ? 'Completed' : 'Scheduled', 
+              outcome || null, dateStr,
+              est.estimate_by, 
+              (est.first_name ? `${est.first_name} ${est.last_name || ''}` : null),
+              est.user_email || null,
+              est.lead_email || null,
+              est.lead_phone || null,
+              est.lead_id, est.deal_id
+            ]);
+          };
+          
+          // Auto-cancel pending follow-ups for this entity (to clean up before adding new ones, or on accepted/declined)
+          const cancelPendingFollowups = async () => {
+             const related_type = est.deal_id ? 'Deal' : (est.lead_id ? 'Lead' : 'Customer');
+             const related_id = est.deal_id || est.lead_id || est.client_id;
+             if (!related_id) return;
+             await connection.query(
+               "UPDATE followups SET status = 'Cancelled', outcome = 'Superseded by Quotation Action' WHERE related_type = ? AND related_id = ? AND status IN ('Scheduled', 'Pending', 'Overdue')",
+               [related_type, related_id]
+             );
+          };
+
+          if (updates.status === 'Sent') {
+            // await cancelPendingFollowups();
+            await createFollowup(true, 'Email', `Quotation Sent (Ver: ${est.version || 1}, Amount: ₹${est.amount})`, 'Sent');
+            await createFollowup(false, 'Call', `Follow-up on Sent Quotation (${est.estimation_number || 'No.'})`, null, 2);
+          } else if (updates.status === 'Revised') {
+            // await cancelPendingFollowups();
+            await createFollowup(true, 'Task', 'Client Requested Revision / Quotation Revised', 'Revised');
+            await createFollowup(false, 'Task', `Send Revised Quotation (${est.estimation_number || 'No.'})`, null, 0);
+          } else if (updates.status === 'Accepted') {
+            // await cancelPendingFollowups();
+            await createFollowup(true, 'Meeting', 'Quotation Accepted', 'Accepted');
+          } else if (updates.status === 'Declined') {
+            // await cancelPendingFollowups();
+            await createFollowup(true, 'Meeting', 'Quotation Declined', 'Declined');
           }
         }
       }

@@ -7,9 +7,10 @@ import {
   ArrowLeft, Layout, PlusCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { followupsAPI, leadsAPI, dealsAPI } from '../../services/api';
+import { followupsAPI, leadsAPI, dealsAPI, estimationsAPI } from '../../services/api';
 import { generateMeetingLink } from '../../utils/meetingUtils';
 import AddFollowupModal from './AddFollowupModal';
+import AddNewEstimationModal from './AddNewEstimationModal';
 import AdvancedDataTable from './AdvancedDataTable';
 import DateRangeDropdown from './DateRangeDropdown';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
@@ -28,6 +29,8 @@ const FollowupsPage = () => {
   });
   const [selectedItems, setSelectedItems] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+  const [quotationInitialData, setQuotationInitialData] = useState(null);
   const [editingFollowup, setEditingFollowup] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('list');
@@ -64,6 +67,46 @@ const FollowupsPage = () => {
   const [expandedFilterSection, setExpandedFilterSection] = useState('status');
   const [isGroupedView, setIsGroupedView] = useState(true);
   const [expandedClients, setExpandedClients] = useState({});
+
+  const handleAddQuotation = async (formData) => {
+    if (!formData) {
+      fetchFollowups();
+      setIsQuotationModalOpen(false);
+      return;
+    }
+    try {
+      const quotationData = {
+        ...formData,
+        estimation_number: formData.quotationNumber,
+        client_id: formData.client_id,
+        lead_id: formData.lead_id,
+        deal_id: formData.deal_id,
+        project_id: formData.project_id,
+        amount: parseFloat(formData.amount || formData.total || 0),
+        currency: formData.currency,
+        estimate_date: formData.quotationDate,
+        expiry_date: formData.validUntil,
+        status: formData.status || 'Draft',
+        description: formData.description,
+        estimate_by: formData.assignedExecutiveId,
+        total: parseFloat(formData.amount || formData.total || 0)
+      };
+
+      if (quotationInitialData && quotationInitialData.id) {
+         await estimationsAPI.update(quotationInitialData.id, quotationData);
+         showSuccessToast('Quotation updated successfully');
+      } else {
+         await estimationsAPI.create(quotationData);
+         showSuccessToast('Quotation created successfully');
+      }
+      setIsQuotationModalOpen(false);
+      setQuotationInitialData(null);
+      fetchFollowups();
+    } catch (err) {
+      console.error(err);
+      showErrorToast('Failed to save quotation');
+    }
+  };
 
   const tabs = ['All Follow-Ups', "Today's", 'Overdue', 'Scheduled', 'Completed'];
 
@@ -168,6 +211,14 @@ const FollowupsPage = () => {
             } else if (formData.outcome === 'Converted to Deal' && formData.related_type === 'Lead') {
               // Optional: trigger conversion logic if needed, or just status update
               await leadsAPI.update(formData.related_id, { lead_status: 'Converted to Deal' });
+            } else if (formData.outcome === 'Quotation Accepted & Converted to Deal' && formData.related_type === 'Lead') {
+              try {
+                await leadsAPI.convertToDeal(formData.related_id, {});
+                console.log(`Auto-converted lead ${formData.related_id} to Deal`);
+              } catch (convErr) {
+                console.warn('Failed to convert to deal via API, updating status only:', convErr);
+                await leadsAPI.update(formData.related_id, { lead_status: 'Converted to Deal' });
+              }
             }
           } catch (autoErr) {
             console.error('Automation failed:', autoErr);
@@ -695,10 +746,7 @@ const FollowupsPage = () => {
     // Sort each group by date and time
     Object.entries(groups).forEach(([key, group]) => {
       group.sort((a, b) => {
-        const dateA = parseDateSafely(a.scheduled_date, a.scheduled_time);
-        const dateB = parseDateSafely(b.scheduled_date, b.scheduled_time);
-        if (dateA - dateB !== 0) return dateA - dateB;
-        return a.id - b.id; // stable fallback by database ID oldest-first
+        return a.id - b.id; // Sort strictly by creation order (database ID) to maintain immutable audit trail
       });
     });
 
@@ -746,6 +794,27 @@ const FollowupsPage = () => {
       if (activeFilters.priority?.length > 0 && !activeFilters.priority.includes(f.priority)) return false;
       if (activeFilters.status?.length > 0 && !activeFilters.status.includes(f.status)) return false;
       if (activeFilters.assigned_to?.length > 0 && !activeFilters.assigned_to.includes(f.assigned_to_name)) return false;
+
+      // Hide finalized/converted entities to avoid duplication confusion (e.g. Lead -> Deal conversion)
+      // unless the user is specifically viewing the 'Completed' tab or searching
+      const isFinalized = f.lead_status === 'Converted' || 
+                          f.deal_status === 'Won' || 
+                          f.deal_status === 'Lost' || 
+                          f.deal_status === 'Finalized Deal' ||
+                          f.outcome === 'Converted to Deal' ||
+                          f.outcome === 'Won';
+      
+      if (isFinalized && activeTab !== 'Completed' && !searchTerm) {
+        return false;
+      }
+
+      // Hide IT Project follow-ups (Reports) from Sales-specific dashboards
+      const isSalesContext = window.location.pathname.includes('/sales/') || 
+                             window.location.pathname.includes('/deals/') || 
+                             window.location.pathname.includes('/leads/');
+      if (isSalesContext && f.type === 'Report' && f.related_type === 'Customer') {
+        return false;
+      }
 
       // Date Range logic
       if (dateRangeType !== 'All Time') {
@@ -809,10 +878,7 @@ const FollowupsPage = () => {
     return Object.values(groups).map(client => {
       // Sort followups by date (Oldest First)
       const sorted = [...client.followups].sort((a, b) => {
-        const dateA = parseDateSafely(a.scheduled_date, a.scheduled_time);
-        const dateB = parseDateSafely(b.scheduled_date, b.scheduled_time);
-        if (dateA - dateB !== 0) return dateA - dateB;
-        return a.id - b.id; // stable fallback by database ID oldest-first
+        return a.id - b.id; // Sort strictly by creation order (database ID) to maintain immutable audit trail
       });
 
       return {
@@ -1358,7 +1424,7 @@ const FollowupsPage = () => {
                                           </td>
                                           <td className="p-2 text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                              {f.outcome === 'Asking for Quotation' && (
+                                              {(['Asking for Quotation', 'Revise Quotation'].includes(f.outcome) || (f.subject && f.subject.includes('Send Revised Quotation'))) && (
                                                 <div className="flex items-center gap-1">
                                                   {f.latest_quotation_status && (
                                                     <span className="text-[9px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded border border-green-200 font-medium whitespace-nowrap">
@@ -1366,18 +1432,47 @@ const FollowupsPage = () => {
                                                     </span>
                                                   )}
                                                   <button
-                                                    onClick={(e) => {
+                                                    onClick={async (e) => {
                                                       e.stopPropagation();
-                                                      navigate('/sales/quotations', {
-                                                        state: {
-                                                          related_type: f.related_type,
-                                                          related_id: f.related_id,
-                                                          related_name: f.related_name,
-                                                          client_email: f.client_email,
-                                                          client_phone: f.client_phone,
-                                                          autoOpenAdd: !f.latest_quotation_status
+                                                      try {
+                                                        const res = await estimationsAPI.getAll();
+                                                        const allEsts = Array.isArray(res) ? res : (res.data || []);
+                                                        // Sort to get latest quotation for this entity
+                                                        const matchingEsts = allEsts.filter(est => 
+                                                          (f.related_type === 'Lead' && est.lead_id === f.related_id) ||
+                                                          (f.related_type === 'Deal' && est.deal_id === f.related_id) ||
+                                                          (f.related_type === 'Customer' && est.client_id === f.related_id)
+                                                        ).sort((a, b) => b.id - a.id);
+                                                        
+                                                        const matchingEst = matchingEsts[0];
+
+                                                        if (matchingEst) {
+                                                          setQuotationInitialData({
+                                                            ...matchingEst,
+                                                            quotationNumber: matchingEst.estimation_number || matchingEst.quotation_number,
+                                                            quotationDate: matchingEst.estimate_date,
+                                                            validUntil: matchingEst.expiry_date,
+                                                            client: matchingEst.client_name || matchingEst.lead_name || f.related_name,
+                                                            lead_id: f.related_type === 'Lead' ? f.related_id : null,
+                                                            deal_id: f.related_type === 'Deal' ? f.related_id : null,
+                                                            client_email: f.client_email,
+                                                            client_phone: f.client_phone,
+                                                            isFromFollowup: true,
+                                                          });
+                                                        } else {
+                                                          setQuotationInitialData({
+                                                            client: f.related_name,
+                                                            client_id: f.related_type === 'Customer' ? f.related_id : null,
+                                                            lead_id: f.related_type === 'Lead' ? f.related_id : null,
+                                                            deal_id: f.related_type === 'Deal' ? f.related_id : null,
+                                                            client_email: f.client_email,
+                                                            client_phone: f.client_phone,
+                                                          });
                                                         }
-                                                      });
+                                                        setIsQuotationModalOpen(true);
+                                                      } catch (err) {
+                                                        console.error(err);
+                                                      }
                                                     }}
                                                     className={`p-1 flex items-center gap-1 ${f.latest_quotation_status ? 'text-blue-600 hover:bg-blue-50' : 'text-green-600 hover:bg-green-50'} rounded transition-colors`}
                                                     title={f.latest_quotation_status ? "View Quotations" : "Create Quotation"}
@@ -1396,7 +1491,7 @@ const FollowupsPage = () => {
                                                   <span className="text-xs font-medium">JOIN</span>
                                                 </button>
                                               )}
-                                              {!isFinalized && f.status === 'Completed' && (
+                                              {!isFinalized && f.status === 'Completed' && !client.next_followup && idx === client.followups.length - 1 && (
                                                 <button
                                                   onClick={(e) => {
                                                     e.stopPropagation();
@@ -1500,6 +1595,17 @@ const FollowupsPage = () => {
         }}
         onSubmit={handleAddFollowup}
         initialData={editingFollowup}
+      />
+      
+      <AddNewEstimationModal
+        isOpen={isQuotationModalOpen}
+        onClose={() => {
+          setIsQuotationModalOpen(false);
+          setQuotationInitialData(null);
+        }}
+        onSubmit={handleAddQuotation}
+        initialData={quotationInitialData}
+        onGeneratePDF={() => {}}
       />
     </div>
   );

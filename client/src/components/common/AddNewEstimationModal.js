@@ -36,6 +36,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
     notes: '',
     currency: 'INR',
     discount: 0,
+    taxPercentage: 10,
     tags: [],
     isRevision: false,
     revisionNumber: '',
@@ -54,7 +55,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
 
   // useEffect moved down below to avoid hoisting reference errors
 
-  const fetchVersions = async (dealId, leadId) => {
+  const fetchVersions = async (dealId, leadId, currentQuotationNumber = '') => {
     if (isFetchingVersionsRef.current) return;
     isFetchingVersionsRef.current = true;
     if (!dealId && !leadId) {
@@ -70,7 +71,15 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
 
       const estimations = await estimationsAPI.getAll(filters);
       if (Array.isArray(estimations)) {
-        const sortedEstimations = [...estimations].sort((a, b) =>
+        const baseNumber = currentQuotationNumber ? currentQuotationNumber.split('-v')[0] : '';
+        const filteredEstimations = baseNumber 
+          ? estimations.filter(est => {
+              const num = est.estimation_number || est.quotation_number || '';
+              return num.startsWith(baseNumber);
+            })
+          : estimations;
+
+        const sortedEstimations = [...filteredEstimations].sort((a, b) =>
           new Date(b.estimate_date || b.created_at || b.date) - new Date(a.estimate_date || a.created_at || a.date)
         );
 
@@ -155,7 +164,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
     }
   };
 
-  const handleLeadChange = async (leadId) => {
+  const handleLeadChange = async (leadId, isExistingQuotation = false, currentQuotationNum = '') => {
     if (!leadId) return;
 
     setLoadingData(true);
@@ -213,11 +222,12 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
           business_description: businessDescription || prev.business_description,
           referral_name: referralName || prev.referral_name,
           assignedExecutiveId: leadData.owner_id ? leadData.owner_id.toString() : prev.assignedExecutiveId,
-          items: leadServices.length > 0 ? leadServices : prev.items
+          items: (!isExistingQuotation && leadServices.length > 0) ? leadServices : prev.items
         }));
 
         // Fetch version history
-        fetchVersions(null, leadId);
+        const qNum = currentQuotationNum || initialData?.quotation_number || initialData?.quotationNumber || formData.quotationNumber;
+        fetchVersions(null, leadId, qNum);
       }
     } catch (err) {
       console.error('Error fetching lead details:', err);
@@ -226,7 +236,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
     }
   };
 
-  const handleDealChangeById = async (dealId) => {
+  const handleDealChangeById = async (dealId, isExistingQuotation = false, currentQuotationNum = '') => {
     if (!dealId) {
       setFormData(prev => ({
         ...prev,
@@ -238,6 +248,13 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
         versionHistory: [],
         revisionNumber: ''
       }));
+      return;
+    }
+
+    if (Number(dealId) > 1000000) {
+      // It's a virtual deal (actually a lead)
+      setFormData(prev => ({ ...prev, deal_id: dealId }));
+      await handleLeadChange((Number(dealId) - 1000000).toString());
       return;
     }
 
@@ -379,7 +396,8 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
         }));
 
         // Fetch version history
-        fetchVersions(dealId, dealData.lead_id);
+        const qNum = currentQuotationNum || initialData?.quotation_number || initialData?.quotationNumber || formData.quotationNumber;
+        fetchVersions(dealId, dealData.lead_id, qNum);
       }
     } catch (err) {
       console.error('Error fetching deal details:', err);
@@ -454,7 +472,8 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
           paymentTerms: initialData.payment_terms || initialData.paymentTerms || '50% advance payment. Balance due upon project completion.',
           notes: initialData.notes || '',
           currency: initialData.currency || 'INR',
-          discount: initialData.discount || initialData.discount_amount || 0,
+          discount: Number(initialData.discount || initialData.discount_amount) || 0,
+          taxPercentage: initialData.tax_percentage !== undefined ? Number(initialData.tax_percentage) : 10,
           client_email: initialData.client_email || initialData.email || '',
           client_phone: initialData.client_phone || initialData.phone || '',
           business_description: initialData.business_description || initialData.description || '',
@@ -462,18 +481,19 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
         }));
 
         // Fetch version history
-        fetchVersions(deal_id, lead_id);
+        const qNum = initialData.quotation_number || initialData.quotationNumber || `Q-${new Date().getFullYear()}-001`;
+        fetchVersions(deal_id, lead_id, qNum);
 
-        // Auto-fetch additional details if this is a new quotation being created from a pre-selected lead/deal
-        if (!initialData.id) {
-          const isVirtual = Number(deal_id) > 1000000;
-          if (isVirtual) {
-            handleLeadChange((Number(deal_id) - 1000000).toString());
-          } else if (deal_id) {
-            handleDealChangeById(deal_id);
-          } else if (lead_id) {
-            handleLeadChange(lead_id);
-          }
+        // Always fetch additional details from lead/deal (to populate fields not saved in DB like contactPerson)
+        const isVirtual = Number(deal_id) > 1000000;
+        const isExisting = !!initialData.id;
+        
+        if (isVirtual) {
+          handleLeadChange((Number(deal_id) - 1000000).toString(), isExisting, qNum);
+        } else if (deal_id) {
+          handleDealChangeById(deal_id, isExisting, qNum);
+        } else if (lead_id) {
+          handleLeadChange(lead_id, isExisting, qNum);
         }
 
         // Fetch items if they are not in initialData and it's a quotation
@@ -512,7 +532,8 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
     const subtotal = formData.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
     const discountAmount = Number(formData.discount) || 0;
     const amountAfterDiscount = subtotal - discountAmount;
-    const tax = amountAfterDiscount * 0.10; // 10% tax
+    const taxRate = Number(formData.taxPercentage) || 0;
+    const tax = amountAfterDiscount * (taxRate / 100);
     const total = amountAfterDiscount + tax;
     return { subtotal, discountAmount, tax, total };
   };
@@ -666,6 +687,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
           amount: total,
           subtotal: subtotal,
           tax_amount: tax,
+          tax_percentage: Number(formData.taxPercentage) || 0,
           discount_amount: discountAmount,
           estimate_date: formData.quotationDate ? (formData.quotationDate.includes('T') ? formData.quotationDate.split('T')[0] : formData.quotationDate) : new Date().toISOString().split('T')[0],
           expiry_date: formData.validUntil ? (formData.validUntil.includes('T') ? formData.validUntil.split('T')[0] : formData.validUntil) : null,
@@ -1126,8 +1148,18 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
                       className="border border-gray-200 p-1.5 text-right w-20 text-gray-900 focus:ring-1 focus:ring-blue-500 rounded outline-none"
                     />
                   </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-gray-400">Tax (10%)</span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-gray-400 flex items-center gap-1">
+                      Tax
+                      <input
+                        type="number"
+                        name="taxPercentage"
+                        value={formData.taxPercentage}
+                        onChange={handleInputChange}
+                        className="border border-gray-200 p-1 w-12 text-center text-gray-900 focus:ring-1 focus:ring-blue-500 rounded outline-none ml-1"
+                      />
+                      %
+                    </span>
                     <span className="text-gray-900 ">₹ {tax.toLocaleString()}</span>
                   </div>
                   <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
@@ -1147,7 +1179,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-0.5">
                           <span className="text-xs  text-gray-900 truncate">{v.type || v.status}</span>
-                          <span className="text-xs  text-gray-900">₹ {(v.amount / 1000).toFixed(0)}k</span>
+                          <span className="text-xs  text-gray-900">₹ {Number(v.amount || 0).toLocaleString()}</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-400">
                           <span>{v.date}</span>
@@ -1253,7 +1285,7 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
       <ReviseQuotationModal
         isOpen={isReviseModalOpen}
         onClose={() => setIsReviseModalOpen(false)}
-        quotation={initialData || formData}
+        quotation={{ ...initialData, ...formData }}
         onUpdate={() => {
           setIsReviseModalOpen(false);
           onClose();

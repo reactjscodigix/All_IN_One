@@ -1091,6 +1091,10 @@ const AddFollowUpModal = ({ isOpen, onClose, onSubmit, initialData = null }) => 
                           <option value="">Select Outcome</option>
                           <option value="Interested">Interested</option>
                           <option value="Asking for Quotation">Asking for Quotation</option>
+                          <option value="Revise Quotation">Revise Quotation</option>
+                          <option value="Quotation Accepted">Quotation Accepted</option>
+                          <option value="Quotation Accepted & Converted to Deal">Quotation Accepted & Converted to Deal</option>
+                          <option value="Quotation Declined">Quotation Declined</option>
                           <option value="Not Interested">Not Interested</option>
                           <option value="Call Back Later">Call Back Later</option>
                           <option value="Wrong Number">Wrong Number</option>

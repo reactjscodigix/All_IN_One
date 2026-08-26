@@ -48,6 +48,29 @@ const ReviseQuotationModal = ({ isOpen, onClose, quotation, onUpdate }) => {
       const baseNumber = (quotation.estimation_number || quotation.quotation_number || quotation.quotationNumber || '').split('-v')[0];
       const newQuotationNumber = `${baseNumber}-v${nextVersion}`;
 
+      const taxPct = quotation.taxPercentage !== undefined ? Number(quotation.taxPercentage) : (quotation.tax_percentage !== undefined ? Number(quotation.tax_percentage) : 10);
+      const sub = parseFloat(quotation.subtotal || quotation.amount || quotation.total) || 0;
+      const taxAmt = quotation.tax !== undefined ? parseFloat(quotation.tax) : (quotation.tax_amount !== undefined ? parseFloat(quotation.tax_amount) : (sub * (taxPct / 100)));
+      const tot = quotation.total !== undefined ? parseFloat(quotation.total) : (quotation.amount !== undefined ? parseFloat(quotation.amount) : (sub + taxAmt));
+
+      const initialItems = (quotation.items && quotation.items.length > 0) 
+        ? quotation.items.map(item => ({
+            ...item,
+            productName: item.productName || item.item_name || item.product_name || item.name || '',
+            original_rate: item.original_rate || item.rate || 0,
+            rate: item.rate || 0,
+            adjustment: item.adjustment || 0
+          }))
+        : [{
+            id: Date.now(),
+            productName: quotation.project_name || quotation.deal_name || quotation.client || 'Service',
+            description: quotation.description || '',
+            original_rate: sub,
+            rate: sub,
+            adjustment: 0,
+            quantity: 1
+          }];
+
       setFormData({
         ...quotation,
         quotationNumber: newQuotationNumber,
@@ -57,16 +80,11 @@ const ReviseQuotationModal = ({ isOpen, onClose, quotation, onUpdate }) => {
         validUntil: quotation.expiry_date ? new Date(quotation.expiry_date).toISOString().split('T')[0] : (quotation.validUntil ? new Date(quotation.validUntil).toISOString().split('T')[0] : ''),
         assignedExecutiveId: quotation.estimate_by || quotation.assignedExecutiveId || '',
         status: 'Revised',
-        items: (quotation.items || []).map(item => ({
-          ...item,
-          productName: item.productName || item.item_name || item.product_name || item.name || '',
-          original_rate: item.original_rate || item.rate || 0,
-          rate: item.rate || 0,
-          adjustment: item.adjustment || 0
-        })),
-        subtotal: quotation.subtotal || 0,
-        tax: quotation.tax_amount || quotation.tax || 0,
-        total: quotation.total || quotation.amount || 0,
+        items: initialItems,
+        subtotal: sub,
+        tax: taxAmt,
+        taxPercentage: taxPct,
+        total: tot,
         currency: quotation.currency || 'INR',
         discount: quotation.discount_amount || quotation.discount || 0,
         notes: quotation.notes || '',
@@ -159,16 +177,24 @@ const ReviseQuotationModal = ({ isOpen, onClose, quotation, onUpdate }) => {
     isFetchingVersionsRef.current = true;
     try {
       const filters = {};
-      if (quotation.deal_id) filters.deal_id = quotation.deal_id;
-      if (quotation.lead_id) filters.lead_id = quotation.lead_id;
+      if (quotation?.deal_id) filters.deal_id = quotation.deal_id;
+      if (quotation?.lead_id) filters.lead_id = quotation.lead_id;
 
       const estimations = await estimationsAPI.getAll(filters);
       if (Array.isArray(estimations)) {
-        const sorted = [...estimations].sort((a, b) =>
+        const qNum = quotation?.estimation_number || quotation?.quotation_number || quotation?.quotationNumber || '';
+        const baseNumber = qNum ? qNum.split('-v')[0] : '';
+        const filteredEstimations = baseNumber 
+          ? estimations.filter(est => {
+              const num = est.estimation_number || est.quotation_number || '';
+              return num.startsWith(baseNumber);
+            })
+          : estimations;
+
+        const sorted = [...filteredEstimations].sort((a, b) =>
           new Date(b.created_at || b.date) - new Date(a.created_at || a.date)
         );
         setVersions(sorted);
-        // By default compare with the quotation being revised (which is usually the latest anyway)
       }
     } catch (err) {
       console.error('Error fetching versions:', err);
@@ -291,9 +317,10 @@ const ReviseQuotationModal = ({ isOpen, onClose, quotation, onUpdate }) => {
   };
 
   const calculateTotals = (items, discount) => {
+    const taxPct = formData.taxPercentage !== undefined ? formData.taxPercentage : 10;
     const sumRates = items.reduce((sum, item) => sum + (parseFloat(item.rate) || 0) - (parseFloat(item.adjustment) || 0), 0);
     const taxableAmount = sumRates - (parseFloat(discount) || 0);
-    const tax = taxableAmount * 0.1; // 10% tax
+    const tax = taxableAmount * (taxPct / 100);
     const total = taxableAmount + tax;
     setFormData(prev => ({ ...prev, subtotal: taxableAmount, tax, total }));
   };
@@ -749,7 +776,7 @@ const ReviseQuotationModal = ({ isOpen, onClose, quotation, onUpdate }) => {
                         <div>
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-[500] text-[#1F2937] text-xs flex text-sm">Quotation v{versions.length - idx}</span>
-                            <span className="p-1 bg-[#DBEAFE] text-[#1D4ED8] text-xs font-[500] rounded ">Sent</span>
+                            <span className="p-1 bg-[#DBEAFE] text-[#1D4ED8] text-xs font-[500] rounded ">{v.status || 'Sent'}</span>
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <CheckCircle2 size={14} className="text-[#F97316]" />

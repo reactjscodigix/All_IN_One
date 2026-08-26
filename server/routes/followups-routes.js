@@ -52,44 +52,72 @@ module.exports = function setupFollowupsRoutes(app, pool) {
     return data;
   };
 
-  const updateLeadStatusFromOutcome = async (connection, leadId, outcome) => {
-    if (!leadId || !outcome) return;
+  const updateStatusFromOutcome = async (connection, relatedType, relatedId, outcome) => {
+    if (!relatedId || !outcome) return;
 
     let leadStatus = 'Contacted'; // Default
 
     switch (outcome) {
-      case 'Interested':
-        leadStatus = 'Contacted';
-        break;
-      case 'Not Interested':
-        leadStatus = 'Lost';
-        break;
-      case 'Wrong Number':
-        leadStatus = 'Unqualified';
-        break;
+      case 'Interested': leadStatus = 'Contacted'; break;
+      case 'Not Interested': leadStatus = 'Lost'; break;
+      case 'Wrong Number': leadStatus = 'Unqualified'; break;
       case 'Meeting Scheduled':
       case 'Converted to Deal':
-        leadStatus = 'Qualified';
-        break;
+      case 'Asking for Quotation':
+      case 'Quotation': leadStatus = 'Qualified'; break;
       case 'Call Back Later':
       case 'Follow-up Required':
-      case 'No Answer':
-        leadStatus = 'Contacted';
-        break;
-      default:
-        leadStatus = 'Contacted';
+      case 'No Answer': leadStatus = 'Contacted'; break;
+      
+      // Quotation syncs
+      case 'Revise Quotation': leadStatus = 'Revised Quotation'; break;
+      case 'Quotation Accepted': leadStatus = 'Won'; break;
+      case 'Quotation Accepted & Converted to Deal': leadStatus = 'Converted to Deal'; break;
+      case 'Quotation Declined': leadStatus = 'Lost'; break;
+      
+      default: leadStatus = 'Contacted';
     }
 
     try {
-      // Use connection if provided, otherwise pool
       const runner = connection || pool;
-      await runner.query(
-        "UPDATE leads SET lead_status = ?, last_follow_up = NOW(), updated_at = NOW() WHERE id = ?",
-        [leadStatus, leadId]
-      );
-      console.log(`Lead ${leadId} status updated to ${leadStatus} due to follow-up outcome: ${outcome}`);
+      
+      if (relatedType === 'Lead') {
+        await runner.query(
+          "UPDATE leads SET lead_status = ?, last_follow_up = NOW(), updated_at = NOW() WHERE id = ?",
+          [leadStatus, relatedId]
+        );
+      } else if (relatedType === 'Deal') {
+        const dealStage = (leadStatus === 'Qualified' || leadStatus === 'Revised Quotation') ? 'Quotation' : (leadStatus === 'Won' ? 'Won' : (leadStatus === 'Lost' ? 'Lost' : 'In Progress'));
+        await runner.query(
+          "UPDATE deals SET pipeline = ?, deal_stage = ?, updated_at = NOW() WHERE id = ?",
+          [dealStage, dealStage, relatedId]
+        );
+      }
+
+      // If it's a quotation outcome, sync with the latest quotation
+      if (['Revise Quotation', 'Quotation Accepted', 'Quotation Accepted & Converted to Deal', 'Quotation Declined'].includes(outcome)) {
+        const targetQuotationStatus = outcome === 'Revise Quotation' ? 'Revised' : (outcome === 'Quotation Declined' ? 'Declined' : 'Accepted');
+        
+        // Find latest quotation
+        let col = relatedType === 'Lead' ? 'lead_id' : (relatedType === 'Deal' ? 'deal_id' : 'client_id');
+        const [estRows] = await runner.query(
+          `SELECT id FROM estimations WHERE ${col} = ? ORDER BY id DESC LIMIT 1`,
+          [relatedId]
+        );
+        
+        if (estRows.length > 0) {
+          const estId = estRows[0].id;
+          // Update quotation status
+          await runner.query(
+            `UPDATE estimations SET status = ?, updated_at = NOW() WHERE id = ?`,
+            [targetQuotationStatus, estId]
+          );
+          
+          console.log(`Quotation ${estId} status synced to ${targetQuotationStatus} from outcome`);
+        }
+      }
     } catch (err) {
-      console.error(`Failed to update lead ${leadId} status to ${leadStatus}:`, err.message);
+      console.error(`Failed to update status for ${relatedType} ${relatedId}:`, err.message);
     }
   };
 
@@ -665,13 +693,15 @@ module.exports = function setupFollowupsRoutes(app, pool) {
 
       // Automation: Update Lead status based on follow-up outcome or schedule
       let followUpCount = 0;
-      if (related_type === 'Lead') {
-        followUpCount = await incrementFollowupCount(connection, related_id);
-        insertData.follow_up_count = followUpCount;
+      if (related_type === 'Lead' || related_type === 'Deal') {
+        if (related_type === 'Lead') {
+          followUpCount = await incrementFollowupCount(connection, related_id);
+          insertData.follow_up_count = followUpCount;
+        }
 
         if (outcome) {
-          await updateLeadStatusFromOutcome(connection, related_id, outcome);
-        } else if (status === 'Scheduled' || !status || status === 'Completed' || status === 'Pending') {
+          await updateStatusFromOutcome(connection, related_type, related_id, outcome);
+        } else if (related_type === 'Lead' && (status === 'Scheduled' || !status || status === 'Completed' || status === 'Pending')) {
           try {
             await connection.query(
               "UPDATE leads SET lead_status = 'Contacted', updated_at = NOW() WHERE id = ?",
@@ -1034,10 +1064,10 @@ module.exports = function setupFollowupsRoutes(app, pool) {
       }
 
       // Automation: Update Lead status based on follow-up outcome or status update
-      if (finalUpdateData.related_type === 'Lead') {
+      if (['Lead', 'Deal'].includes(finalUpdateData.related_type)) {
         if (finalUpdateData.outcome) {
-          await updateLeadStatusFromOutcome(connection, finalUpdateData.related_id, finalUpdateData.outcome);
-        } else if (finalUpdateData.status === 'Scheduled' || finalUpdateData.status === 'Completed' || finalUpdateData.status === 'Pending') {
+          await updateStatusFromOutcome(connection, finalUpdateData.related_type, finalUpdateData.related_id, finalUpdateData.outcome);
+        } else if (finalUpdateData.related_type === 'Lead' && (finalUpdateData.status === 'Scheduled' || finalUpdateData.status === 'Completed' || finalUpdateData.status === 'Pending')) {
           try {
             await connection.query(
               "UPDATE leads SET lead_status = 'Contacted', updated_at = NOW() WHERE id = ?",
@@ -1052,10 +1082,10 @@ module.exports = function setupFollowupsRoutes(app, pool) {
         // We might not have related_id/type in the request, let's fetch it if needed
         try {
           const [fu] = await connection.query("SELECT related_id, related_type, outcome FROM followups WHERE id = ?", [id]);
-          if (fu.length > 0 && fu[0].related_type === 'Lead') {
+          if (fu.length > 0 && ['Lead', 'Deal'].includes(fu[0].related_type)) {
             if (fu[0].outcome) {
-              await updateLeadStatusFromOutcome(connection, fu[0].related_id, fu[0].outcome);
-            } else {
+              await updateStatusFromOutcome(connection, fu[0].related_type, fu[0].related_id, fu[0].outcome);
+            } else if (fu[0].related_type === 'Lead') {
               await connection.query(
                 "UPDATE leads SET lead_status = 'Contacted', updated_at = NOW() WHERE id = ?",
                 [fu[0].related_id]
@@ -1102,8 +1132,8 @@ module.exports = function setupFollowupsRoutes(app, pool) {
       // Automation: Update Lead status based on outcome
       try {
         const [fu] = await connection.query("SELECT related_id, related_type FROM followups WHERE id = ?", [id]);
-        if (fu.length > 0 && fu[0].related_type === 'Lead') {
-          await updateLeadStatusFromOutcome(connection, fu[0].related_id, outcome);
+        if (fu.length > 0 && ['Lead', 'Deal'].includes(fu[0].related_type)) {
+          await updateStatusFromOutcome(connection, fu[0].related_type, fu[0].related_id, outcome);
         }
       } catch (e) {
         console.error('Failed to update lead status on completion:', e.message);
