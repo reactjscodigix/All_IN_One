@@ -385,6 +385,7 @@ const setupNotificationsRoutes = require('./routes/notifications-routes');
 const setupSprintsRoutes = require('./routes/sprints-routes');
 const setupImportRoutes = require('./routes/import-routes');
 const setupGithubRoutes = require('./routes/github-routes');
+const setupItServicesRoutes = require('./routes/it-services-routes');
 
 setupEntitiesRoutes(app, pool);
 setupActivitiesNotesRoutes(app, pool);
@@ -407,6 +408,7 @@ setupNotificationsRoutes(app, pool);
 setupSprintsRoutes(app, pool);
 setupImportRoutes(app, pool);
 setupGithubRoutes(app, pool);
+setupItServicesRoutes(app, pool);
 
 const testerDashboardRoutes = require('./routes/tester-dashboard-routes');
 app.use('/api/tester', testerDashboardRoutes);

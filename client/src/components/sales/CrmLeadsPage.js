@@ -747,6 +747,7 @@ const CrmLeadsPage = () => {
 
       <AddNewLeadModal
         isOpen={isModalOpen}
+        currentUser={user}
         onClose={() => {
           setIsModalOpen(false);
           setLeadToEdit(null);

@@ -829,6 +829,15 @@ async function initializeDatabase() {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS it_services (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS estimations (
         id INT AUTO_INCREMENT PRIMARY KEY,
         estimation_number VARCHAR(50) UNIQUE NOT NULL,
@@ -2307,6 +2316,30 @@ async function initializeDatabase() {
         );
       }
       console.log('✓ Demo files created');
+    }
+
+    const [existingItServices] = await connection.query('SELECT COUNT(*) as count FROM it_services');
+    if (existingItServices[0].count === 0) {
+      const demoItServices = [
+        'AI Solutions',
+        'Industrial IoT',
+        'ERP software',
+        'CRM software',
+        'Machine Learning',
+        'Custom Software Engineering',
+        'Predictive Analytics',
+        'Web Development',
+        'Web CSM',
+        'Cloud Applications',
+        'Other'
+      ];
+      for (const service of demoItServices) {
+        await connection.query(
+          'INSERT IGNORE INTO it_services (name) VALUES (?)',
+          [service]
+        );
+      }
+      console.log('✓ Demo IT services created');
     }
 }
 

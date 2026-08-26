@@ -4,7 +4,7 @@ import AddNewCompanyForm from '../common/AddNewCompanyForm';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyAdded, leadToEdit }) => {
+const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyAdded, leadToEdit, currentUser }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [loadingData, setLoadingData] = useState(true);
@@ -29,7 +29,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     referral_contact: '',
     industry: '',
     industry_other: '',
-    owner: '',
+    owner: currentUser?.id?.toString() || '',
     status: 'New',
     rating: 5,
     tags: [],
@@ -108,7 +108,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
         referral_contact: '',
         industry: '',
         industry_other: '',
-        owner: '',
+        owner: currentUser?.id?.toString() || '',
         status: 'Not Contacted',
         rating: 5,
         tags: [],
@@ -128,6 +128,9 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
   const [companySearchTerm, setCompanySearchTerm] = useState('');
   const [fetchedCompanies, setFetchedCompanies] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [itServicesList, setItServicesList] = useState([]);
+  const [itServiceSearchOpen, setItServiceSearchOpen] = useState(false);
+  const [itServiceSearchTerm, setItServiceSearchTerm] = useState('');
 
   const marketingServiceOptions = [
     'SEO',
@@ -184,6 +187,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     if (isOpen) {
       fetchUsers();
       fetchCompaniesData();
+      fetchItServicesData();
     }
   }, [isOpen]);
 
@@ -223,6 +227,20 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     }
   };
 
+  const fetchItServicesData = async () => {
+    try {
+      const apiUrl = process.env.REACT_APP_API_URL || API_BASE_URL + '';
+      const response = await fetch(`${apiUrl}/it-services`);
+      if (response.ok) {
+        const data = await response.json();
+        setItServicesList(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Error fetching IT services:', err);
+    }
+  };
+
+
   const getSelectedOwner = () => {
     if (!formData.owner) return null;
     return users.find(u => u.id === parseInt(formData.owner));
@@ -249,6 +267,17 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
       return companyName.includes(searchTerm) || industry.includes(searchTerm);
     });
   };
+
+  const getFilteredItServices = () => {
+    if (!itServiceSearchTerm.trim()) {
+      return itServicesList;
+    }
+    return itServicesList.filter(s => {
+      const serviceName = (s.name || '').toLowerCase();
+      return serviceName.includes(itServiceSearchTerm.toLowerCase());
+    });
+  };
+
 
   const getSelectedCompanyName = () => {
     if (!formData.company) return '';
@@ -469,7 +498,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
       referral_contact: '',
       industry: '',
       industry_other: '',
-      owner: '',
+      owner: currentUser?.id?.toString() || '',
       status: 'New',
       rating: 5,
       tags: [],
@@ -483,6 +512,8 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     setSelectPeopleDropdownOpen(false);
     setCompanySearchOpen(false);
     setCompanySearchTerm('');
+    setItServiceSearchTerm('');
+    setItServiceSearchOpen(false);
     setSelectedFile(null);
     onClose();
   };
@@ -551,7 +582,8 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
               </label>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs    text-gray-700 mb-2">
                 Client Name<span className="text-red-500">*</span>
@@ -731,17 +763,71 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
                 <label className="block text-xs  text-gray-700 mb-2">
                   IT Services
                 </label>
-                <select
-                  name="it_services"
-                  value={formData.it_services}
-                  onChange={handleInputChange}
-                  className="w-full p-2 border border-gray-300 rounded  text-xs bg-white focus:outline-none focus:border-red-500 transition"
-                >
-                  <option value="">Select IT Service</option>
-                  {itServiceOptions.map(service => (
-                    <option key={service} value={service}>{service}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setItServiceSearchOpen(!itServiceSearchOpen)}
+                    className="w-full p-2 border border-gray-300 rounded text-xs bg-white focus:outline-none focus:border-red-500 transition text-left flex items-center justify-between"
+                  >
+                    <span className={formData.it_services ? 'text-gray-900' : 'text-gray-500'}>
+                      {formData.it_services || 'Select IT Service'}
+                    </span>
+                    <ChevronDown size={14} className="text-gray-400" />
+                  </button>
+
+                  {itServiceSearchOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-20">
+                      <div className="p-2 border-b border-gray-100">
+                        <input
+                          type="text"
+                          placeholder="Search IT service..."
+                          value={itServiceSearchTerm}
+                          onChange={(e) => setItServiceSearchTerm(e.target.value)}
+                          className="w-full p-1.5 text-xs border border-gray-200 rounded focus:outline-none focus:border-red-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, it_services: '' }));
+                            setItServiceSearchOpen(false);
+                          }}
+                          className="w-full p-2 text-left text-xs text-gray-500 hover:bg-gray-50 border-b border-gray-50"
+                        >
+                          None (Clear Selection)
+                        </button>
+                        {getFilteredItServices().map(service => (
+                          <button
+                            key={service.id}
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, it_services: service.name }));
+                              setItServiceSearchOpen(false);
+                            }}
+                            className="w-full p-2 text-left text-xs text-gray-700 hover:bg-gray-50 border-b border-gray-50 last:border-b-0"
+                          >
+                            {service.name}
+                          </button>
+                        ))}
+                        <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, it_services: 'Other' }));
+                              setItServiceSearchOpen(false);
+                            }}
+                            className="w-full p-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                          >
+                            Other
+                        </button>
+                        {getFilteredItServices().length === 0 && (
+                          <div className="p-2 text-xs text-gray-500 text-center">No services found</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {formData.it_services === 'Other' && (
