@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, MoreHorizontal, Trash2, Eye } from 'lucide-react';
 import { projectAPI } from '../../services/api';
-import AddNewProjectModal from './AddNewProjectModal';
+import AddProjectModal from './AddProjectModal';
 import { showSuccessToast, showErrorToast } from '../../utils/toast';
 
 const ProjectsListPage = ({ onProjectSelect }) => {
@@ -42,9 +42,39 @@ const ProjectsListPage = ({ onProjectSelect }) => {
     }
   };
 
+  const handleModalSubmit = async (formData) => {
+    try {
+      const projectData = {
+        title: formData.name,
+        name: formData.name,
+        description: formData.description,
+        status: formData.status,
+        priority: formData.priority,
+        budget: parseFloat(String(formData.price).replace(/[^0-9.]/g, '')) || 0,
+        due_date: formData.dueDate,
+        start_date: formData.startDate,
+        project_type: formData.projectType,
+        company: formData.client,
+        company_id: formData.company_id,
+        project_id: formData.projectId,
+        manager_id: formData.manager_id,
+        deal_id: formData.dealId || null,
+        service_type: formData.category || null
+      };
+
+      await projectAPI.create(projectData);
+      fetchProjects();
+      showSuccessToast('Project created successfully!');
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error creating project:', err);
+      showErrorToast('Failed to save project: ' + err.message);
+    }
+  };
+
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.project_id.toLowerCase().includes(searchTerm.toLowerCase());
+                         (project.project_id_code || project.project_id || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || project.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -216,10 +246,10 @@ const ProjectsListPage = ({ onProjectSelect }) => {
         </div>
       </div>
 
-      <AddNewProjectModal
+      <AddProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchProjects}
+        onSubmit={handleModalSubmit}
       />
     </div>
   );

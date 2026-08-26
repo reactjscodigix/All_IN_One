@@ -16,8 +16,8 @@ const ITTeamsPage = ({ department }) => {
   const path = window.location.pathname.toLowerCase();
   const currentDept = department || (
     path.includes('/marketing') ? 'Marketing' :
-    path.includes('/seo-gmb') ? 'Marketing' :
-    'IT'
+      path.includes('/seo-gmb') ? 'Marketing' :
+        'IT'
   );
   const [teams, setTeams] = useState([]);
   const [users, setUsers] = useState([]);
@@ -392,13 +392,13 @@ const ITTeamsPage = ({ department }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="p-2 bg-white border border-gray-200 text-gray-700 rounded-md text-sm font-medium flex items-center gap-2  hover:bg-gray-50 transition-colors">
+            <button className="p-2 bg-white border border-gray-200 text-gray-700 rounded text-sm font-medium flex items-center gap-2  hover:bg-gray-50 transition-colors">
               <Users size={14} /> Team Workload
             </button>
-            <button className="p-2 bg-white border border-gray-200 text-gray-700 rounded-md text-sm font-medium flex items-center gap-2  hover:bg-gray-50 transition-colors">
+            <button className="p-2 bg-white border border-gray-200 text-gray-700 rounded text-sm font-medium flex items-center gap-2  hover:bg-gray-50 transition-colors">
               <Download size={14} /> Import Team
             </button>
-            <button onClick={() => { setSelectedTeam(null); setIsAssignProjectModalOpen(true); }} className="p-2 bg-indigo-600 text-white rounded-md text-sm font-medium flex items-center gap-2  hover:bg-indigo-700 transition-colors">
+            <button onClick={() => { setSelectedTeam(null); setIsAssignProjectModalOpen(true); }} className="p-2 bg-indigo-600 text-white rounded text-sm font-medium flex items-center gap-2  hover:bg-indigo-700 transition-colors">
               <Plus size={14} /> Assign Team
             </button>
           </div>
@@ -414,8 +414,8 @@ const ITTeamsPage = ({ department }) => {
             <div key={i} className="bg-white p-4 rounded-lg border border-gray-100 flex items-center gap-4 hover:shadow-sm transition-shadow">
               <div className={`p-3.5 rounded-lg ${k.bg} ${k.color} shrink-0`}><k.icon size={22} /></div>
               <div>
-                <div className="text-sm font-semibold text-gray-500 mb-0.5">{k.title}</div>
-                <div className="text-2xl font-bold text-gray-900 mb-0.5">{k.val}</div>
+                <div className="text-sm  text-gray-500 mb-0.5">{k.title}</div>
+                <div className="text-xl  text-gray-900 mb-0.5">{k.val}</div>
                 <div className="text-[10px] text-gray-400">{k.sub}</div>
               </div>
             </div>
@@ -429,7 +429,7 @@ const ITTeamsPage = ({ department }) => {
               <div
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-3 text-[12px] font-semibold cursor-pointer transition-colors relative ${activeTab === tab
+                className={`pb-3 text-[12px]  cursor-pointer transition-colors relative ${activeTab === tab
                   ? 'text-indigo-600  border-b-2 border-indigo-600'
                   : 'text-gray-500 hover:text-gray-700'
                   }`}
@@ -465,7 +465,7 @@ const ITTeamsPage = ({ department }) => {
             <div className="bg-white rounded border border-gray-100 p-6 flex flex-col">
               <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-100">
                 <div>
-                  <h2 className="text-[14px] font-bold text-gray-900">Active Teams</h2>
+                  <h2 className="text-[14px]  text-gray-900">Active Teams</h2>
                   <p className="text-xs text-gray-500 mt-0.5">Manage allocations, assign members, and monitor IT teams.</p>
                 </div>
                 <button
@@ -484,7 +484,7 @@ const ITTeamsPage = ({ department }) => {
                     setManagerRoleSearch('');
                     setIsCreateModalOpen(true);
                   }}
-                  className="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs font-semibold flex items-center gap-1.5 hover:bg-indigo-700 transition-colors"
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs  flex items-center gap-1.5 hover:bg-indigo-700 transition-colors"
                 >
                   <Plus size={14} /> New Team
                 </button>
@@ -494,7 +494,7 @@ const ITTeamsPage = ({ department }) => {
                 <div className="overflow-x-auto border border-gray-100 rounded-lg shadow-sm">
                   <table className="w-full text-left border-collapse bg-white">
                     <thead>
-                      <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 bg-gray-50/50">
+                      <tr className="border-b border-gray-100 text-xs  text-gray-500 bg-gray-50/50">
                         <th className="py-3 px-4 w-10"></th>
                         <th className="py-3 px-4">Team Name</th>
                         <th className="py-3 px-4">Description</th>
@@ -522,25 +522,25 @@ const ITTeamsPage = ({ department }) => {
                                   <ChevronRight size={14} className="text-gray-400" />
                                 )}
                               </td>
-                              <td className="py-3.5 px-4 font-bold text-gray-900">{team.name}</td>
+                              <td className="py-3.5 px-4  text-gray-900">{team.name}</td>
                               <td className="py-3.5 px-4 text-gray-500 max-w-xs truncate">{team.description || '—'}</td>
                               <td className="py-3.5 px-4">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-5 h-5 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] font-bold">
+                                  <div className="w-5 h-5 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[10px] ">
                                     {manager ? manager.first_name[0].toUpperCase() : 'M'}
                                   </div>
-                                  <span className="font-semibold text-gray-800">
+                                  <span className=" text-gray-800">
                                     {manager ? `${manager.first_name} ${manager.last_name}` : 'Unassigned'}
                                   </span>
                                 </div>
                               </td>
                               <td className="py-3.5 px-4 text-center">
-                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold">
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full ">
                                   {team.members?.length || 0} Members
                                 </span>
                               </td>
                               <td className="py-3.5 px-4 text-center">
-                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-bold">
+                                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full ">
                                   {projects.filter(p => p.team_id === team.id).length} Projects
                                 </span>
                               </td>
@@ -624,10 +624,10 @@ const ITTeamsPage = ({ department }) => {
                                 <td colSpan="7" className="py-3 px-8">
                                   <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden mb-2">
                                     <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Allocated Team Members</span>
+                                      <span className="text-[10px]  text-gray-500 uppercase tracking-wider">Allocated Team Members</span>
                                       <button
                                         onClick={() => { setSelectedTeam(team); setIsAddMemberModalOpen(true); }}
-                                        className="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1"
+                                        className="text-[11px] text-indigo-600 hover:text-indigo-800  flex items-center gap-1"
                                       >
                                         <Plus size={12} /> Add Member
                                       </button>
@@ -648,13 +648,13 @@ const ITTeamsPage = ({ department }) => {
                                             const user = users.find(u => u.id === member.user_id);
                                             return (
                                               <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                                                <td className="py-2 px-4 font-bold text-gray-800">
+                                                <td className="py-2 px-4  text-gray-800">
                                                   {user ? `${user.first_name} ${user.last_name}` : `User ID: ${member.user_id}`}
                                                 </td>
-                                                <td className="py-2 px-4 text-gray-600 font-semibold">{member.role}</td>
+                                                <td className="py-2 px-4 text-gray-600 ">{member.role}</td>
                                                 <td className="py-2 px-4 text-gray-500">{user?.email || '—'}</td>
                                                 <td className="py-2 px-4 text-center">
-                                                  <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px] font-bold">Active</span>
+                                                  <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px] ">Active</span>
                                                 </td>
                                                 <td className="py-2 px-4 text-right pr-6">
                                                   <button
@@ -691,10 +691,10 @@ const ITTeamsPage = ({ department }) => {
 
                                   <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden mt-4 mb-2">
                                     <div className="px-4 py-2 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Assigned Projects</span>
+                                      <span className="text-[10px]  text-gray-500 uppercase tracking-wider">Assigned Projects</span>
                                       <button
                                         onClick={() => { setSelectedTeam(team); setIsAssignProjectModalOpen(true); }}
-                                        className="text-[11px] text-emerald-600 hover:text-emerald-800 font-bold flex items-center gap-1"
+                                        className="text-[11px] text-emerald-600 hover:text-emerald-800  flex items-center gap-1"
                                       >
                                         <Plus size={12} /> Assign Project
                                       </button>
@@ -713,16 +713,16 @@ const ITTeamsPage = ({ department }) => {
                                           return teamProjects.length > 0 ? (
                                             teamProjects.map(p => (
                                               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                                                <td className="py-2 px-4 font-bold text-gray-800">{p.name}</td>
+                                                <td className="py-2 px-4  text-gray-800">{p.name}</td>
                                                 <td className="py-2 px-4">
-                                                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-bold">
+                                                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] ">
                                                     {p.status || 'Planning'}
                                                   </span>
                                                 </td>
                                                 <td className="py-2 px-4 text-right pr-6">
                                                   <button
                                                     onClick={() => navigate(`/projects/${designation || 'it-manager'}/${username || 'ashwini'}/details/${p.id}`)}
-                                                    className="p-1 hover:bg-indigo-50 text-indigo-650 rounded transition-colors inline-flex items-center gap-1 font-bold text-[10px]"
+                                                    className="p-1 hover:bg-indigo-50 text-indigo-650 rounded transition-colors inline-flex items-center gap-1  text-[10px]"
                                                   >
                                                     <Eye size={12} /> View Project
                                                   </button>
@@ -755,7 +755,7 @@ const ITTeamsPage = ({ department }) => {
                   <p className="text-sm text-gray-500 font-medium">No active teams found.</p>
                   <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="mt-3 text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-md font-semibold hover:bg-indigo-700 transition-colors"
+                    className="mt-3 text-xs bg-indigo-600 text-white px-3 py-1.5 rounded  hover:bg-indigo-700 transition-colors"
                   >
                     Create First Team
                   </button>
@@ -769,14 +769,14 @@ const ITTeamsPage = ({ department }) => {
           <div className="bg-white rounded border border-gray-100  flex flex-col mb-6">
             <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white rounded-t-xl">
               <div>
-                <h2 className="text-[13px] font-semibold text-gray-900">Project Wise Team Allocation</h2>
+                <h2 className="text-[13px]  text-gray-900">Project Wise Team Allocation</h2>
                 <p className="text-xs text-gray-400 mt-0.5">Tracking team assignment across all active projects</p>
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500  bg-gray-50/50">
+                  <tr className="border-b border-gray-100 text-xs  text-gray-500  bg-gray-50/50">
                     <th className="py-3 px-4">Project</th>
                     <th className="p-2">Assigned Team</th>
                     <th className="p-2">Team Size</th>
@@ -792,7 +792,7 @@ const ITTeamsPage = ({ department }) => {
                     return (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-gray-900">{p.name}</div>
+                          <div className=" text-gray-900">{p.name}</div>
                           <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded mt-1 inline-block">IT Project</span>
                         </td>
                         <td className="p-2 font-medium text-indigo-600">
@@ -800,7 +800,7 @@ const ITTeamsPage = ({ department }) => {
                             <span className="text-gray-400 font-normal">Unassigned</span>
                           )}
                         </td>
-                        <td className="p-2 font-semibold text-gray-700">
+                        <td className="p-2  text-gray-700">
                           {assignedTeam ? `${assignedTeam.members?.length || 0} Members` : '-'}
                         </td>
                         <td className="p-2 text-gray-700">
@@ -842,7 +842,7 @@ const ITTeamsPage = ({ department }) => {
         {activeTab === 'Role Management' && (
           <div className="grid grid-cols-12 gap-6 mb-6">
             <div className="col-span-4 bg-white p-2 rounded border border-gray-100  flex flex-col">
-              <h3 className="text-[13px] font-semibold text-gray-900 mb-4">Allocation by Role</h3>
+              <h3 className="text-[13px]  text-gray-900 mb-4">Allocation by Role</h3>
               <div className="space-y-3 flex-1 overflow-y-auto pr-1">
                 {dynamicRoleAllocations.map((r, i) => (
                   <div key={i} className="flex items-center gap-3 text-xs">
@@ -851,7 +851,7 @@ const ITTeamsPage = ({ department }) => {
                       <div className="h-full bg-indigo-600 rounded-full" style={{ width: r.pct }}></div>
                     </div>
                     <div className="w-16 flex justify-between text-gray-500">
-                      <span className="font-semibold text-gray-900">{r.count}</span>
+                      <span className=" text-gray-900">{r.count}</span>
                       <span>({r.pct})</span>
                     </div>
                   </div>
@@ -861,12 +861,12 @@ const ITTeamsPage = ({ department }) => {
 
             <div className="col-span-8 bg-white rounded border border-gray-100  flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
-                <h2 className="text-[13px] font-semibold text-gray-900">Role Breakdown Registry</h2>
+                <h2 className="text-[13px]  text-gray-900">Role Breakdown Registry</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500  bg-gray-50/50">
+                    <tr className="border-b border-gray-100 text-xs  text-gray-500  bg-gray-50/50">
                       <th className="py-3 px-4">Role Title</th>
                       <th className="p-2">Department</th>
                       <th className="p-2 text-center">Total Staff</th>
@@ -881,13 +881,13 @@ const ITTeamsPage = ({ department }) => {
                       ).length;
                       return (
                         <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                          <td className="py-3 px-4 font-semibold text-gray-900">{role}</td>
+                          <td className="py-3 px-4  text-gray-900">{role}</td>
                           <td className="p-2 text-gray-600">IT Department</td>
                           <td className="p-2 text-center text-indigo-600 font-medium">
                             {count} Staff
                           </td>
                           <td className="p-2 text-center">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${count > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px]  ${count > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
                               {count > 0 ? 'Active' : 'Inactive'}
                             </span>
                           </td>
@@ -905,7 +905,7 @@ const ITTeamsPage = ({ department }) => {
         {activeTab === 'Skills Matrix' && (
           <div className="grid grid-cols-12 gap-6 mb-6">
             <div className="col-span-4 bg-white p-4 rounded border border-gray-100 flex flex-col">
-              <h3 className="text-[13px] font-semibold text-gray-900 mb-4">Top Roles in Team</h3>
+              <h3 className="text-[13px]  text-gray-900 mb-4">Top Roles in Team</h3>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(
                   users.reduce((acc, u) => {
@@ -914,7 +914,7 @@ const ITTeamsPage = ({ department }) => {
                     return acc;
                   }, {})
                 ).map(([name, count], i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 border rounded-md border-indigo-100 bg-indigo-50 text-indigo-600">
+                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 border rounded border-indigo-100 bg-indigo-50 text-indigo-600">
                     <span className="text-xs">{name}</span>
                     <span className="text-[9px] opacity-80">{count}</span>
                   </div>
@@ -927,12 +927,12 @@ const ITTeamsPage = ({ department }) => {
 
             <div className="col-span-8 bg-white rounded border border-gray-100 flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
-                <h2 className="text-[13px] font-semibold text-gray-900">Skills & Designations Registry</h2>
+                <h2 className="text-[13px]  text-gray-900">Skills & Designations Registry</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 bg-gray-50/50">
+                    <tr className="border-b border-gray-100 text-xs  text-gray-500 bg-gray-50/50">
                       <th className="py-3 px-4">Resource</th>
                       <th className="p-2">Primary Skillset / Role</th>
                       <th className="p-2 text-center">Status</th>
@@ -941,9 +941,9 @@ const ITTeamsPage = ({ department }) => {
                   <tbody className="text-sm">
                     {users.map((u, i) => (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
+                        <td className="py-3 px-4  text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
                         <td className="p-2">
-                          <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[9px] font-semibold">
+                          <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[9px] ">
                             {u.job_title || u.role || 'Member'}
                           </span>
                         </td>
@@ -967,12 +967,12 @@ const ITTeamsPage = ({ department }) => {
         {activeTab === 'Availability Calendar' && (
           <div className="bg-white rounded border border-gray-100 flex flex-col mb-6">
             <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
-              <h2 className="text-[13px] font-semibold text-gray-900">Resource Capacity & Calendar</h2>
+              <h2 className="text-[13px]  text-gray-900">Resource Capacity & Calendar</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 bg-gray-50/50">
+                  <tr className="border-b border-gray-100 text-xs  text-gray-500 bg-gray-50/50">
                     <th className="py-3 px-4">Member Name</th>
                     <th className="p-2">Weekly Allocated Hours</th>
                     <th className="p-2 text-center">Department</th>
@@ -982,7 +982,7 @@ const ITTeamsPage = ({ department }) => {
                 <tbody className="text-sm">
                   {users.map((u, i) => (
                     <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                      <td className="py-3 px-4 font-semibold text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
+                      <td className="py-3 px-4  text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
                       <td className="p-2 font-medium text-gray-700">40 Hours / week</td>
                       <td className="p-2 text-center text-gray-600">{u.department || 'IT Department'}</td>
                       <td className="p-2 text-center">
@@ -1005,7 +1005,7 @@ const ITTeamsPage = ({ department }) => {
           <div className="grid grid-cols-12 gap-6 mb-6">
             <div className="col-span-5 bg-white p-4 rounded border border-gray-100 flex flex-col">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-[13px] font-semibold text-gray-900">Upcoming Leaves Schedule</h3>
+                <h3 className="text-[13px]  text-gray-900">Upcoming Leaves Schedule</h3>
               </div>
               <div className="py-12 text-center text-gray-400 text-xs">
                 No upcoming leaves scheduled.
@@ -1014,12 +1014,12 @@ const ITTeamsPage = ({ department }) => {
 
             <div className="col-span-7 bg-white rounded border border-gray-100 flex flex-col">
               <div className="px-5 py-4 border-b border-gray-100 bg-white rounded-t-xl">
-                <h2 className="text-[13px] font-semibold text-gray-900">Today's Attendance Registry</h2>
+                <h2 className="text-[13px]  text-gray-900">Today's Attendance Registry</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-gray-100 text-xs font-semibold text-gray-500 bg-gray-50/50">
+                    <tr className="border-b border-gray-100 text-xs  text-gray-500 bg-gray-50/50">
                       <th className="py-3 px-4">Member</th>
                       <th className="p-2 text-center">Status</th>
                     </tr>
@@ -1027,7 +1027,7 @@ const ITTeamsPage = ({ department }) => {
                   <tbody className="text-sm">
                     {users.map((u, i) => (
                       <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
-                        <td className="py-3 px-4 font-semibold text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
+                        <td className="py-3 px-4  text-gray-900">{`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User'}</td>
                         <td className="p-2 text-center">
                           <span className="px-2 py-0.5 bg-gray-50 text-gray-400 rounded-full text-[9px]">Offline</span>
                         </td>
@@ -1049,11 +1049,11 @@ const ITTeamsPage = ({ department }) => {
       {/* Create Team Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-5 w-full max-w-3xl shadow-2xl border border-gray-200 overflow-y-auto max-h-[90vh]">
+          <div className="bg-white rounded-lg p-5 w-full max-w-3xl shadow-xl border border-gray-200 overflow-y-auto max-h-[90vh]">
             {/* Header */}
             <div className="flex justify-between items-center pb-3 border-b border-gray-100 mb-4">
               <div>
-                <h2 className="text-base font-bold text-gray-900">{isEditMode ? 'Edit Team Details' : 'Create New Team'}</h2>
+                <h2 className="text-base  text-gray-900">{isEditMode ? 'Edit Team Details' : 'Create New Team'}</h2>
                 <p className="text-[11px] text-gray-500">{isEditMode ? 'Modify team details, change the manager, or manage team allocations.' : 'Configure team properties, select the manager, and allocate team members.'}</p>
               </div>
               <button
@@ -1072,7 +1072,7 @@ const ITTeamsPage = ({ department }) => {
             <form onSubmit={handleCreateTeam} className="space-y-4">
               {/* Section 1: Team & Manager Information */}
               <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-100 mb-4">
-                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-900 border-b border-gray-100 pb-1.5">
+                <div className="flex items-center gap-2 mb-3 text-xs  text-gray-900 border-b border-gray-100 pb-1.5">
                   <Briefcase size={14} className="text-indigo-600" />
                   <span>Team & Manager Information</span>
                 </div>
@@ -1119,7 +1119,7 @@ const ITTeamsPage = ({ department }) => {
                                     setActiveDropdown(null);
                                   }}
                                 >
-                                  <span className="text-xs font-semibold text-gray-900">{u.first_name} {u.last_name}</span>
+                                  <span className="text-xs  text-gray-900">{u.first_name} {u.last_name}</span>
                                   <span className="text-[10px] text-gray-500">{u.email}</span>
                                 </div>
                               ))
@@ -1148,7 +1148,7 @@ const ITTeamsPage = ({ department }) => {
 
               {/* Section 2: Allocate Team Member (Form) */}
               <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-100 mb-4">
-                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-900 border-b border-gray-100 pb-1.5">
+                <div className="flex items-center gap-2 mb-3 text-xs  text-gray-900 border-b border-gray-100 pb-1.5">
                   <UserPlus size={14} className="text-emerald-600" />
                   <span>Allocate Team Member</span>
                 </div>
@@ -1185,7 +1185,7 @@ const ITTeamsPage = ({ department }) => {
                               setMemberFormUserSearchActive(false);
                             }}
                           >
-                            <span className="text-xs font-semibold text-gray-900">{u.first_name} {u.last_name}</span>
+                            <span className="text-xs  text-gray-900">{u.first_name} {u.last_name}</span>
                             <span className="text-[10px] text-gray-500">{u.email}</span>
                           </div>
                         ))}
@@ -1232,7 +1232,7 @@ const ITTeamsPage = ({ department }) => {
                     <button
                       type="button"
                       onClick={addMemberToList}
-                      className="w-full p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-semibold flex items-center justify-center gap-1 transition-colors h-8"
+                      className="w-full p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs  flex items-center justify-center gap-1 transition-colors h-8"
                     >
                       <Plus size={14} /> Add
                     </button>
@@ -1243,13 +1243,13 @@ const ITTeamsPage = ({ department }) => {
               {/* Section 3: Allocated Members Table */}
               <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
                 <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
-                  <span className="text-xs font-bold text-gray-900">Allocated Members List ({newTeam.members.length})</span>
+                  <span className="text-xs  text-gray-900">Allocated Members List ({newTeam.members.length})</span>
                 </div>
 
                 <div className="overflow-x-auto max-h-48 custom-scrollbar">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 text-gray-500 bg-gray-50/50 font-semibold sticky top-0">
+                      <tr className="border-b border-gray-200 text-gray-500 bg-gray-50/50  sticky top-0">
                         <th className="py-2.5 px-3 w-10">#</th>
                         <th className="p-2">Member Name</th>
                         <th className="p-2">Email</th>
@@ -1262,7 +1262,7 @@ const ITTeamsPage = ({ department }) => {
                         newTeam.members.map((m, idx) => (
                           <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
                             <td className="py-2.5 px-3 text-gray-500 font-medium">{idx + 1}</td>
-                            <td className="p-2 font-semibold text-gray-900">{m.userName}</td>
+                            <td className="p-2  text-gray-900">{m.userName}</td>
                             <td className="p-2 text-gray-500">{m.email}</td>
                             <td className="p-2 text-gray-700">{m.role}</td>
                             <td className="py-2 px-3 text-center">
@@ -1291,7 +1291,7 @@ const ITTeamsPage = ({ department }) => {
 
               {/* Section 4: Assign IT Project (Form) */}
               <div className="bg-gray-50/50 rounded-lg p-3 border border-gray-100 mb-4">
-                <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-900 border-b border-gray-100 pb-1.5">
+                <div className="flex items-center gap-2 mb-3 text-xs  text-gray-900 border-b border-gray-100 pb-1.5">
                   <Folder size={14} className="text-indigo-600" />
                   <span>Assign IT Project</span>
                 </div>
@@ -1317,7 +1317,7 @@ const ITTeamsPage = ({ department }) => {
                     <button
                       type="button"
                       onClick={addProjectToList}
-                      className="w-full p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold flex items-center justify-center gap-1 transition-colors h-[34px]"
+                      className="w-full p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs  flex items-center justify-center gap-1 transition-colors h-[34px]"
                     >
                       <Plus size={14} /> Add Project
                     </button>
@@ -1328,13 +1328,13 @@ const ITTeamsPage = ({ department }) => {
               {/* Section 5: Assigned Projects List Table */}
               <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
                 <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 flex justify-between items-center">
-                  <span className="text-xs font-bold text-gray-900">Assigned Projects List ({newTeam.project_ids?.length || 0})</span>
+                  <span className="text-xs  text-gray-900">Assigned Projects List ({newTeam.project_ids?.length || 0})</span>
                 </div>
 
                 <div className="overflow-x-auto max-h-48 custom-scrollbar">
                   <table className="w-full text-left text-xs">
                     <thead>
-                      <tr className="border-b border-gray-200 text-gray-500 bg-gray-50/50 font-semibold sticky top-0">
+                      <tr className="border-b border-gray-200 text-gray-500 bg-gray-50/50  sticky top-0">
                         <th className="py-2.5 px-3 w-10">#</th>
                         <th className="p-2">Project Name</th>
                         <th className="p-2">Status</th>
@@ -1348,9 +1348,9 @@ const ITTeamsPage = ({ department }) => {
                           return (
                             <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
                               <td className="py-2.5 px-3 text-gray-500 font-medium">{idx + 1}</td>
-                              <td className="p-2 font-semibold text-gray-900">{p ? p.name : `Project ID: ${projId}`}</td>
+                              <td className="p-2  text-gray-900">{p ? p.name : `Project ID: ${projId}`}</td>
                               <td className="p-2">
-                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-bold">
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] ">
                                   {p?.status || 'Planning'}
                                 </span>
                               </td>
@@ -1394,7 +1394,7 @@ const ITTeamsPage = ({ department }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded text-xs "
                 >
                   {isEditMode ? 'Update Team' : 'Create Team'}
                 </button>
@@ -1512,14 +1512,14 @@ const ITTeamsPage = ({ department }) => {
       {isAssignProjectModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded p-4 w-full max-w-md shadow-xl border border-gray-150">
-            <h2 className="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100">
+            <h2 className="text-sm  text-gray-900 mb-4 pb-2 border-b border-gray-100">
               {selectedTeam ? `Assign Project to ${selectedTeam.name}` : 'Assign Project to Team'}
             </h2>
             <form onSubmit={handleAssignProject} className="space-y-4">
 
               {!selectedTeam && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">Select Team <span className="text-red-500">*</span></label>
+                  <label className="block text-xs  text-gray-700 mb-1.5">Select Team <span className="text-red-500">*</span></label>
                   <select
                     required
                     className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 outline-none text-xs bg-white"
@@ -1541,7 +1541,7 @@ const ITTeamsPage = ({ department }) => {
                 const assignedProjects = projects.filter(p => String(p.team_id) === String(activeTeamId));
                 return (
                   <div className="bg-gray-50 rounded p-3 border border-gray-100">
-                    <h3 className="text-[11px] font-bold text-gray-700 mb-2 uppercase tracking-wider">Currently Assigned Projects</h3>
+                    <h3 className="text-[11px]  text-gray-700 mb-2 uppercase tracking-wider">Currently Assigned Projects</h3>
                     {assignedProjects.length > 0 ? (
                       <ul className="text-xs text-gray-600 space-y-1.5 max-h-24 overflow-y-auto custom-scrollbar">
                         {assignedProjects.map(p => (
@@ -1559,7 +1559,7 @@ const ITTeamsPage = ({ department }) => {
               })()}
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Select IT Project to Assign <span className="text-red-500">*</span></label>
+                <label className="block text-xs  text-gray-700 mb-1.5">Select IT Project to Assign <span className="text-red-500">*</span></label>
                 <select
                   required
                   className="w-full border border-gray-300 rounded p-2 focus:ring-1 focus:ring-indigo-500 outline-none text-xs bg-white"
@@ -1583,13 +1583,13 @@ const ITTeamsPage = ({ department }) => {
                     setProjectAssignment({ project_id: '', team_id: '' });
                     setSelectedTeam(null);
                   }}
-                  className="flex-1 p-2 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700 font-semibold"
+                  className="flex-1 p-2 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700 "
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-red-600 text-white p-2 rounded hover:bg-red-700 text-xs font-semibold"
+                  className="flex-1 bg-red-600 text-white p-2 rounded hover:bg-red-700 text-xs "
                 >
                   Assign Project
                 </button>
@@ -1601,11 +1601,11 @@ const ITTeamsPage = ({ department }) => {
       {/* View Team Modal */}
       {isViewModalOpen && selectedTeam && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-5 w-full max-w-2xl shadow-xl border border-gray-150 max-h-[85vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-white rounded-lg p-5 w-full max-w-xl shadow-xl border border-gray-150 max-h-[85vh] overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-150">
               <div className="flex items-center gap-2">
                 <Users className="text-indigo-600" size={18} />
-                <h2 className="text-sm font-bold text-gray-900">Team Profile: {selectedTeam.name}</h2>
+                <h2 className="text-sm  text-gray-900">Team Profile: {selectedTeam.name}</h2>
               </div>
               <button
                 onClick={() => {
@@ -1622,27 +1622,27 @@ const ITTeamsPage = ({ department }) => {
               {/* Manager & Description Section */}
               <div className="grid grid-cols-2 gap-4 bg-gray-50/50 p-3 rounded-lg border border-gray-100">
                 <div>
-                  <h3 className="font-bold text-gray-500 uppercase text-[9px] tracking-wider mb-1">Team Manager</h3>
+                  <h3 className=" text-gray-500 uppercase text-[9px] tracking-wider mb-1">Team Manager</h3>
                   {(() => {
                     const manager = users.find(u => u.id === selectedTeam.manager_id);
                     return manager ? (
                       <div className="flex items-center gap-2 mt-1">
-                        <div className="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[11px] font-bold">
+                        <div className="w-6 h-6 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-[11px] ">
                           {manager.first_name[0].toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-bold text-gray-800">{manager.first_name} {manager.last_name}</p>
+                          <p className=" text-gray-800">{manager.first_name} {manager.last_name}</p>
                           <p className="text-[10px] text-gray-500">{manager.email}</p>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-gray-400 font-semibold italic mt-1">No manager assigned</p>
+                      <p className="text-gray-400  italic mt-1">No manager assigned</p>
                     );
                   })()}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-500 uppercase text-[9px] tracking-wider mb-1">Team Description</h3>
-                  <p className="text-gray-700 leading-relaxed font-semibold mt-1">
+                  <h3 className=" text-gray-500 uppercase text-[9px] tracking-wider mb-1">Team Description</h3>
+                  <p className="text-gray-700 leading-relaxed  mt-1">
                     {selectedTeam.description || 'No description provided.'}
                   </p>
                 </div>
@@ -1651,16 +1651,16 @@ const ITTeamsPage = ({ department }) => {
               {/* Members Section */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-bold text-gray-900 uppercase text-[9px] tracking-wider">Allocated Members ({selectedTeam.members?.length || 0})</h3>
+                  <h3 className=" text-gray-900 uppercase text-[9px] tracking-wider">Allocated Members ({selectedTeam.members?.length || 0})</h3>
                 </div>
                 <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-gray-100 text-gray-400 bg-gray-50/20">
-                        <th className="py-2 px-3 font-semibold">Member Name</th>
-                        <th className="py-2 px-3 font-semibold">Role</th>
-                        <th className="py-2 px-3 font-semibold">Email</th>
-                        <th className="py-2 px-3 text-center font-semibold">Status</th>
+                        <th className="py-2 px-3 ">Member Name</th>
+                        <th className="py-2 px-3 ">Role</th>
+                        <th className="py-2 px-3 ">Email</th>
+                        <th className="py-2 px-3 text-center ">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1669,13 +1669,13 @@ const ITTeamsPage = ({ department }) => {
                           const user = users.find(u => u.id === member.user_id);
                           return (
                             <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                              <td className="py-2.5 px-3 font-bold text-gray-800">
+                              <td className="py-2.5 px-3  text-gray-800">
                                 {user ? `${user.first_name} ${user.last_name}` : `User ID: ${member.user_id}`}
                               </td>
-                              <td className="py-2.5 px-3 text-gray-600 font-semibold">{member.role}</td>
+                              <td className="py-2.5 px-3 text-gray-600 ">{member.role}</td>
                               <td className="py-2.5 px-3 text-gray-500">{user?.email || '—'}</td>
                               <td className="py-2.5 px-3 text-center">
-                                <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px] font-bold">Active</span>
+                                <span className="px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[9px] ">Active</span>
                               </td>
                             </tr>
                           );
@@ -1693,7 +1693,7 @@ const ITTeamsPage = ({ department }) => {
               {/* Projects Section */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-bold text-gray-900 uppercase text-[9px] tracking-wider">Assigned Projects</h3>
+                  <h3 className=" text-gray-900 uppercase text-[9px] tracking-wider">Assigned Projects</h3>
                   <button
                     type="button"
                     onClick={() => {
@@ -1701,7 +1701,7 @@ const ITTeamsPage = ({ department }) => {
                       setIsAssignProjectModalOpen(true);
                       setIsViewModalOpen(false);
                     }}
-                    className="text-[11px] text-emerald-600 hover:text-emerald-800 font-bold flex items-center gap-1 focus:outline-none"
+                    className="text-[11px] text-emerald-600 hover:text-emerald-800  flex items-center gap-1 focus:outline-none"
                   >
                     <Plus size={12} /> Assign Project
                   </button>
@@ -1710,9 +1710,9 @@ const ITTeamsPage = ({ department }) => {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-gray-100 text-gray-400 bg-gray-50/20">
-                        <th className="py-2 px-3 font-semibold">Project Name</th>
-                        <th className="py-2 px-3 font-semibold">Status</th>
-                        <th className="py-2 px-3 text-right pr-6 font-semibold">Action</th>
+                        <th className="py-2 px-3 ">Project Name</th>
+                        <th className="py-2 px-3 ">Status</th>
+                        <th className="py-2 px-3 text-right pr-6 ">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1721,9 +1721,9 @@ const ITTeamsPage = ({ department }) => {
                         return teamProjects.length > 0 ? (
                           teamProjects.map(p => (
                             <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
-                              <td className="py-2.5 px-3 font-bold text-gray-800">{p.name}</td>
+                              <td className="py-2.5 px-3  text-gray-800">{p.name}</td>
                               <td className="py-2.5 px-3">
-                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-bold">
+                                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] ">
                                   {p.status || 'Planning'}
                                 </span>
                               </td>
@@ -1733,7 +1733,7 @@ const ITTeamsPage = ({ department }) => {
                                     setIsViewModalOpen(false);
                                     navigate(`/projects/${designation || 'it-manager'}/${username || 'ashwini'}/details/${p.id}`);
                                   }}
-                                  className="p-1 hover:bg-indigo-50 text-indigo-650 rounded transition-colors inline-flex items-center gap-1 font-bold text-[10px] focus:outline-none"
+                                  className="p-1 hover:bg-indigo-50 text-indigo-650 rounded transition-colors inline-flex items-center gap-1  text-[10px] focus:outline-none"
                                   title="View Project Details"
                                 >
                                   <Eye size={12} /> View Project
@@ -1760,7 +1760,7 @@ const ITTeamsPage = ({ department }) => {
                   setIsViewModalOpen(false);
                   setSelectedTeam(null);
                 }}
-                className="px-4 py-2 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700 font-semibold"
+                className="px-4 py-2 text-xs border border-gray-300 rounded hover:bg-gray-50 text-gray-700 "
               >
                 Close
               </button>

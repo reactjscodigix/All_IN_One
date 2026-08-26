@@ -11,286 +11,357 @@ module.exports = function setupGithubRoutes(app, pool) {
     return res.status(statusCode).json({ error: message, details: error?.message || error });
   };
 
-  // Helper to extract Task Key (e.g., WR-114, IT-203) from strings
+  app.get('/api/github/admin/reset-schema', async (req, res) => {
+    try {
+      await db.query('DROP TABLE IF EXISTS github_repositories');
+      await db.query(`
+        CREATE TABLE github_repositories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          connection_id INT,
+          github_repo_id VARCHAR(255),
+          repository_name VARCHAR(255),
+          full_name VARCHAR(255),
+          owner VARCHAR(255),
+          description TEXT,
+          html_url VARCHAR(255),
+          clone_url VARCHAR(255),
+          ssh_url VARCHAR(255),
+          visibility VARCHAR(50),
+          default_branch VARCHAR(100),
+          language VARCHAR(100),
+          is_active BOOLEAN DEFAULT true,
+          github_created_at TIMESTAMP NULL,
+          github_updated_at TIMESTAMP NULL,
+          last_sync_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (connection_id) REFERENCES github_connections(id) ON DELETE CASCADE
+        )
+      `);
+      res.send('Schema reset successful');
+    } catch (err) {
+      res.status(500).send(err.message);
+    }
+  });
+
   const extractTaskKeys = (text) => {
     if (!text) return [];
-    // Matches patterns like ABC-123 or ABC-1234
     const regex = /([A-Z]+-\d+)/g;
     const matches = text.match(regex);
-    // Return unique matches
     return matches ? [...new Set(matches)] : [];
   };
 
-  // GET attached GitHub metadata for a task key
   app.get('/api/tasks/:taskKey/github', async (req, res) => {
     try {
       const { taskKey } = req.params;
-
-      const [commits] = await db.query(
-        'SELECT * FROM github_commits WHERE task_key = ? ORDER BY created_at DESC',
-        [taskKey]
-      );
-
-      const [prs] = await db.query(
-        'SELECT * FROM github_prs WHERE task_key = ? ORDER BY created_at DESC',
-        [taskKey]
-      );
-
+      const [commits] = await db.query('SELECT * FROM github_commits WHERE task_key = ? ORDER BY created_at DESC', [taskKey]);
+      const [prs] = await db.query('SELECT * FROM github_prs WHERE task_key = ? ORDER BY created_at DESC', [taskKey]);
       res.json({ commits, prs });
     } catch (error) {
       responseError(res, 500, 'Failed to fetch github data for task', error);
     }
   });
 
-  // Init table for repositories if it doesn't exist
   (async () => {
     try {
       await db.query(`
         CREATE TABLE IF NOT EXISTS github_repositories (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          full_name VARCHAR(500),
-          description TEXT,
-          project VARCHAR(255),
-          language VARCHAR(100),
-          language_color VARCHAR(50),
-          is_private BOOLEAN DEFAULT FALSE,
-          stars INT DEFAULT 0,
-          forks INT DEFAULT 0,
-          open_prs INT DEFAULT 0,
-          last_commit_msg VARCHAR(500),
-          last_commit_hash VARCHAR(100),
-          last_update VARCHAR(100),
-          created_on VARCHAR(100),
-          active_branch VARCHAR(100) DEFAULT 'main',
-          status ENUM('Active', 'Archived') DEFAULT 'Active',
-          topics JSON,
-          contributors JSON
+          project_id INT NULL,
+          repo_name VARCHAR(255) NOT NULL,
+          repo_url VARCHAR(255) NOT NULL,
+          github_repo_id VARCHAR(255) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_repo (project_id, repo_name)
         )
       `);
-      
-      // Try to add the contributors column if it doesn't exist (migration)
-      try {
-        await db.query('ALTER TABLE github_repositories ADD COLUMN contributors JSON');
-      } catch (err) {
-        // Column likely exists
-      }
-      
-      // Seed data if empty
-      const [rows] = await db.query('SELECT COUNT(*) as count FROM github_repositories');
-      if (rows.count === 0) {
-        const seedData = [
-          ['hospital-erp-backend', 'codigix-infotech/hospital-erp-backend', 'Backend API for Hospital ERP system built with Node.js, Express and TypeScript.', 'Hospital ERP', 'TypeScript', '#3178C6', true, 18, 7, 3, 'Fix: Patient billing calculation', 'a1b2c3d', '2 hours ago', 'Mar 15, 2026', 'main', 'Active', JSON.stringify(['nodejs', 'express', 'typescript', 'api', 'hospital', 'erp']), JSON.stringify([{name: 'Rahul Patil', role: 'Lead Developer', commits: 124, color: 'bg-blue-100 text-blue-700'}])],
-          ['hospital-erp-frontend', 'codigix-infotech/hospital-erp-frontend', 'Frontend application for Hospital ERP', 'Hospital ERP', 'React', '#61DAFB', true, 24, 9, 2, 'Feat: Add new dashboard widgets', 'd4e5f6g', '4 hours ago', 'Mar 10, 2026', 'main', 'Active', JSON.stringify(['react', 'dashboard', 'frontend']), JSON.stringify([{name: 'Sneha Joshi', role: 'Frontend Developer', commits: 89, color: 'bg-purple-100 text-purple-700'}])],
-          ['crm-backend', 'codigix-infotech/crm-backend', 'CRM backend services and APIs', 'CRM System', 'Node.js', '#339933', true, 32, 11, 5, 'Refactor: User service', 'h7i8j9k', '6 hours ago', 'Feb 1, 2026', 'develop', 'Active', JSON.stringify(['crm', 'nodejs', 'api']), '[]'],
-          ['crm-frontend', 'codigix-infotech/crm-frontend', 'CRM frontend application', 'CRM System', 'Vue', '#4FC08D', true, 16, 4, 1, 'Fix: Responsive issues', 'l1m2n3o', '1 day ago', 'Feb 5, 2026', 'main', 'Active', JSON.stringify(['vue', 'crm', 'frontend']), '[]'],
-          ['mobile-app', 'codigix-infotech/mobile-app', 'React Native mobile application', 'Mobile App', 'React Native', '#61DAFB', true, 27, 8, 3, 'Feat: Push notifications', 'p4q5r6s', '1 day ago', 'Jan 20, 2026', 'feature/push', 'Active', JSON.stringify(['react-native', 'mobile', 'ios', 'android']), '[]'],
-          ['website', 'codigix-infotech/website', 'Corporate website', 'Website', 'Next.js', '#000000', false, 42, 15, 2, 'Update: Contact form', 't7u8v9w', '2 days ago', 'Dec 10, 2025', 'main', 'Active', JSON.stringify(['nextjs', 'website', 'marketing']), '[]'],
-          ['shared-components', 'codigix-infotech/shared-components', 'Reusable UI components', 'Shared Library', 'TypeScript', '#3178C6', false, 31, 6, 0, 'Chore: Update dependencies', 'x1y2z3a', '3 days ago', 'Nov 15, 2025', 'master', 'Active', JSON.stringify(['typescript', 'react', 'ui-library']), '[]'],
-          ['devops-scripts', 'codigix-infotech/devops-scripts', 'Deployment and automation scripts', 'DevOps', 'Shell', '#89e051', true, 12, 3, 1, 'Add: Backup automation', 'b4c5d6e', '4 days ago', 'Oct 5, 2025', 'main', 'Active', JSON.stringify(['bash', 'devops', 'automation']), '[]']
-        ];
-        
-        for (const data of seedData) {
-          await db.query(`
-            INSERT INTO github_repositories 
-            (name, full_name, description, project, language, language_color, is_private, stars, forks, open_prs, last_commit_msg, last_commit_hash, last_update, created_on, active_branch, status, topics, contributors)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `, data);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to init github_repositories table:', err);
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS github_commits (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          task_key VARCHAR(50) NOT NULL,
+          commit_hash VARCHAR(255) NOT NULL,
+          message TEXT,
+          author VARCHAR(255),
+          url VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_commit (task_key, commit_hash)
+        )
+      `);
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS github_prs (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          task_key VARCHAR(50) NOT NULL,
+          pr_number INT NOT NULL,
+          title VARCHAR(255),
+          state VARCHAR(50),
+          url VARCHAR(255),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_pr (task_key, pr_number)
+        )
+      `);
+    } catch (error) {
+      console.error('Error ensuring github tables exist:', error);
     }
   })();
 
-  // GET repositories
-  app.get('/api/github/repositories', async (req, res) => {
-    try {
-      const [repos] = await db.query('SELECT * FROM github_repositories ORDER BY stars DESC');
-      res.json(repos);
-    } catch (error) {
-      responseError(res, 500, 'Failed to fetch repositories', error);
-    }
-  });
-
-  // DELETE repository
-  app.delete('/api/github/repositories/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      await db.query('DELETE FROM github_repositories WHERE id = ?', [id]);
-      res.json({ success: true, message: 'Repository deleted successfully' });
-    } catch (error) {
-      responseError(res, 500, 'Failed to delete repository', error);
-    }
-  });
-
-  // POST sync
-  app.post('/api/github/sync', async (req, res) => {
-    try {
-      // Simulate sync delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      // Randomly update a repository's last_update to simulate new commits
-      await db.query('UPDATE github_repositories SET last_update = "Just now", open_prs = open_prs + 1 WHERE id = 1');
-      res.json({ success: true, message: 'Sync complete' });
-    } catch (error) {
-      responseError(res, 500, 'Failed to sync repositories', error);
-    }
-  });
-
-  // POST import
-  app.post('/api/github/import', async (req, res) => {
-    try {
-      const { url, project, isPrivate, token } = req.body;
-      
-      if (!url) {
-        return res.status(400).json({ error: 'GitHub Clone URL is required' });
-      }
-
-      // Very simple parser for https://github.com/owner/repo.git
-      const urlParts = url.split('/');
-      const repoWithGit = urlParts[urlParts.length - 1];
-      const owner = urlParts[urlParts.length - 2];
-      const repoName = repoWithGit ? repoWithGit.replace('.git', '') : 'UnknownRepo';
-      const fullName = `${owner}/${repoName}`;
-      
-      let realContributors = [];
-      try {
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        
-        // First try to fetch collaborators (requires auth usually)
-        try {
-          const collabRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/collaborators`, {
-            headers, timeout: 5000
-          });
-          const colors = ['bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700', 'bg-emerald-100 text-emerald-700', 'bg-amber-100 text-amber-700', 'bg-rose-100 text-rose-700'];
-          realContributors = collabRes.data.map((c, idx) => ({
-            name: c.login,
-            role: 'Collaborator',
-            commits: c.contributions || 10, // Collaborators endpoint doesn't return contributions, so mock it
-            color: colors[idx % colors.length]
-          }));
-        } catch (collabErr) {
-          // Fallback to contributors if collaborators fails (e.g. no token)
-          const ghRes = await axios.get(`https://api.github.com/repos/${owner}/${repoName}/contributors`, {
-            headers, timeout: 5000
-          });
-          const colors = ['bg-blue-100 text-blue-700', 'bg-purple-100 text-purple-700', 'bg-emerald-100 text-emerald-700', 'bg-amber-100 text-amber-700', 'bg-rose-100 text-rose-700'];
-          realContributors = ghRes.data.map((c, idx) => ({
-            name: c.login,
-            role: 'Contributor',
-            commits: c.contributions,
-            color: colors[idx % colors.length]
-          }));
-        }
-      } catch (err) {
-        console.error('Failed to fetch real contributors from GitHub:', err.message);
-      }
-      
-      const newRepo = [
-        repoName,
-        fullName,
-        'Imported repository from ' + url,
-        project || 'Unassigned',
-        'Unknown', // Language
-        '#6B7280', // Default color (gray)
-        isPrivate || false,
-        0, // stars
-        0, // forks
-        0, // open_prs
-        'Initial import',
-        '0000000',
-        'Just now',
-        new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        'main',
-        'Active',
-        JSON.stringify([]), // topics
-        JSON.stringify(realContributors) // contributors
-      ];
-
-      await db.query(`
-        INSERT INTO github_repositories 
-        (name, full_name, description, project, language, language_color, is_private, stars, forks, open_prs, last_commit_msg, last_commit_hash, last_update, created_on, active_branch, status, topics, contributors)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, newRepo);
-
-      res.json({ success: true, message: 'Repository imported successfully' });
-    } catch (error) {
-      responseError(res, 500, 'Failed to import repository', error);
-    }
-  });
-
-  // Webhook listener for GitHub events
   app.post('/api/github/webhook', async (req, res) => {
-    // Note: To secure this properly in production, verify the X-Hub-Signature-256 header using a secret.
-    const event = req.headers['x-github-event'];
-    const payload = req.body;
-
-    if (!event) {
-      return res.status(400).json({ error: 'No GitHub event header found' });
-    }
-
-    console.log(`[GitHub Webhook] Received event: ${event}`);
-
     try {
+      const event = req.headers['x-github-event'];
+      const payload = req.body;
       if (event === 'push') {
         const commits = payload.commits || [];
         for (const commit of commits) {
           const message = commit.message;
           const taskKeys = extractTaskKeys(message);
-          
           for (const key of taskKeys) {
-            // Save commit linked to the task_key
             try {
               await db.query(`
                 INSERT IGNORE INTO github_commits (task_key, commit_hash, message, author, url)
                 VALUES (?, ?, ?, ?, ?)
-              `, [
-                key, 
-                commit.id, 
-                message, 
-                commit.author?.name || commit.author?.username,
-                commit.url
-              ]);
-              console.log(`Linked commit ${commit.id.substring(0,7)} to task ${key}`);
+              `, [key, commit.id, message, commit.author?.name || commit.author?.username, commit.url]);
             } catch (err) {
               console.error('Error inserting commit:', err);
             }
           }
         }
       } else if (event === 'pull_request') {
-        const action = payload.action;
         const pr = payload.pull_request;
         const title = pr.title;
         const body = pr.body || '';
-        
-        // Search for task keys in PR title and PR body
         const taskKeys = extractTaskKeys(`${title} ${body}`);
-
         for (const key of taskKeys) {
           try {
             await db.query(`
               INSERT INTO github_prs (task_key, pr_number, title, state, url)
               VALUES (?, ?, ?, ?, ?)
               ON DUPLICATE KEY UPDATE state = ?, title = ?
-            `, [
-              key, 
-              pr.number, 
-              title, 
-              pr.state, // 'open' or 'closed'
-              pr.html_url,
-              pr.state,
-              title
-            ]);
-            console.log(`Linked PR #${pr.number} to task ${key} with state ${pr.state}`);
+            `, [key, pr.number, title, pr.state, pr.html_url, pr.state, title]);
           } catch (err) {
             console.error('Error inserting PR:', err);
           }
         }
       }
-
       res.status(200).json({ message: 'Webhook processed successfully' });
     } catch (error) {
       responseError(res, 500, 'Error processing webhook', error);
     }
   });
+
+  const GITHUB_APP_ID = process.env.GITHUB_APP_ID;
+  const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+
+  app.get('/api/github/connect', (req, res) => {
+    if (GITHUB_CLIENT_ID) {
+      const redirectUri = `https://github.com/apps/${process.env.GITHUB_APP_NAME}/installations/new`;
+      res.redirect(redirectUri);
+    } else {
+      res.redirect('/api/github/mock-callback');
+    }
+  });
+
+  const handleGitHubCallback = async (req, res) => {
+    const { installation_id } = req.query;
+    if (installation_id) {
+      try {
+        await db.query(`
+          INSERT INTO github_connections 
+          (organization_id, github_account_id, github_account_name, installation_id, app_id, status, connected_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [1, '12345', 'codigix-infotech', installation_id, GITHUB_APP_ID || 'mock-app-id', 'connected', 1]);
+        res.redirect('http://localhost:3001/it/it-manager/ashwinikhedekar1006/repositories?connected=true');
+      } catch (err) {
+        console.error('Error saving connection', err);
+        res.status(500).send('Database error');
+      }
+    } else {
+      res.status(400).send('No installation ID provided');
+    }
+  };
+
+  app.get('/api/github/callback', handleGitHubCallback);
+  app.get('/api/github/setup', handleGitHubCallback);
+
+  app.get('/api/github/mock-callback', async (req, res) => {
+    try {
+      const [existing] = await db.query('SELECT * FROM github_connections LIMIT 1');
+      if (existing.length === 0) {
+        await db.query(`
+          INSERT INTO github_connections 
+          (organization_id, github_account_id, github_account_name, installation_id, app_id, status, connected_by)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [1, 'mock-123', 'codigix-infotech', 'mock-install-999', 'mock-app-id', 'connected', 1]);
+      }
+      res.redirect('http://localhost:3001/it/it-manager/ashwinikhedekar1006/repositories?connected=true');
+    } catch (err) {
+      console.error('Error in mock callback', err);
+      res.status(500).send('Database error');
+    }
+  });
+
+  app.get('/api/github/repositories', async (req, res) => {
+    try {
+      const [repos] = await db.query(`
+        SELECT r.*, c.github_account_name 
+        FROM github_repositories r
+        LEFT JOIN github_connections c ON r.connection_id = c.id
+        WHERE r.connection_id IS NOT NULL
+        ORDER BY r.last_sync_at DESC
+      `);
+      res.json(repos);
+    } catch (err) {
+      res.status(500).json({ message: 'Error fetching repositories', error: err.message });
+    }
+  });
+
+  app.post('/api/github/repositories/sync', async (req, res) => {
+    try {
+      const [connections] = await db.query('SELECT * FROM github_connections WHERE status = "connected"');
+      if (connections.length === 0) {
+        return res.status(400).json({ message: 'No active GitHub connection found' });
+      }
+      const connection = connections[0];
+      let reposToSync = [];
+      const privateKeyBase64 = process.env.GITHUB_APP_PRIVATE_KEY_BASE64;
+      const appId = process.env.GITHUB_APP_ID;
+
+      if (appId && privateKeyBase64 && connection.installation_id && !connection.installation_id.startsWith('mock')) {
+        try {
+          const { App } = require('@octokit/app');
+          const privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf8');
+          const app = new App({
+            appId: appId,
+            privateKey: privateKey,
+          });
+          const octokit = await app.getInstallationOctokit(Number(connection.installation_id));
+          const { data } = await octokit.request('GET /installation/repositories', { per_page: 100 });
+          
+          reposToSync = await Promise.all(data.repositories.map(async r => {
+            let lastCommitMsg = '';
+            let lastCommitHash = '';
+            try {
+              const commitRes = await octokit.request('GET /repos/{owner}/{repo}/commits', {
+                owner: r.owner.login,
+                repo: r.name,
+                per_page: 1
+              });
+              if (commitRes.data && commitRes.data.length > 0) {
+                lastCommitHash = commitRes.data[0].sha.substring(0, 7);
+                lastCommitMsg = commitRes.data[0].commit.message;
+              }
+            } catch (e) {
+              console.error(`Error fetching commits for ${r.name}:`, e.message);
+            }
+            return {
+              github_repo_id: String(r.id),
+              repository_name: r.name,
+              full_name: r.full_name,
+              owner: r.owner.login,
+              description: r.description || '',
+              html_url: r.html_url,
+              visibility: r.private ? 'Private' : 'Public',
+              default_branch: r.default_branch,
+              language: r.language || 'Unknown',
+              github_created_at: r.created_at,
+              github_updated_at: r.pushed_at || r.updated_at,
+              last_commit_msg: lastCommitMsg,
+              last_commit_hash: lastCommitHash
+            };
+          }));
+        } catch (githubErr) {
+          console.error("Failed to fetch from GitHub API using Octokit:", githubErr);
+          return res.status(500).json({ message: 'Failed to sync from GitHub API', error: githubErr.message });
+        }
+      } else {
+        reposToSync = [
+          { github_repo_id: 'repo-001', repository_name: 'enterprise-crm', full_name: 'codigix-infotech/enterprise-crm', owner: 'codigix-infotech', description: 'Main enterprise CRM backend and frontend', html_url: 'https://github.com/codigix-infotech/enterprise-crm', visibility: 'Private', default_branch: 'main', language: 'JavaScript', github_created_at: new Date(), github_updated_at: new Date(), last_commit_msg: 'Initial mock commit', last_commit_hash: '1a2b3c4' }
+        ];
+      }
+
+      for (const repo of reposToSync) {
+        await db.query(`
+          INSERT INTO github_repositories 
+          (connection_id, github_repo_id, repository_name, full_name, owner, description, html_url, visibility, default_branch, language, github_created_at, github_updated_at, last_commit_msg, last_commit_hash, last_sync_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON DUPLICATE KEY UPDATE 
+          repository_name = VALUES(repository_name), full_name = VALUES(full_name), description = VALUES(description), visibility = VALUES(visibility), default_branch = VALUES(default_branch), language = VALUES(language), github_created_at = VALUES(github_created_at), github_updated_at = VALUES(github_updated_at), last_commit_msg = VALUES(last_commit_msg), last_commit_hash = VALUES(last_commit_hash), last_sync_at = CURRENT_TIMESTAMP
+        `, [
+          connection.id, repo.github_repo_id, repo.repository_name, repo.full_name, repo.owner, repo.description, repo.html_url, repo.visibility, repo.default_branch, repo.language, 
+          repo.github_created_at ? new Date(repo.github_created_at) : null, 
+          repo.github_updated_at ? new Date(repo.github_updated_at) : null,
+          repo.last_commit_msg, repo.last_commit_hash
+        ]);
+      }
+      await db.query('UPDATE github_connections SET last_sync_at = CURRENT_TIMESTAMP WHERE id = ?', [connection.id]);
+      const [updatedRepos] = await db.query('SELECT * FROM github_repositories WHERE connection_id IS NOT NULL');
+      res.json({ message: 'Sync successful', repositories: updatedRepos });
+    } catch (err) {
+      console.error('Error syncing repositories', err);
+      res.status(500).json({ message: 'Error syncing repositories', error: err.message });
+    }
+  });
+
+  app.get('/api/github/repositories/:id/branches', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [repos] = await db.query('SELECT * FROM github_repositories WHERE id = ?', [id]);
+      if (repos.length === 0) {
+        return res.status(404).json({ message: 'Repository not found' });
+      }
+      const repo = repos[0];
+      
+      const [connections] = await db.query('SELECT * FROM github_connections WHERE id = ?', [repo.connection_id]);
+      const connection = connections.length > 0 ? connections[0] : null;
+
+      const appId = process.env.GITHUB_APP_ID;
+      const privateKeyBase64 = process.env.GITHUB_APP_PRIVATE_KEY_BASE64;
+      
+      if (connection && appId && privateKeyBase64 && connection.installation_id && !connection.installation_id.startsWith('mock')) {
+        const { App } = require('@octokit/app');
+        const privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf8');
+        const app = new App({ appId: appId, privateKey: privateKey });
+        const octokit = await app.getInstallationOctokit(Number(connection.installation_id));
+        
+        const { data: branchesData } = await octokit.request('GET /repos/{owner}/{repo}/branches', {
+          owner: repo.owner,
+          repo: repo.repository_name,
+          per_page: 20
+        });
+
+        const branches = await Promise.all(branchesData.map(async b => {
+          let last_commit_msg = '';
+          let last_commit_date = '';
+          try {
+            const commitRes = await octokit.request('GET /repos/{owner}/{repo}/commits/{commit_sha}', {
+              owner: repo.owner,
+              repo: repo.repository_name,
+              commit_sha: b.commit.sha
+            });
+            last_commit_msg = commitRes.data.commit.message;
+            last_commit_date = commitRes.data.commit.author.date;
+          } catch(e) {}
+          
+          return {
+            name: b.name,
+            last_commit_hash: b.commit.sha.substring(0, 7),
+            last_commit_msg: last_commit_msg,
+            last_commit_date: last_commit_date
+          };
+        }));
+        
+        return res.json(branches);
+      } else {
+        // Mock fallback
+        const mockBranches = [
+          { name: repo.default_branch || 'main', last_commit_hash: repo.last_commit_hash || '1a2b3c4', last_commit_msg: repo.last_commit_msg || 'Initial commit', last_commit_date: new Date().toISOString() },
+          { name: 'develop', last_commit_hash: '9f8e7d6', last_commit_msg: 'Merge feature/auth', last_commit_date: new Date(Date.now() - 86400000).toISOString() },
+          { name: 'feature/new-ui', last_commit_hash: '5a4b3c2', last_commit_msg: 'Update components', last_commit_date: new Date(Date.now() - 172800000).toISOString() }
+        ];
+        return res.json(mockBranches);
+      }
+    } catch (err) {
+      console.error('Error fetching branches:', err);
+      res.status(500).json({ message: 'Error fetching branches', error: err.message });
+    }
+  });
+
 };

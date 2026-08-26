@@ -133,8 +133,8 @@ const ITKanbanPage = ({ department }) => {
   const path = window.location.pathname.toLowerCase();
   const currentDept = department || (
     path.includes('/marketing') ? 'Marketing' :
-    path.includes('/seo-gmb') ? 'Marketing' :
-    'IT'
+      path.includes('/seo-gmb') ? 'Marketing' :
+        'IT'
   );
 
   // The active sprint, if any. Drives the Scrum behaviour below: with a sprint running the
@@ -204,7 +204,7 @@ const ITKanbanPage = ({ department }) => {
   const [selectedType, setSelectedType] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedPriority, setSelectedPriority] = useState('ALL');
-  const [selectedAssignee, setSelectedAssignee] = useState('ALL');
+  const [selectedAssignees, setSelectedAssignees] = useState([]);
   const [onlyMyIssues, setOnlyMyIssues] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilterDropdown, setActiveFilterDropdown] = useState(null);
@@ -430,13 +430,16 @@ const ITKanbanPage = ({ department }) => {
     if (selectedPriority !== 'ALL') {
       filtered = filtered.filter(issue => issue.priority === selectedPriority);
     }
-    if (selectedAssignee !== 'ALL') {
-      if (selectedAssignee === 'UNASSIGNED') {
-        filtered = filtered.filter(issue => !issue.assignee || issue.assignee === 'Unassigned' || issue.assignee === 'Automatic');
-      } else {
-        const a = selectedAssignee.toLowerCase();
-        filtered = filtered.filter(issue => issue.assignee && issue.assignee.toLowerCase().includes(a));
-      }
+    if (selectedAssignees.length > 0) {
+      filtered = filtered.filter(issue => {
+        const isUnassigned = !issue.assignee || issue.assignee === 'Unassigned' || issue.assignee === 'Automatic';
+        if (selectedAssignees.includes('UNASSIGNED') && isUnassigned) return true;
+
+        return selectedAssignees.some(a => {
+          if (a === 'UNASSIGNED') return false;
+          return issue.assignee && issue.assignee.toLowerCase().includes(a.toLowerCase());
+        });
+      });
     }
     const isUserTask = (issue) => {
       const assigneeStr = (issue.assignee || '').toLowerCase();
@@ -495,7 +498,7 @@ const ITKanbanPage = ({ department }) => {
     });
 
     setBoardData(newBoard);
-  }, [allRawIssues, activeSprints, columnOrder, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignee, onlyMyIssues, isManager, userSearchTerms, myIdentities, searchQuery, username]);
+  }, [allRawIssues, activeSprints, columnOrder, selectedProjectId, selectedType, selectedStatus, selectedPriority, selectedAssignees, onlyMyIssues, isManager, userSearchTerms, myIdentities, searchQuery, username]);
 
   // Opens a ticket straight from a URL like ...&/kanban?ticketKey=MKT-104, which is how
   // notifications deep-link. Depends on location.search so clicking a notification while
@@ -827,30 +830,19 @@ const ITKanbanPage = ({ department }) => {
                       toolbar and the Complete sprint button. Which sprints are running is
                       the Backlog's job to show. */}
                   <div className="flex items-center gap-2 flex-wrap relative">
-                    <div className="relative">
-                      <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search issues"
-                        className="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 w-44"
-                      />
-                    </div>
 
                     {/* JIRA USER AVATAR BUBBLES */}
                     <div className="flex items-center -space-x-1.5 mx-1">
-                      {itUsersList.map((u) => {
+                      {itUsersList.slice(0, 5).map((u) => {
                         const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'User';
                         const initials = (u.first_name ? u.first_name[0] : (u.username ? u.username[0] : 'U')) +
                           (u.last_name ? u.last_name[0] : '');
                         const uppercaseInitials = initials.toUpperCase();
 
-                        const a = selectedAssignee.toLowerCase();
-                        const isSelected = selectedAssignee !== 'ALL' && (
-                          a === fullName.toLowerCase() ||
-                          a === (u.username || '').toLowerCase() ||
-                          (u.first_name && a.includes(u.first_name.toLowerCase()))
+                        const isSelected = selectedAssignees.some(a =>
+                          a.toLowerCase() === fullName.toLowerCase() ||
+                          a.toLowerCase() === (u.username || '').toLowerCase() ||
+                          (u.first_name && a.toLowerCase().includes(u.first_name.toLowerCase()))
                         );
 
                         const colors = [
@@ -869,21 +861,30 @@ const ITKanbanPage = ({ department }) => {
                             key={u.id || u.username}
                             onClick={() => {
                               if (isSelected) {
-                                setSelectedAssignee('ALL');
+                                setSelectedAssignees(prev => prev.filter(a =>
+                                  a.toLowerCase() !== fullName.toLowerCase() &&
+                                  a.toLowerCase() !== (u.username || '').toLowerCase() &&
+                                  !(u.first_name && a.toLowerCase().includes(u.first_name.toLowerCase()))
+                                ));
                               } else {
-                                setSelectedAssignee(fullName);
+                                setSelectedAssignees(prev => [...prev, fullName]);
                               }
                             }}
                             title={`Filter issues by ${fullName}`}
                             className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all relative border-2 border-white cursor-pointer ${isSelected
-                                ? 'ring-2 ring-blue-600 ring-offset-1 z-20 scale-110 shadow-md'
-                                : 'hover:z-10 hover:scale-105 opacity-90 hover:opacity-100'
+                              ? 'ring-2 ring-blue-600 ring-offset-1 z-20 scale-110 shadow-md'
+                              : 'hover:z-10 hover:scale-105 opacity-90 hover:opacity-100'
                               } ${colorClass}`}
                           >
                             {uppercaseInitials}
                           </button>
                         );
                       })}
+                      {itUsersList.length > 5 && (
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold bg-gray-100 text-gray-600 border-2 border-white z-0 ml-[-8px]" title={`${itUsersList.length - 5} more members`}>
+                          +{itUsersList.length - 5}
+                        </div>
+                      )}
                     </div>
 
                     {/* Project Filter Dropdown */}
@@ -988,32 +989,45 @@ const ITKanbanPage = ({ department }) => {
                     <div className="relative">
                       <button
                         onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'assignee' ? null : 'assignee')}
-                        className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${selectedAssignee !== 'ALL' ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700'}`}
+                        className={`flex items-center gap-1.5 p-2 rounded text-xs font-medium border hover:bg-gray-50 transition-colors ${selectedAssignees.length > 0 ? 'bg-blue-50 border-blue-200 text-blue-700 font-semibold' : 'bg-white border-gray-300 text-gray-700'}`}
                       >
-                        Assignee: {selectedAssignee !== 'ALL' ? selectedAssignee : 'All'} <ChevronDown size={14} />
+                        Assignee: {selectedAssignees.length === 0 ? 'All' : selectedAssignees.length === 1 ? selectedAssignees[0] : `${selectedAssignees.length} Selected`} <ChevronDown size={14} />
                       </button>
                       {activeFilterDropdown === 'assignee' && (
                         <div className="absolute left-0 top-full mt-1 w-52 bg-white border border-gray-200 rounded-md shadow-xl py-1 z-50 text-xs text-gray-700 max-h-60 overflow-y-auto">
                           <div
-                            onClick={() => { setSelectedAssignee('ALL'); setActiveFilterDropdown(null); }}
-                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer font-medium border-b border-gray-100 ${selectedAssignee === 'ALL' ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                            onClick={() => { setSelectedAssignees([]); setActiveFilterDropdown(null); }}
+                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer font-medium border-b border-gray-100 ${selectedAssignees.length === 0 ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
                           >
                             All Assignees
                           </div>
                           <div
-                            onClick={() => { setSelectedAssignee('UNASSIGNED'); setActiveFilterDropdown(null); }}
-                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 ${selectedAssignee === 'UNASSIGNED' ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                            onClick={() => {
+                              if (selectedAssignees.includes('UNASSIGNED')) {
+                                setSelectedAssignees(prev => prev.filter(a => a !== 'UNASSIGNED'));
+                              } else {
+                                setSelectedAssignees(prev => [...prev, 'UNASSIGNED']);
+                              }
+                            }}
+                            className={`px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 ${selectedAssignees.includes('UNASSIGNED') ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
                           >
                             Unassigned
                           </div>
                           {usersList.map(u => {
                             const uName = u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim();
                             if (!uName) return null;
+                            const isSelected = selectedAssignees.includes(uName);
                             return (
                               <div
                                 key={u.id || uName}
-                                onClick={() => { setSelectedAssignee(uName); setActiveFilterDropdown(null); }}
-                                className={`px-3 py-2 hover:bg-gray-100 cursor-pointer truncate ${selectedAssignee === uName ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setSelectedAssignees(prev => prev.filter(a => a !== uName));
+                                  } else {
+                                    setSelectedAssignees(prev => [...prev, uName]);
+                                  }
+                                }}
+                                className={`px-3 py-2 hover:bg-gray-100 cursor-pointer truncate ${isSelected ? 'text-blue-600 font-bold bg-blue-50' : ''}`}
                               >
                                 {uName}
                               </div>
@@ -1027,9 +1041,9 @@ const ITKanbanPage = ({ department }) => {
                     {isManager && (
                       <button
                         onClick={() => setOnlyMyIssues(!onlyMyIssues)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${onlyMyIssues
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                            : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
+                        className={`flex items-center gap-1.5 p-2 rounded text-xs font-semibold border transition-all cursor-pointer ${onlyMyIssues
+                          ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                          : 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
                           }`}
                         title="Show only tasks assigned to or reported by me"
                       >
@@ -1039,14 +1053,14 @@ const ITKanbanPage = ({ department }) => {
                     )}
 
                     {/* Clear Filters reset button */}
-                    {(selectedProjectId !== 'ALL' || selectedType !== 'ALL' || selectedStatus !== 'ALL' || selectedPriority !== 'ALL' || selectedAssignee !== 'ALL' || onlyMyIssues || searchQuery) && (
+                    {(selectedProjectId !== 'ALL' || selectedType !== 'ALL' || selectedStatus !== 'ALL' || selectedPriority !== 'ALL' || selectedAssignees.length > 0 || onlyMyIssues || searchQuery) && (
                       <button
                         onClick={() => {
                           setSelectedProjectId('ALL');
                           setSelectedType('ALL');
                           setSelectedStatus('ALL');
                           setSelectedPriority('ALL');
-                          setSelectedAssignee('ALL');
+                          setSelectedAssignees([]);
                           setOnlyMyIssues(false);
                           setSearchQuery('');
                         }}
@@ -1055,10 +1069,10 @@ const ITKanbanPage = ({ department }) => {
                         Reset filters
                       </button>
                     )}
-                    <button className="flex items-center gap-1 p-2 text-xs text-gray-600 hover:bg-gray-50 rounded">
+                    {/* <button className="flex items-center gap-1 p-2 text-xs text-gray-600 hover:bg-gray-50 rounded">
                       More filters <ChevronDown size={14} />
-                    </button>
-                    <button className="text-xs text-blue-600 font-medium hover:underline ml-2">Save filter</button>
+                    </button> */}
+                    {/* <button className="text-xs text-blue-600 font-medium hover:underline ml-2">Save filter</button> */}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -1108,9 +1122,8 @@ const ITKanbanPage = ({ department }) => {
                       </div>
                     </>
                   )}
-                  <button className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 font-medium"><Share2 size={14} /> Share</button>
                   <button className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 font-medium"><Download size={14} /> Export</button>
-                  <button className="text-gray-400 hover:text-gray-600"><MoreHorizontal size={16} /></button>
+                  {/* <button className="text-gray-400 hover:text-gray-600"><MoreHorizontal size={16} /></button> */}
                 </div>
               </div>
 
@@ -1146,553 +1159,553 @@ const ITKanbanPage = ({ department }) => {
                   )}
                 </div>
               ) : (
-              <div className=" flex-1 flex flex-col min-h-0">
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <Droppable droppableId="all-columns" direction="horizontal" type="column">
-                    {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="flex gap-4 overflow-x-auto overflow-y-hidden h-full items-stretch"
-                      >
-                        {columnOrder.map((col, index) => (
-                          <Draggable key={col} draggableId={col} index={index}>
-                            {(provided) => {
-                              const colBg = COLUMN_COLORS[col] || 'bg-gray-50';
-                              return (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={`flex-1 min-w-[260px] ${colBg} rounded p-2 flex flex-col`}
-                                >
+                <div className=" flex-1 flex flex-col min-h-0">
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="all-columns" direction="horizontal" type="column">
+                      {(provided) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="flex gap-4 overflow-x-auto overflow-y-hidden h-full items-stretch"
+                        >
+                          {columnOrder.map((col, index) => (
+                            <Draggable key={col} draggableId={col} index={index}>
+                              {(provided) => {
+                                const colBg = COLUMN_COLORS[col] || 'bg-gray-50';
+                                return (
                                   <div
-                                    {...provided.dragHandleProps}
-                                    className="flex items-center gap-2 pb-3 pt-1 px-1 shrink-0 cursor-grab active:cursor-grabbing sticky top-0 bg-inherit z-10"
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    className={`flex-1 min-w-[260px] ${colBg} rounded p-2 flex flex-col`}
                                   >
-                                    <span className="text-xs  text-gray-500 ">{col}</span>
-                                    <span className="text-xs text-gray-400 font-medium">{boardData[col] ? boardData[col].length : 0}</span>
-                                  </div>
+                                    <div
+                                      {...provided.dragHandleProps}
+                                      className="flex items-center gap-2 pb-3 pt-1 px-1 shrink-0 cursor-grab active:cursor-grabbing sticky top-0 bg-inherit z-10"
+                                    >
+                                      <span className="text-xs  text-gray-500 ">{col}</span>
+                                      <span className="text-xs text-gray-400 font-medium">{boardData[col] ? boardData[col].length : 0}</span>
+                                    </div>
 
-                                  <Droppable droppableId={col} type="task">
-                                    {(provided, snapshot) => (
-                                      <div
-                                        {...provided.droppableProps}
-                                        ref={provided.innerRef}
-                                        className={`flex-1 overflow-y-auto min-h-0 flex flex-col gap-2 pb-2 transition-colors rounded custom-scrollbar ${snapshot.isDraggingOver ? 'bg-blue-50/50' : ''}`}
-                                      >
-                                        {(boardData[col] || []).map((card, idx) => (
-                                          <Draggable key={card.key} draggableId={card.key} index={idx}>
-                                            {(provided, snapshot) => (
-                                              <div
-                                                ref={provided.innerRef}
-                                                {...provided.draggableProps}
-                                                {...provided.dragHandleProps}
-                                                onClick={() => setSelectedIssue(card.key)}
-                                                style={{
-                                                  ...provided.draggableProps.style,
-                                                }}
-                                                className={`relative group bg-white border rounded p-3  hover:shadow-md transition-all duration-200 ${selectedIssue === card.key ? 'ring-2 ring-blue-500 border-transparent' : 'border-gray-200'} ${snapshot.isDragging ? 'shadow-lg rotate-2' : ''}`}
-                                              >
-                                                {/* Delete Trash Button */}
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (window.confirm(`Are you sure you want to delete ticket ${card.key}?`)) {
-                                                      deleteIssue(card.key);
-                                                    }
+                                    <Droppable droppableId={col} type="task">
+                                      {(provided, snapshot) => (
+                                        <div
+                                          {...provided.droppableProps}
+                                          ref={provided.innerRef}
+                                          className={`flex-1 overflow-y-auto min-h-0 flex flex-col gap-2 pb-2 transition-colors rounded custom-scrollbar ${snapshot.isDraggingOver ? 'bg-blue-50/50' : ''}`}
+                                        >
+                                          {(boardData[col] || []).map((card, idx) => (
+                                            <Draggable key={card.key} draggableId={card.key} index={idx}>
+                                              {(provided, snapshot) => (
+                                                <div
+                                                  ref={provided.innerRef}
+                                                  {...provided.draggableProps}
+                                                  {...provided.dragHandleProps}
+                                                  onClick={() => setSelectedIssue(card.key)}
+                                                  style={{
+                                                    ...provided.draggableProps.style,
                                                   }}
-                                                  className="absolute top-2.5 right-2.5 p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 cursor-pointer"
-                                                  title="Delete Ticket"
+                                                  className={`relative group bg-white border rounded p-3  hover:shadow-md transition-all duration-200 ${selectedIssue === card.key ? 'ring-2 ring-blue-500 border-transparent' : 'border-gray-200'} ${snapshot.isDragging ? 'shadow-lg rotate-2' : ''}`}
                                                 >
-                                                  <Trash2 size={13} />
-                                                </button>
-                                                {/* Jira strikes through the key of a finished work item. */}
-                                                <div className={`text-blue-600 text-xs hover:underline mb-1 font-medium cursor-pointer ${isDoneStatus(card.status) ? 'line-through' : ''}`} onClick={(e) => { e.stopPropagation(); setSelectedIssue(card.key); }}>{card.key}</div>
-                                                <div className="text-xs text-gray-900 font-medium mb-3 leading-snug cursor-grab active:cursor-grabbing">{card.title}</div>
+                                                  {/* Delete Trash Button */}
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (window.confirm(`Are you sure you want to delete ticket ${card.key}?`)) {
+                                                        deleteIssue(card.key);
+                                                      }
+                                                    }}
+                                                    className="absolute top-2.5 right-2.5 p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 cursor-pointer"
+                                                    title="Delete Ticket"
+                                                  >
+                                                    <Trash2 size={13} />
+                                                  </button>
+                                                  {/* Jira strikes through the key of a finished work item. */}
+                                                  <div className={`text-blue-600 text-xs hover:underline mb-1 font-medium cursor-pointer ${isDoneStatus(card.status) ? 'line-through' : ''}`} onClick={(e) => { e.stopPropagation(); setSelectedIssue(card.key); }}>{card.key}</div>
+                                                  <div className="text-xs text-gray-900 font-medium mb-3 leading-snug cursor-grab active:cursor-grabbing">{card.title}</div>
 
-                                                {/* JIRA INLINE EXPANDABLE SUBTASKS LIST */}
-                                                {(() => {
-                                                  let rawSt = card.subtasks;
-                                                  if (typeof rawSt === 'string') {
-                                                    try { rawSt = JSON.parse(rawSt); } catch (e) { rawSt = []; }
-                                                  }
-                                                  if (!Array.isArray(rawSt)) rawSt = [];
-                                                  const totalSt = rawSt.length;
+                                                  {/* JIRA INLINE EXPANDABLE SUBTASKS LIST */}
+                                                  {(() => {
+                                                    let rawSt = card.subtasks;
+                                                    if (typeof rawSt === 'string') {
+                                                      try { rawSt = JSON.parse(rawSt); } catch (e) { rawSt = []; }
+                                                    }
+                                                    if (!Array.isArray(rawSt)) rawSt = [];
+                                                    const totalSt = rawSt.length;
 
-                                                  // JIRA RULE: Only visible when that particular ticket actually HAS subtasks (> 0)
-                                                  if (totalSt === 0) return null;
+                                                    // JIRA RULE: Only visible when that particular ticket actually HAS subtasks (> 0)
+                                                    if (totalSt === 0) return null;
 
-                                                  const completedSt = rawSt.filter(s => s.completed || s.status === 'DONE').length;
-                                                  const isExpanded = expandedSubtaskCardKeys.includes(card.key);
+                                                    const completedSt = rawSt.filter(s => s.completed || s.status === 'DONE').length;
+                                                    const isExpanded = expandedSubtaskCardKeys.includes(card.key);
 
-                                                  return (
-                                                    <div className="mb-3">
-                                                      {/* Subtasks Accordion Pill Header (Jira Style) */}
-                                                      <button
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          setExpandedSubtaskCardKeys(prev =>
-                                                            prev.includes(card.key) ? prev.filter(k => k !== card.key) : [...prev, card.key]
-                                                          );
-                                                        }}
-                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-gray-200 bg-gray-50 hover:bg-gray-100 text-[11px] font-medium text-gray-700 cursor-pointer transition-all hover:border-gray-300 w-full justify-between select-none"
-                                                        title="Click to toggle subtasks list"
-                                                      >
-                                                        <div className="flex items-center gap-1.5 min-w-0">
-                                                          {/* Branch / Subtask Icon */}
-                                                          <svg className="w-3.5 h-3.5 text-gray-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                            <line x1="6" y1="3" x2="6" y2="15"></line>
-                                                            <circle cx="18" cy="6" r="3"></circle>
-                                                            <circle cx="6" cy="18" r="3"></circle>
-                                                            <path d="M18 9a9 9 0 0 1-9 9"></path>
-                                                          </svg>
-                                                          <span className="font-semibold text-gray-800">Subtasks {completedSt}/{totalSt}</span>
-                                                        </div>
-                                                        <ChevronDown size={13} className={`text-gray-500 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                                                      </button>
+                                                    return (
+                                                      <div className="mb-3">
+                                                        {/* Subtasks Accordion Pill Header (Jira Style) */}
+                                                        <button
+                                                          onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setExpandedSubtaskCardKeys(prev =>
+                                                              prev.includes(card.key) ? prev.filter(k => k !== card.key) : [...prev, card.key]
+                                                            );
+                                                          }}
+                                                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-gray-200 bg-gray-50 hover:bg-gray-100 text-[11px] font-medium text-gray-700 cursor-pointer transition-all hover:border-gray-300 w-full justify-between select-none"
+                                                          title="Click to toggle subtasks list"
+                                                        >
+                                                          <div className="flex items-center gap-1.5 min-w-0">
+                                                            {/* Branch / Subtask Icon */}
+                                                            <svg className="w-3.5 h-3.5 text-gray-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                              <line x1="6" y1="3" x2="6" y2="15"></line>
+                                                              <circle cx="18" cy="6" r="3"></circle>
+                                                              <circle cx="6" cy="18" r="3"></circle>
+                                                              <path d="M18 9a9 9 0 0 1-9 9"></path>
+                                                            </svg>
+                                                            <span className="font-semibold text-gray-800">Subtasks {completedSt}/{totalSt}</span>
+                                                          </div>
+                                                          <ChevronDown size={13} className={`text-gray-500 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                                        </button>
 
-                                                      {/* Expanded Subtasks List under Card (Jira Card View) */}
-                                                      {isExpanded && (
-                                                        <div className="mt-1.5 space-y-1.5 pl-1 pr-1 py-1 bg-gray-50/80 rounded border border-gray-200/80 animate-in fade-in duration-150">
-                                                          {rawSt.map((st, idx) => {
-                                                            const subtaskKey = `${card.key}-${st.id || idx + 1}`;
-                                                            const isDone = st.completed || st.status === 'DONE';
-                                                            const statusLabel = isDone ? 'Done' : (st.status || 'To Do');
+                                                        {/* Expanded Subtasks List under Card (Jira Card View) */}
+                                                        {isExpanded && (
+                                                          <div className="mt-1.5 space-y-1.5 pl-1 pr-1 py-1 bg-gray-50/80 rounded border border-gray-200/80 animate-in fade-in duration-150">
+                                                            {rawSt.map((st, idx) => {
+                                                              const subtaskKey = `${card.key}-${st.id || idx + 1}`;
+                                                              const isDone = st.completed || st.status === 'DONE';
+                                                              const statusLabel = isDone ? 'Done' : (st.status || 'To Do');
 
-                                                            return (
-                                                              <div
-                                                                key={st.id || idx}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:border-blue-300 shadow-2xs text-xs font-sans group transition-all"
-                                                              >
-                                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                                  <input
-                                                                    type="checkbox"
-                                                                    checked={isDone}
-                                                                    onChange={() => handleToggleCardSubtask(card.key, st.id)}
-                                                                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
-                                                                  />
-                                                                  <div className="min-w-0 flex-1">
-                                                                    <div className="flex items-center gap-1.5">
-                                                                      <span className="text-[10px] text-blue-600 font-semibold">{subtaskKey}</span>
-                                                                      <span className={`text-xs font-medium truncate ${isDone ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-                                                                        {st.title}
-                                                                      </span>
+                                                              return (
+                                                                <div
+                                                                  key={st.id || idx}
+                                                                  onClick={(e) => e.stopPropagation()}
+                                                                  className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:border-blue-300 shadow-2xs text-xs font-sans group transition-all"
+                                                                >
+                                                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                                    <input
+                                                                      type="checkbox"
+                                                                      checked={isDone}
+                                                                      onChange={() => handleToggleCardSubtask(card.key, st.id)}
+                                                                      className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
+                                                                    />
+                                                                    <div className="min-w-0 flex-1">
+                                                                      <div className="flex items-center gap-1.5">
+                                                                        <span className="text-[10px] text-blue-600 font-semibold">{subtaskKey}</span>
+                                                                        <span className={`text-xs font-medium truncate ${isDone ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                                                                          {st.title}
+                                                                        </span>
+                                                                      </div>
                                                                     </div>
                                                                   </div>
-                                                                </div>
 
-                                                                <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                                                                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold tracking-tight ${isDone
+                                                                  <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                                                                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold tracking-tight ${isDone
                                                                       ? 'bg-emerald-100 text-emerald-700'
                                                                       : 'bg-gray-100 text-gray-600'
-                                                                    }`}>
-                                                                    {statusLabel}
-                                                                  </span>
+                                                                      }`}>
+                                                                      {statusLabel}
+                                                                    </span>
+                                                                  </div>
                                                                 </div>
-                                                              </div>
-                                                            );
-                                                          })}
-                                                        </div>
-                                                      )}
-                                                    </div>
-                                                  );
-                                                })()}
+                                                              );
+                                                            })}
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })()}
 
-                                                <div className="flex items-center justify-between">
-                                                  <div className="flex items-center gap-2">
-                                                    {TYPE_ICONS[card.type] || TYPE_ICONS.Task}
-                                                    {PRIORITY_ICONS[card.priority]}
-                                                    <span className="text-xs text-gray-600">{card.priority}</span>
-                                                  </div>
-                                                  {col === 'DONE' ? (
-                                                    <CheckCircleIcon className="text-green-500" size={16} />
-                                                  ) : (
-                                                    <div className="relative card-assignee-dropdown">
-                                                      <button
-                                                        onClick={(e) => handleOpenCardAssignee(e, card.key)}
-                                                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border border-white shrink-0 cursor-pointer transition-transform hover:scale-110 ${card.assignee === 'Unassigned' || !card.assignee
+                                                  <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                      {TYPE_ICONS[card.type] || TYPE_ICONS.Task}
+                                                      {PRIORITY_ICONS[card.priority]}
+                                                      <span className="text-xs text-gray-600">{card.priority}</span>
+                                                    </div>
+                                                    {col === 'DONE' ? (
+                                                      <CheckCircleIcon className="text-green-500" size={16} />
+                                                    ) : (
+                                                      <div className="relative card-assignee-dropdown">
+                                                        <button
+                                                          onClick={(e) => handleOpenCardAssignee(e, card.key)}
+                                                          className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border border-white shrink-0 cursor-pointer transition-transform hover:scale-110 ${card.assignee === 'Unassigned' || !card.assignee
                                                             ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                                                             : 'bg-blue-600 text-white shadow-sm'
-                                                          }`}
-                                                        title={`Assignee: ${card.assignee || 'Unassigned'} (Click to change)`}
-                                                      >
-                                                        {card.assignee === 'Unassigned' || !card.assignee ? (
-                                                          <User size={12} className="text-gray-500" />
-                                                        ) : (
-                                                          getInitials(card.assignee)
-                                                        )}
-                                                      </button>
-
-                                                      {/* JIRA CARD ASSIGNEE POPUP MENU (Right Side Floating) */}
-                                                      {openCardAssigneeDropdown === card.key && (
-                                                        <div
-                                                          onClick={(e) => e.stopPropagation()}
-                                                          style={{
-                                                            position: 'fixed',
-                                                            top: `${cardAssigneePos.top}px`,
-                                                            left: `${cardAssigneePos.left}px`,
-                                                            width: '260px',
-                                                            zIndex: 99999
-                                                          }}
-                                                          className="bg-white border border-gray-200 rounded-lg shadow-2xl py-1.5 text-xs text-gray-700 font-sans border-t-2 border-t-blue-500"
+                                                            }`}
+                                                          title={`Assignee: ${card.assignee || 'Unassigned'} (Click to change)`}
                                                         >
-                                                          {/* Jira Top Active / Search Input Box */}
-                                                          <div className="p-2 border-b border-gray-100 bg-white">
-                                                            <div className="relative">
-                                                              <input
-                                                                type="text"
-                                                                autoFocus
-                                                                value={assigneeSearchQuery}
-                                                                onChange={(e) => setAssigneeSearchQuery(e.target.value)}
-                                                                placeholder={card.assignee || "Search users..."}
-                                                                className="w-full px-3 py-1.5 text-xs border-2 border-blue-500 rounded-md focus:outline-none bg-white text-gray-900 font-medium"
-                                                              />
-                                                            </div>
-                                                          </div>
+                                                          {card.assignee === 'Unassigned' || !card.assignee ? (
+                                                            <User size={12} className="text-gray-500" />
+                                                          ) : (
+                                                            getInitials(card.assignee)
+                                                          )}
+                                                        </button>
 
-                                                          <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
-                                                            {/* Unassigned Option */}
-                                                            <div
-                                                              onClick={() => handleUpdateCardAssignee(card.key, 'Unassigned')}
-                                                              className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${card.assignee === 'Unassigned' || !card.assignee ? 'bg-[#deebff] font-semibold text-blue-900' : 'text-gray-700'
-                                                                }`}
-                                                            >
-                                                              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shrink-0">
-                                                                <User size={13} className="text-gray-600" />
+                                                        {/* JIRA CARD ASSIGNEE POPUP MENU (Right Side Floating) */}
+                                                        {openCardAssigneeDropdown === card.key && (
+                                                          <div
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            style={{
+                                                              position: 'fixed',
+                                                              top: `${cardAssigneePos.top}px`,
+                                                              left: `${cardAssigneePos.left}px`,
+                                                              width: '260px',
+                                                              zIndex: 99999
+                                                            }}
+                                                            className="bg-white border border-gray-200 rounded-lg shadow-2xl py-1.5 text-xs text-gray-700 font-sans border-t-2 border-t-blue-500"
+                                                          >
+                                                            {/* Jira Top Active / Search Input Box */}
+                                                            <div className="p-2 border-b border-gray-100 bg-white">
+                                                              <div className="relative">
+                                                                <input
+                                                                  type="text"
+                                                                  autoFocus
+                                                                  value={assigneeSearchQuery}
+                                                                  onChange={(e) => setAssigneeSearchQuery(e.target.value)}
+                                                                  placeholder={card.assignee || "Search users..."}
+                                                                  className="w-full px-3 py-1.5 text-xs border-2 border-blue-500 rounded-md focus:outline-none bg-white text-gray-900 font-medium"
+                                                                />
                                                               </div>
-                                                              <span className="text-xs font-medium">Unassigned</span>
                                                             </div>
 
-                                                            {/* Automatic Option */}
-                                                            <div
-                                                              onClick={() => {
-                                                                const myName = user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : 'Unassigned';
-                                                                handleUpdateCardAssignee(card.key, myName);
-                                                              }}
-                                                              className="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 text-gray-700 font-medium border-b border-gray-100 transition-colors"
-                                                            >
-                                                              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shrink-0">
-                                                                <User size={13} className="text-gray-600" />
-                                                              </div>
-                                                              <span className="text-xs font-medium">Automatic</span>
-                                                            </div>
-
-                                                            {/* Logged in User (Assign to me) Option */}
-                                                            {user && (
+                                                            <div className="max-h-60 overflow-y-auto py-1 custom-scrollbar">
+                                                              {/* Unassigned Option */}
                                                               <div
-                                                                onClick={() => {
-                                                                  const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-                                                                  handleUpdateCardAssignee(card.key, myName);
-                                                                }}
-                                                                className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${card.assignee && (card.assignee.toLowerCase().includes((user.first_name || '').toLowerCase()) || card.assignee.toLowerCase() === user.username.toLowerCase())
-                                                                    ? 'bg-[#deebff] font-semibold text-blue-900'
-                                                                    : 'text-gray-700'
+                                                                onClick={() => handleUpdateCardAssignee(card.key, 'Unassigned')}
+                                                                className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${card.assignee === 'Unassigned' || !card.assignee ? 'bg-[#deebff] font-semibold text-blue-900' : 'text-gray-700'
                                                                   }`}
                                                               >
-                                                                <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                                                                  {getInitials(user.first_name || user.username)}
+                                                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shrink-0">
+                                                                  <User size={13} className="text-gray-600" />
                                                                 </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                  <div className="truncate text-xs font-medium text-gray-900">
-                                                                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username} <span className="text-[10px] text-gray-500 font-normal">(assign to me)</span>
-                                                                  </div>
-                                                                  {user.email && <div className="text-[10px] text-gray-500 truncate leading-none mt-0.5">{user.email}</div>}
-                                                                </div>
+                                                                <span className="text-xs font-medium">Unassigned</span>
                                                               </div>
-                                                            )}
 
-                                                            {/* Team Users List */}
-                                                            {itUsersList
-                                                              .filter(u => {
-                                                                if (user && (u.id === user.id || u.username === user.username)) return false;
-                                                                const name = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '';
-                                                                return name.toLowerCase().includes(assigneeSearchQuery.toLowerCase()) || (u.email && u.email.toLowerCase().includes(assigneeSearchQuery.toLowerCase()));
-                                                              })
-                                                              .map((u) => {
-                                                                const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'User';
-                                                                const initials = getInitials(fullName);
-                                                                const isCurrentAssignee = card.assignee && card.assignee.toLowerCase() === fullName.toLowerCase();
+                                                              {/* Automatic Option */}
+                                                              <div
+                                                                onClick={() => {
+                                                                  const myName = user ? (`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username) : 'Unassigned';
+                                                                  handleUpdateCardAssignee(card.key, myName);
+                                                                }}
+                                                                className="px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 text-gray-700 font-medium border-b border-gray-100 transition-colors"
+                                                              >
+                                                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 shrink-0">
+                                                                  <User size={13} className="text-gray-600" />
+                                                                </div>
+                                                                <span className="text-xs font-medium">Automatic</span>
+                                                              </div>
 
-                                                                const colors = [
-                                                                  'bg-blue-600 text-white',
-                                                                  'bg-purple-600 text-white',
-                                                                  'bg-amber-600 text-white',
-                                                                  'bg-pink-600 text-white',
-                                                                  'bg-indigo-600 text-white',
-                                                                  'bg-teal-600 text-white'
-                                                                ];
-                                                                const colorClass = colors[Number(u.id || 0) % colors.length];
-
-                                                                return (
-                                                                  <div
-                                                                    key={u.id || u.username}
-                                                                    onClick={() => handleUpdateCardAssignee(card.key, fullName)}
-                                                                    className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${isCurrentAssignee ? 'bg-[#deebff] text-blue-900 font-semibold' : 'text-gray-700'
-                                                                      }`}
-                                                                  >
-                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${colorClass}`}>
-                                                                      {initials}
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                      <div className="truncate text-xs font-medium text-gray-900">{fullName}</div>
-                                                                      {u.email && <div className="text-[10px] text-gray-500 truncate leading-none mt-0.5">{u.email}</div>}
-                                                                    </div>
-                                                                    {isCurrentAssignee && <Check size={14} className="text-blue-600 shrink-0" />}
+                                                              {/* Logged in User (Assign to me) Option */}
+                                                              {user && (
+                                                                <div
+                                                                  onClick={() => {
+                                                                    const myName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+                                                                    handleUpdateCardAssignee(card.key, myName);
+                                                                  }}
+                                                                  className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${card.assignee && (card.assignee.toLowerCase().includes((user.first_name || '').toLowerCase()) || card.assignee.toLowerCase() === user.username.toLowerCase())
+                                                                    ? 'bg-[#deebff] font-semibold text-blue-900'
+                                                                    : 'text-gray-700'
+                                                                    }`}
+                                                                >
+                                                                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                                                    {getInitials(user.first_name || user.username)}
                                                                   </div>
-                                                                );
-                                                              })}
+                                                                  <div className="flex-1 min-w-0">
+                                                                    <div className="truncate text-xs font-medium text-gray-900">
+                                                                      {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username} <span className="text-[10px] text-gray-500 font-normal">(assign to me)</span>
+                                                                    </div>
+                                                                    {user.email && <div className="text-[10px] text-gray-500 truncate leading-none mt-0.5">{user.email}</div>}
+                                                                  </div>
+                                                                </div>
+                                                              )}
+
+                                                              {/* Team Users List */}
+                                                              {itUsersList
+                                                                .filter(u => {
+                                                                  if (user && (u.id === user.id || u.username === user.username)) return false;
+                                                                  const name = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || '';
+                                                                  return name.toLowerCase().includes(assigneeSearchQuery.toLowerCase()) || (u.email && u.email.toLowerCase().includes(assigneeSearchQuery.toLowerCase()));
+                                                                })
+                                                                .map((u) => {
+                                                                  const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || 'User';
+                                                                  const initials = getInitials(fullName);
+                                                                  const isCurrentAssignee = card.assignee && card.assignee.toLowerCase() === fullName.toLowerCase();
+
+                                                                  const colors = [
+                                                                    'bg-blue-600 text-white',
+                                                                    'bg-purple-600 text-white',
+                                                                    'bg-amber-600 text-white',
+                                                                    'bg-pink-600 text-white',
+                                                                    'bg-indigo-600 text-white',
+                                                                    'bg-teal-600 text-white'
+                                                                  ];
+                                                                  const colorClass = colors[Number(u.id || 0) % colors.length];
+
+                                                                  return (
+                                                                    <div
+                                                                      key={u.id || u.username}
+                                                                      onClick={() => handleUpdateCardAssignee(card.key, fullName)}
+                                                                      className={`px-3 py-2 hover:bg-blue-50 cursor-pointer flex items-center gap-2.5 transition-colors ${isCurrentAssignee ? 'bg-[#deebff] text-blue-900 font-semibold' : 'text-gray-700'
+                                                                        }`}
+                                                                    >
+                                                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${colorClass}`}>
+                                                                        {initials}
+                                                                      </div>
+                                                                      <div className="flex-1 min-w-0">
+                                                                        <div className="truncate text-xs font-medium text-gray-900">{fullName}</div>
+                                                                        {u.email && <div className="text-[10px] text-gray-500 truncate leading-none mt-0.5">{u.email}</div>}
+                                                                      </div>
+                                                                      {isCurrentAssignee && <Check size={14} className="text-blue-600 shrink-0" />}
+                                                                    </div>
+                                                                  );
+                                                                })}
+                                                            </div>
                                                           </div>
-                                                        </div>
-                                                      )}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            )}
-                                          </Draggable>
-                                        ))}
-                                        {provided.placeholder}
-                                      </div>
-                                    )}
-                                  </Droppable>
-
-                                  {activeCreateColumn === col ? (
-                                    <div className="mt-2 p-3 bg-white border border-blue-500 rounded  flex flex-col gap-3 font-sans text-xs inline-create-box">
-                                      {/* Text Area */}
-                                      <textarea
-                                        autoFocus
-                                        placeholder="What needs to be done?"
-                                        value={newIssueTitle}
-                                        onChange={(e) => setNewIssueTitle(e.target.value)}
-                                        className="w-full text-xs text-gray-800 placeholder-gray-400 focus:outline-none resize-none h-14"
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleCreateInlineIssue(col);
-                                          }
-                                        }}
-                                      />
-
-                                      {/* Bottom Row */}
-                                      <div className="flex items-center justify-between mt-1 relative">
-                                        <div className="flex items-center gap-2">
-                                          {/* Work Type selector dropdown */}
-                                          <div className="relative inline-dropdown">
-                                            <button
-                                              onClick={() => setOpenInlineDropdown(openInlineDropdown === 'type' ? null : 'type')}
-                                              className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition"
-                                            >
-                                              {TYPE_ICONS[newIssueType] || <CheckSquare size={14} className="text-blue-500 fill-blue-100" />}
-                                              <ChevronDown size={10} />
-                                            </button>
-                                            {openInlineDropdown === 'type' && (
-                                              <div className="absolute left-0 bottom-full mb-1.5 w-36 bg-white border border-gray-200 rounded shadow-lg py-1 z-50 text-sm">
-                                                {deptIssueTypes.map(type => (
-                                                  <div
-                                                    key={type}
-                                                    onClick={() => {
-                                                      setNewIssueType(type);
-                                                      setOpenInlineDropdown(null);
-                                                    }}
-                                                    className="px-2.5 py-1.5 hover:bg-gray-50 flex items-center gap-2 cursor-pointer text-gray-700 font-medium"
-                                                  >
-                                                    {TYPE_ICONS_SM[type] || <CheckSquare size={12} className="text-blue-500 fill-blue-100" />} {type}
-                                                  </div>
-                                                ))}
-                                                <div className="border-t border-gray-100 my-1"></div>
-                                                <div className="px-2.5 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-500 font-medium">Add work type</div>
-                                                <div className="px-2.5 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-500 font-medium">Edit work type</div>
-                                                <div className="px-2.5 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-500 font-medium">Manage</div>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {/* Due date picker dropdown */}
-                                          <div className="relative inline-dropdown">
-                                            <button
-                                              onClick={() => setOpenInlineDropdown(openInlineDropdown === 'date' ? null : 'date')}
-                                              className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition"
-                                            >
-                                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                                            </button>
-                                            {openInlineDropdown === 'date' && (
-                                              <div className="absolute left-0 bottom-full mb-1.5 w-64 bg-white border border-gray-200 rounded shadow-xl p-3 z-50 text-gray-800">
-                                                <div className="font-semibold text-xs text-gray-500 mb-1">Due date</div>
-                                                <input
-                                                  type="text"
-                                                  placeholder="7/13/2026"
-                                                  value={newIssueDueDate || '7/13/2026'}
-                                                  onChange={(e) => setNewIssueDueDate(e.target.value)}
-                                                  className="w-full px-2.5 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:border-blue-500"
-                                                />
-                                                {/* Calendar Grid */}
-                                                <div className="mt-3">
-                                                  <div className="flex justify-between items-center text-xs font-semibold text-gray-700 px-1 mb-2">
-                                                    <span>July 2026</span>
-                                                    <div className="flex gap-2">
-                                                      <span className="cursor-pointer hover:text-blue-500">{"<"}</span>
-                                                      <span className="cursor-pointer hover:text-blue-500">{">"}</span>
-                                                    </div>
-                                                  </div>
-                                                  <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-400 mb-1">
-                                                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <span key={d}>{d}</span>)}
-                                                  </div>
-                                                  <div className="grid grid-cols-7 gap-1 text-xs">
-                                                    {[28, 29, 30, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 1].map((day, idx) => {
-                                                      const isCurrentMonth = idx >= 3 && idx <= 33;
-                                                      const isToday = day === 13 && isCurrentMonth;
-                                                      return (
-                                                        <span
-                                                          key={idx}
-                                                          onClick={() => {
-                                                            setNewIssueDueDate(`7/${day}/2026`);
-                                                            setOpenInlineDropdown(null);
-                                                          }}
-                                                          className={`py-1 rounded cursor-pointer transition ${isToday ? 'bg-blue-600 text-white ' :
-                                                            isCurrentMonth ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300'
-                                                            }`}
-                                                        >
-                                                          {day}
-                                                        </span>
-                                                      );
-                                                    })}
+                                                        )}
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 </div>
-                                              </div>
-                                            )}
-                                          </div>
+                                              )}
+                                            </Draggable>
+                                          ))}
+                                          {provided.placeholder}
+                                        </div>
+                                      )}
+                                    </Droppable>
 
-                                          {/* Assignee selector dropdown */}
-                                          <div className="relative inline-dropdown">
-                                            <button
-                                              onClick={() => setOpenInlineDropdown(openInlineDropdown === 'assignee' ? null : 'assignee')}
-                                              className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition"
-                                            >
-                                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                            </button>
-                                            {openInlineDropdown === 'assignee' && (
-                                              <div className="absolute left-0 bottom-full mb-1.5 w-60 bg-white border border-gray-200 rounded-md shadow-lg py-1.5 z-50 text-sm">
-                                                <div className="px-2 pb-1.5 border-b border-gray-100">
-                                                  <input
-                                                    type="text"
-                                                    placeholder="Search users..."
-                                                    defaultValue="Unassigned"
-                                                    className="w-full px-2 py-1 border border-gray-200 rounded outline-none focus:border-blue-500"
-                                                  />
-                                                </div>
-                                                <div className="max-h-48 overflow-y-auto mt-1">
-                                                  {[
-                                                    { name: 'Automatic', sub: '' },
-                                                    { name: 'codigix infotech (Assign to me)', sub: 'codigixinfotech@gmail.com' },
-                                                    { name: 'sonalicodigix', sub: '' },
-                                                    { name: 'sanika mote', sub: '' },
-                                                    { name: 'Dinesh Dhage', sub: '' },
-                                                    { name: 'Abhijit Khedekar', sub: '' },
-                                                    { name: 'wpdevelopercodigix', sub: '' }
-                                                  ].map(user => (
+                                    {activeCreateColumn === col ? (
+                                      <div className="mt-2 p-3 bg-white border border-blue-500 rounded  flex flex-col gap-3 font-sans text-xs inline-create-box">
+                                        {/* Text Area */}
+                                        <textarea
+                                          autoFocus
+                                          placeholder="What needs to be done?"
+                                          value={newIssueTitle}
+                                          onChange={(e) => setNewIssueTitle(e.target.value)}
+                                          className="w-full text-xs text-gray-800 placeholder-gray-400 focus:outline-none resize-none h-14"
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                              e.preventDefault();
+                                              handleCreateInlineIssue(col);
+                                            }
+                                          }}
+                                        />
+
+                                        {/* Bottom Row */}
+                                        <div className="flex items-center justify-between mt-1 relative">
+                                          <div className="flex items-center gap-2">
+                                            {/* Work Type selector dropdown */}
+                                            <div className="relative inline-dropdown">
+                                              <button
+                                                onClick={() => setOpenInlineDropdown(openInlineDropdown === 'type' ? null : 'type')}
+                                                className="flex items-center gap-1 p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition"
+                                              >
+                                                {TYPE_ICONS[newIssueType] || <CheckSquare size={14} className="text-blue-500 fill-blue-100" />}
+                                                <ChevronDown size={10} />
+                                              </button>
+                                              {openInlineDropdown === 'type' && (
+                                                <div className="absolute left-0 bottom-full mb-1.5 w-36 bg-white border border-gray-200 rounded shadow-lg py-1 z-50 text-sm">
+                                                  {deptIssueTypes.map(type => (
                                                     <div
-                                                      key={user.name}
+                                                      key={type}
                                                       onClick={() => {
-                                                        setNewIssueAssignee(user.name);
+                                                        setNewIssueType(type);
                                                         setOpenInlineDropdown(null);
                                                       }}
-                                                      className="p-2 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium"
+                                                      className="px-2.5 py-1.5 hover:bg-gray-50 flex items-center gap-2 cursor-pointer text-gray-700 font-medium"
                                                     >
-                                                      <div className="flex items-center gap-2">
-                                                        <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[9px] ">
-                                                          {user.name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                          <div>{user.name}</div>
-                                                          {user.sub && <div className="text-[9px] text-gray-400 font-normal">{user.sub}</div>}
-                                                        </div>
-                                                      </div>
+                                                      {TYPE_ICONS_SM[type] || <CheckSquare size={12} className="text-blue-500 fill-blue-100" />} {type}
                                                     </div>
                                                   ))}
+                                                  <div className="border-t border-gray-100 my-1"></div>
+                                                  <div className="px-2.5 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-500 font-medium">Add work type</div>
+                                                  <div className="px-2.5 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-500 font-medium">Edit work type</div>
+                                                  <div className="px-2.5 py-1.5 hover:bg-gray-50 cursor-pointer text-gray-500 font-medium">Manage</div>
                                                 </div>
-                                              </div>
-                                            )}
+                                              )}
+                                            </div>
+
+                                            {/* Due date picker dropdown */}
+                                            <div className="relative inline-dropdown">
+                                              <button
+                                                onClick={() => setOpenInlineDropdown(openInlineDropdown === 'date' ? null : 'date')}
+                                                className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition"
+                                              >
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                              </button>
+                                              {openInlineDropdown === 'date' && (
+                                                <div className="absolute left-0 bottom-full mb-1.5 w-64 bg-white border border-gray-200 rounded shadow-xl p-3 z-50 text-gray-800">
+                                                  <div className="font-semibold text-xs text-gray-500 mb-1">Due date</div>
+                                                  <input
+                                                    type="text"
+                                                    placeholder="7/13/2026"
+                                                    value={newIssueDueDate || '7/13/2026'}
+                                                    onChange={(e) => setNewIssueDueDate(e.target.value)}
+                                                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:border-blue-500"
+                                                  />
+                                                  {/* Calendar Grid */}
+                                                  <div className="mt-3">
+                                                    <div className="flex justify-between items-center text-xs font-semibold text-gray-700 px-1 mb-2">
+                                                      <span>July 2026</span>
+                                                      <div className="flex gap-2">
+                                                        <span className="cursor-pointer hover:text-blue-500">{"<"}</span>
+                                                        <span className="cursor-pointer hover:text-blue-500">{">"}</span>
+                                                      </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-400 mb-1">
+                                                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <span key={d}>{d}</span>)}
+                                                    </div>
+                                                    <div className="grid grid-cols-7 gap-1 text-xs">
+                                                      {[28, 29, 30, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 1].map((day, idx) => {
+                                                        const isCurrentMonth = idx >= 3 && idx <= 33;
+                                                        const isToday = day === 13 && isCurrentMonth;
+                                                        return (
+                                                          <span
+                                                            key={idx}
+                                                            onClick={() => {
+                                                              setNewIssueDueDate(`7/${day}/2026`);
+                                                              setOpenInlineDropdown(null);
+                                                            }}
+                                                            className={`py-1 rounded cursor-pointer transition ${isToday ? 'bg-blue-600 text-white ' :
+                                                              isCurrentMonth ? 'text-gray-700 hover:bg-gray-100' : 'text-gray-300'
+                                                              }`}
+                                                          >
+                                                            {day}
+                                                          </span>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Assignee selector dropdown */}
+                                            <div className="relative inline-dropdown">
+                                              <button
+                                                onClick={() => setOpenInlineDropdown(openInlineDropdown === 'assignee' ? null : 'assignee')}
+                                                className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700 transition"
+                                              >
+                                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                              </button>
+                                              {openInlineDropdown === 'assignee' && (
+                                                <div className="absolute left-0 bottom-full mb-1.5 w-60 bg-white border border-gray-200 rounded-md shadow-lg py-1.5 z-50 text-sm">
+                                                  <div className="px-2 pb-1.5 border-b border-gray-100">
+                                                    <input
+                                                      type="text"
+                                                      placeholder="Search users..."
+                                                      defaultValue="Unassigned"
+                                                      className="w-full px-2 py-1 border border-gray-200 rounded outline-none focus:border-blue-500"
+                                                    />
+                                                  </div>
+                                                  <div className="max-h-48 overflow-y-auto mt-1">
+                                                    {[
+                                                      { name: 'Automatic', sub: '' },
+                                                      { name: 'codigix infotech (Assign to me)', sub: 'codigixinfotech@gmail.com' },
+                                                      { name: 'sonalicodigix', sub: '' },
+                                                      { name: 'sanika mote', sub: '' },
+                                                      { name: 'Dinesh Dhage', sub: '' },
+                                                      { name: 'Abhijit Khedekar', sub: '' },
+                                                      { name: 'wpdevelopercodigix', sub: '' }
+                                                    ].map(user => (
+                                                      <div
+                                                        key={user.name}
+                                                        onClick={() => {
+                                                          setNewIssueAssignee(user.name);
+                                                          setOpenInlineDropdown(null);
+                                                        }}
+                                                        className="p-2 hover:bg-gray-50 cursor-pointer text-gray-700 font-medium"
+                                                      >
+                                                        <div className="flex items-center gap-2">
+                                                          <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[9px] ">
+                                                            {user.name.charAt(0).toUpperCase()}
+                                                          </div>
+                                                          <div>
+                                                            <div>{user.name}</div>
+                                                            {user.sub && <div className="text-[9px] text-gray-400 font-normal">{user.sub}</div>}
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
+
+                                          {/* Submit Arrow Button */}
+                                          <button
+                                            onClick={() => handleCreateInlineIssue(col)}
+                                            disabled={!newIssueTitle.trim()}
+                                            className={`p-1.5 rounded transition ${newIssueTitle.trim() ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                              }`}
+                                          >
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+                                          </button>
                                         </div>
-
-                                        {/* Submit Arrow Button */}
-                                        <button
-                                          onClick={() => handleCreateInlineIssue(col)}
-                                          disabled={!newIssueTitle.trim()}
-                                          className={`p-1.5 rounded transition ${newIssueTitle.trim() ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            }`}
-                                        >
-                                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
-                                        </button>
                                       </div>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      onClick={() => setActiveCreateColumn(col)}
-                                      className="mt-2 shrink-0 flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-200 p-2 rounded transition-colors w-full create-trigger-btn"
-                                    >
-                                      <Plus size={14} /> Create issue
-                                    </button>
-                                  )}
-                                </div>
-                              )
-                            }}
-                          </Draggable>
-                        ))}
-                        {/* ADD NEW COLUMN BUTTON */}
-                        <div className="min-w-[260px] h-min rounded p-3 bg-gray-50/50 hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors flex flex-col">
-                          {isAddingColumn ? (
-                            <div className="flex flex-col gap-2">
-                              <input
-                                autoFocus
-                                type="text"
-                                placeholder="Enter column name..."
-                                className="w-full p-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                value={newColumnName}
-                                onChange={(e) => setNewColumnName(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && newColumnName.trim()) {
-                                    const colName = newColumnName.toUpperCase();
-                                    if (!columnOrder.includes(colName)) {
-                                      setColumnOrder([...columnOrder, colName]);
-                                      setBoardData({ ...boardData, [colName]: [] });
+                                    ) : (
+                                      <button
+                                        onClick={() => setActiveCreateColumn(col)}
+                                        className="mt-2 shrink-0 flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 hover:bg-gray-200 p-2 rounded transition-colors w-full create-trigger-btn"
+                                      >
+                                        <Plus size={14} /> Create issue
+                                      </button>
+                                    )}
+                                  </div>
+                                )
+                              }}
+                            </Draggable>
+                          ))}
+                          {/* ADD NEW COLUMN BUTTON */}
+                          <div className="min-w-[260px] h-min rounded p-3 bg-gray-50/50 hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors flex flex-col">
+                            {isAddingColumn ? (
+                              <div className="flex flex-col gap-2">
+                                <input
+                                  autoFocus
+                                  type="text"
+                                  placeholder="Enter column name..."
+                                  className="w-full p-2 text-xs border border-gray-300 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                  value={newColumnName}
+                                  onChange={(e) => setNewColumnName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && newColumnName.trim()) {
+                                      const colName = newColumnName.toUpperCase();
+                                      if (!columnOrder.includes(colName)) {
+                                        setColumnOrder([...columnOrder, colName]);
+                                        setBoardData({ ...boardData, [colName]: [] });
+                                      }
+                                      setNewColumnName('');
+                                      setIsAddingColumn(false);
+                                    } else if (e.key === 'Escape') {
+                                      setIsAddingColumn(false);
+                                      setNewColumnName('');
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    if (newColumnName.trim()) {
+                                      const colName = newColumnName.toUpperCase();
+                                      if (!columnOrder.includes(colName)) {
+                                        setColumnOrder([...columnOrder, colName]);
+                                        setBoardData({ ...boardData, [colName]: [] });
+                                      }
                                     }
                                     setNewColumnName('');
                                     setIsAddingColumn(false);
-                                  } else if (e.key === 'Escape') {
-                                    setIsAddingColumn(false);
-                                    setNewColumnName('');
-                                  }
-                                }}
-                                onBlur={() => {
-                                  if (newColumnName.trim()) {
-                                    const colName = newColumnName.toUpperCase();
-                                    if (!columnOrder.includes(colName)) {
-                                      setColumnOrder([...columnOrder, colName]);
-                                      setBoardData({ ...boardData, [colName]: [] });
-                                    }
-                                  }
-                                  setNewColumnName('');
-                                  setIsAddingColumn(false);
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setIsAddingColumn(true)}
-                              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 w-full"
-                            >
-                              <Plus size={14} /> Add column
-                            </button>
-                          )}
-                        </div>
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setIsAddingColumn(true)}
+                                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 w-full"
+                              >
+                                <Plus size={14} /> Add column
+                              </button>
+                            )}
+                          </div>
 
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
-              </div>
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                </div>
               )}
 
             </div>

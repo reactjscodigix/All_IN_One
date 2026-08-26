@@ -50,7 +50,7 @@ const ITIssueDetailsSidebar = ({
   setProjectId,
   projectsList,
   typeOptions = [],
-  showDevTools = true,
+  showDevTools = false,
   issuesList = [],
   originalEstimate,
   setOriginalEstimate,
