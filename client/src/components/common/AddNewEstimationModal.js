@@ -95,15 +95,18 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
             }
           }
 
+          const isCurrent = initialData?.id ? Number(est.id) === Number(initialData.id) : index === 0;
+
           return {
             version: `v${sortedEstimations.length - index}`,
             status: est.status,
             date: dateStr,
             amount: parseFloat(est.amount || est.total) || 0,
             type: est.quotation_type || (est.status === 'Revised' ? 'Revised Quotation' : (est.status + ' Quotation')),
-            current: index === 0,
+            current: isCurrent,
             id: est.id,
-            number: est.estimation_number || est.quotation_number
+            number: est.estimation_number || est.quotation_number,
+            rawEst: est
           };
         });
 
@@ -119,6 +122,75 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
       console.error('Error fetching version history:', err);
     } finally {
       isFetchingVersionsRef.current = false;
+    }
+  };
+
+  const handleSelectVersion = async (v) => {
+    if (!v || !v.rawEst) return;
+    const est = v.rawEst;
+    setLoadingData(true);
+
+    try {
+      let items = [];
+      try {
+        const itemsRes = await estimationsAPI.getItems(est.id);
+        if (Array.isArray(itemsRes) && itemsRes.length > 0) {
+          items = itemsRes.map(item => ({
+            id: item.id || Date.now() + Math.random(),
+            productName: item.item_name || item.productName || item.product_name || item.name || '',
+            description: item.description || '',
+            duration: item.duration || '',
+            quantity: parseFloat(item.quantity) || 1,
+            rate: parseFloat(item.rate || item.price) || 0
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching selected version line items:', err);
+      }
+
+      if (items.length === 0) {
+        if (est.it_services && est.it_services !== 'None') {
+          items.push({
+            id: Date.now() + 1,
+            productName: est.it_services === 'Other' ? est.it_services_other : est.it_services,
+            description: est.description || '',
+            quantity: 1,
+            rate: parseFloat(est.amount || est.total) || 0
+          });
+        } else {
+          items.push({
+            id: Date.now(),
+            productName: est.project_name || est.deal_name || 'Service',
+            description: est.description || '',
+            quantity: 1,
+            rate: parseFloat(est.amount || est.total) || 0
+          });
+        }
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        id: est.id,
+        quotationNumber: est.estimation_number || est.quotation_number || prev.quotationNumber,
+        quotationDate: est.estimate_date ? new Date(est.estimate_date).toISOString().split('T')[0] : prev.quotationDate,
+        validUntil: est.expiry_date ? new Date(est.expiry_date).toISOString().split('T')[0] : prev.validUntil,
+        status: est.status || prev.status,
+        quotationType: est.quotation_type || est.status || prev.quotationType,
+        discount: Number(est.discount || est.discount_amount) || 0,
+        taxPercentage: est.tax_percentage !== undefined ? Number(est.tax_percentage) : 10,
+        notes: est.notes || '',
+        paymentTerms: est.payment_terms || prev.paymentTerms,
+        assignedExecutiveId: est.estimate_by ? est.estimate_by.toString() : prev.assignedExecutiveId,
+        items: items,
+        versionHistory: prev.versionHistory.map(item => ({
+          ...item,
+          current: Number(item.id) === Number(est.id)
+        }))
+      }));
+    } catch (err) {
+      console.error('Error selecting quotation version:', err);
+    } finally {
+      setLoadingData(false);
     }
   };
 
@@ -1173,21 +1245,38 @@ const AddNewEstimationModal = ({ isOpen, onClose, onSubmit, initialData, onGener
               <div className="bg-white rounded border border-gray-200 overflow-hidden">
                 <div className="p-3 bg-gray-50/50 border-b border-gray-200 text-xs  text-gray-800 ">Version History</div>
                 <div className="p-4 space-y-4">
-                  {formData.versionHistory.map((v, i) => (
-                    <div key={i} className={`flex items-start gap-3 ${i > 0 ? 'opacity-50' : ''}`}>
-                      <div className="w-8 h-8 rounded bg-gray-50 border border-gray-100 flex items-center justify-center text-xs font-[500] text-gray-400">{v.version.toUpperCase()}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline mb-0.5">
-                          <span className="text-xs  text-gray-900 truncate">{v.type || v.status}</span>
-                          <span className="text-xs  text-gray-900">₹ {Number(v.amount || 0).toLocaleString()}</span>
+                  {formData.versionHistory.map((v, i) => {
+                    const isSelected = v.current || Number(formData.id) === Number(v.id);
+                    return (
+                      <div 
+                        key={i} 
+                        onClick={() => handleSelectVersion(v)}
+                        className={`flex items-start gap-3 p-2 rounded cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-blue-50/80 border border-blue-300 shadow-xs'
+                            : 'hover:bg-gray-50 border border-transparent opacity-75 hover:opacity-100'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded border flex items-center justify-center text-xs font-[500] ${
+                          isSelected
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-gray-50 border-gray-200 text-gray-500'
+                        }`}>
+                          {v.version.toUpperCase()}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                          <span>{v.date}</span>
-                          {v.current && <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline mb-0.5">
+                            <span className={`text-xs truncate ${isSelected ? 'font-[500] text-blue-900' : 'text-gray-900'}`}>{v.type || v.status}</span>
+                            <span className={`text-xs ${isSelected ? 'font-[500] text-blue-900' : 'text-gray-900'}`}>₹ {Number(v.amount || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <span>{v.date}</span>
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
