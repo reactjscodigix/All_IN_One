@@ -236,7 +236,7 @@ export default function ITFileManagerPage() {
 
           {/* Storage Locations */}
           <div className="bg-white rounded  border border-gray-100 overflow-hidden">
-            <h3 className="text-[12px] font-extrabold text-gray-700  tracking-wider p-4 pb-2">Storage Locations</h3>
+            <h3 className="text-xs  text-gray-700   p-4 pb-2">Storage Locations</h3>
             <ul className="p-2 space-y-0.5">
               {STORAGE_LOCATIONS.map((loc) => {
                 const isActive = activeLocation === loc.label && !activeQuick;
@@ -260,7 +260,7 @@ export default function ITFileManagerPage() {
 
           {/* Quick Access */}
           <div className="bg-white rounded  border border-gray-100 overflow-hidden">
-            <h3 className="text-[12px] font-extrabold text-gray-700  tracking-wider p-4 pb-2">Quick Access</h3>
+            <h3 className="text-xs  text-gray-700   p-4 pb-2">Quick Access</h3>
             <ul className="p-2 space-y-0.5">
               {QUICK_ACCESS.map((item) => {
                 const isActive = activeQuick === item.label;
@@ -287,7 +287,7 @@ export default function ITFileManagerPage() {
           {/* Storage Details */}
           <div className="bg-white rounded  border border-gray-100 p-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-[12px] font-extrabold text-gray-700  tracking-wider">Storage Details</h3>
+              <h3 className="text-xs  text-gray-700  ">Storage Details</h3>
               <span className="text-xs  bg-green-50 text-green-600 px-2 py-0.5 rounded">Used 77%</span>
             </div>
             <div className="space-y-2.5">
