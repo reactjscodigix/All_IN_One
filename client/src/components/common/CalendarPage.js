@@ -654,7 +654,7 @@ export default function CalendarPage() {
         {/* Event Categories */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[12px] font-extrabold text-gray-700  tracking-wider">Event Categories</h3>
+            <h3 className="text-xs  text-gray-700  ">Event Categories</h3>
             <button onClick={() => setShowAddModal(true)} className="w-6 h-6 rounded-full bg-gray-100 hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center text-gray-500 transition-colors">
               <Plus size={14} />
             </button>
@@ -680,7 +680,7 @@ export default function CalendarPage() {
         {/* Upcoming Events */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[12px] font-extrabold text-gray-700  tracking-wider">Upcoming Events</h3>
+            <h3 className="text-xs  text-gray-700  ">Upcoming Events</h3>
             <button className="text-xs  text-blue-600 hover:text-blue-700">View All</button>
           </div>
           <div className="space-y-3">
