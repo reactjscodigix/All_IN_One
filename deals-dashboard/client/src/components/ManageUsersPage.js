@@ -204,8 +204,7 @@ const ManageUsersPage = () => {
 
   const fetchRoles = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/roles`);
+      const response = await fetch('http://localhost:5000/api/roles');
       if (!response.ok) throw new Error('Failed to fetch roles');
       const data = await response.json();
       setRoles(data);
@@ -216,8 +215,7 @@ const ManageUsersPage = () => {
 
   const fetchUsers = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/users`);
+      const response = await fetch('http://localhost:5000/api/users');
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
       

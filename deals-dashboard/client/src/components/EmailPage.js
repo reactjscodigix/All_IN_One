@@ -107,8 +107,7 @@ const EmailPage = () => {
 
   const loadTasks = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/tasks`);
+      const response = await fetch('http://localhost:5000/api/tasks');
       if (response.ok) {
         const tasks = await response.json();
         return (Array.isArray(tasks) ? tasks : []).map(task => ({
@@ -138,8 +137,7 @@ const EmailPage = () => {
 
   const loadDeals = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/deals`);
+      const response = await fetch('http://localhost:5000/api/deals');
       if (response.ok) {
         const deals = await response.json();
         return (Array.isArray(deals) ? deals : []).map(deal => ({
@@ -169,8 +167,7 @@ const EmailPage = () => {
 
   const loadProjects = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/projects`);
+      const response = await fetch('http://localhost:5000/api/projects');
       if (response.ok) {
         const projects = await response.json();
         return (Array.isArray(projects) ? projects : []).map(project => ({
@@ -199,8 +196,7 @@ const EmailPage = () => {
 
   const loadCalls = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/call-history?limit=50`);
+      const response = await fetch('http://localhost:5000/api/call-history?limit=50');
       if (response.ok) {
         const calls = await response.json();
         return (Array.isArray(calls) ? calls : []).map(call => ({

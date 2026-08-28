@@ -261,42 +261,26 @@ const LeadReport = () => {
         const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
         const response = await fetch(`${apiUrl}/leads`);
         if (!response.ok) throw new Error('Failed to fetch leads');
-        let data = await response.json();
+        const data = await response.json();
         
-        console.log('✅ LeadReport - API Response:', data);
+        const formattedLeads = data.map((lead, index) => ({
+          id: lead.id,
+          name: lead.name || 'Unknown Lead',
+          avatar: `https://i.pravatar.cc/100?img=${index}`,
+          company: lead.company_name || 'N/A',
+          companySub: lead.company_location || 'Unknown',
+          phone: lead.phone || 'N/A',
+          status: lead.status || 'Contacted',
+          created: lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'N/A',
+          owner: { 
+            name: lead.owner_name || 'Unassigned', 
+            avatar: lead.owner_avatar || `https://i.pravatar.cc/100?img=${index + 20}` 
+          },
+        }));
         
-        if (!Array.isArray(data)) {
-          data = data?.data || data?.leads || [];
-        }
-        
-        console.log('✅ LeadReport - Extracted leads:', data);
-        
-        if (Array.isArray(data)) {
-          const formattedLeads = data.map((lead, index) => ({
-            id: lead.id,
-            name: lead.lead_name || 'Unknown Lead',
-            avatar: `https://i.pravatar.cc/100?img=${index}`,
-            company: lead.company || 'N/A',
-            companySub: lead.industry || 'N/A',
-            phone: lead.phone || 'N/A',
-            status: lead.lead_status || 'New',
-            created: lead.created_at ? new Date(lead.created_at).toLocaleDateString() : 'N/A',
-            owner: { 
-              name: lead.owner_first_name && lead.owner_last_name 
-                ? `${lead.owner_first_name} ${lead.owner_last_name}` 
-                : 'Unassigned', 
-              avatar: `https://i.pravatar.cc/100?img=${index + 20}` 
-            },
-          }));
-          
-          console.log('✅ LeadReport - Formatted leads:', formattedLeads);
-          setLeads(formattedLeads);
-          setError('');
-        } else {
-          throw new Error('Invalid data format');
-        }
+        setLeads(formattedLeads);
+        setError('');
       } catch (err) {
-        console.error('❌ Error fetching leads:', err);
         setError(err.message || 'Failed to fetch leads');
         setLeads([]);
       } finally {

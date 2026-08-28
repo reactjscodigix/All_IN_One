@@ -80,16 +80,10 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
     try {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await fetch(`${apiUrl}/companies`);
-      let data = await response.json();
-      
-      if (!Array.isArray(data)) {
-        data = data.data || data.companies || [];
-      }
-      
-      setCompanies(Array.isArray(data) ? data : []);
+      const data = await response.json();
+      setCompanies(data);
     } catch (error) {
       console.error('Error fetching companies:', error);
-      setCompanies([]);
     }
   };
 
@@ -267,17 +261,8 @@ const AddContactModal = ({ isOpen, onClose, onSubmit, initialData = null, isEdit
       company_id: form.company_id || null,
       email: form.email,
       phone: form.phone,
-      phone2: form.phone2 || null,
-      fax: form.fax || null,
       status: 'Active',
       avatar: avatar,
-      address: form.street || null,
-      city: form.city || null,
-      state: form.state || null,
-      country: form.country || null,
-      source: form.source || null,
-      notes: form.description || null,
-      department: form.department || null,
     };
 
     onSubmit(submitData);

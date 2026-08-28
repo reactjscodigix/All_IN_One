@@ -36,8 +36,7 @@ export default function AudioCallPage() {
 
   const recordCall = async (phone) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      await fetch(`${apiUrl}/call-history`, {
+      await fetch('http://localhost:5000/api/call-history', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

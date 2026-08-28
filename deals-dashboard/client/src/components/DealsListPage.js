@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import DataTable from './DataTable';
 import AddNewDealModal from './AddNewDealModal';
 import { dealsAPI, contactsAPI, companiesAPI } from '../services/api';
-import dealsDataJson from '../data/dealsData.json';
 
 const DealsListPage = () => {
   const [deals, setDeals] = useState([]);
@@ -13,84 +12,42 @@ const DealsListPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      setError('');
-      let dealsRes, contactsRes, companiesRes;
-      
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        [dealsRes, contactsRes, companiesRes] = await Promise.all([
+        setIsLoading(true);
+        setError('');
+        const [dealsRes, contactsRes, companiesRes] = await Promise.all([
           dealsAPI.getAll(),
           contactsAPI.getAll(),
           companiesAPI.getAll(),
         ]);
-      } catch (apiErr) {
-        console.warn('⚠️ API unavailable, using mock data:', apiErr.message);
-        dealsRes = dealsDataJson;
-        contactsRes = [];
-        companiesRes = [];
-      }
-      
-      console.log('✅ DealsListPage - API Response:', { dealsRes, contactsRes, companiesRes });
-      
-      let actualDeals = dealsRes || [];
-      if (dealsRes && !Array.isArray(dealsRes) && typeof dealsRes === 'object') {
-        if (dealsRes.data && Array.isArray(dealsRes.data)) {
-          actualDeals = dealsRes.data;
-        } else if (dealsRes.deals && Array.isArray(dealsRes.deals)) {
-          actualDeals = dealsRes.deals;
-        } else if (dealsRes.rows && Array.isArray(dealsRes.rows)) {
-          actualDeals = dealsRes.rows;
+        
+        console.log('✅ DealsListPage - API Response:', { dealsRes, contactsRes, companiesRes });
+        console.log('✅ DealsListPage - dealsRes type:', typeof dealsRes);
+        console.log('✅ DealsListPage - dealsRes is Array:', Array.isArray(dealsRes));
+        
+        let actualDeals = dealsRes || [];
+        if (dealsRes && !Array.isArray(dealsRes) && typeof dealsRes === 'object') {
+          if (dealsRes.data && Array.isArray(dealsRes.data)) {
+            actualDeals = dealsRes.data;
+            console.log('✅ DealsListPage - Unwrapped deals from dealsRes.data');
+          } else if (dealsRes.deals && Array.isArray(dealsRes.deals)) {
+            actualDeals = dealsRes.deals;
+            console.log('✅ DealsListPage - Unwrapped deals from dealsRes.deals');
+          } else if (dealsRes.rows && Array.isArray(dealsRes.rows)) {
+            actualDeals = dealsRes.rows;
+            console.log('✅ DealsListPage - Unwrapped deals from dealsRes.rows');
+          }
         }
-      }
-      
-      let actualContacts = contactsRes || [];
-      if (contactsRes && !Array.isArray(contactsRes) && typeof contactsRes === 'object') {
-        if (contactsRes.data && Array.isArray(contactsRes.data)) {
-          actualContacts = contactsRes.data;
-        } else if (contactsRes.contacts && Array.isArray(contactsRes.contacts)) {
-          actualContacts = contactsRes.contacts;
-        }
-      }
-      
-      let actualCompanies = companiesRes || [];
-      if (companiesRes && !Array.isArray(companiesRes) && typeof companiesRes === 'object') {
-        if (companiesRes.data && Array.isArray(companiesRes.data)) {
-          actualCompanies = companiesRes.data;
-        } else if (companiesRes.companies && Array.isArray(companiesRes.companies)) {
-          actualCompanies = companiesRes.companies;
-        }
-      }
-      
-      console.log('✅ DealsListPage - Data extracted:', { actualDeals, actualContacts, actualCompanies });
-      
-      const transformedDeals = (actualDeals || []).map(deal => {
-        const company = actualCompanies?.find(c => c.id === deal.company_id);
-        const contact = actualContacts?.find(c => c.id === deal.contact_id);
         
-        const contactName = contact 
-          ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
-          : (deal.contact_first_name && deal.contact_last_name 
-              ? `${deal.contact_first_name} ${deal.contact_last_name}`
-              : 'N/A');
+        console.log('✅ DealsListPage - actualDeals:', actualDeals);
         
-        const assignedName = deal.assignee_first_name && deal.assignee_last_name
-          ? `${deal.assignee_first_name} ${deal.assignee_last_name}`
-          : 'Unassigned';
-        
-        const email = deal.contact_email || 'N/A';
-        const phone = deal.contact_phone || 'N/A';
-        
-        return {
+        const transformedDeals = (actualDeals || []).map(deal => ({
           id: deal.id,
           name: deal.deal_name,
-          company: company?.company_name || deal.company_name || 'N/A',
-          contact: contactName,
-          email: email,
-          phone: phone,
-          location: deal.location || 'N/A',
-          assigned_name: assignedName,
+          company: deal.company_name || 'Unknown',
+          contact: deal.contact_id ? `${deal.first_name || ''} ${deal.last_name || ''}`.trim() : 'N/A',
           stage: deal.pipeline || deal.deal_stage || 'Unclassified',
           value: parseFloat(deal.deal_value) || 0,
           status: deal.status || 'Pending',
@@ -98,37 +55,21 @@ const DealsListPage = () => {
           company_id: deal.company_id,
           contact_id: deal.contact_id,
           ...deal
-        };
-      });
-      
-      console.log('✅ DealsListPage - Transformed Deals:', transformedDeals);
-      
-      setDeals(transformedDeals);
-      setContacts(actualContacts);
-      setCompanies(actualCompanies);
-    } catch (err) {
-      console.error('❌ DealsListPage - Error fetching data:', err);
-      setError(`Failed to load deals data from server: ${err.message}`);
-      setDeals((dealsDataJson.deals || []).map(deal => ({
-        id: deal.id,
-        name: deal.name,
-        company: deal.company,
-        contact: deal.contact,
-        email: deal.email,
-        phone: deal.phone,
-        location: deal.location,
-        assigned_name: deal.assigned_name,
-        stage: deal.stage,
-        value: deal.value,
-        status: deal.status,
-        ...deal
-      })));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        }));
+        
+        console.log('✅ DealsListPage - Transformed Deals:', transformedDeals);
+        
+        setDeals(transformedDeals);
+        setContacts(contactsRes || []);
+        setCompanies(companiesRes || []);
+      } catch (err) {
+        console.error('❌ DealsListPage - Error fetching data:', err);
+        setError(`Failed to load deals data from server: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  useEffect(() => {
     fetchData();
   }, []);
 
@@ -137,8 +78,14 @@ const DealsListPage = () => {
       const response = await dealsAPI.create(formData);
       
       if (response.id) {
+        const newDeal = {
+          id: response.id,
+          ...formData,
+          created_at: new Date().toISOString(),
+        };
+        
+        setDeals(prev => [newDeal, ...prev]);
         setIsModalOpen(false);
-        await fetchData();
       }
     } catch (err) {
       throw new Error(err.message || 'Failed to create deal');
@@ -178,30 +125,6 @@ const DealsListPage = () => {
       key: 'contact',
       label: 'Contact Person',
       sortable: true
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      sortable: true,
-      render: (value) => <span className="text-sm text-gray-600">{value}</span>
-    },
-    {
-      key: 'phone',
-      label: 'Phone',
-      sortable: true,
-      render: (value) => <span className="text-sm text-gray-600">{value}</span>
-    },
-    {
-      key: 'location',
-      label: 'Location',
-      sortable: true,
-      render: (value) => <span className="text-sm text-gray-600">{value}</span>
-    },
-    {
-      key: 'assigned_name',
-      label: 'Assigned To',
-      sortable: true,
-      render: (value) => <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">{value}</span>
     },
     {
       key: 'stage',
@@ -259,7 +182,7 @@ const DealsListPage = () => {
         columns={columns}
         data={deals}
         title="All Deals"
-        searchKeys={['name', 'company', 'contact', 'email', 'phone', 'location', 'assigned_name', 'stage']}
+        searchKeys={['name', 'company', 'contact', 'stage']}
       />
 
       <AddNewDealModal

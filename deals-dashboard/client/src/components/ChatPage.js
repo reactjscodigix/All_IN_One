@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, Send, Phone, Video, MoreVertical, X, UserPlus, MessageCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { conversationsAPI } from '../services/api';
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -55,23 +54,29 @@ export default function ChatPage() {
 
   const fetchConversations = async () => {
     try {
-      const data = await conversationsAPI.getByUserId(user?.id);
+      const response = await fetch(`http://localhost:5000/api/conversations/${user?.id}`);
+      if (!response.ok) throw new Error('Failed to fetch conversations');
+      const data = await response.json();
       setConversations(data);
       if (data.length > 0 && !selectedChat) {
         setSelectedChat(data[0]);
       }
     } catch (error) {
-      console.error('❌ Error fetching conversations:', error);
+      console.error('Error fetching conversations:', error);
     }
   };
 
   const fetchMessages = async () => {
     if (!selectedChat?.id || !user?.id) return;
     try {
-      const data = await conversationsAPI.getMessagesByUserId(user?.id, selectedChat?.id);
+      const response = await fetch(
+        `http://localhost:5000/api/messages/${user?.id}?conversationWith=${selectedChat?.id}`
+      );
+      if (!response.ok) throw new Error('Failed to fetch messages');
+      const data = await response.json();
       setCurrentMessages(data);
     } catch (error) {
-      console.error('❌ Error fetching messages:', error);
+      console.error('Error fetching messages:', error);
     }
   };
 
@@ -86,11 +91,18 @@ export default function ChatPage() {
     }
     
     try {
-      const data = await conversationsAPI.getAvailableUsers(userId, searchQuery);
+      const url = searchQuery 
+        ? `http://localhost:5000/api/available-users/${userId}?search=${encodeURIComponent(searchQuery)}`
+        : `http://localhost:5000/api/available-users/${userId}`;
+      console.log('Fetching from:', url);
+      const response = await fetch(url);
+      console.log('Response status:', response.status, response.statusText);
+      if (!response.ok) throw new Error(`Failed to fetch users: ${response.statusText}`);
+      const data = await response.json();
       console.log('Fetched users:', data);
       setAvailableUsers(data);
     } catch (error) {
-      console.error('❌ Error fetching available users:', error);
+      console.error('Error fetching available users:', error);
       setAvailableUsers([]);
     }
   };
@@ -125,18 +137,26 @@ export default function ChatPage() {
     if (!messageInput.trim() || !selectedChat?.id || !user?.id) return;
 
     try {
-      await conversationsAPI.sendMessage({
-        sender_id: user?.id,
-        receiver_id: selectedChat?.id,
-        message_text: messageInput,
+      const response = await fetch('http://localhost:5000/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender_id: user?.id,
+          receiver_id: selectedChat?.id,
+          message_text: messageInput,
+        }),
       });
 
+      if (!response.ok) throw new Error('Failed to send message');
+      
       setMessageInput('');
       setIsTyping(false);
       
       await fetchMessages();
     } catch (error) {
-      console.error('❌ Error sending message:', error);
+      console.error('Error sending message:', error);
       alert('Failed to send message');
     }
   };

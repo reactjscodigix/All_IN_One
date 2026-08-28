@@ -1,13 +1,20 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "CRM Dashboard Backend API",
-  "main": "server.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
+<<<<<<< HEAD
     "start": "node server.js",
     "dev": "node server.js",
     "test-db": "node test-db-connection.js",
     "test-server": "node test-server.js"
+=======
+    "start": "set NODE_ENV=production&&node server.js",
+    "dev": "set NODE_ENV=development&&node server.js",
+    "setup": "node setup-db.js",
+    "test": "node test-api.js"
+>>>>>>> parent of b984cf21 (final sturctured data)
   },
   "keywords": [],
   "author": "",

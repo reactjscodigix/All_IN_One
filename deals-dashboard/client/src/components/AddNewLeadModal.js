@@ -20,7 +20,6 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
     industry: '',
     owner: '',
     status: 'New',
-    rating: 5,
     tags: [],
     description: '',
     visibility: 'Public',
@@ -266,7 +265,6 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
         source: formData.source,
         lead_source: formData.source,
         status: formData.status,
-        lead_status: formData.status,
         rating: formData.rating || 5,
         description: formData.description,
         notes: formData.description,
@@ -277,7 +275,7 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
         industry: formData.industry,
         visibility: visibility,
         tags: formData.tags && formData.tags.length > 0 ? formData.tags : [],
-        people_assigned: visibility === 'People' ? formData.selectedPeople.map(p => parseInt(p)) : null
+        people_assigned: visibility === 'People' ? formData.selectedPeople.map(p => parseInt(p)) : []
       };
 
       if (onSubmit) {
@@ -305,7 +303,6 @@ const AddNewLeadModal = ({ isOpen, onClose, onSubmit, companies = [], onCompanyA
       industry: '',
       owner: '',
       status: 'New',
-      rating: 5,
       tags: [],
       description: '',
       visibility: 'Public',

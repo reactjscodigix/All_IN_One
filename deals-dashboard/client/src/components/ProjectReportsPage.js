@@ -262,33 +262,24 @@ export default function ProjectReportsPage() {
         const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
         const response = await fetch(`${apiUrl}/projects`);
         if (!response.ok) throw new Error('Failed to fetch projects');
-        let data = await response.json();
+        const data = await response.json();
         
-        if (!Array.isArray(data)) {
-          data = data?.data || data?.projects || [];
-        }
+        const formattedProjects = data.map((project, index) => ({
+          id: project.id,
+          name: project.name || project.title || 'Untitled Project',
+          client: project.company_name || 'No Company',
+          clientLogo: `https://i.pravatar.cc/40?img=${index}`,
+          priority: project.priority || 'Medium',
+          startDate: project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A',
+          endDate: project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A',
+          stage: project.status || 'Plan',
+          stageColor: stageColors[project.status] || '#6366f1',
+          status: project.status === 'Completed' ? 'Active' : 'Inactive',
+        }));
         
-        if (Array.isArray(data)) {
-          const formattedProjects = data.map((project, index) => ({
-            id: project.id,
-            name: project.name || project.title || 'Untitled Project',
-            client: project.company_name || 'No Company',
-            clientLogo: `https://i.pravatar.cc/40?img=${index}`,
-            priority: project.priority || 'Medium',
-            startDate: project.start_date ? new Date(project.start_date).toLocaleDateString() : 'N/A',
-            endDate: project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A',
-            stage: project.status || 'Plan',
-            stageColor: stageColors[project.status] || '#6366f1',
-            status: project.status === 'Completed' ? 'Active' : 'Inactive',
-          }));
-          
-          setProjects(formattedProjects);
-          setError('');
-        } else {
-          throw new Error('Invalid data format');
-        }
+        setProjects(formattedProjects);
+        setError('');
       } catch (err) {
-        console.error('❌ Error fetching projects:', err);
         setError(err.message || 'Failed to fetch projects');
         setProjects([]);
       } finally {

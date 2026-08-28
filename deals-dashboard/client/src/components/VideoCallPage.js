@@ -17,8 +17,7 @@ export default function VideoCallPage() {
 
   const recordCall = async (meetingLink) => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const response = await fetch(`${apiUrl}/call-history`, {
+      const response = await fetch('http://localhost:5000/api/call-history', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
